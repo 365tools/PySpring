@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyspring-core"
+version = "0.1.0"
+authors = [
+  { name="Yingchun", email="allureyc@gmail.com" },
+]
+description = "A SpringBoot-style scaffold for FastAPI with IoC and Auto-Configuration."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "fastapi>=0.95.0",
+    "uvicorn>=0.22.0",
+    "pydantic>=1.10.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/365tools/PySpring"
+"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
