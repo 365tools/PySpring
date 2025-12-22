@@ -1,0 +1,83 @@
+# 日志系统配置示例
+# 复制此文件为 logging.yaml 并根据需要修改
+
+# 基本配置
+logging:
+  # 应用日志级别（控制 Loguru 日志输出）
+  # 注意：这与 application.yaml 中的 server.log_level 不同
+  # - logging.level: 控制应用内部代码的日志级别（本配置）
+  # - server.log_level: 控制 Uvicorn 服务器的日志输出
+  # 日志级别选项: TRACE, DEBUG, INFO, SUCCESS, WARNING, ERROR, CRITICAL
+  # 开发环境建议: DEBUG
+  # 生产环境建议: INFO 或 WARNING
+  level: "INFO"
+  
+  # 控制台日志配置
+  console:
+    enabled: true
+    colorize: true  # 生产环境可设置为 false
+    # 可选格式：
+    # 简洁格式: "<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | {message}"
+    # 详细格式（推荐）: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}"
+    # 最详细格式: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | {message}"
+    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}"
+
+  # 文件日志配置
+  file:
+    enabled: false  # 生产环境建议设置为 true
+    path: "logs/app.log"
+    # 轮转选项:
+    # - 按大小: "10 MB", "500 MB", "1 GB"
+    # - 按时间: "12:00", "1 week", "1 month"
+    rotation: "10 MB"
+    # 保留时间: "1 day", "1 week", "1 month", "3 months"
+    retention: "7 days"
+    compression: "zip"  # zip, gz, tar
+    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]}:{line} | {message}"
+
+  # 高级配置
+  advanced:
+    backtrace: true  # 异常时显示完整调用栈，开发环境建议 true
+    diagnose: true   # 显示变量值，生产环境建议 false（安全考虑）
+    enqueue: true    # 异步日志，提高性能
+    depth_offset: 1  # 通常不需要修改
+
+  # 过滤器配置
+  filters:
+    health_check: true
+    metrics: true
+    favicon: true
+    # 添加需要过滤的自定义路径
+    custom_paths:
+      - "/health"
+      - "/metrics"
+      - "/favicon.ico"
+      # - "/api/internal"  # 添加您的路径
+
+  # 日志拦截配置
+  intercept:
+    stdlib: true
+    uvicorn: true
+    fastapi: true
+    watchfiles: true
+    # 添加需要拦截的自定义日志记录器
+    custom_loggers:
+      - "sqlalchemy.engine"  # 拦截 SQLAlchemy SQL 日志
+      - "asyncio"
+      # - "httpx"  # 拦截 HTTPX 请求日志
+      # - "redis"  # 拦截 Redis 日志
+
+# 环境配置示例：
+# 开发环境：
+#   level: "DEBUG"
+#   console.colorize: true
+#   file.enabled: false
+#   advanced.diagnose: true
+
+# 生产环境：
+#   level: "INFO"
+#   console.colorize: false
+#   file.enabled: true
+#   file.rotation: "500 MB"
+#   file.retention: "30 days"
+#   advanced.diagnose: false

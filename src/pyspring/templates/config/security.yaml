@@ -1,0 +1,205 @@
+# 认证与授权配置示例
+# 复制此文件为 security.yaml 并根据需要修改
+
+# 认证配置
+authentication:
+  enabled: true
+  
+  # JWT 配置
+  jwt:
+    # ⚠️ 密钥必须通过环境变量 JWT_SECRET_KEY 设置（生产环境）
+    secret_key: null
+    algorithm: "HS256"
+    # Access Token 过期时间（秒）
+    # 建议：1小时（3600）- 30分钟（1800）
+    access_token_expire: 3600
+    # Refresh Token 过期时间（秒）
+    # 建议：7-30天（604800-2592000）
+    refresh_token_expire: 2592000
+    
+    # JWT 加密配置（防止 Token payload 被 base64 解码查看）
+    encryption:
+      # 是否启用 JWT 加密
+      # false: JWT 仅签名，payload 可被 base64 解码查看
+      # true: JWT 先签名后加密，外部无法查看 payload 内容
+      enabled: false  # 开发环境可禁用，生产环境建议启用
+      
+      # 加密密钥（⚠️ 必须通过环境变量 JWT_ENCRYPTION_KEY 设置）
+      # 生成方式：python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+      encryption_key: null
+      
+      # 加密算法
+      # Fernet: AES-128-CBC + HMAC-SHA256（推荐，安全且简单）
+      # AES-GCM: AES-256-GCM（高级选项）
+      algorithm: "Fernet"
+  
+  # 认证提供者链（按 priority 顺序执行）
+  # 可以启用多个认证方式，支持降级和备用认证
+  providers:
+    # JWT Token 认证（主要认证方式）
+    - name: "jwt"
+      type: "JWTAuthProvider"
+      enabled: true
+      priority: 1  # 优先级最高
+      config:
+        token_sources:
+          - "header"    # 优先从 Authorization Header 获取
+          - "cookie"    # 其次从 Cookie 获取
+          - "query"     # 最后从 URL 参数获取
+        token_prefix: "Bearer"
+        verify_device: false  # 是否验证设备指纹
+    
+    # API Key 认证（用于服务间调用）
+    - name: "api_key"
+      type: "APIKeyAuthProvider"
+      enabled: false  # 默认禁用
+      priority: 2
+      config:
+        header_name: "X-API-Key"
+        verify_ip: false  # 是否验证 IP 白名单
+    
+    # OAuth2 认证（第三方登录）
+    - name: "oauth2"
+      type: "OAuth2AuthProvider"
+      enabled: false
+      priority: 3
+      config:
+        providers:
+          - google
+          - github
+          - wechat
+  
+  # 白名单配置（不需要认证的路径）
+  whitelist:
+    # 精确匹配的路径
+    exact_paths:
+      - "/"
+      - "/health"
+      - "/favicon.ico"
+      - "/docs"                      # Swagger 文档
+      - "/redoc"                     # ReDoc 文档
+      - "/openapi.json"
+      - "/api/auth/login"            # 登录接口
+      - "/api/auth/register"         # 注册接口
+      - "/api/auth/token/refresh"    # Token 刷新
+      # 添加您的公开接口
+      # - "/api/public/announcement"
+    
+    # 前缀匹配（以这些前缀开头的路径都不需要认证）
+    prefix_paths:
+      - "/static/"                   # 静态文件
+      - "/api/docs/"                 # 文档路径
+      - "/api/public/"               # 公开 API
+      # - "/download/"               # 下载路径
+    
+    # 正则表达式匹配（高级匹配规则）
+    regex_patterns:
+      - "^/api/v[0-9]+/public/.*"    # 所有版本的 public API
+      - "^/download/[a-z0-9]+$"      # 下载链接
+      # - "^/share/[a-f0-9-]{36}$"   # 分享链接
+  
+  # 设备验证配置（可选的额外安全层）
+  device:
+    enabled: false  # 开发环境建议禁用
+    fingerprint_header: "X-Device-Fingerprint"
+    auto_register: true
+    default_status: "pending"  # pending（待审批）, approved（已批准）
+
+# 授权配置（角色和权限）
+authorization:
+  enabled: true
+  
+  # 路径-角色映射（定义哪些路径需要哪些角色）
+  role_mappings:
+    # 精确路径匹配
+    "/api/admin/users":
+      - "admin"
+    "/api/admin/settings":
+      - "admin"
+      - "super_admin"
+    "/api/system/config":
+      - "super_admin"
+    
+    # 通配符匹配（* 匹配任意字符）
+    "/api/admin/*": # 所有 admin 路径需要 admin 角色
+      - "admin"
+    "/api/user/*": # 所有 user 路径需要 user 或 admin 角色
+      - "user"
+      - "admin"
+  
+  # 角色继承（子角色自动拥有父角色的所有权限）
+  role_hierarchy:
+    super_admin: # 超级管理员
+      inherits: [ "admin" ]        # 继承 admin 的所有权限
+    admin: # 管理员
+      inherits: [ "user" ]         # 继承 user 的所有权限
+    user: # 普通用户
+      inherits: [ ]               # 无继承
+
+# 安全配置
+security:
+  # 限流配置（防止暴力破解和 DDoS）
+  rate_limit:
+    enabled: false  # 开发环境可禁用
+    default_limit: 60  # 默认每分钟 60 次请求
+    path_limits:
+      "/api/auth/login": 5       # 登录接口：每分钟 5 次
+      "/api/auth/register": 3    # 注册接口：每分钟 3 次
+      "/api/auth/send-code": 10  # 发送验证码：每分钟 10 次
+  
+  # CORS 配置（跨域资源共享）
+  cors:
+    enabled: true
+    allow_origins:
+      - "http://localhost:3000"
+      - "http://localhost:5173"
+      - "https://yourdomain.com"
+    allow_credentials: true
+    allow_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "PATCH"
+      - "OPTIONS"
+    allow_headers:
+      - "*"
+
+# 环境配置建议：
+
+# 开发环境:
+# authentication:
+#   enabled: true
+#   providers:
+#     - name: "jwt"
+#       enabled: true
+#       config:
+#         verify_device: false
+#   device:
+#     enabled: false
+# authorization:
+#   enabled: false  # 开发时可禁用角色验证
+# security:
+#   rate_limit:
+#     enabled: false
+
+# 生产环境:
+# authentication:
+#   enabled: true
+#   jwt:
+#     access_token_expire: 1800  # 30分钟
+#   providers:
+#     - name: "jwt"
+#       enabled: true
+#       config:
+#         verify_device: true  # 启用设备验证
+#   device:
+#     enabled: true
+# authorization:
+#   enabled: true
+# security:
+#   rate_limit:
+#     enabled: true
+#   cors:
+#     allow_origins:
+#       - "https://yourdomain.com"  # 仅允许生产域名
