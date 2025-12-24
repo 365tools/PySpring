@@ -1,0 +1,97 @@
+"""
+PySpring 应用启动示例
+
+展示如何使用 IoC 容器和启动初始化器
+"""
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+# 导入 PySpring 组件
+from pyspring.log.loguru.ins import logger
+from pyspring.ioc.manager import AppContainerManager
+
+
+# IoC 容器管理器
+ioc_manager: AppContainerManager = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理"""
+    global ioc_manager
+    
+    # 启动时执行
+    logger.info("🚀 PySpring 应用启动中...")
+    
+    # 1. 创建 IoC 容器管理器并扫描注册服务
+    ioc_manager = AppContainerManager()
+    ioc_manager.register_all_services()
+    logger.info("✅ IoC 容器服务注册完成")
+    
+    # 2. 执行启动初始化器
+    # 包括: CacheInitializer, DBInitializer, DatabaseInitializer
+    await ioc_manager.run_startup_initializers()
+    logger.info("✅ 启动初始化完成")
+    logger.info("✅ PySpring 应用启动完成")
+    
+    yield  # 应用运行期间
+    
+    # 关闭时执行
+    logger.info("👋 PySpring 应用关闭中...")
+    
+    # 执行所有关闭处理器
+    # 包括: 关闭数据库连接、关闭缓存连接等
+    await ioc_manager.run_shutdown_handlers()
+    
+    logger.info("✅ 应用已关闭")
+
+
+app = FastAPI(
+    title="PySpring Application",
+    description="基于 PySpring 框架构建的应用",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# 配置 CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境请修改为具体域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+async def root():
+    """根路径"""
+    return {
+        "message": "Welcome to PySpring",
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """健康检查"""
+    return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    from pyspring.system.impl.service import SystemService
+    
+    # 从配置文件读取服务器配置
+    system_service = SystemService()
+    
+    uvicorn.run(
+        "main:app",
+        host=system_service.get_config("server.host", "0.0.0.0"),
+        port=int(system_service.get_config("server.port", 8000)),
+        reload=system_service.get_config("server.reload", True),
+        log_level=system_service.get_config("server.log_level", "info"),
+        workers=int(system_service.get_config("server.workers", 1))
+    )

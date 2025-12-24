@@ -1,0 +1,28 @@
+# IoC 容器配置
+# 用于配置服务扫描路径和容器行为
+
+# 服务扫描配置
+scan:
+  # 需要扫描的包路径列表
+  packages:
+    - src.pyspring.repositories
+    - src.pyspring.security
+    - src.pyspring.system
+    - src.pyspring.log
+  
+  # 是否启用递归扫描（扫描子包）
+  recursive: true
+  
+  # 服务类名后缀（用于识别服务类）
+  service_suffix: "Service"
+
+# 容器配置
+container:
+  # 是否启用懒加载（首次使用时才实例化）
+  lazy_loading: true
+  
+  # 是否启用接口自动映射
+  auto_interface_mapping: true
+  
+  # 是否记录详细日志
+  debug: false

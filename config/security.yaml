@@ -1,0 +1,162 @@
+# 认证与授权配置
+# 配置认证提供者、白名单、角色权限等
+
+# 认证配置
+authentication:
+  # 是否启用认证
+  enabled: true
+  
+  # JWT 配置
+  jwt:
+    # 密钥（生产环境务必通过环境变量设置）
+    secret_key: null  # 通过环境变量 JWT_SECRET_KEY 设置
+    # 算法
+    algorithm: "HS256"
+    # Access Token 过期时间（秒）
+    access_token_expire: 3600  # 1小时
+    # Refresh Token 过期时间（秒）
+    refresh_token_expire: 2592000  # 30天
+    
+    # JWT 加密配置（防止 Token 被轻易解析）
+    encryption:
+      # 是否启用 JWT 加密（启用后 Token 将被 AES-256 加密）
+      enabled: false
+      # 加密密钥（生产环境务必通过环境变量 JWT_ENCRYPTION_KEY 设置）
+      # 必须是 32 字节的 base64 编码字符串，或由系统自动生成
+      encryption_key: null  # 通过环境变量 JWT_ENCRYPTION_KEY 设置
+      # 加密算法（Fernet = AES-128-CBC + HMAC）
+      algorithm: "Fernet"  # Fernet（推荐）或 AES-GCM
+  
+  # 认证提供者链（按顺序执行）
+  providers:
+    # JWT Token 认证
+    - name: "jwt"
+      type: "JWTAuthProvider"
+      enabled: true
+      priority: 1
+      config:
+        # Token 来源优先级
+        token_sources:
+          - "header"    # Authorization: Bearer <token>
+          - "cookie"    # Cookie: access_token=<token>
+          - "query"     # ?token=<token>
+        # Token 前缀
+        token_prefix: "Bearer"
+        # 是否验证设备指纹
+        verify_device: false
+    
+    # API Key 认证
+    - name: "api_key"
+      type: "APIKeyAuthProvider"
+      enabled: false
+      priority: 2
+      config:
+        # API Key 头名称
+        header_name: "X-API-Key"
+        # 是否验证 IP 白名单
+        verify_ip: false
+    
+    # OAuth2 认证（扩展示例）
+    - name: "oauth2"
+      type: "OAuth2AuthProvider"
+      enabled: false
+      priority: 3
+      config:
+        # OAuth2 提供者配置
+        providers:
+          - google
+          - github
+  
+  # 白名单配置
+  whitelist:
+    # 完全匹配的路径（无需认证）
+    exact_paths:
+      - "/"
+      - "/health"
+      - "/favicon.ico"
+      - "/docs"
+      - "/redoc"
+      - "/openapi.json"
+      - "/api/auth/login"
+      - "/api/auth/register"
+      - "/api/auth/token/refresh"
+    
+    # 前缀匹配的路径（无需认证）
+    prefix_paths:
+      - "/static/"
+      - "/api/docs/"
+      - "/api/public/"
+    
+    # 正则表达式匹配（无需认证）
+    regex_patterns:
+      - "^/api/v[0-9]+/public/.*"
+      - "^/download/[a-z0-9]+$"
+  
+  # 设备验证配置
+  device:
+    # 是否启用全局设备验证
+    enabled: false
+    # 设备指纹头名称
+    fingerprint_header: "X-Device-Fingerprint"
+    # 是否自动注册新设备
+    auto_register: true
+    # 新设备默认状态
+    default_status: "pending"  # pending, approved, rejected
+
+# 授权配置
+authorization:
+  # 是否启用角色验证
+  enabled: true
+  
+  # 角色权限映射（路径 -> 所需角色）
+  role_mappings:
+    # 精确路径匹配
+    "/api/admin/users":
+      - "admin"
+    "/api/admin/settings":
+      - "admin"
+      - "super_admin"
+    
+    # 前缀路径匹配
+    "/api/admin/*":
+      - "admin"
+    "/api/user/*":
+      - "user"
+      - "admin"
+  
+  # 权限继承（子角色继承父角色的所有权限）
+  role_hierarchy:
+    super_admin:
+      inherits: [ "admin" ]
+    admin:
+      inherits: [ "user" ]
+    user:
+      inherits: [ ]
+
+# 安全配置
+security:
+  # 限流配置
+  rate_limit:
+    enabled: false
+    # 默认限制（每分钟请求数）
+    default_limit: 60
+    # 路径特定限制
+    path_limits:
+      "/api/auth/login": 5
+      "/api/auth/register": 3
+  
+  # CORS 配置
+  cors:
+    enabled: true
+    allow_origins:
+      - "http://localhost:3000"
+      - "https://yourdomain.com"
+    allow_credentials: true
+    allow_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "PATCH"
+    allow_headers:
+      - "*"
