@@ -8,7 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # 导入 PySpring 组件
-from pyspring.log.loguru.ins import logger
+from pyspring.log.instance import logger
 from pyspring.ioc.manager import AppContainerManager
 
 

@@ -182,7 +182,7 @@ python main.py
 
 ### security.yaml - 认证与授权配置
 
-配置 JWT、密码加密、设备授权等安全相关设置。
+配置 JWT、密码加密等安全相关设置。
 
 详细说明请参考各配置文件中的注释。
 
@@ -202,7 +202,6 @@ python main.py
 
 **安全相关表：**
 
-- `device_authorizations` - 设备授权表
 - `refresh_tokens` - Refresh Token 表
 
 ### 默认数据

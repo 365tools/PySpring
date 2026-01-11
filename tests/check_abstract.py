@@ -8,7 +8,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from pyspring.security.auth.initializer import AuthenticationInitializer
+from pyspring.security.authentication.initializer import AuthenticationInitializer
 
 print("=" * 60)
 print("🔍 检查 AuthenticationInitializer")

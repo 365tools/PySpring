@@ -19,42 +19,42 @@ def test_imports():
         # 使用相对于 pyspring 的路径
         sys.path.insert(0, str(project_root / "src"))
 
-        from pyspring.interfaces.ISingleton import ISingletonService
+        from pyspring.core.interfaces.ISingleton import ISingletonService
         print("  ✓ ISingletonService 导入成功")
 
-        from pyspring.security.auth.config_manager import SecurityConfigManager
+        from pyspring.security.base.config.loader import SecurityConfigManager
         print("  ✓ SecurityConfigManager 导入成功")
 
-        from pyspring.security.auth.chain import AuthenticationChainManager
+        from pyspring.security.authentication.chain import AuthenticationChainManager
         print("  ✓ AuthenticationChainManager 导入成功")
 
-        from pyspring.security.auth.encryption import JWTEncryptionManager
+        from pyspring.security.authentication.encryption import JWTEncryptionManager
         print("  ✓ JWTEncryptionManager 导入成功")
 
-        from pyspring.log.loguru.config_manager import LoggingConfigManager
+        from pyspring.log.loguru.config.manager import LoggingConfigManager
         print("  ✓ LoggingConfigManager 导入成功")
 
-        from pyspring.repositories.config_manager import RepositoriesConfigManager
+        from pyspring.repositories.base.config.loader import RepositoriesConfigManager
         print("  ✓ RepositoriesConfigManager 导入成功")
 
-        from pyspring.system.config.manager import BaseConfigManager
+        from pyspring.core.config.manager import BaseConfigManager
         print("  ✓ BaseConfigManager 导入成功")
 
-        from pyspring.system.config.registry import ConfigRegistry
+        from pyspring.core.config.registry import ConfigRegistry
         print("  ✓ ConfigRegistry 导入成功")
 
-        from pyspring.system.env import EnvConfigLoader
+        from pyspring.core.env import EnvConfigLoader
         print("  ✓ EnvConfigLoader 导入成功")
 
         from pyspring.ioc.manager import AppContainerManager
         print("  ✓ AppContainerManager 导入成功")
 
-        return True
+        assert True
     except Exception as e:
         print(f"  ✗ 导入失败: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"导入失败: {e}"
 
 
 def test_inheritance():
@@ -62,14 +62,14 @@ def test_inheritance():
     print("\n🔍 测试 2: 验证继承关系...")
 
     try:
-        from pyspring.interfaces.ISingleton import ISingletonService
-        from pyspring.security.auth.config_manager import SecurityConfigManager
-        from pyspring.security.auth.chain import AuthenticationChainManager
-        from pyspring.security.auth.encryption import JWTEncryptionManager
-        from pyspring.log.loguru.config_manager import LoggingConfigManager
-        from pyspring.repositories.config_manager import RepositoriesConfigManager
-        from pyspring.system.config.registry import ConfigRegistry
-        from pyspring.system.env import EnvConfigLoader
+        from pyspring.core.interfaces.ISingleton import ISingletonService
+        from pyspring.security.base.config.loader import SecurityConfigManager
+        from pyspring.security.authentication.chain import AuthenticationChainManager
+        from pyspring.security.authentication.encryption import JWTEncryptionManager
+        from pyspring.log.loguru.config.manager import LoggingConfigManager
+        from pyspring.repositories.base.config.loader import RepositoriesConfigManager
+        from pyspring.core.config.registry import ConfigRegistry
+        from pyspring.core.env import EnvConfigLoader
         from pyspring.ioc.manager import AppContainerManager
 
         classes_to_test = [
@@ -91,12 +91,12 @@ def test_inheritance():
                 print(f"  ✗ {name} 未继承 ISingletonService")
                 all_passed = False
 
-        return all_passed
+        assert all_passed
     except Exception as e:
         print(f"  ✗ 继承测试失败: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"继承测试失败: {e}"
 
 
 def test_no_custom_singleton():
@@ -104,9 +104,9 @@ def test_no_custom_singleton():
     print("\n🔍 测试 3: 验证移除自定义单例逻辑...")
 
     try:
-        from pyspring.security.auth.config_manager import SecurityConfigManager
-        from pyspring.security.auth.chain import AuthenticationChainManager
-        from pyspring.security.auth.encryption import JWTEncryptionManager
+        from pyspring.security.base.config.loader import SecurityConfigManager
+        from pyspring.security.authentication.chain import AuthenticationChainManager
+        from pyspring.security.authentication.encryption import JWTEncryptionManager
 
         classes_to_test = [
             ("SecurityConfigManager", SecurityConfigManager),
@@ -134,12 +134,12 @@ def test_no_custom_singleton():
             else:
                 print(f"  ✓ {name} 未重写 __new__")
 
-        return all_passed
+        assert all_passed
     except Exception as e:
         print(f"  ✗ 单例逻辑检查失败: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        assert False, f"单例逻辑检查失败: {e}"
 
 
 def test_no_old_imports():
@@ -174,10 +174,10 @@ def test_no_old_imports():
             print(f"    - {imp}")
         if len(old_imports_found) > 5:
             print(f"    ... 还有 {len(old_imports_found) - 5} 处")
-        return False
+        assert False, f"发现 {len(old_imports_found)} 处旧导入路径"
     else:
         print("  ✓ 未发现旧导入路径 (src.ref.core)")
-        return True
+        assert True
 
 
 def main():

@@ -1,618 +1,246 @@
 <div align="center">
 
-# PySpring
+# PySpring 🚀
 
-**Enterprise-Grade Python Web Framework**
+**企业级 Python Web 框架 - 为生产力而生的 "Spring Boot for Python"**
 
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-powered-009688.svg)](https://fastapi.tiangolo.com/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-[English](README.md) | [中文文档](README_CN.md) | [Documentation](docs/) | [Changelog](CHANGELOG.md)
-
 </div>
 
 ---
 
-## Overview
+## 🌟 什么是 PySpring？
 
-**PySpring** is a modern, enterprise-grade Python web framework inspired by Spring Boot's design philosophy. Built on FastAPI, it provides production-ready infrastructure including IoC container, authentication, data access, and
-comprehensive logging for building scalable applications.
+**PySpring** 是一个基于 [FastAPI](https://fastapi.tiangolo.com/) 构建的、深受 Java Spring Boot 设计哲学启发的现代化 Python Web 框架。它不仅仅是一个 Web 框架，更是一套生产环境就绪的基础设施。
 
-### Why PySpring?
-
-- **🏗️ Spring-Inspired Architecture** - Familiar concepts for Java developers: IoC, dependency injection, lifecycle management
-- **⚡ Production Ready** - Battle-tested patterns for authentication, caching, database connections
-- **🔧 Configuration-Driven** - Centralized YAML configuration for all framework components
-- **🛡️ Security First** - JWT encryption, RBAC, authentication chains, and flexible whitelisting
-- **📦 Modular Design** - Loosely coupled components with clear separation of concerns
+旨在通过 **控制反转 (IoC)**、**依赖注入 (DI)** 和 **约定优于配置** 的原则，解决大型 Python 项目中常见的代码耦合、配置混乱和结构随意等痛点，帮助开发者构建可扩展、易维护的后端应用。
 
 ---
 
-## Key Features
+## 🏗️ 核心架构
 
-### IoC Container & Dependency Injection
+PySpring 内部各组件通过 IoC 容器紧密协作，形成了一个稳固的生命周期闭环。
 
-PySpring provides a powerful IoC container for managing application components and their dependencies.
-
-- **Singleton Service Management** - Unified lifecycle management through `ISingletonService` interface
-- **Automatic Dependency Resolution** - Type-based and name-based injection strategies
-- **Thread-Safe Initialization** - Guaranteed singleton creation in multi-threaded environments
-- **Lazy Loading** - Services instantiated on first use for optimized startup
-
-### Application Lifecycle Management
-
-Extensible startup initialization system based on the Initializer Pattern.
-
-- **Startup Initializers** - Pluggable components for application bootstrap tasks
-- **Database Auto-Initialization** - Automatic schema creation on application startup
-  - **Incremental Mode** - Safe creation of missing tables only
-  - **Full Mode** - Complete schema recreation (development only)
-  - **Auto-Detection** - Intelligent SQL script path resolution
-- **Shutdown Handlers** - Graceful resource cleanup on application termination
-
-### Security & Authentication
-
-Production-ready security infrastructure with flexible configuration.
-
-- **Authentication Chain** - Composable authentication handlers using chain of responsibility
-- **JWT Encryption** - Token payload encryption with Fernet/AES-GCM algorithms
-- **RBAC Authorization** - Complete role-based access control system
-- **Multi-Device Management** - Device tracking and authentication
-- **Flexible Whitelisting** - Exact match, prefix match, and regex pattern support
-
-### Data Access Layer
-
-Unified abstraction for data storage with transparent provider switching.
-
-- **Cache Abstraction** - Seamless Memory/Redis cache switching without code changes
-- **Database Support** - PostgreSQL, SQLite with unified interface
-- **Connection Pooling** - Automatic management of database and cache connections
-- **Configuration-Driven** - All storage settings managed through YAML configuration
-
-### Logging Infrastructure
-
-Structured logging system built on Loguru.
-
-- **Structured Logging** - JSON format support for log aggregation
-- **Automatic Rotation** - Size and time-based log file rotation
-- **Colored Console Output** - Enhanced development experience
-- **Contextual Filters** - Request context tracking and filtering
-
-### Project Scaffolding
-
-Command-line tools for rapid project setup.
-
-- **Standardized Structure** - Generate complete project layout with `pyspring init`
-- **Template System** - Customizable code generation templates
-- **Automatic Configuration** - JWT keys and environment variables auto-generated
-- **Production Ready** - Generated `main.py` includes complete startup logic
+```mermaid
+graph TD
+    App[FastAPI Application] --> IoC[AppContainerManager - IoC 容器]
+    
+    subgraph Core[核心基础 Core]
+        IoC --> Config[Config - 配置管理]
+        IoC --> Web[Web - 响应/异常]
+    end
+    
+    subgraph Infra[基础设施 Infrastructure]
+        IoC --> Security[Security - 认证与授权]
+        IoC --> Repos[Repositories - 数据库/缓存]
+    end
+    
+    %% Lifecycle
+    IOCScan[Package Scanning] -- 自动注册 --> IoC
+    Init[Startup Initializers] -- 启动钩子 --> IoC
+    Close[Shutdown Handlers] -- 关闭钩子 --> IoC
+    
+    %% Runtime Security Flow
+    Middleware[Middlewares] -- 1.拦截请求 --> Security
+    Security -- 2.解析身份/校验权限 --> Context[AuthContext - 用户上下文]
+```
 
 ---
 
-## Installation
+## ✨ 四大核心支柱
 
-### Prerequisites
+### 1. 智能 IoC 容器 (Smart IoC)
 
-- Python 3.12 or higher
-- pip or uv package manager
+基于强大的 `dependency-injector` 模式实现，支持**全自动包扫描**。
 
-### Install via pip
+- **零配置注入**：只需将类放置在扫描路径下（并符合命名约定，如 `XxxService`），容器将自动发现并处理其实例化。
+- **依赖自动装配**：通过类型注解自动注入依赖，无需手动传递参数。
+- **单例管理**：完美支持单例声明 (`ISingletonService`)，确保核心服务（如数据库连接池、配置管理器）全局共享且线程安全。
 
+### 2. 生产级安全体系 (Security First)
+
+无需从零编写复杂的认证逻辑，PySpring 内置了企业级安全特性：
+
+- **认证链模式**：支持 JWT、API Key 等多种认证方式并行，按优先级自动匹配，易于扩展。
+- **全链路加密**：内置 Token 负载加密（Fernet/AES-GCM），确保敏感信息在传输和存储中的绝对安全。
+- **智能鉴权**：开箱即用的白名单机制（精确/前缀/正则）及 RBAC 角色权限控制。
+
+### 3. 应用生命周期钩子 (Lifecycle Hooks)
+
+像 Spring 一样管理应用的每一个阶段，告别 `main.py` 中的面条代码。
+
+- **Startup Initializers**：启动时自动执行数据迁移、缓存预热或第三方服务探活。
+- **Shutdown Handlers**：优雅停机，确保数据库连接池关闭、临时资源正常释放，防止数据丢失。
+
+### 4. 统一数据抽象 (Unified DAL)
+
+- **数据库透明化**：一套代码，通过配置即可在 PostgreSQL 和 SQLite 间无缝切换，利于开发与生产环境隔离。
+- **缓存抽象层**：接口统一，支持从本地内存缓存平滑升级到 Redis 集群，无需修改业务代码。
+
+---
+
+## 🚀 快速上手
+
+### 1. 安装 (推荐使用 uv)
+
+[uv](https://github.com/astral-sh/uv) 是一个极速的 Python 包管理器，推荐用它来管理环境。
+
+```powershell
+# 安装 uv (如果尚未安装)
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# 创建虚拟环境并激活
+uv venv
+.venv\Scripts\Activate.ps1
+
+# 安装 PySpring
+uv pip install pyspring
+```
+
+或者使用标准 pip：
 ```bash
 pip install pyspring
 ```
 
-### Install via uv (Recommended for Speed)
-
-[uv](https://github.com/astral-sh/uv) is a blazingly fast Python package manager, 10-100x faster than pip:
-
-```bash
-# Install uv (first time only)
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Create virtual environment and install PySpring
-uv venv
-source .venv/bin/activate  # Linux/Mac
-.venv\Scripts\Activate.ps1 # Windows
-uv pip install pyspring
-```
-
-### Install from Source
-
-```bash
-git clone https://github.com/365tools/PySpring.git
-cd PySpring
-pip install -e .
-```
-
-For detailed installation instructions, see [Installation Guide](docs/01-getting-started/INSTALLATION_GUIDE.md).
-
----
-
-## Quick Start
-
-### 1. Initialize Project
-
-Create a new project with standardized structure:
+### 2. 初始化项目
 
 ```bash
 pyspring init
 ```
 
-This generates a complete application structure:
+该命令会引导你生成标准的工程结构，包含完整的配置模板（YAML）、认证逻辑脚手架和测试套件。
 
-```
-your-project/
-├── app/                       # Application code
-│   ├── api/                  # API routes and endpoints
-│   ├── models/               # Data models and schemas
-│   ├── services/             # Business logic layer
-│   └── utils/                # Utility functions
-├── config/                    # Configuration files
-│   ├── container.yaml        # IoC container configuration
-│   ├── logging.yaml          # Logging configuration
-│   ├── repositories.yaml     # Database and cache configuration
-│   └── security.yaml         # Authentication and authorization
-├── scripts/db/               # Database scripts
-│   ├── init_incremental.sql  # Safe incremental initialization
-│   └── init_full.sql         # Full schema recreation
-├── tests/                    # Test suite
-├── logs/                     # Log files
-├── data/                     # Data directory
-├── main.py                   # Application entry point
-├── .env                      # Environment variables (auto-generated)
-├── .env.example             # Environment template
-├── .gitignore               # Git ignore rules
-└── pyproject.toml           # Project metadata and dependencies
-```
+### 3. 体验“自动注入”
 
-### 2. Configure Environment
-
-The `.env` file is automatically generated with secure JWT keys. Configure other settings as needed:
-
-```bash
-# JWT Configuration (auto-generated)
-JWT_SECRET_KEY=<auto-generated-secret>
-JWT_ENCRYPTION_KEY=<auto-generated-encryption-key>
-
-# Database Configuration
-POSTGRES_HOST=localhost
-POSTGRES_PORT=5432
-POSTGRES_USER=your-user
-POSTGRES_PASSWORD=your-password
-POSTGRES_DB=your-database
-
-# Redis Configuration
-REDIS_HOST=localhost
-REDIS_PORT=6379
-```
-
-### 3. Configure Database Auto-Initialization
-
-Edit `config/repositories.yaml`:
-
-```yaml
-database:
-  initialization:
-    enabled: true              # Enable auto-initialization
-    mode: incremental          # Use safe incremental mode
-    auto_detect: true          # Auto-detect script path
-    # script_path: scripts/db/init_incremental.sql  # Or specify manually
-```
-
-**Initialization Modes:**
-
-- `incremental`: Safe mode - creates only missing tables, preserves existing data
-- `full`: Dangerous mode - drops and recreates all tables (development only)
-
-### 4. Run Application
-
-The generated `main.py` includes complete startup logic:
-
-```bash
-uvicorn main:app --reload
-```
-
-On startup, the application automatically executes initialization tasks:
-
-```
-🔧 [DatabaseInitializer] Starting initialization...
-✅ [DatabaseInitializer] Database initialization completed
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000
-```
-
-### 5. Access API
-
-- **API Documentation**: http://localhost:8000/docs
-- **Health Check**: http://localhost:8000/health
-
----
-
-## Core Concepts
-
-### IoC Container & Singleton Services
-
-PySpring's core is the **IoC (Inversion of Control) container**, providing dependency injection and singleton lifecycle management:
-
+在 `app/services/user_service.py` 中定义服务：
 ```python
-from pyspring.interfaces.ISingleton import ISingletonService
+from pyspring.core.interfaces.ISingleton import ISingletonService
+# 假设有一个已存在的 DBManagerService
 
 class UserService(ISingletonService):
-    """Singleton service example"""
-  
-    def __init__(self):
-        super().__init__()
-        # Initialization logic
-  
-    async def initialize(self) -> bool:
-        """Async initialization hook"""
-        # Setup resources
-        return True
-  
-    async def cleanup(self) -> None:
-        """Cleanup hook"""
-        # Release resources
-        pass
+    # 类型提示触发自动注入
+    def __init__(self, db_manager: 'DBManagerService'): 
+        self.db = db_manager
 
-# Using the service
+    def get_users(self):
+        return self.db.query("SELECT * FROM users")
+```
+
+在业务代码中使用：
+
+```python
 from pyspring.ioc.manager import AppContainerManager
+from app.services.user_service import UserService
 
+# 框架会在启动时自动扫描并注册 UserService
 container = AppContainerManager()
-service = container.get(UserService)
-```
+user_service = container.get(UserService)
 
-**Benefits:**
-
-- 🔒 Thread-safe singleton creation
-- ⚡ Lazy initialization on first use
-- 🔄 Complete lifecycle management (initialize, cleanup)
-- 📦 Automatic dependency resolution
-
-### Application Lifecycle
-
-Manage startup tasks using the **Initializer Pattern**:
-
-```python
-from pyspring.interfaces.IStartupInitializer import (
-    IStartupInitializer, 
-    StartupInitializerManager
-)
-
-class CacheWarmupInitializer(IStartupInitializer):
-    """Cache warmup initializer"""
-  
-    async def execute(self) -> bool:
-        # Cache warmup logic
-        logger.info("Cache warmup completed")
-        return True
-
-# Register at application startup
-@app.on_event("startup")
-async def startup():
-    manager = StartupInitializerManager()
-    manager.register(DatabaseInitializer())     # Database initialization
-    manager.register(CacheWarmupInitializer())  # Cache warmup
-    await manager.execute_all()
-```
-
-**Features:**
-
-- 🎯 Centralized startup task management
-- 📊 Sequential execution with logging
-- 🛡️ Error handling and rollback support
-- 🔌 Easy to extend
-
-### Authentication Chain
-
-Flexible authentication architecture supporting multiple authentication methods:
-
-```python
-# Configure multiple authentication handlers
-auth_chain = [
-    WhitelistAuthHandler(),  # Whitelist check
-    JWTAuthHandler(),        # JWT validation
-    RBACAuthHandler(),       # Permission check
-]
-```
-
-### Unified Configuration
-
-All configuration managed through YAML files with environment variable support:
-
-```yaml
-# config/security.yaml
-authentication:
-  jwt:
-    secret_key: ${JWT_SECRET_KEY}
-    algorithm: HS256
-    access_token_expire_minutes: 30
+users = user_service.get_users()
 ```
 
 ---
 
-## CLI Tools
+## 📊 为什么选择 PySpring？
 
-### Available Commands
+| 特性       | 原生 FastAPI           | PySpring                                |
+|:---------|:---------------------|:----------------------------------------|
+| **项目结构** | 需自行设计，容易混乱           | **标准化目录结构，最佳实践落地**                      |
+| **依赖注入** | `Depends` 基于函数，较零散   | **集中式 IoC 容器，支持类与单例的全自动处理**             |
+| **安全认证** | 需手动集成 OAuth2/JWT     | **内置责任链认证、负载加密、RBAC**                   |
+| **配置管理** | 基于环境变量或 .env         | **统一 YAML 配置体系，支持多环境覆盖与对象映射**           |
+| **生命周期** | 简单的 startup/shutdown | **结构化 Initializer/Shutdown Handler 体系** |
+| **数据访问** | 需手动配置引擎与连接           | **配置驱动，支持多库/多缓存透明切换**                   |
 
-```bash
-# Initialize new project
-pyspring init
+---
 
-# Diagnose installation and import issues
-pyspring diagnose
+## 📂 项目结构规范
 
-# Advanced initialization options
-pyspring init --force          # Overwrite existing files
-pyspring init --minimal        # Minimal project structure
-pyspring init --skip-env       # Skip .env file generation
+`pyspring init` 生成的标准结构如下：
+
+```text
+your-project/
+├── app/                  # 业务代码 (自动扫描核心区域)
+│   ├── api/              # 路由接口 (Controller)
+│   ├── services/         # 业务逻辑 (Service)
+│   ├── handlers/         # 生命周期处理器 (Handler)
+│   └── models/           # 数据实体
+├── config/               # 配置文件 (YAML)
+│   ├── application.yaml  # 应用全局配置
+│   ├── container.yaml    # IoC 容器扫描路径配置
+│   ├── security.yaml     # 安全策略与白名单
+│   └── repositories.yaml # 数据库源与缓存配置
+├── logs/                 # 运行日志
+├── scripts/              # 维护脚本 (如 SQL 初始化)
+├── main.py               # 应用入口
+└── .env                  # 敏感变量 (API Key, Secrets)
 ```
 
-### Diagnostic Tool
+---
 
-Troubleshoot installation or import issues:
+## 🧩 扩展与自定义指南
 
-```bash
-pyspring diagnose
-```
+PySpring 设计为开放架构，你几乎可以替换任何组件。以下是常见的扩展场景：
 
-The diagnostic tool checks:
+### 1. 业务逻辑开发
 
-- ✅ Python environment (version, path, virtual environment)
-- ✅ PySpring installation status
-- ✅ Module import functionality
-- ✅ Python search path configuration
-- ✅ Provides specific solutions
+- **Service 层**: 继承 `ISingletonService`，并在构造函数中声明依赖。
+  ```python
+  class MyService(ISingletonService): ...
+  ```
+- **API 响应**: 使用 `Response.success()` 和 `Response.error()` 统一格式，或继承 `HttpResponse[T]` 定制字段。
 
-For detailed troubleshooting, see [Troubleshooting Guide](docs/06-troubleshooting/).
+### 2. 生命周期管理
 
-### Template System
+- **启动任务**: 实现 `IStartupInitializer` 接口。
+  > 场景：缓存预热、检查第三方 API连通性、加载机器学习模型。
+  ```python
+  class ModelLoader(IStartupInitializer):
+      def get_name(self) -> str: return "AIModelLoader"
+      async def initialize(self) -> bool: ...
+  ```
+- **关闭清理**: 实现 `IShutdownHandler` 接口。
+  > 场景：关闭非标数据库连接、发送停机通知。
 
-All generated files come from customizable templates located in `src/pyspring/templates/`.
+### 3. 安全体系扩展
 
-**Customizing templates:**
+- **自定义认证源**: 继承 `BaseAuthenticationProvider` 并注册到容器。
+  > 场景：集成 LDAP、通过原有系统的 Cookie 验证。
+- **自定义权限校验**: 如果内置的 RBAC 不满足需求，可直接替换 `RoleBasedAccessControl` 中间件。
 
-1. Edit source files (e.g., `pyproject.toml`, `examples/main_with_db_init.py`)
-2. Run `python tools/sync_templates.py` to sync to template directory
-3. Reinstall: `pip install -e .`
+### 4. 数据层扩展
+
+- **新数据库支持**: 如果不想用 SQLAlchemy，可以实现 `IDBService` 接口接入 MongoEngine 或 Tortoise-ORM。
 
 ---
 
-## Documentation
+## 🛠️ 开发者工具
 
-Complete documentation is available in the [docs/](docs/) directory, organized into six categories:
+- **命令行工具 (`pyspring`)**:
+    - `pyspring init`: 快速生成项目脚手架。
+    - `pyspring diagnose`: 自动诊断环境依赖、导入错误与配置问题。
+    - `pyspring uv`: 封装 uv 命令，简化依赖管理。
 
-### 🚀 [Getting Started](docs/01-getting-started/)
-
-- [Installation Guide](docs/01-getting-started/INSTALLATION_GUIDE.md) - Detailed installation and setup
-- [Project Initialization](docs/01-getting-started/PROJECT_INIT_GUIDE.md) - Complete `pyspring init` guide
-- [Quick Reference](docs/01-getting-started/QUICK_REFERENCE.md) - Command and configuration cheatsheet
-
-### 🏗️ [Core Concepts](docs/02-core-concepts/)
-
-- [IoC Container &amp; Singleton Services](docs/02-core-concepts/IOC_SINGLETON_GUIDE.md) - Dependency injection and lifecycle
-- [IoC Container Configuration](docs/02-core-concepts/IOC_CONFIG_GUIDE.md) - Container configuration
-- [Project Structure](docs/02-core-concepts/PROJECT_STRUCTURE.md) - Framework architecture
-
-### ⚙️ [Configuration](docs/03-configuration/)
-
-- [Configuration Architecture](docs/03-configuration/CONFIG_ARCHITECTURE.md) - Configuration file organization
-- [Application Configuration](docs/03-configuration/APPLICATION_CONFIG_GUIDE.md) - App and server settings
-- [Logging Configuration](docs/03-configuration/LOGGING_CONFIG_GUIDE.md) - Logging system setup
-- [Data Storage Configuration](docs/03-configuration/REPOSITORIES_CONFIG_GUIDE.md) - Database and cache
-- [Security Configuration](docs/03-configuration/SECURITY_CONFIG_GUIDE.md) - Authentication and authorization
-
-### ✨ [Features](docs/04-features/)
-
-- [JWT Encryption](docs/04-features/JWT_ENCRYPTION_GUIDE.md) - Token encryption guide
-- [JWT Implementation](docs/04-features/JWT_ENCRYPTION_IMPLEMENTATION.md) - Encryption internals
-- [Database Auto-Initialization](docs/04-features/DATABASE_AUTO_INIT.md) - Automatic schema creation
-- [Template Management](docs/04-features/TEMPLATE_MANAGEMENT.md) - Template system usage
-
-### 🎓 [Advanced Topics](docs/05-advanced/)
-
-- [Framework Migration](docs/05-advanced/SECURITY_MIGRATION_GUIDE.md) - Migrating from other frameworks
-- [Project Integration](docs/05-advanced/INSTALLATION_OTHER_PROJECT.md) - Integrate into existing projects
-- [uv Package Manager](docs/05-advanced/SETUP_WITH_UV.md) - Fast installation with uv
-
-### 🔧 [Troubleshooting](docs/06-troubleshooting/)
-
-- [Diagnostic Guide](docs/06-troubleshooting/DIAGNOSE_GUIDE.md) - Using diagnostic tools
-- [IDE Configuration](docs/06-troubleshooting/FIX_UNRESOLVED_REFERENCE.md) - Fixing IDE issues
-- [SQL Issues](docs/06-troubleshooting/SQL_ISSUES.md) - Database problem solving
+- **代码辅助**:
+    - `AppContainerManager.service(Xxx)`: 在非注入环境（如脚本中）快速获取服务实例。
 
 ---
 
-## Examples
+## 🤝 贡献与支持
 
-### Complete Application
+PySpring 是一个开源项目，欢迎任何形式的贡献！
 
-```python
-from fastapi import FastAPI
-from pyspring.interfaces.IStartupInitializer import StartupInitializerManager
-from pyspring.repositories.db.initializer import DatabaseInitializer
-
-app = FastAPI(title="PySpring Application")
-
-@app.on_event("startup")
-async def startup():
-    """Execute initialization tasks on application startup"""
-    manager = StartupInitializerManager()
-    manager.register(DatabaseInitializer())
-    await manager.execute_all()
-
-@app.get("/")
-async def root():
-    return {"message": "Welcome to PySpring!"}
-
-@app.get("/health")
-async def health():
-    return {"status": "healthy"}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-```
-
-More examples available in the [examples/](examples/) directory:
-
-- [Configuration Usage](examples/config_usage_example.py) - Configuration management patterns
-- [JWT Encryption](examples/jwt_encryption_example.py) - Token encryption implementation
-- [Logging Setup](examples/logging_example.py) - Structured logging configuration
+- 🐛 **报告 Bug**：请提交 [GitHub Issues](https://github.com/365tools/PySpring/issues)
+- 💬 **参与讨论**：欢迎在 [GitHub Discussions](https://github.com/365tools/PySpring/discussions) 中分享想法
 
 ---
 
-## Contributing
+## 📄 开源协议
 
-Contributions are welcome! We appreciate bug reports, feature requests, and code contributions.
+本项目采用 **Apache License 2.0** 协议开源。
 
-### How to Contribute
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### Development Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/365tools/PySpring.git
-cd PySpring
-
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest tests/
-
-# Run linting
-black src/
-flake8 src/
-```
-
-### Contribution Guidelines
-
-- Follow [PEP 8](https://pep8.org/) style guide
-- Add tests for new features
-- Update documentation for API changes
-- Ensure all tests pass before submitting PR
-
----
-
-## License
-
-This project is licensed under the **Apache License 2.0** - see the [LICENSE](LICENSE) file for details.
-
-### Copyright Notice
-
-Copyright © 2025 [Yingchun] (365tools)
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-**Note:** This project was developed independently during personal time and does not involve any proprietary or confidential information from commercial entities.
-
----
-
-## Acknowledgments
-
-PySpring is built with inspiration and support from the following outstanding open-source projects:
-
-### Design Inspiration
-
-- **[Spring Boot](https://spring.io/projects/spring-boot)** - Design philosophy, architecture patterns, and IoC container concepts
-
-### Core Framework
-
-- **[FastAPI](https://fastapi.tiangolo.com/)** - High-performance modern Python web framework
-- **[Uvicorn](https://www.uvicorn.org/)** - Lightning-fast ASGI server
-- **[Pydantic](https://docs.pydantic.dev/)** - Data validation and settings management using Python type annotations
-- **[Starlette](https://www.starlette.io/)** - Lightweight ASGI framework/toolkit (FastAPI foundation)
-
-### Security & Authentication
-
-- **[python-jose](https://github.com/mpdavis/python-jose)** - JavaScript Object Signing and Encryption (JOSE) for JWT
-- **[Passlib](https://passlib.readthedocs.io/)** - Comprehensive password hashing framework
-- **[Cryptography](https://cryptography.io/)** - Cryptographic recipes and primitives
-
-### Database & ORM
-
-- **[SQLAlchemy](https://www.sqlalchemy.org/)** - Powerful SQL toolkit and ORM
-- **[Alembic](https://alembic.sqlalchemy.org/)** - Database migration tool
-- **[asyncpg](https://github.com/MagicStack/asyncpg)** - Fast PostgreSQL database client library
-- **[aiosqlite](https://github.com/omnilib/aiosqlite)** - Async support for SQLite
-
-### Caching & Storage
-
-- **[Redis](https://redis.io/)** - In-memory data structure store
-- **[redis-py](https://github.com/redis/redis-py)** - Python Redis client
-
-### Logging & Configuration
-
-- **[Loguru](https://github.com/Delgan/loguru)** - Python logging made simple and elegant
-- **[PyYAML](https://pyyaml.org/)** - YAML parser and emitter
-- **[python-dotenv](https://github.com/theskumar/python-dotenv)** - Environment variable management
-
-### Dependency Injection
-
-- **[dependency-injector](https://github.com/ets-labs/python-dependency-injector)** - Dependency injection framework
-
-### Development Tools
-
-- **[pytest](https://pytest.org/)** - Testing framework
-- **[Black](https://black.readthedocs.io/)** - Code formatter
-- **[mypy](http://mypy-lang.org/)** - Static type checker
-
-We are grateful to all the maintainers and contributors of these projects for their excellent work.
-
----
-
-## Support & Community
-
-### Getting Help
-
-- **Documentation**: [docs/](docs/)
-- **Examples**: [examples/](examples/)
-- **Issues**: [GitHub Issues](https://github.com/365tools/PySpring/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/365tools/PySpring/discussions)
-
-### Reporting Issues
-
-When reporting issues, please include:
-
-- PySpring version (`pip show pyspring`)
-- Python version (`python --version`)
-- Operating system
-- Minimal reproducible example
-- Error messages and stack traces
-
-### Feature Requests
-
-Feature requests are welcome! Please:
-
-- Check existing issues first
-- Clearly describe the use case
-- Explain why it benefits the community
-
----
-
-<div align="center">
-
-**Build Enterprise-Grade Python Applications with PySpring** 🚀
-
-[Documentation](docs/) • [Examples](examples/) • [Contributing](#contributing) • [License](#license)
-
-</div>
+Copyright © 2026 [Yingchun] (365tools)

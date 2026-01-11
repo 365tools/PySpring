@@ -64,7 +64,7 @@ uv pip install pyspring
 uv pip install -e D:\Project\PycharmProjects\PySpring
 
 # 5. 验证
-python -c "from pyspring.log.loguru.ins import logger; print('✅ 成功!')"
+python -c "from pyspring.log.loguru.logger import logger; print('✅ 成功!')"
 ```
 
 ## 📦 使用 pyproject.toml 管理依赖
@@ -209,7 +209,7 @@ uv run pyspring diagnose
 .venv\Scripts\python.exe -m pyspring.diagnose
 
 # 方法 2: 测试导入
-.venv\Scripts\python.exe -c "from pyspring.log.loguru.ins import logger; print('✅')"
+.venv\Scripts\python.exe -c "from pyspring.log.loguru.logger import logger; print('✅')"
 
 # 方法 3: 查看已安装的包
 uv pip show pyspring

@@ -3,10 +3,9 @@ JWT 加密功能使用示例
 
 演示如何使用 JWT 加密功能
 """
-import asyncio
 from cryptography.fernet import Fernet
 from pyspring.ioc.container import ServiceContainer
-from pyspring.security.auth.encryption import JWTEncryption, JWTEncryptionManager
+from pyspring.security.authentication.encryption import JWTEncryption, JWTEncryptionManager
 
 
 def example_1_basic_encryption():

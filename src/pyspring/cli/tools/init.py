@@ -236,11 +236,11 @@ def create_database_scripts(target_dir: Path):
 
     try:
         # 尝试从 SQLAlchemy 模型生成 SQL 脚本
-        from pyspring.security.auth.models.rabc.orm.tables import (
+        from pyspring.security.authorization.rabc.orm.tables import (
             UserTable, RoleTable, PermissionTable, UserRoleTable,
-            UserDeviceTable, RolePermissionTable
+            RolePermissionTable
         )
-        from pyspring.security.auth.models.rabc.orm.token_tables import (
+        from pyspring.security.authorization.rabc.orm.token_tables import (
             RefreshTokenTable, TokenBlacklistTable
         )
         from pyspring.repositories.db.models.common.define import Base
@@ -254,7 +254,7 @@ def create_database_scripts(target_dir: Path):
         pg_scripts = []
 
         for table in [UserTable, RoleTable, PermissionTable, UserRoleTable,
-                      UserDeviceTable, RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
+                      RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
             create_table = CreateTable(table.__table__, if_not_exists=True)
             pg_scripts.append(str(create_table.compile(dialect=pg_engine.dialect)) + ';')
 
@@ -263,7 +263,7 @@ def create_database_scripts(target_dir: Path):
         sqlite_scripts = []
 
         for table in [UserTable, RoleTable, PermissionTable, UserRoleTable,
-                      UserDeviceTable, RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
+                      RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
             create_table = CreateTable(table.__table__, if_not_exists=True)
             sqlite_scripts.append(str(create_table.compile(dialect=sqlite_engine.dialect)) + ';')
 
@@ -405,7 +405,6 @@ sqlite3 your_database.db < init_sqlite.sql
 
 ### 安全相关表
 
-- **device_authorizations**: 设备授权表
 - **refresh_tokens**: Refresh Token 表
 
 ## 默认数据

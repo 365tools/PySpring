@@ -42,8 +42,6 @@ authentication:
           - "query"     # ?token=<token>
         # Token 前缀
         token_prefix: "Bearer"
-        # 是否验证设备指纹
-        verify_device: false
     
     # API Key 认证
     - name: "api_key"
@@ -91,17 +89,6 @@ authentication:
     regex_patterns:
       - "^/api/v[0-9]+/public/.*"
       - "^/download/[a-z0-9]+$"
-  
-  # 设备验证配置
-  device:
-    # 是否启用全局设备验证
-    enabled: false
-    # 设备指纹头名称
-    fingerprint_header: "X-Device-Fingerprint"
-    # 是否自动注册新设备
-    auto_register: true
-    # 新设备默认状态
-    default_status: "pending"  # pending, approved, rejected
 
 # 授权配置
 authorization:

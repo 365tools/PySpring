@@ -5,12 +5,14 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-from pyspring.interfaces.IStartupInitializer import StartupInitializerManager
-from pyspring.log.loguru.ins import logger
-from pyspring.repositories.db.initializer import DatabaseInitializer
-from pyspring.repositories.db.sqlite.impl.service import SqliteService
+import pytest
+from pyspring.core.interfaces.IStartupInitializer import StartupInitializerManager
+from pyspring.log.instance import logger
+from pyspring.repositories.db.initializer.migration import MigrationInitializer as DatabaseInitializer
+from pyspring.repositories.db.ins.sqlite.impl.service import SqliteService
 
 
+@pytest.mark.asyncio
 async def test_database_initializer():
     """测试数据库初始化器"""
 
@@ -83,13 +85,20 @@ async def test_database_initializer():
     manager = StartupInitializerManager()
 
     # 注册数据库初始化器
-    db_initializer = DatabaseInitializer(
-        db_service=db_service,
-        enabled=True,
-        mode="incremental",
-        script_path=None,  # 自动检测
-        auto_detect=True
-    )
+    db_initializer = DatabaseInitializer(enabled=True)
+    # 手动注入 db_service
+    db_initializer._db_service = db_service
+
+    # Mock config_manager
+    from unittest.mock import MagicMock
+    db_initializer.config_manager = MagicMock()
+    db_initializer.config_manager.get_database_initialization_config.return_value = {
+        'enabled': True,
+        'mode': 'incremental',
+        'script_path': str(sql_script),
+        'auto_detect': False
+    }
+    
     manager.register(db_initializer)
 
     # 执行初始化
@@ -123,13 +132,16 @@ async def test_database_initializer():
 
     # 重新执行，应该跳过
     manager2 = StartupInitializerManager()
-    db_initializer2 = DatabaseInitializer(
-        db_service=db_service,
-        enabled=True,
-        mode="incremental",
-        script_path=str(sql_script),
-        auto_detect=False
-    )
+    db_initializer2 = DatabaseInitializer(enabled=True)
+    db_initializer2._db_service = db_service
+    db_initializer2.config_manager = MagicMock()
+    db_initializer2.config_manager.get_database_initialization_config.return_value = {
+        'enabled': True,
+        'mode': 'incremental',
+        'script_path': str(sql_script),
+        'auto_detect': False
+    }
+
     manager2.register(db_initializer2)
 
     success2 = await manager2.execute_all()

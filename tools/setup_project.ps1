@@ -114,7 +114,7 @@ Write-Host "   - 选择虚拟环境: $ProjectPath\venv\Scripts\python.exe" -Fore
 Write-Host "   - File → Invalidate Caches / Restart" -ForegroundColor White
 Write-Host ""
 Write-Host "3. 测试导入:" -ForegroundColor Cyan
-Write-Host "   python -c `"from pyspring.log.loguru.ins import logger; print('✅ 成功!')`"" -ForegroundColor White
+Write-Host "   python -c `"from pyspring.log.instance import logger; print('✅ 成功!')`"" -ForegroundColor White
 Write-Host ""
 Write-Host "4. 初始化项目配置:" -ForegroundColor Cyan
 Write-Host "   pyspring init" -ForegroundColor White

@@ -64,7 +64,6 @@ authentication:
 # 直接注册中间件
 app.add_middleware(
     AuthenticationMiddleware,
-    enable_device_check=False,
     enable_role_check=True
 )
 ```
@@ -257,13 +256,12 @@ AuthenticationInitializer.initialize(token_manager)  # 此时中间件已经初�
 
 ### 4. 向后兼容
 
-旧版的 `enable_device_check` 和 `enable_role_check` 参数仍然支持：
+旧版的 `enable_role_check` 参数仍然支持：
 
 ```python
 # 仍然有效（会覆盖配置文件的设置）
 app.add_middleware(
     AuthenticationMiddleware,
-    enable_device_check=False,
     enable_role_check=True
 )
 ```

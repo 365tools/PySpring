@@ -5,10 +5,10 @@
 scan:
   # 需要扫描的包路径列表
   packages:
-    - src.pyspring.repositories
-    - src.pyspring.security
-    - src.pyspring.system
-    - src.pyspring.log
+    - pyspring.repositories
+    - pyspring.security
+    - pyspring.core
+    - pyspring.log
   
   # 是否启用递归扫描（扫描子包）
   recursive: true

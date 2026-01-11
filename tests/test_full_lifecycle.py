@@ -3,12 +3,14 @@
 """
 import asyncio
 
-from pyspring.interfaces.IShutdownHandler import IShutdownHandler
-from pyspring.interfaces.IStartupInitializer import IStartupInitializer
+import pytest
+from pyspring.core.interfaces.IShutdownHandler import IShutdownHandler
+from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.log.loguru.ins import logger
+from pyspring.log.instance import logger
 
 
+@pytest.mark.asyncio
 async def test_full_lifecycle():
     """测试完整的应用生命周期：启动 -> 关闭"""
     logger.info("=" * 70)

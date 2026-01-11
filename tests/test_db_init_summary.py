@@ -62,10 +62,10 @@ database:
 ## 使用示例
 
 ```python
-from pyspring.interfaces.IStartupInitializer import StartupInitializerManager
+from pyspring.core.interfaces.IStartupInitializer import StartupInitializerManager
 from pyspring.repositories.db.initializer import DatabaseInitializer
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.repositories.config_manager import RepositoriesConfigManager
+from pyspring.repositories.common.config_loader import RepositoriesConfigManager
 
 @app.on_event("startup")
 async def startup_event():

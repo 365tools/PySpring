@@ -56,7 +56,7 @@ source venv/bin/activate
 pip install -e D:\Project\PycharmProjects\PySpring
 
 # 5. 验证安装
-python -c "from pyspring.log.loguru.ins import logger; print('✅ 成功!')"
+python -c "from pyspring.log.loguru.logger import logger; print('✅ 成功!')"
 ```
 
 ### 方案 2：VS Code 配置
@@ -108,7 +108,7 @@ pip show pyspring
 python -c "import sys; print('\n'.join(sys.path))"
 
 # 尝试导入
-python -c "from pyspring.log.loguru.ins import logger; from pyspring.ioc.manager import AppContainerManager; print('✅ 导入成功!')"
+python -c "from pyspring.log.loguru.logger import logger; from pyspring.ioc.manager import AppContainerManager; print('✅ 导入成功!')"
 ```
 
 ### 方法 2：使用测试脚本
@@ -206,7 +206,7 @@ YourProject/
 
 ```python
 # your_code.py
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 from pyspring.ioc.manager import AppContainerManager
 
 # 初始化 IoC 容器
@@ -270,7 +270,7 @@ venv\Scripts\Activate.ps1  # Windows PowerShell
 pip install -e D:\Project\PycharmProjects\PySpring
 
 # 5. 创建测试文件
-echo 'from pyspring.log.loguru.ins import logger; logger.info("Hello PySpring!")' > test.py
+echo 'from pyspring.log.loguru.logger import logger; logger.info("Hello PySpring!")' > test.py
 
 # 6. 运行测试
 python test.py

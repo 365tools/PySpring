@@ -68,7 +68,7 @@ def check_import():
 
     # 测试具体模块
     modules = [
-        ("pyspring.log.loguru.ins", "logger"),
+        ("pyspring.log", "logger"),
         ("pyspring.ioc.manager", "AppContainerManager"),
     ]
 
@@ -148,10 +148,10 @@ def suggest_solution():
         print("   pip install pyspring")
 
     print("\n5. 验证:")
-    print("   python -c \"from pyspring.log.loguru.ins import logger; print('✅ 成功!')\"")
+    print("   python -c \"from pyspring.log.instance import logger; print('✅ 成功!')\"")
     print("   pyspring diagnose")
     print("\n6. 在 IDE 中测试:")
-    print("   创建新的 .py 文件，输入: from pyspring.log.loguru.ins import logger")
+    print("   创建新的 .py 文件，输入: from pyspring.log.instance import logger")
     print("   应该有代码提示和自动补全")
 
 
@@ -179,7 +179,7 @@ def main():
             print("🎉 PySpring 工作正常！可以开始使用了。")
             print("\n示例代码:")
             print("```python")
-            print("from pyspring.log.loguru.ins import logger")
+            print("from pyspring.log.instance import logger")
             print("from pyspring.ioc.manager import AppContainerManager")
             print("")
             print("logger.info('Hello PySpring!')")

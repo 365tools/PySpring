@@ -331,7 +331,7 @@ intercept:
 日志服务会在首次使用时自动加载配置：
 
 ```python
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 
 # 直接使用
 logger.info("应用启动")
@@ -353,7 +353,7 @@ request_logger.info("处理请求")
 如果需要强制重新加载配置：
 
 ```python
-from pyspring.log.loguru.format import LoguruConfig
+from pyspring.log.loguru.config.formatter import LoguruConfig
 
 # 从 YAML 配置初始化
 LoguruConfig.setup_from_yaml(force=True)
@@ -564,7 +564,7 @@ logging:
 2. 代码简化为:
 
 ```python
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 
 # 自动加载配置，直接使用
 logger.info("应用启动")
@@ -577,14 +577,14 @@ logger.info("应用启动")
 ### 动态重载配置
 
 ```python
-from pyspring.log.loguru.config_manager import LoggingConfigManager
+from pyspring.log.loguru.config.manager import LoggingConfigManager
 
 # 重新加载配置
 config_manager = LoggingConfigManager()
 config_manager.reload()
 
 # 重新初始化日志系统
-from pyspring.log.loguru.format import LoguruConfig
+from pyspring.log.loguru.config.formatter import LoguruConfig
 LoguruConfig.setup_from_yaml(force=True)
 ```
 

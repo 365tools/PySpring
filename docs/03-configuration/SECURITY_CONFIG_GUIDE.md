@@ -54,9 +54,8 @@ PySpring 认证系统基于 **责任链模式（Chain of Responsibility Pattern�
 1. **请求拦截**：`AuthenticationMiddleware` 拦截所有 HTTP 请求
 2. **白名单检查**：检查请求路径是否在白名单中
 3. **认证链执行**：按优先级顺序执行所有启用的认证提供者
-4. **设备验证**（可选）：验证设备指纹
-5. **角色验证**（可选）：验证用户角色权限
-6. **注入用户信息**：将认证信息注入到 `request.state`
+4. **角色验证**（可选）：验证用户角色权限
+5. **注入用户信息**：将认证信息注入到 `request.state`
 7. **继续处理**：交给业务逻辑处理
 
 ---
@@ -190,7 +189,6 @@ providers:
         - "cookie"           # 2. Cookie
         - "query"            # 3. URL 参数
       token_prefix: "Bearer" # Token 前缀
-      verify_device: false   # 是否验证设备指纹
 ```
 
 **多提供者示例**：
@@ -596,10 +594,6 @@ authentication:
   enabled: true
   providers:
     - name: "jwt"
-      config:
-        verify_device: false  # 开发时禁用设备验证
-  device:
-    enabled: false
   
 authorization:
   enabled: false  # 开发时禁用角色验证
@@ -618,10 +612,6 @@ authentication:
     access_token_expire: 1800  # 30 分钟
   providers:
     - name: "jwt"
-      config:
-        verify_device: true  # 生产环境启用设备验证
-  device:
-    enabled: true
 
 authorization:
   enabled: true
@@ -695,7 +685,7 @@ role_mappings:
 启用详细的认证日志：
 
 ```python
-from src.pyspring.log.loguru.ins import logger
+from src.pyspring.log.loguru.logger import logger
 
 # 在认证失败时记录
 logger.warning(f"认证失败: {path} - {error_message}")

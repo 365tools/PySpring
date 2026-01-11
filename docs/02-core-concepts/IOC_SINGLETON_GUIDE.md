@@ -146,7 +146,7 @@ print(service2.get_data("config"))  # {"debug": True}
 
 ```python
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.log.loguru.config_manager import LoggingConfigManager
+from pyspring.log.loguru.config.manager import LoggingConfigManager
 
 class BusinessService:
     def __init__(self):

@@ -5,7 +5,7 @@
 当你在其他项目中使用 PySpring 时遇到导入错误：
 
 ```python
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 # ModuleNotFoundError: No module named 'pyspring'
 ```
 
@@ -50,7 +50,7 @@ Python 版本: 3.12.10
    位置: /path/to/venv/lib/python3.12/site-packages/pyspring/__init__.py
 
 测试具体模块:
-✅ pyspring.log.loguru.ins.logger
+✅ pyspring.log.loguru.logger.logger
 ✅ pyspring.ioc.manager.AppContainerManager
 
 ======================================================================
@@ -69,7 +69,7 @@ Python 版本: 3.12.10
 
 示例代码:
 ```python
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 from pyspring.ioc.manager import AppContainerManager
 
 logger.info('Hello PySpring!')
@@ -137,7 +137,7 @@ PySpring 导入问题诊断
     - 重启 VS Code
 
 5. 验证:
-   python -c "from pyspring.log.loguru.ins import logger; print('✅ 成功!')"
+   python -c "from pyspring.log.loguru.logger import logger; print('✅ 成功!')"
    或运行: pyspring diagnose
 
 ```

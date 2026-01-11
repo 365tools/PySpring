@@ -41,7 +41,7 @@ def debug_scan():
 
         # 检查 initializer.py 是否被找到
         print(f"\n🎯 查找 initializer 模块:")
-        auth_initializer_module = "pyspring.security.auth.initializer"
+        auth_initializer_module = "pyspring.security.authentication.initializer"
         if auth_initializer_module in modules_found:
             print(f"   ✅ 找到: {auth_initializer_module}")
 

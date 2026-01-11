@@ -80,7 +80,6 @@ pyspring init --skip-env  # 跳过 .env
 
 ### 安全表
 
-- **device_authorizations** - 设备授权
 - **refresh_tokens** - Token 管理
 
 ### 默认数据

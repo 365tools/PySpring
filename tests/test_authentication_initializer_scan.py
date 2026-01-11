@@ -24,7 +24,7 @@ def test_scan_initializer():
     # 2. 尝试直接导入
     print(f"\n2️⃣ 尝试直接导入:")
     try:
-        from pyspring.security.auth.initializer import AuthenticationInitializer
+        from pyspring.security.authentication.initializer import AuthenticationInitializer
         print(f"   导入: ✅")
         print(f"   类名: {AuthenticationInitializer.__name__}")
         print(f"   模块: {AuthenticationInitializer.__module__}")
@@ -35,8 +35,8 @@ def test_scan_initializer():
 
     # 3. 检查是否继承正确的接口
     print(f"\n3️⃣ 检查接口继承:")
-    from pyspring.interfaces.IStartupInitializer import IStartupInitializer
-    from pyspring.interfaces.ISingleton import ISingletonService
+    from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
+    from pyspring.core.interfaces.ISingleton import ISingletonService
     print(f"   继承 IStartupInitializer: {'✅' if issubclass(AuthenticationInitializer, IStartupInitializer) else '❌'}")
     print(f"   继承 ISingletonService: {'✅' if issubclass(AuthenticationInitializer, ISingletonService) else '❌'}")
 

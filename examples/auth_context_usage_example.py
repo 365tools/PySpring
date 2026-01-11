@@ -5,8 +5,8 @@
 """
 from fastapi import APIRouter, Depends
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.security.auth.context import AuthContext
-from pyspring.security.auth.impl.manager import UserManagerService
+from pyspring.security.authentication.context import AuthContext
+from pyspring.security.authentication.impl.user.manager import UserManagerService
 
 router = APIRouter()
 
@@ -70,8 +70,7 @@ async def get_user_info():
 
     return {
         "user": user.user.model_dump(),
-        "roles": [role.model_dump() for role in user.roles] if user.roles else [],
-        "devices": [device.model_dump() for device in user.device] if user.device else []
+        "roles": [role.model_dump() for role in user.roles] if user.roles else []
     }
 
 

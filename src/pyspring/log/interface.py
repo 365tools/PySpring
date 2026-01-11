@@ -41,6 +41,28 @@ class ILoggerService(Protocol):
         pass
 
     @abstractmethod
+    def trace(self, message: str, *args, **kwargs) -> Any:
+        """
+        记录追踪日志
+        :param message: 日志信息
+        :param args: 可选参数
+        :param kwargs: 可选参数
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def success(self, message: str, *args, **kwargs) -> Any:
+        """
+        记录成功日志
+        :param message: 日志信息
+        :param args: 可选参数
+        :param kwargs: 可选参数
+        :return:
+        """
+        pass
+
+    @abstractmethod
     def warning(self, message: str, *args, **kwargs) -> Any:
         """
         记录警告日志

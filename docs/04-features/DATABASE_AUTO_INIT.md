@@ -75,7 +75,7 @@ ON CONFLICT (code) DO NOTHING;
 
 ```python
 from fastapi import FastAPI
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 from pyspring.interfaces.IStartupInitializer import StartupInitializerManager
 from pyspring.repositories.db.initializer import DatabaseInitializer
 from pyspring.repositories.db.manager import DBManagerService
@@ -201,7 +201,7 @@ script_path: null
 
 ```python
 from pyspring.interfaces.IStartupInitializer import IStartupInitializer
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 
 class CacheWarmupInitializer(IStartupInitializer):
     """缓存预热初始化器"""

@@ -1,10 +1,8 @@
 from typing import Optional
 
-from pyspring.interfaces.ISingleton import ISingletonService
-from pyspring.log.loguru.ins import logger
-from pyspring.repositories.db.postgres.impl.service import PostgresService
+from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.log.instance import logger
 from pyspring.repositories.db.service import IDBService
-from pyspring.repositories.db.sqlite.impl.service import SqliteService
 
 
 class DBManagerService(ISingletonService):
@@ -12,23 +10,25 @@ class DBManagerService(ISingletonService):
     数据库管理服务
     
     注意:
-    - 数据库连接需要通过 DBInitializer 在应用启动时初始化
-    - 不再支持延迟初始化，必须先调用 DBInitializer.initialize()
+    - 数据库连接需要通过 ConnectionInitializer 在应用启动时初始化
+    - 不再支持延迟初始化，必须先调用 ConnectionInitializer.initialize()
     """
 
-    def __init__(self, postgres: Optional[PostgresService] = None, sqlite: Optional[SqliteService] = None):
+    def __init__(self):
         super().__init__()
-        self._postgres = postgres or PostgresService()
-        self._sqlite = sqlite or SqliteService()
-        self._use_postgres = True
-        # 默认为 None，由 DBInitializer 设置实际使用的服务
+        # 默认为 None，由 ConnectionInitializer 设置实际使用的服务
         self.ins: Optional[IDBService] = None
+
+    def set_provider(self, provider: IDBService):
+        """设置实际使用的数据库服务提供者"""
+        self.ins = provider
+        logger.debug(f"✅ DBManager: Provider set to {provider.__class__.__name__}")
 
     async def service(self) -> IDBService:
         """
         获取已初始化的数据库服务实例
         
-        注意: 必须先通过 DBInitializer 初始化
+        注意: 必须先通过 ConnectionInitializer 初始化
         
         Returns:
             数据库服务实例
@@ -38,10 +38,10 @@ class DBManagerService(ISingletonService):
         """
         if self.ins is None:
             raise RuntimeError(
-                "数据库服务未初始化！请在应用启动时调用 DBInitializer.initialize()"
+                "数据库服务未初始化！请在应用启动时调用 ConnectionInitializer.initialize()"
             )
 
-        logger.debug(f"✅ db({self.ins}) instance ready.")
+        # logger.debug(f"✅ db({self.ins}) instance ready.")
         return self.ins
 
     async def get_session(self):
@@ -80,18 +80,11 @@ class DBManagerService(ISingletonService):
         """
         关闭所有数据库连接, 释放资源
         """
-        try:
-            if self._postgres is not None:
-                await self._postgres.close()
-                logger.debug("🔌 DBManager: PostgreSQL 连接已关闭")
-        except Exception as e:
-            logger.error(f"🚨 关闭 PostgreSQL 连接失败: {e}")
-
-        try:
-            if self._sqlite is not None:
-                await self._sqlite.close()
-                logger.debug("🔌 DBManager: SQLite 连接已关闭")
-        except Exception as e:
-            logger.error(f"🚨 关闭 SQLite 连接失败: {e}")
-
-        self.ins = None
+        if self.ins:
+            try:
+                await self.ins.close()
+                logger.debug(f"🔌 DBManager: {self.ins.__class__.__name__} 连接已关闭")
+            except Exception as e:
+                logger.error(f"🚨 关闭数据库连接失败: {e}")
+            finally:
+                self.ins = None

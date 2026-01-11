@@ -64,7 +64,6 @@ PySpring/
 │   │       ├── factory.py     # 提供者工厂
 │   │       ├── impl/          # 实现类
 │   │       │   ├── config.py
-│   │       │   ├── device.py
 │   │       │   ├── login.py
 │   │       │   ├── manager.py
 │   │       │   ├── register.py
@@ -72,7 +71,6 @@ PySpring/
 │   │       ├── interfaces/    # 接口定义
 │   │       ├── middleware/    # 中间件
 │   │       │   ├── auth.py
-│   │       │   ├── device.py
 │   │       │   ├── role.py
 │   │       │   └── utils.py
 │   │       ├── models/        # 数据模型

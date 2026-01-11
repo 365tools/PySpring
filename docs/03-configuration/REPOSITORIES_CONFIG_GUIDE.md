@@ -411,7 +411,7 @@ database:
 
 ```python
 from pyspring.repositories.cache.redis.impl.service import RedisService
-from pyspring.repositories.db.postgres.impl.service import PostgresService
+from pyspring.repositories.db.ins.postgres.impl.service import PostgresService
 
 # 自动从 YAML 配置加载
 redis = RedisService()

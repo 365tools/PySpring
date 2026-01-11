@@ -8,12 +8,14 @@
 """
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).parent.parent
+
 
 def test_template_files():
     """测试模板文件是否存在"""
     print("🔍 测试模板文件...")
 
-    template_dir = Path(__file__).parent / "src" / "pyspring" / "templates"
+    template_dir = PROJECT_ROOT / "src" / "pyspring" / "templates" / "config"
 
     required_files = [
         "container.yaml",
@@ -31,7 +33,7 @@ def test_template_files():
             print(f"  ✗ {filename} 不存在")
             all_exist = False
 
-    return all_exist
+    assert all_exist
 
 
 def test_cli_module():
@@ -39,7 +41,7 @@ def test_cli_module():
     print("\n🔍 测试 CLI 模块...")
 
     try:
-        from src.pyspring import cli
+        from pyspring import cli
         print("  ✓ cli.py 可导入")
 
         # 检查 main 函数
@@ -47,12 +49,12 @@ def test_cli_module():
             print("  ✓ main() 函数存在")
         else:
             print("  ✗ main() 函数不存在")
-            return False
+            assert False, "main() 函数不存在"
 
-        return True
+        assert True
     except ImportError as e:
         print(f"  ✗ 导入失败: {e}")
-        return False
+        assert False, f"导入失败: {e}"
 
 
 def test_init_module():
@@ -60,7 +62,7 @@ def test_init_module():
     print("\n🔍 测试初始化模块...")
 
     try:
-        from src.pyspring import init
+        from pyspring.cli.tools import init
         print("  ✓ init.py 可导入")
 
         # 检查主要函数
@@ -81,21 +83,21 @@ def test_init_module():
                 print(f"  ✗ {func_name}() 函数不存在")
                 all_exist = False
 
-        return all_exist
+        assert all_exist
     except ImportError as e:
         print(f"  ✗ 导入失败: {e}")
-        return False
+        assert False, f"导入失败: {e}"
 
 
 def test_pyproject_config():
     """测试 pyproject.toml 配置"""
     print("\n🔍 测试 pyproject.toml 配置...")
 
-    pyproject_path = Path(__file__).parent / "pyproject.toml"
+    pyproject_path = PROJECT_ROOT / "pyproject.toml"
 
     if not pyproject_path.exists():
         print("  ✗ pyproject.toml 不存在")
-        return False
+        assert False, "pyproject.toml 不存在"
 
     content = pyproject_path.read_text(encoding='utf-8')
 
@@ -112,27 +114,27 @@ def test_pyproject_config():
         else:
             print(f"  ⚠ {name} 配置可能不正确")
 
-    return True
+    assert True
 
 
 def test_manifest():
     """测试 MANIFEST.in"""
     print("\n🔍 测试 MANIFEST.in...")
 
-    manifest_path = Path(__file__).parent / "MANIFEST.in"
+    manifest_path = PROJECT_ROOT / "MANIFEST.in"
 
     if not manifest_path.exists():
         print("  ✗ MANIFEST.in 不存在")
-        return False
+        assert False, "MANIFEST.in 不存在"
 
     content = manifest_path.read_text(encoding='utf-8')
 
     if "recursive-include" in content and "templates" in content:
         print("  ✓ MANIFEST.in 配置正确")
-        return True
+        assert True
     else:
         print("  ⚠ MANIFEST.in 可能缺少模板文件配置")
-        return False
+        assert False, "MANIFEST.in 可能缺少模板文件配置"
 
 
 def main():

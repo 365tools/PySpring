@@ -3,7 +3,7 @@
 
 展示如何使用 PySpring 的日志系统
 """
-from pyspring.log.loguru.ins import logger
+from pyspring.log.instance import logger
 
 
 def basic_logging_example():

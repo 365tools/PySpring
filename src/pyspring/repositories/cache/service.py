@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from pyspring.interfaces.ISingleton import ISingletonService
+from pyspring.core.interfaces.ISingleton import ISingletonService
 from typing import Any
 
 

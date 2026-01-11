@@ -4,7 +4,7 @@
 演示如何在 FastAPI 应用中启用全局认证中间件
 """
 from fastapi import FastAPI
-from pyspring.security.auth.middleware.auth import AuthenticationMiddleware
+from pyspring.security.authentication.middleware.auth import AuthenticationMiddleware
 
 
 # ==================== 方式1: 创建应用时直接添加（推荐） ====================
@@ -19,7 +19,6 @@ def create_app_with_auth():
     # 添加认证中间件
     app.add_middleware(
         AuthenticationMiddleware,
-        enable_device_check=False,  # 是否启用设备验证（可选，默认从配置读取）
         enable_role_check=True  # 是否启用角色验证（可选，默认从配置读取）
     )
 
@@ -30,7 +29,7 @@ def create_app_with_auth():
 
     @app.get("/api/profile")
     async def get_profile():
-        from pyspring.security.auth.context import AuthContext
+        from pyspring.security.authentication.context import AuthContext
         user = AuthContext.get_current_user()
         return {"email": user.user.email if user else None}
 
@@ -108,7 +107,6 @@ def create_production_app():
     # 2. 认证中间件（必须在 CORS 之后）
     app.add_middleware(
         AuthenticationMiddleware,
-        enable_device_check=True,  # 生产环境启用设备验证
         enable_role_check=True  # 生产环境启用角色验证
     )
 
@@ -125,7 +123,6 @@ from pydantic_settings import BaseSettings
 class AppConfig(BaseSettings):
     """应用配置"""
     enable_auth: bool = True
-    enable_device_check: bool = False
     enable_role_check: bool = True
 
     class Config:
@@ -140,7 +137,6 @@ def create_app_from_settings():
     if config.enable_auth:
         app.add_middleware(
             AuthenticationMiddleware,
-            enable_device_check=config.enable_device_check,
             enable_role_check=config.enable_role_check
         )
 
@@ -152,7 +148,7 @@ def create_app_from_settings():
 # main.py
 """
 from fastapi import FastAPI
-from pyspring.security.auth.middleware.auth import AuthenticationMiddleware
+from pyspring.security.authentication.middleware.auth import AuthenticationMiddleware
 
 app = FastAPI()
 
@@ -162,13 +158,12 @@ app.add_middleware(AuthenticationMiddleware)
 # 或者自定义配置
 app.add_middleware(
     AuthenticationMiddleware,
-    enable_device_check=False,  # 禁用设备验证
     enable_role_check=True      # 启用角色验证
 )
 
 @app.get("/api/profile")
 async def get_profile():
-    from pyspring.security.auth.context import AuthContext
+    from pyspring.security.authentication.context import AuthContext
     user = AuthContext.get_current_user()
     return {"email": user.user.email}
 
@@ -229,9 +224,6 @@ authorization:
     user:
       permissions:
         - "user:read"
-
-device_verification:
-  enabled: false  # 设备验证（可选）
 """
 
 # ==================== .env 文件示例 ====================
@@ -241,7 +233,6 @@ device_verification:
 ----
 # 认证配置
 AUTH_ENABLED=true
-ENABLE_DEVICE_CHECK=false
 ENABLE_ROLE_CHECK=true
 
 # JWT 配置

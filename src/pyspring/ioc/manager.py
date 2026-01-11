@@ -6,9 +6,9 @@ import types as _types
 import typing as _typing
 import yaml
 from pathlib import Path
-from pyspring.interfaces.ISingleton import ISingletonService
+from pyspring.core.interfaces.ISingleton import ISingletonService
 from pyspring.ioc.container import DynamicContainer
-from pyspring.log.loguru.ins import logger
+from pyspring.log.instance import logger
 from typing import Any, get_origin, get_args, get_type_hints, List, Dict
 
 
@@ -18,29 +18,30 @@ class AppContainerManager(ISingletonService):
     负责注入src/ref/repositories和src/ref/services下的所有服务
     """
     logger = None
-    _initialized = False
     _config_cache = None  # 类级别配置缓存
-    _instance = None  # 单例实例
+    _instance = None      # 单例实例
 
-    def __new__(cls):
-        """确保单例模式"""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
+    def __new__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(AppContainerManager, cls).__new__(cls)
+            cls._instance._initialized = False
         return cls._instance
 
     def __init__(self):
         """
-        初始化容器管理器（只执行一次）
+        初始化容器管理器
         """
-        if not AppContainerManager._initialized:
-            self.container = DynamicContainer()
-            # 接口到实现的映射（扫描阶段填充）
-            self._interface_impl_map: dict[type, type] = {}
-            # 已注册的服务名称集合（避免重复注册）
-            self._registered_services: set[str] = set()
-            # 加载配置（只加载一次）
-            self._config = self._load_config()
-            AppContainerManager._initialized = True
+        if getattr(self, '_initialized', False):
+            return
+
+        self.container = DynamicContainer()
+        # 接口到实现的映射（扫描阶段填充）
+        self._interface_impl_map: dict[type, type] = {}
+        # 已注册的服务名称集合（避免重复注册）
+        self._registered_services: set[str] = set()
+        # 加载配置（只加载一次）
+        self._config = self._load_config()
+        self._initialized = True
 
     @staticmethod
     def generate_name(service_class: type):
@@ -80,10 +81,10 @@ class AppContainerManager(ISingletonService):
         default_config = {
             'scan': {
                 'packages': [
-                    'src.pyspring.repositories',
-                    'src.pyspring.security',
-                    'src.pyspring.system',
-                    'src.pyspring.log',
+                    'pyspring.repositories',
+                    'pyspring.security',
+                    'pyspring.system',
+                    'pyspring.log',
                 ],
                 'recursive': True,
                 'service_suffix': 'Service'
@@ -181,7 +182,7 @@ class AppContainerManager(ISingletonService):
         #
         # return self.container
 
-    def scan_and_register_services(self, base_package: str):
+    def scan_and_register_services(self, base_package: str = "pyspring"):
         """
         扫描并注册服务
 
@@ -207,11 +208,31 @@ class AppContainerManager(ISingletonService):
                     module = importlib.import_module(modname)
 
                     # 查找服务类、处理器类和初始化器类
+                    from pyspring.core.interfaces.IService import IService
+                    
                     for name, obj in vars(module).items():
-                        # 检查是否为类，且以 Service/Handler/Initializer 结尾，且在当前模块定义
+                        # 检查是否为类，且在当前模块定义
                         if isinstance(obj, type) and obj.__module__ == modname:
-                            # 匹配 Service/Handler/Initializer 结尾的类
-                            if name.endswith('Service') or name.endswith('Handler') or name.endswith('Initializer'):
+                            is_decorated = hasattr(obj, "__pyspring_component__")
+                            
+                            # 增强判定逻辑：
+                            # 1. 有装饰器
+                            # 2. 名称符合约定 (以 Service/Handler/Initializer 结尾)
+                            # 3. 是 IService 的子类 (但排除 IService 本身)
+                            is_name_match = name.endswith('Service') or name.endswith('Handler') or name.endswith('Initializer')
+                            
+                            # 检查是否为 IService 子类 (需要处理 Protocol 的特殊性)
+                            # 注意：Protocol 类使用 issubclass 可能会有不同行为，这里主要针对显式继承的类
+                            is_service_subclass = False
+                            try:
+                                # 排除 IService 本身
+                                if obj is not IService and issubclass(obj, IService):
+                                    is_service_subclass = True
+                            except TypeError:
+                                # 处理某些特殊类型无法 issubclass 的情况
+                                pass
+
+                            if is_decorated or is_name_match or is_service_subclass:
                                 # 仅跳过抽象接口类（不注册），但用于接口->实现映射
                                 if inspect.isabstract(obj):
                                     continue
@@ -266,7 +287,9 @@ class AppContainerManager(ISingletonService):
         Args:
             service_class: 服务类
         """
-        service_name = self.generate_name(service_class)
+        # Check for overrides from decorator
+        override_name = getattr(service_class, "__pyspring_name__", None)
+        service_name = override_name if override_name else self.generate_name(service_class)
 
         # 检查是否已经注册过，避免重复注册
         if service_name in self._registered_services:
@@ -365,7 +388,17 @@ class AppContainerManager(ISingletonService):
                 logger.debug(f"Fuzzy match inject failed for {param_name}: {e}")
 
         # 单例/工厂注册
-        if issubclass(service_class, ISingletonService):
+        is_singleton_attr = getattr(service_class, "__pyspring_singleton__", None)
+
+        is_singleton = False
+        if is_singleton_attr is True:
+            is_singleton = True
+        elif is_singleton_attr is False:
+            is_singleton = False
+        elif issubclass(service_class, ISingletonService):
+            is_singleton = True
+
+        if is_singleton:
             self.container.bind_singleton(service_name, service_class, **dependencies)
             logger.debug(f"Registered {service_name} as singleton service with dependencies: {list(dependencies.keys())}.")
         else:
@@ -565,7 +598,7 @@ class AppContainerManager(ISingletonService):
         Raises:
             RuntimeError: 如果关键初始化器失败
         """
-        from pyspring.interfaces.IStartupInitializer import IStartupInitializer, StartupInitializerManager
+        from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer, StartupInitializerManager
 
         logger.info("🚀 开始执行启动初始化器...")
 
@@ -616,7 +649,7 @@ class AppContainerManager(ISingletonService):
         Returns:
             bool: 是否所有关闭处理器都成功
         """
-        from pyspring.interfaces.IShutdownHandler import IShutdownHandler, ShutdownHandlerManager
+        from pyspring.core.interfaces.IShutdownHandler import IShutdownHandler, ShutdownHandlerManager
 
         logger.info("🔄 开始执行关闭处理器...")
 

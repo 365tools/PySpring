@@ -6,8 +6,8 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from pyspring.log.loguru.http import RequestLoggingMiddleware
-from pyspring.security.auth.middleware.auth import AuthenticationMiddleware
+from pyspring.log.loguru.middleware.request import RequestLoggingMiddleware
+from pyspring.security.authentication.middleware.auth import AuthenticationMiddleware
 
 
 # ==================== 应用生命周期管理 ====================
@@ -78,7 +78,6 @@ def create_app() -> FastAPI:
     # 2. 认证中间件
     app.add_middleware(
         AuthenticationMiddleware,
-        enable_device_check=False,  # 可选：是否启用设备验证
         enable_role_check=True  # 可选：是否启用角色验证
     )
 
@@ -115,7 +114,7 @@ async def health():
 @app.get("/api/profile")
 async def get_profile():
     """获取当前用户信息（需要认证）"""
-    from pyspring.security.auth.context import AuthContext
+    from pyspring.security.authentication.context import AuthContext
 
     user = AuthContext.get_current_user()
 
@@ -140,7 +139,7 @@ async def login():
 @app.get("/api/protected")
 async def protected():
     """受保护的路由"""
-    from pyspring.security.auth.context import AuthContext
+    from pyspring.security.authentication.context import AuthContext
 
     user = AuthContext.get_current_user()
     return {

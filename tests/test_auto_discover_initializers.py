@@ -3,11 +3,13 @@
 """
 import asyncio
 
-from pyspring.interfaces.IStartupInitializer import IStartupInitializer
+import pytest
+from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.log.loguru.ins import logger
+from pyspring.log.instance import logger
 
 
+@pytest.mark.asyncio
 async def test_auto_discover_initializers():
     """测试自动发现所有 IStartupInitializer 实现"""
     logger.info("=" * 60)

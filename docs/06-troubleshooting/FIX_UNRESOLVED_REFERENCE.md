@@ -131,7 +131,7 @@ pyspring diagnose
 在 IDE 中创建新文件 `test_pyspring.py`：
 
 ```python
-from pyspring.log.loguru.ins import logger
+from pyspring.log.loguru.logger import logger
 from pyspring.ioc.manager import AppContainerManager
 
 # 应该有代码提示和自动补全
@@ -208,7 +208,7 @@ pip install pyspring
 
 # 3. 验证
 pyspring diagnose
-python -c "from pyspring.log.loguru.ins import logger; print('✅')"
+python -c "from pyspring.log.loguru.logger import logger; print('✅')"
 
 # 4. 在 IDE 中
 # - 选择解释器: venv\Scripts\python.exe

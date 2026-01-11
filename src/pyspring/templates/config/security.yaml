@@ -47,7 +47,6 @@ authentication:
           - "cookie"    # 其次从 Cookie 获取
           - "query"     # 最后从 URL 参数获取
         token_prefix: "Bearer"
-        verify_device: false  # 是否验证设备指纹
     
     # API Key 认证（用于服务间调用）
     - name: "api_key"
@@ -98,13 +97,6 @@ authentication:
       - "^/download/[a-z0-9]+$"      # 下载链接
       # - "^/share/[a-f0-9-]{36}$"   # 分享链接
   
-  # 设备验证配置（可选的额外安全层）
-  device:
-    enabled: false  # 开发环境建议禁用
-    fingerprint_header: "X-Device-Fingerprint"
-    auto_register: true
-    default_status: "pending"  # pending（待审批）, approved（已批准）
-
 # 授权配置（角色和权限）
 authorization:
   enabled: true
@@ -173,10 +165,6 @@ security:
 #   providers:
 #     - name: "jwt"
 #       enabled: true
-#       config:
-#         verify_device: false
-#   device:
-#     enabled: false
 # authorization:
 #   enabled: false  # 开发时可禁用角色验证
 # security:
@@ -191,10 +179,6 @@ security:
 #   providers:
 #     - name: "jwt"
 #       enabled: true
-#       config:
-#         verify_device: true  # 启用设备验证
-#   device:
-#     enabled: true
 # authorization:
 #   enabled: true
 # security:

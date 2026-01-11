@@ -1,0 +1,4 @@
+scan:
+  packages:
+    # 扫描示例项目的业务及其子包
+    - examples.project_demo.app
