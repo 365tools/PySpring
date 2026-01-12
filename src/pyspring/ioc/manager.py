@@ -9,12 +9,13 @@ from typing import Any, get_origin, get_args, get_type_hints, List, Dict
 
 import yaml
 
+from pyspring.core.interfaces.IService import IService
 from pyspring.core.interfaces.ISingleton import ISingletonService
 from pyspring.ioc.container import DynamicContainer
 from pyspring.log.instance import logger
 
 
-class AppContainerManager(ISingletonService):
+class AppContainerManager:
     """
     应用容器管理器（即 IoC 容器管理单例）
     负责注入src/ref/repositories和src/ref/services下的所有服务
@@ -58,7 +59,8 @@ class AppContainerManager(ISingletonService):
     def generate_name(service_class: type):
         return re.sub(r'(?<!^)(?=[A-Z])', '_', service_class.__name__).lower()
 
-    def _load_config(self) -> Dict[str, Any]:
+    @staticmethod
+    def _load_config() -> Dict[str, Any]:
         """
         加载 IoC 容器配置文件（带缓存）
         
@@ -387,8 +389,8 @@ class AppContainerManager(ISingletonService):
                         if impl_name not in self._registered_services:
                             self.register_service_by_convention(impl)
                         # ✅ 获取 provider（延迟解析）
-                        if impl_name in self.container._bindings:
-                            dependencies[param_name] = self.container._bindings[impl_name]
+                        if self.container.has_binding(impl_name):
+                            dependencies[param_name] = self.container.get_provider(impl_name)
                             injected = True
             except Exception as e:
                 logger.debug(f"Interface mapping inject failed for {type_name}: {e}")
@@ -416,8 +418,8 @@ class AppContainerManager(ISingletonService):
                     if raw_name not in self._registered_services:
                         self.register_service_by_convention(raw)
                     # ✅ 获取 provider（延迟解析）
-                    if raw_name in self.container._bindings:
-                        dependencies[param_name] = self.container._bindings[raw_name]
+                    if self.container.has_binding(raw_name):
+                        dependencies[param_name] = self.container.get_provider(raw_name)
                         injected = True
             except Exception as e:
                 logger.debug(f"Direct inject failed for {type_name}: {e}")
@@ -428,8 +430,8 @@ class AppContainerManager(ISingletonService):
             # 3) 无注解或解析失败：按参数名从容器解析同名 provider
             try:
                 # ✅ 从 _bindings 获取 provider
-                if param_name in self.container._bindings:
-                    dependencies[param_name] = self.container._bindings[param_name]
+                if self.container.has_binding(param_name):
+                    dependencies[param_name] = self.container.get_provider(param_name)
                     injected = True
             except Exception as e:
                 logger.debug(f"Name-based inject failed for {param_name}: {e}")
@@ -444,8 +446,8 @@ class AppContainerManager(ISingletonService):
                 service_name_candidate = param_name + "_service"
                 if service_name_candidate in self._registered_services:
                     # ✅ 从 _bindings 获取 provider
-                    if service_name_candidate in self.container._bindings:
-                        dependencies[param_name] = self.container._bindings[service_name_candidate]
+                    if self.container.has_binding(service_name_candidate):
+                        dependencies[param_name] = self.container.get_provider(service_name_candidate)
                         injected = True
                         logger.debug(f"Fuzzy match inject success: {param_name} -> {service_name_candidate}")
             except Exception as e:

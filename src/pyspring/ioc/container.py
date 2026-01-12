@@ -14,6 +14,8 @@ dependency_injector 是一个用于 Python 的依赖注入框架，主要包含�
    - Callable: 可调用对象提供者
    - Object: 对象提供者，直接提供已有对象实例
 """
+import logging
+
 from dependency_injector import containers, providers
 
 
@@ -140,6 +142,14 @@ class DynamicContainer:
         provider = self._bindings[name]
         return provider()
 
+    def has_binding(self, name: str) -> bool:
+        """检查是否有指定名称的绑定"""
+        return name in self._bindings
+
+    def get_provider(self, name: str):
+        """所取指定名称的 provider"""
+        return self._bindings.get(name)
+
     def get_instances_of_type(self, interface_type: type) -> list:
         """获取所有实现了指定接口/基类的服务实例
         
@@ -166,7 +176,8 @@ class DynamicContainer:
                 # 检查实例是否是指定类型的子类
                 if isinstance(instance, interface_type):
                     instances.append(instance)
-            except Exception:
+            except Exception as e:
+                logging.warning(f"Failed to get service '{name}': {e}")
                 # 跳过获取失败的服务
                 continue
         return instances
