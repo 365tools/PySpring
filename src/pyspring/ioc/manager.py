@@ -4,12 +4,14 @@ import pkgutil
 import re
 import types as _types
 import typing as _typing
-import yaml
 from pathlib import Path
+from typing import Any, get_origin, get_args, get_type_hints, List, Dict
+
+import yaml
+
 from pyspring.core.interfaces.ISingleton import ISingletonService
 from pyspring.ioc.container import DynamicContainer
 from pyspring.log.instance import logger
-from typing import Any, get_origin, get_args, get_type_hints, List, Dict
 
 
 class AppContainerManager(ISingletonService):
@@ -245,7 +247,7 @@ class AppContainerManager(ISingletonService):
                                 # 根据类的特征决定注册方式
                                 self.register_service_by_convention(obj)
                 except Exception as e:
-                    logger.debug(f"Warning: Could not process module {modname}: {e}")
+                    logger.error(f"Warning: Could not process module {modname}: {e}")
         except ImportError as e:
             logger.debug(f"Error importing base package {base_package}: {e}")
 
@@ -598,7 +600,7 @@ class AppContainerManager(ISingletonService):
         Raises:
             RuntimeError: 如果关键初始化器失败
         """
-        from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer, StartupInitializerManager
+        from pyspring.core.interfaces.initializer.startup import IStartupInitializer, StartupInitializerManager
 
         logger.info("🚀 开始执行启动初始化器...")
 
@@ -649,7 +651,7 @@ class AppContainerManager(ISingletonService):
         Returns:
             bool: 是否所有关闭处理器都成功
         """
-        from pyspring.core.interfaces.IShutdownHandler import IShutdownHandler, ShutdownHandlerManager
+        from pyspring.core.interfaces.handler.shutdown import IShutdownHandler, ShutdownHandlerManager
 
         logger.info("🔄 开始执行关闭处理器...")
 

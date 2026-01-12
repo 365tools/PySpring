@@ -3,7 +3,7 @@
 
 在应用启动时初始化数据库连接（PostgreSQL/SQLite）
 """
-from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
+from pyspring.core.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.manager import DBManagerService

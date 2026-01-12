@@ -1,5 +1,6 @@
 from pyspring.core.context.registry import ContextRegistry
 
+
 def register_context_var(key: str, context_var, default: object = None) -> None:
     """
     注册一个上下文变量到全局注册表中。

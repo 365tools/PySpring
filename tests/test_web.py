@@ -16,9 +16,9 @@ from pydantic import BaseModel
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
-from pyspring.web.response import Response, HttpResponse
-from pyspring.web.exception_handler import GlobalExceptionHandler
-from pyspring.core.exceptions import AppError
+from src.pyspring.web.response import Response, HttpResponse
+from src.pyspring.web.exception_handler import GlobalExceptionHandler
+from src.pyspring.core.exceptions import AppError
 
 
 class TestResponse:

@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import tempfile
-from pyspring.cli.tools.init import create_main_file, get_template_dir
+from src.pyspring.cli.tools.init import create_main_file, get_template_dir
 
 # 检查模板文件
 print("=" * 80)

@@ -3,10 +3,10 @@
 
 在应用启动时初始化缓存服务（Redis/Memory）
 """
-from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
+from pyspring.core.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
-from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
+from pyspring.repositories.cache.manager import CacheManagerService
 
 
 class CacheConnectionInitializer(IStartupInitializer):

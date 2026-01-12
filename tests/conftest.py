@@ -1,8 +1,14 @@
 import copy
+import os
+import sys
+
+# Ensure 'src' is in python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
 import pytest
-from pyspring.log.loguru.config.manager import LoggingConfigManager
-from pyspring.log.loguru.impl.service import LoguruService
+
+from src.pyspring.log.loguru.config.manager import LoggingConfigManager
+from src.pyspring.log.loguru.impl.service import LoguruService
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -12,6 +18,8 @@ def disable_loguru_enqueue():
     以避免 Windows 下 pytest capture 导致的 OSError: [WinError 6] 句柄无效。
     此 Fix 通过 MonkeyPatch 拦截配置读取，不修改核心代码。
     """
+    # 延迟导入以避免 PytestAssertRewriteWarning (anyio)
+
     # 保存原始方法
     original_get = LoggingConfigManager.get
 

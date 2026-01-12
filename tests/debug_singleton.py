@@ -7,8 +7,7 @@ src_path = os.path.join(project_root, 'src')
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
-from pyspring.security.base.config.loader import SecurityConfigManager
-from pyspring.log.instance import logger
+from src.pyspring.security.base.config.loader import SecurityConfigManager
 
 print("First instantiation:")
 s1 = SecurityConfigManager()
@@ -24,7 +23,7 @@ print("\nChecking _config:")
 print(f"S1 config loaded: {s1._config is not None}")
 
 # Check imports
-import pyspring.security.base.config.loader as m1
+import src.pyspring.security.base.config.loader as m1
 
 print(f"\nModule 1: {m1}")
 

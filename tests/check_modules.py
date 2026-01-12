@@ -7,7 +7,7 @@ src_path = os.path.join(project_root, 'src')
 if src_path not in sys.path:
     sys.path.insert(0, src_path)
 
-from pyspring.security.base.config.loader import SecurityConfigManager
+from src.pyspring.security.base.config.loader import SecurityConfigManager
 
 s = SecurityConfigManager()
 

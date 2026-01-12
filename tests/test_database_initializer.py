@@ -6,10 +6,11 @@ import tempfile
 from pathlib import Path
 
 import pytest
-from pyspring.core.interfaces.IStartupInitializer import StartupInitializerManager
-from pyspring.log.instance import logger
-from pyspring.repositories.db.initializer.migration import MigrationInitializer as DatabaseInitializer
-from pyspring.repositories.db.ins.sqlite.impl.service import SqliteService
+
+from src.pyspring.core.interfaces.initializer.startup import StartupInitializerManager
+from src.pyspring.log.instance import logger
+from src.pyspring.repositories.db.initializer.migration import MigrationInitializer
+from src.pyspring.repositories.db.ins.sqlite.impl.service import SqliteService
 
 
 @pytest.mark.asyncio
@@ -85,9 +86,7 @@ async def test_database_initializer():
     manager = StartupInitializerManager()
 
     # 注册数据库初始化器
-    db_initializer = DatabaseInitializer(enabled=True)
-    # 手动注入 db_service
-    db_initializer._db_service = db_service
+    db_initializer = MigrationInitializer(db_manager=db_service, enabled=True)
 
     # Mock config_manager
     from unittest.mock import MagicMock
@@ -132,8 +131,7 @@ async def test_database_initializer():
 
     # 重新执行，应该跳过
     manager2 = StartupInitializerManager()
-    db_initializer2 = DatabaseInitializer(enabled=True)
-    db_initializer2._db_service = db_service
+    db_initializer2 = MigrationInitializer(db_manager=db_service, enabled=True)
     db_initializer2.config_manager = MagicMock()
     db_initializer2.config_manager.get_database_initialization_config.return_value = {
         'enabled': True,

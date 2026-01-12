@@ -24,7 +24,7 @@ def test_scan_initializer():
     # 2. 尝试直接导入
     print(f"\n2️⃣ 尝试直接导入:")
     try:
-        from pyspring.security.authentication.initializer import AuthenticationInitializer
+        from src.pyspring.security.authentication.initializer import AuthenticationInitializer
         print(f"   导入: ✅")
         print(f"   类名: {AuthenticationInitializer.__name__}")
         print(f"   模块: {AuthenticationInitializer.__module__}")
@@ -35,15 +35,15 @@ def test_scan_initializer():
 
     # 3. 检查是否继承正确的接口
     print(f"\n3️⃣ 检查接口继承:")
-    from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
-    from pyspring.core.interfaces.ISingleton import ISingletonService
+    from src.pyspring.core.interfaces.initializer.startup import IStartupInitializer
+    from src.pyspring.core.interfaces.ISingleton import ISingletonService
     print(f"   继承 IStartupInitializer: {'✅' if issubclass(AuthenticationInitializer, IStartupInitializer) else '❌'}")
     print(f"   继承 ISingletonService: {'✅' if issubclass(AuthenticationInitializer, ISingletonService) else '❌'}")
 
     # 4. 测试 IoC 容器扫描
     print(f"\n4️⃣ 测试 IoC 容器扫描:")
     try:
-        from pyspring.ioc.manager import AppContainerManager
+        from src.pyspring.ioc.manager import AppContainerManager
         ioc_manager = AppContainerManager()
 
         print(f"   注册服务...")

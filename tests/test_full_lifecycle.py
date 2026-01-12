@@ -4,10 +4,11 @@
 import asyncio
 
 import pytest
-from pyspring.core.interfaces.IShutdownHandler import IShutdownHandler
-from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
-from pyspring.ioc.manager import AppContainerManager
-from pyspring.log.instance import logger
+
+from src.pyspring.core.interfaces.handler.shutdown import IShutdownHandler
+from src.pyspring.core.interfaces.initializer.startup import IStartupInitializer
+from src.pyspring.ioc.manager import AppContainerManager
+from src.pyspring.log.instance import logger
 
 
 @pytest.mark.asyncio

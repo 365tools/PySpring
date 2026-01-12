@@ -5,13 +5,15 @@
 注意：必须在 DBInitializer 之后执行（依赖数据库连接已建立）
 """
 from pathlib import Path
-from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
+from typing import Optional
+
+from sqlalchemy import text
+
+from pyspring.core.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.utils.config_finder import detect_project_root
-from sqlalchemy import text
-from typing import Optional
 
 
 class MigrationInitializer(IStartupInitializer):

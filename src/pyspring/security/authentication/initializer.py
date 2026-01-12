@@ -4,7 +4,7 @@
 负责在应用启动时初始化认证提供者链
 """
 from pyspring.core.interfaces.ISingleton import ISingletonService
-from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
+from pyspring.core.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 
 

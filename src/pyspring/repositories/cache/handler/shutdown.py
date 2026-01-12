@@ -3,7 +3,7 @@
 
 在应用关闭时关闭缓存连接
 """
-from pyspring.core.interfaces.IShutdownHandler import IShutdownHandler
+from pyspring.core.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
 

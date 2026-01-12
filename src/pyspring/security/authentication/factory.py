@@ -2,12 +2,13 @@
 认证提供者工厂
 根据配置动态创建认证提供者实例
 """
+from typing import Dict, Type, List
+
 from pyspring.log.instance import logger
-from pyspring.security.base.config.loader import SecurityConfigManager
 from pyspring.security.authentication.impl.session.token import TokenManagerService
 from pyspring.security.authentication.providers.base import BaseAuthenticationProvider
-from pyspring.security.authentication.providers.jwt_provider import JWTAuthenticationProvider
-from typing import Dict, Type, List
+from pyspring.security.authentication.providers.jwt import JWTAuthenticationProvider
+from pyspring.security.base.config.loader import SecurityConfigManager
 
 
 class AuthProviderFactory:
@@ -153,7 +154,6 @@ class AuthProviderFactoryHelper:
             token_manager: Token 管理服务
             **kwargs: 其他依赖服务
         """
-        from pyspring.security.authentication.chain import AuthenticationChain
         from pyspring.ioc.manager import AppContainerManager
 
         logger.info("🚀 开始初始化认证提供者")

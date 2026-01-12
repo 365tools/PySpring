@@ -7,13 +7,21 @@ from pathlib import Path
 
 import pytest
 
-# 添加 src 到路径
+try:
+    from pyspring.core.interfaces.handler.shutdown import IShutdownHandler
+    from pyspring.core.interfaces.initializer.startup import IStartupInitializer
+    from pyspring.ioc.manager import AppContainerManager
+except ImportError:
+    # Fallback for IDEs that require src prefix (won't work at runtime if mixed)
+    # But strictly for runtime, we need 'pyspring' to match the app's internal imports.
+    # To fix IDE errors, mark 'src' directory as "Sources Root" in PyCharm/IDEA.
+    from src.pyspring.core.interfaces.handler.shutdown import IShutdownHandler
+    from src.pyspring.core.interfaces.initializer.startup import IStartupInitializer
+    from src.pyspring.ioc.manager import AppContainerManager
+
+# 添加 src 到路径 (Ensure 'pyspring' is importable as top-level package)
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from pyspring.ioc.manager import AppContainerManager
-from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
-from pyspring.core.interfaces.IShutdownHandler import IShutdownHandler
-from pyspring.log.instance import logger
 
 
 def test_basic_functionality():
@@ -66,7 +74,7 @@ def test_basic_functionality():
 
     # 测试 6: 依赖注入
     print("\n✓ 测试 6: 依赖注入")
-    from pyspring.repositories.cache.manager import CacheManagerService
+    from src.pyspring.repositories.cache.manager import CacheManagerService
     cache_manager = AppContainerManager.service(CacheManagerService)
     assert cache_manager is not None
     print("  ✅ 通过 - CacheManagerService 成功获取")

@@ -12,9 +12,9 @@ PySpring 综合测试套件
 8. 数据库和缓存服务
 """
 import pytest
-from pyspring.core.interfaces.IShutdownHandler import IShutdownHandler
-from pyspring.core.interfaces.ISingleton import ISingletonService
-from pyspring.core.interfaces.IStartupInitializer import IStartupInitializer
+
+from pyspring.core.interfaces.handler.shutdown import IShutdownHandler
+from pyspring.core.interfaces.initializer.startup import IStartupInitializer
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 
@@ -95,7 +95,7 @@ class TestDependencyInjection:
         manager.register_all_services()
 
         # 尝试获取一个已注册的服务
-        from pyspring.repositories.cache.manager import CacheManagerService
+        from src.pyspring.repositories.cache.manager import CacheManagerService
         cache_manager = AppContainerManager.service(CacheManagerService)
         assert cache_manager is not None
         logger.info("✅ CacheManagerService 获取成功")
@@ -106,7 +106,6 @@ class TestDependencyInjection:
         manager.register_all_services()
 
         # 获取需要依赖注入的服务
-        from pyspring.repositories.cache.handler.shutdown import CacheShutdownHandler
         try:
             handler = manager.container.get('cache_shutdown_handler')
             assert handler is not None
@@ -123,6 +122,7 @@ class TestInterfaceMapping:
         """测试获取接口的所有实现"""
         manager = AppContainerManager()
         manager.register_all_services()
+        print(f"DEBUG REGISTERED: {sorted(list(manager._registered_services))}")
 
         # 获取所有 IShutdownHandler 实现
         handlers = manager.get_all_instances_of(IShutdownHandler)
@@ -171,7 +171,7 @@ class TestConfigManagement:
 
     def test_repositories_config(self):
         """测试仓储配置"""
-        from pyspring.repositories.base.config.loader import RepositoriesConfigManager
+        from src.pyspring.repositories.base.config.loader import RepositoriesConfigManager
 
         config_manager = RepositoriesConfigManager()
 
