@@ -80,6 +80,24 @@ class AuthenticationInitializer(IStartupInitializer, ISingletonService):
             auth_chain = container.get(AuthenticationChain)
             auth_chain.register_providers(providers)
 
+            # [Auto-Discovery] 自动发现并注册安全上下文验证器
+            # 这使得开发者只需编写 Validator 并继承 ISingletonService，无需手动注册
+            from pyspring.security.authentication.impl.core.context import SecurityContextManagerService
+            from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
+
+            # 使用 container.get() 确保服务已初始化
+            context_manager = container.get(SecurityContextManagerService)
+
+            # 扫描所有 ISecurityContextValidator 的实现
+            validators = container.get_all_instances_of(ISecurityContextValidator)
+
+            if validators:
+                for v in validators:
+                    context_manager.register(v)
+                logger.debug(f"🔍 自动注册了 {len(validators)} 个安全上下文验证器: {[v.name for v in validators]}")
+            else:
+                logger.debug("🔍 未发现自定义安全上下文验证器")
+
             self.initialized = True
             logger.info("✅ 认证系统初始化完成")
             return True

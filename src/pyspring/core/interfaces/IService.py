@@ -2,9 +2,10 @@
 服务接口基类定义
 提供统一的服务接口规范，便于依赖注入和动态绑定
 """
-from typing import Any, Dict, Protocol, Optional
+from typing import Any, Dict, Protocol, Optional, runtime_checkable
 
 
+@runtime_checkable
 class IService(Protocol):
     """
     服务接口协议基类

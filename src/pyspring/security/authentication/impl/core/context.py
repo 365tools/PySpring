@@ -1,9 +1,10 @@
+from dataclasses import dataclass, field
 from typing import List, Dict, Any
-from pyspring.log.instance import logger
+
 from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.log.instance import logger
 from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
 
-from dataclasses import dataclass, field
 
 @dataclass
 class ContextEvaluationResult:
@@ -48,17 +49,24 @@ class SecurityContextManagerService(ISingletonService):
         for v in self.validators:
             try:
                 res = await v.validate(context)
-                
-                if not res.get('success', True):
+
+                if not res.success:
                     # 如果不是阻断性的，通常记录为 warning 或 error
                     # 这里假设 explicit success=False 为阻断性错误
-                    errors.append(f"{v.name}: {res.get('reason', 'Check failed')}")
-                
-                if 'claims' in res:
-                    final_claims.update(res['claims'])
-                    
-                if 'warnings' in res:
-                    warnings.extend(res['warnings'])
+                    errors.append(f"{v.name}: {res.reason or 'Check failed'}")
+
+                if res.claims:
+                    # 只有当 key 不存在，或者值为 list 时才合并？
+                    # 简单策略：update (后者覆盖前者)
+                    # 改进策略：对于 list 类型的 claim (如 roles, permissions)，进行 append/extend
+                    for key, value in res.claims.items():
+                        if key in final_claims and isinstance(final_claims[key], list) and isinstance(value, list):
+                            final_claims[key].extend(value)
+                        else:
+                            final_claims[key] = value
+
+                if res.warnings:
+                    warnings.extend(res.warnings)
                     
             except Exception as e:
                 logger.error(f"❌ 验证器 {v.name} 执行异常: {e}")

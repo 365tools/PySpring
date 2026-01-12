@@ -58,8 +58,8 @@ class UserRole(BaseModel):
 class RolePermission(BaseModel):
     """角色权限模型"""
     id: Optional[int] = Field(None, description="数据库主键ID")
-    role_code: int = Field(..., description="角色代码")
-    permission_code: int = Field(..., description="权限代码")
+    role_code: str = Field(..., description="角色代码")
+    permission_code: str = Field(..., description="权限代码")
 
     model_config = ConfigDict(from_attributes=True)
 

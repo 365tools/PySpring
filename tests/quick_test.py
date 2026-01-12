@@ -8,16 +8,16 @@ from pathlib import Path
 import pytest
 
 try:
-    from pyspring.core.interfaces.handler.shutdown import IShutdownHandler
-    from pyspring.core.interfaces.initializer.startup import IStartupInitializer
-    from pyspring.ioc.manager import AppContainerManager
-except ImportError:
-    # Fallback for IDEs that require src prefix (won't work at runtime if mixed)
-    # But strictly for runtime, we need 'pyspring' to match the app's internal imports.
-    # To fix IDE errors, mark 'src' directory as "Sources Root" in PyCharm/IDEA.
+    # 统一使用 pyspring 导入，确保通过 sys.path 正确加载 src 目录
+    # 这种方式模拟了安装后的环境，同时支持本地开发（需要添加 src 到路径）
+    sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
     from src.pyspring.core.interfaces.handler.shutdown import IShutdownHandler
     from src.pyspring.core.interfaces.initializer.startup import IStartupInitializer
     from src.pyspring.ioc.manager import AppContainerManager
+except ImportError as e:
+    print(f"❌ 导入失败: {e}")
+    print("请确保在项目根目录下运行，或将 'src' 目录添加到 PYTHONPATH")
+    sys.exit(1)
 
 # 添加 src 到路径 (Ensure 'pyspring' is importable as top-level package)
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -74,7 +74,7 @@ def test_basic_functionality():
 
     # 测试 6: 依赖注入
     print("\n✓ 测试 6: 依赖注入")
-    from src.pyspring.repositories.cache.manager import CacheManagerService
+    from pyspring.repositories.cache.manager import CacheManagerService
     cache_manager = AppContainerManager.service(CacheManagerService)
     assert cache_manager is not None
     print("  ✅ 通过 - CacheManagerService 成功获取")

@@ -1,8 +1,10 @@
+from typing import Optional, List
+
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
-from pyspring.web.response import Response, HttpResponse
+
 from pyspring.log.instance import logger
-from typing import Optional, List
+from pyspring.web.response import Response, HttpResponse
 
 
 class RoleCheckMiddleware:
@@ -23,7 +25,7 @@ class RoleCheckMiddleware:
         """
         required_roles = self.requires_role(path)
         if required_roles:
-            user_roles = request.state.user_roles
+            user_roles = getattr(request.state, "user_roles", [])
             has_permission = any(role in required_roles for role in user_roles)
 
             if not has_permission:

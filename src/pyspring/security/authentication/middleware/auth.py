@@ -4,14 +4,16 @@
 基于认证提供者链（Chain of Responsibility Pattern）
 统一处理所有API请求的认证逻辑，类似Spring Boot的AOP
 """
+from typing import Callable
+
 from fastapi import Request, Response, status
-from pyspring.log.instance import logger
-from pyspring.security.base.config.loader import SecurityConfigManager
-from pyspring.security.authentication.context import AuthContext
-from pyspring.security.authorization.middleware.role import RoleCheckMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from typing import Callable
+
+from pyspring.log.instance import logger
+from pyspring.security.authentication.context import AuthContext
+from pyspring.security.authorization.middleware.role import RoleCheckMiddleware
+from pyspring.security.base.config.loader import SecurityConfigManager
 
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
@@ -134,10 +136,16 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             request.state.user_id = auth_result.user_id
         if auth_result.username:
             request.state.user_email = auth_result.username
-        if auth_result.roles:
-            request.state.user_roles = auth_result.roles
+
+        # 总是初始化 user_roles，避免后续中间件报错
+        request.state.user_roles = auth_result.roles if auth_result.roles else []
+        
         if auth_result.extra_data:
             request.state.token_payload = auth_result.extra_data
+            # [Permission-Upgrade] 注入 user_permissions 到 state
+            request.state.user_permissions = auth_result.extra_data.get("permissions", [])
+        else:
+            request.state.user_permissions = []
 
         # 3.5 【新增】设置认证上下文（类似 Spring Security 的 SecurityContextHolder）
         # 从 token 获取完整用户信息并设置到上下文

@@ -1,7 +1,8 @@
 from abc import abstractmethod
-from typing import Any, Protocol
+from typing import Any, Protocol, runtime_checkable
 
 
+@runtime_checkable
 class ILoggerService(Protocol):
     """
     日志服务接口

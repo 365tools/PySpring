@@ -1,16 +1,19 @@
+from typing import Optional
+
 from fastapi import HTTPException, status
 from fastapi_users.password import PasswordHelper
+from sqlalchemy import select
+
 from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.core.service import SystemService
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.impl.core.context import SecurityContextManagerService
 from pyspring.security.authentication.impl.session.token import TokenManagerService
-from pyspring.security.authorization.rabc.orm.tables import UserTable, RoleTable, UserRoleTable
+from pyspring.security.authorization.rabc.orm.tables import UserTable, RoleTable, UserRoleTable, PermissionTable, RolePermissionTable
 from pyspring.security.authorization.rabc.schema.constant import RevokeTokenReason
-from pyspring.security.authorization.rabc.schema.requests import UserInfo, User, Role, LoginRequest
-from pyspring.core.service import SystemService
-from sqlalchemy import select
-from typing import Optional, Dict, Any
+from pyspring.security.authorization.rabc.schema.requests import UserInfo, User, Role, LoginRequest, Permission
+from pyspring.security.authorization.rabc.schema.response import LoginResponse, TokenResponse, LogoutResponse
 
 
 class LoginService(ISingletonService):
@@ -39,7 +42,7 @@ class LoginService(ISingletonService):
         self.password_helper = PasswordHelper()
         logger.info("🔧 LoginService 初始化完成 (Context Aware)")
 
-    async def login(self, request: LoginRequest) -> Dict[str, Any]:
+    async def login(self, request: LoginRequest) -> LoginResponse:
         """
         用户登录
 
@@ -47,7 +50,7 @@ class LoginService(ISingletonService):
             request: 登录凭据
 
         Returns:
-            包含 access_token、user_info 等信息的字典
+            LoginResponse: 包含 access_token 等信息的对象
 
         Raises:
             HTTPException: 认证失败
@@ -116,6 +119,15 @@ class LoginService(ISingletonService):
                 roles = result.scalars().all()
                 role_codes = [role.code for role in roles]
 
+                # [Permission-Upgrade] 查询 RBAC 权限
+                permissions = []
+                if role_codes:
+                    stmt = select(PermissionTable.code).join(
+                        RolePermissionTable, RolePermissionTable.permission_code == PermissionTable.code
+                    ).where(RolePermissionTable.role_code.in_(role_codes))
+                    result = await session.execute(stmt)
+                    permissions = list(set(result.scalars().all())) 
+
                 # [安全策略]撤销该用户所有旧的Refresh Token(颁发新token, 旧的失效)
                 await self.token_manager.revoke_user_refresh_tokens(
                     session,
@@ -129,9 +141,26 @@ class LoginService(ISingletonService):
                         "email": db_user.email,
                         "user_id": db_user.user_id,
                         "roles": role_codes,
+                    "permissions": permissions,
                 }
-                # 动态把 Security Context 的 Claims 注入 Token
-                token_payload.update(evaluation.claims)
+
+                # [增强] 动态注入 Context Claims (支持角色和权限合并)
+                claims_to_merge = evaluation.claims.copy()
+
+                if 'roles' in claims_to_merge:
+                    extra_roles = claims_to_merge.pop('roles')
+                    if isinstance(extra_roles, list):
+                        # 合并 DB 角色和动态角色，并去重
+                        token_payload['roles'] = list(set(token_payload['roles'] + extra_roles))
+                        logger.debug(f"➕ 合并动态角色: {extra_roles}")
+
+                if 'permissions' in claims_to_merge:
+                    extra_perms = claims_to_merge.pop('permissions')
+                    if isinstance(extra_perms, list):
+                        token_payload['permissions'] = list(set(token_payload['permissions'] + extra_perms))
+                        logger.debug(f"➕ 合并动态权限: {extra_perms}")
+
+                token_payload.update(claims_to_merge)
                 
                 access_token = self.token_manager.create_access_token(data=token_payload)
 
@@ -141,7 +170,8 @@ class LoginService(ISingletonService):
                         "email": db_user.email,
                         "user_id": db_user.user_id,
                 }
-                refresh_token_payload.update(evaluation.claims) # 也注入到 refresh token
+                # 注入其他动态 Claims (不包含 roles，保持 Refresh Token精简)
+                refresh_token_payload.update(claims_to_merge)
                 
                 refresh_token = await self.token_manager.create_refresh_token(
                     data=refresh_token_payload
@@ -150,13 +180,13 @@ class LoginService(ISingletonService):
                 logger.info(f"✅ 用户登录成功: {db_user.email} (ID: {db_user.id})")
 
                 # 返回登录信息
-                return {
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "token_type": "bearer",
-                    "expires_in": self.system.get().authentication.jwt.access_token_expire,
-                    "message": warning_msg if warning_msg else "登录成功"
-                }
+                return LoginResponse(
+                    access_token=access_token,
+                    refresh_token=refresh_token,
+                    token_type="bearer",
+                    expires_in=self.system.get().authentication.jwt.access_token_expire,
+                    message=warning_msg if warning_msg else "登录成功"
+                )
 
         except HTTPException:
             raise
@@ -167,7 +197,7 @@ class LoginService(ISingletonService):
                 detail=f"登录失败: {str(e)}"
             )
 
-    async def logout(self, token: str) -> Dict[str, str]:
+    async def logout(self, token: str) -> LogoutResponse:
         """
         用户登出
         
@@ -177,7 +207,7 @@ class LoginService(ISingletonService):
             token: JWT access token
 
         Returns:
-            登出成功消息
+            LogoutResponse: 登出结果
 
         Raises:
             HTTPException: token 无效
@@ -198,10 +228,10 @@ class LoginService(ISingletonService):
             email = payload.get("email", "unknown")
             logger.info(f"✅ 用户登出成功: {email}")
 
-            return {
-                "message": "登出成功",
-                "detail": "Token已失效"
-            }
+            return LogoutResponse(
+                message="登出成功",
+                detail="Token已失效"
+            )
 
         except HTTPException:
             raise
@@ -212,7 +242,7 @@ class LoginService(ISingletonService):
                 detail=f"登出失败: {str(e)}"
             )
 
-    async def refresh_token(self, refresh_token: str) -> Dict[str, Any]:
+    async def refresh_token(self, refresh_token: str) -> TokenResponse:
         """
         刷新访问 token
         
@@ -220,7 +250,7 @@ class LoginService(ISingletonService):
             refresh_token: Refresh token
             
         Returns:
-            新的 access token
+            TokenResponse: 新的 access token 信息
             
         Raises:
             HTTPException: refresh token 无效
@@ -237,11 +267,11 @@ class LoginService(ISingletonService):
 
             logger.info("✅ Token 刷新成功")
 
-            return {
-                "access_token": new_access_token,
-                "token_type": "bearer",
-                "expires_in": self.system_service.get().authentication.jwt.access_token_expire
-            }
+            return TokenResponse(
+                access_token=new_access_token,
+                token_type="bearer",
+                expires_in=self.system_service.get().authentication.jwt.access_token_expire
+            )
         except HTTPException:
             raise
         except Exception as e:
@@ -307,10 +337,23 @@ class LoginService(ISingletonService):
                 result = await session.execute(stmt)
                 roles = [Role.model_validate(role) for role in result.scalars().all()]
 
+                # 查询权限
+                permissions = []
+                if roles:
+                    role_codes = [role.code for role in roles]
+                    stmt = select(PermissionTable).join(
+                        RolePermissionTable, RolePermissionTable.permission_code == PermissionTable.code
+                    ).where(RolePermissionTable.role_code.in_(role_codes))
+                    result = await session.execute(stmt)
+
+                    # 去重 (SQLAlchemy distinct 可能更优，这里简单使用 dict)
+                    perm_map = {p.code: p for p in result.scalars().all()}
+                    permissions = [Permission.model_validate(p) for p in perm_map.values()]
+
                 return UserInfo(
                     user=user,
                     roles=roles if roles else None,
-                    permissions=None
+                    permissions=permissions if permissions else None
                 )
 
         except HTTPException:

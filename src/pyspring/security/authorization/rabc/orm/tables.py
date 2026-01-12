@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, Boolean, INT, TEXT, DateTime
+from sqlalchemy import Column, String, Boolean, INT
 from sqlalchemy.sql.schema import ForeignKey
 
 from pyspring.repositories.db.models.common.define import Base
@@ -65,5 +65,5 @@ class RolePermissionTable(Base):
     __tablename__ = "role_permission"
 
     id = Column(INT, primary_key=True, autoincrement=True)
-    role_code = Column(INT, ForeignKey('role.code'), nullable=False)
-    permission_code = Column(INT, ForeignKey('permission.code'), nullable=False)
+    role_code = Column(String, ForeignKey('role.code'), nullable=False)
+    permission_code = Column(String, ForeignKey('permission.code'), nullable=False)

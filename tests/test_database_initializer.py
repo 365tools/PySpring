@@ -2,10 +2,13 @@
 测试数据库自动初始化功能
 """
 import asyncio
+import sys
 import tempfile
 from pathlib import Path
 
 import pytest
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from src.pyspring.core.interfaces.initializer.startup import StartupInitializerManager
 from src.pyspring.log.instance import logger

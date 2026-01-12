@@ -1,5 +1,15 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import Dict, Any, List
+
+
+@dataclass
+class SecurityValidatorResult:
+    """单个验证器的执行结果"""
+    success: bool = True
+    reason: str = None
+    claims: Dict[str, Any] = field(default_factory=dict)
+    warnings: List[str] = field(default_factory=list)
 
 class ISecurityContextValidator(ABC):
     """
@@ -13,7 +23,7 @@ class ISecurityContextValidator(ABC):
         pass
 
     @abstractmethod
-    async def validate(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    async def validate(self, context: Dict[str, Any]) -> SecurityValidatorResult:
         """
         验证上下文
         
@@ -21,12 +31,6 @@ class ISecurityContextValidator(ABC):
             context: 上下文数据，包含 user, request 等
             
         Returns:
-            Dict[str, Any]: 验证结果
-            {
-                "success": bool,          # 是否通过(通常为True，除非是阻断性错误)
-                "reason": str,            # 错误原因/警告信息
-                "claims": Dict[str, Any], # 需要写入Token的额外数据
-                "warnings": List[str]     # 警告列表
-            }
+            SecurityValidatorResult: 验证结果对象
         """
         pass

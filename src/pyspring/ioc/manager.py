@@ -23,6 +23,15 @@ class AppContainerManager(ISingletonService):
     _config_cache = None  # 类级别配置缓存
     _instance = None      # 单例实例
 
+    # 框架核心包列表 (始终扫描)
+    FRAMEWORK_PACKAGES = [
+        'pyspring.core',
+        'pyspring.ioc',
+        'pyspring.log',
+        'pyspring.repositories',
+        'pyspring.security',
+    ]
+
     def __new__(cls, *args, **kwargs):
         if not cls._instance:
             cls._instance = super(AppContainerManager, cls).__new__(cls)
@@ -85,11 +94,9 @@ class AppContainerManager(ISingletonService):
                 'packages': [
                     'pyspring.repositories',
                     'pyspring.security',
-                    'pyspring.system',
                     'pyspring.log',
                 ],
                 'recursive': True,
-                'service_suffix': 'Service'
             },
             'container': {
                 'lazy_loading': True,
@@ -103,6 +110,7 @@ class AppContainerManager(ISingletonService):
     def get_scan_packages(self) -> List[str]:
         """
         获取需要扫描的包路径列表
+        会自动合并 框架核心包 + 用户配置包
         
         自动标准化包路径：
         - 如果配置中是 'src.pyspring.*'，会尝试导入
@@ -111,18 +119,38 @@ class AppContainerManager(ISingletonService):
         Returns:
             包路径列表
         """
-        packages = self._config.get('scan', {}).get('packages', [])
+        # 1. 获取用户配置的包
+        config_packages = self._config.get('scan', {}).get('packages') or []
+
+        # 2. 合并框架核心包 (去重)
+        all_packages = list(set(config_packages + self.FRAMEWORK_PACKAGES))
+        
         normalized_packages = []
 
-        for pkg in packages:
+        for pkg in all_packages:
             # 先尝试导入完整的包路径（至少前两级，如 src.pyspring）
             try:
                 # 尝试导入包的前两级（如 src.pyspring）
+                # 只有当包名包含点时才分割，否则直接导入
                 test_pkg = '.'.join(pkg.split('.')[:2]) if '.' in pkg else pkg
                 importlib.import_module(test_pkg)
                 normalized_packages.append(pkg)
                 logger.debug(f"✅ 路径有效: {pkg}")
-            except ImportError as e:
+            except ImportError:
+                # 框架包本身容错：如果是框架包且导入失败（可能模块不存在，如 pyspring.system），尝试忽略或记录
+                # 但如果是用户包，或者是 src. 开头的，尝试标准化
+                if pkg in self.FRAMEWORK_PACKAGES:
+                    # 框架包如果导人失败，可能是因为项目结构调整或者该模块确实不存在
+                    # 尝试检查是否是 'src.pyspring' 开发环境结构
+                    try:
+                        dev_pkg = f"src.{pkg}"
+                        importlib.import_module('.'.join(dev_pkg.split('.')[:2]))
+                        normalized_packages.append(dev_pkg)
+                        logger.debug(f"✅ 框架开发环境路径有效: {dev_pkg}")
+                        continue
+                    except ImportError:
+                        pass
+                
                 # 如果以 'src.' 开头且导入失败，尝试去掉 'src.' 前缀
                 if pkg.startswith('src.'):
                     normalized_pkg = pkg[4:]  # 去掉 'src.'
@@ -134,13 +162,23 @@ class AppContainerManager(ISingletonService):
                         logger.debug(f"📝 路径标准化: {pkg} -> {normalized_pkg}")
                     except ImportError as e2:
                         # 两种方式都失败，保留原路径（稍后会记录错误）
-                        logger.debug(f"⚠️ 路径无法标准化: {pkg} (原因: {e}, {e2})")
+                        logger.debug(f"⚠️ 路径无法标准化: {pkg} (原因: {e2})")
                         normalized_packages.append(pkg)
                 else:
-                    logger.debug(f"⚠️ 路径导入失败: {pkg} (原因: {e})")
-                    normalized_packages.append(pkg)
+                    # 尝试加上 src. 前缀 (作为 fallback)
+                    try:
+                        normalized_pkg = f"src.{pkg}"
+                        test_pkg = '.'.join(normalized_pkg.split('.')[:2]) if '.' in normalized_pkg else normalized_pkg
+                        importlib.import_module(test_pkg)
+                        normalized_packages.append(normalized_pkg)
+                        logger.debug(f"📝 自动添加src前缀: {pkg} -> {normalized_pkg}")
+                    except ImportError as e:
+                        logger.debug(f"⚠️ 路径导入失败: {pkg} (原因: {e})")
+                        # 如果是框架核心包且真的不存在，则不添加，避免扫描报错
+                        if pkg not in self.FRAMEWORK_PACKAGES:
+                            normalized_packages.append(pkg)
 
-        return normalized_packages
+        return list(set(normalized_packages))
 
     def register_all_services(self):
         """
@@ -189,15 +227,21 @@ class AppContainerManager(ISingletonService):
         扫描并注册服务
 
         扫描规则：
-        - 扫描以 'Service' 结尾的类（如 DBManagerService）
-        - 扫描以 'Handler' 结尾的类（如 DBShutdownHandler、CacheShutdownHandler）        - 扫描以 'Initializer' 结尾的类（如 CacheInitializer、DBInitializer）        - 跳过抽象类（用于接口映射）
+        - 类被 @Component (或 @Service, @Repository) 装饰
+        - 类实现了 IService 接口
+        - 跳过抽象类（用于接口映射）
         
         Args:
-            base_package: 基础包名，如 "src.pyspring.repositories"
+            base_package: 基础包名，如 "pyspring.repositories"
         """
         try:
             # 导入基础包
             package = importlib.import_module(base_package)
+
+            # 如果是单个模块文件而不是包，直接扫描该模块
+            if not hasattr(package, '__path__'):
+                self._scan_module(package)
+                return
 
             # 使用pkgutil递归扫描所有子模块
             for importer, modname, ispkg in pkgutil.walk_packages(
@@ -208,48 +252,54 @@ class AppContainerManager(ISingletonService):
                 try:
                     # 导入模块
                     module = importlib.import_module(modname)
-
-                    # 查找服务类、处理器类和初始化器类
-                    from pyspring.core.interfaces.IService import IService
-                    
-                    for name, obj in vars(module).items():
-                        # 检查是否为类，且在当前模块定义
-                        if isinstance(obj, type) and obj.__module__ == modname:
-                            is_decorated = hasattr(obj, "__pyspring_component__")
-                            
-                            # 增强判定逻辑：
-                            # 1. 有装饰器
-                            # 2. 名称符合约定 (以 Service/Handler/Initializer 结尾)
-                            # 3. 是 IService 的子类 (但排除 IService 本身)
-                            is_name_match = name.endswith('Service') or name.endswith('Handler') or name.endswith('Initializer')
-                            
-                            # 检查是否为 IService 子类 (需要处理 Protocol 的特殊性)
-                            # 注意：Protocol 类使用 issubclass 可能会有不同行为，这里主要针对显式继承的类
-                            is_service_subclass = False
-                            try:
-                                # 排除 IService 本身
-                                if obj is not IService and issubclass(obj, IService):
-                                    is_service_subclass = True
-                            except TypeError:
-                                # 处理某些特殊类型无法 issubclass 的情况
-                                pass
-
-                            if is_decorated or is_name_match or is_service_subclass:
-                                # 仅跳过抽象接口类（不注册），但用于接口->实现映射
-                                if inspect.isabstract(obj):
-                                    continue
-                                # 记录接口->实现映射（基于 MRO 查找抽象父类）
-                                for base in obj.__mro__[1:]:
-                                    if isinstance(base, type) and inspect.isabstract(base):
-                                        # 映射抽象基类到实现类
-                                        if base.__name__.endswith('Service') or base.__name__.endswith('Handler') or base.__name__.endswith('Initializer'):
-                                            self._interface_impl_map.setdefault(base, obj)
-                                # 根据类的特征决定注册方式
-                                self.register_service_by_convention(obj)
+                    self._scan_module(module)
                 except Exception as e:
                     logger.error(f"Warning: Could not process module {modname}: {e}")
         except ImportError as e:
             logger.debug(f"Error importing base package {base_package}: {e}")
+
+    def _scan_module(self, module):
+        """扫描单个模块中的类"""
+        try:
+            # 查找服务类
+            from pyspring.core.interfaces.IService import IService
+
+            for name, obj in vars(module).items():
+                # 检查是否为类，且在当前模块定义
+                if isinstance(obj, type) and obj.__module__ == module.__name__:
+                    is_decorated = hasattr(obj, "__pyspring_component__")
+
+                    # 判定逻辑：
+                    # 1. 有装饰器
+                    # 2. 是 IService 的子类 (但排除 IService 本身)
+
+                    # 检查是否为 IService 子类 (需要处理 Protocol 的特殊性)
+                    is_service_subclass = False
+                    try:
+                        # 排除 IService 本身
+                        if obj is not IService and issubclass(obj, IService):
+                            is_service_subclass = True
+                    except TypeError:
+                        pass
+
+                    if is_decorated or is_service_subclass:
+                        # 仅跳过抽象接口类（不注册），但用于接口->实现映射
+                        if inspect.isabstract(obj):
+                            # 对抽象类也进行接口映射检查（如果它继承了 IService）
+                            if is_service_subclass:
+                                self._interface_impl_map.setdefault(obj, None)  # 仅作为一种标记或者后续扩展，目前逻辑主要在子类注册时查找基类
+                            continue
+
+                        # 记录接口->实现映射（基于 MRO 查找抽象父类）
+                        for base in obj.__mro__[1:]:
+                            if isinstance(base, type) and inspect.isabstract(base):
+                                # 映射抽象基类到实现类 - 只要是实现了 IService 的抽象类都作为接口处理
+                                if issubclass(base, IService):
+                                    self._interface_impl_map.setdefault(base, obj)
+                        # 根据类的特征决定注册方式
+                        self.register_service_by_convention(obj)
+        except Exception as e:
+            logger.error(f"Error scanning module {module.__name__}: {e}")
 
     @staticmethod
     def unwrap_annotation(ann: Any):
@@ -346,10 +396,22 @@ class AppContainerManager(ISingletonService):
             if injected:
                 continue
 
-            # 2) 具体 Service 类型直接注入
+            # 2) 具体 Service 类型直接注入 (基于类型或装饰器)
             try:
-                if isinstance(raw, type) and raw.__name__.endswith('Service') and not inspect.isabstract(raw):
-                    raw_name = self.generate_name(raw)
+                # 判定条件：
+                # 1. 有装饰器标记
+                # 2. 或是 IService 的实现类
+                is_pyspring_component = False
+                if isinstance(raw, type):
+                    # 检查装饰器
+                    if hasattr(raw, "__pyspring_component__"):
+                        is_pyspring_component = True
+                    # 检查是否实现 IService (需排除 Protocol 本身以免误判)
+                    elif raw is not IService and issubclass(raw, IService):
+                        is_pyspring_component = True
+
+                if is_pyspring_component and not inspect.isabstract(raw):
+                    raw_name = getattr(raw, "__pyspring_name__", None) or self.generate_name(raw)
                     # ✅ 确保服务已注册（内部有重复检查保护）
                     if raw_name not in self._registered_services:
                         self.register_service_by_convention(raw)

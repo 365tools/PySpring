@@ -6,17 +6,11 @@ scan:
   # 需要扫描的包路径列表
   # 示例：添加自定义服务包
   packages:
-    - src.pyspring.repositories
-    - src.pyspring.security
-    - src.pyspring.system
-    - src.pyspring.log
     # - your.custom.package  # 添加您的自定义包路径
-  
+
   # 是否启用递归扫描（扫描子包）
   recursive: true
-  
-  # 服务类名后缀（用于识别服务类）
-  service_suffix: "Service"
+
 
 # 容器配置
 container:
@@ -31,6 +25,5 @@ container:
 
 # 注意事项：
 # 1. 包路径必须是有效的 Python 模块路径
-# 2. 所有以 service_suffix 结尾的类都会被识别为服务类
-# 3. 实现了 ISingletonService 接口的服务会被注册为单例
-# 4. 其他服务默认注册为工厂模式（每次请求创建新实例）
+# 2. 实现了 ISingletonService 接口的服务会被注册为单例
+# 3. 其他服务默认注册为工厂模式（每次请求创建新实例）

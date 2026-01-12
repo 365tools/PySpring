@@ -4,17 +4,15 @@
 # 服务扫描配置
 scan:
   # 需要扫描的包路径列表
+  # 注意: PySpring 框架核心包 (pyspring.core, security 等) 会自动扫描，无需在此配置
+  # 此处仅需配置您的业务代码包
   packages:
-    - pyspring.repositories
-    - pyspring.security
-    - pyspring.core
-    - pyspring.log
+  # - my_app.services
+  # - my_app.handlers
   
   # 是否启用递归扫描（扫描子包）
   recursive: true
-  
-  # 服务类名后缀（用于识别服务类）
-  service_suffix: "Service"
+
 
 # 容器配置
 container:
