@@ -4,7 +4,7 @@ PySpring CLI Main Entry Point
 import argparse
 import sys
 
-from .commands import init, diagnose, uv_manager
+from .commands import init, diagnose, uv_manager, check
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
         epilog='For more information, visit https://github.com/365tools/PySpring'
     )
 
-    parser.add_argument('--version', action='version', version='PySpring 1.0.0')
+    parser.add_argument('-v', '--version', action='version', version='PySpring 1.0.0')
 
     subparsers = parser.add_subparsers(
         title='Available Commands',
@@ -25,9 +25,10 @@ def main():
     )
 
     # Register subcommands from tools
-    init.register_subcommand(subparsers)
-    diagnose.register_subcommand(subparsers)
     uv_manager.register_subcommand(subparsers)
+    init.register_subcommand(subparsers)
+    check.register_subcommand(subparsers)
+    diagnose.register_subcommand(subparsers)
 
     # Show help if no arguments provided
     if len(sys.argv) == 1:

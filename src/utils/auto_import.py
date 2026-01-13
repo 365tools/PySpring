@@ -8,18 +8,20 @@ import pkgutil
 from typing import Dict, Any
 
 
-def auto_import_package(package_name: str, globals_dict: Dict[str, Any] = None) -> list:
+def auto_import_package(package_name: str, globals_dict: Dict[str, Any] = None, exclude: list = None) -> list:
     """
     自动导入包下的所有模块
     
     Args:
         package_name: 包名
         globals_dict: 全局命名空间（可选），如果提供则会自动更新
+        exclude: 需要排除的模块名为列表（可选）
         
     Returns:
         list: 导出的符号列表
     """
     exported = {}
+    exclude = exclude or []
 
     try:
         # 导入包
@@ -29,6 +31,9 @@ def auto_import_package(package_name: str, globals_dict: Dict[str, Any] = None) 
         if hasattr(package, '__path__'):
             # 遍历包下的所有模块
             for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
+                if modname in exclude:
+                    continue
+                    
                 try:
                     # 导入模块
                     module = importlib.import_module(f'{package_name}.{modname}')
