@@ -26,7 +26,12 @@ PySpring/
 │   │
 │   ├── ioc/                   # IoC 容器
 │   │   ├── container.py       # 服务容器
-│   │   └── manager.py         # 容器管理器
+│   │   ├── manager.py         # 容器管理器
+│   │   └── validator.py       # (v1.0.1) 依赖校验器
+│   │
+│   ├── aop/                   # (v1.0.1) AOP 切面
+│   │   ├── core.py            # 切面核心类
+│   │   └── proxy.py           # 动态代理生成
 │   │
 │   ├── log/                   # 日志系统
 │   │   ├── config.py          # 日志配置

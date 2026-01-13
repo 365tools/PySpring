@@ -395,7 +395,7 @@ if decryption_failures > THRESHOLD:
 
 ```python
 # test_encryption.py
-from src.pyspring.security.auth.encryption import jwt_encryption_manager
+from pyspring.security.auth.encryption import jwt_encryption_manager
 
 # 检查是否启用
 print(f"加密已启用: {jwt_encryption_manager.is_enabled()}")
@@ -437,7 +437,7 @@ gAAAAABmX8Y5k3J2h7LmP9qN0oR5tU3vB6cA1dE4fI7jK8lM2nO3pQ4rS5tU6vW7xY8zA9bC0dD1eE2f
 
 ```python
 import time
-from src.pyspring.security.auth.impl.token import TokenManagerService
+from pyspring.security.auth.impl.token import TokenManagerService
 
 # 测试 1000 次加密/解密
 token_manager = TokenManagerService(...)

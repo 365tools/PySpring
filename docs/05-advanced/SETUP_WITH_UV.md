@@ -26,23 +26,22 @@ uv --version
 
 ## 🚀 快速设置 PySpring 项目
 
-### 方法 1: 使用自动化脚本（推荐）
+### 方法 1: 使用 PySpring CLI（推荐）
 
-```powershell
-# 1. 复制设置脚本到你的项目
-Copy-Item D:\Project\PycharmProjects\PySpring\tools\setup_uv.ps1 .
+PySpring 内置了对 `uv` 的原生支持。
 
-# 2. 运行设置
-.\setup_uv.ps1
+```bash
+# 设置 uv 环境 (创建 venv 并安装依赖)
+pyspring uv setup
 
-# 3. 重建虚拟环境
-.\setup_uv.ps1 -Rebuild
+# 开发模式 (安装开发依赖)
+pyspring uv setup --dev
 
-# 4. 开发模式（可编辑安装）
-.\setup_uv.ps1 -DevMode
+# 重建环境 (删除旧 venv 并重来)
+pyspring uv setup --rebuild
 
-# 5. 重建 + 开发模式
-.\setup_uv.ps1 -Rebuild -DevMode
+# 查看状态
+pyspring uv status
 ```
 
 ### 方法 2: 手动步骤

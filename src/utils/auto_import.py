@@ -8,15 +8,16 @@ import pkgutil
 from typing import Dict, Any
 
 
-def auto_import_package(package_name: str) -> Dict[str, Any]:
+def auto_import_package(package_name: str, globals_dict: Dict[str, Any] = None) -> list:
     """
     自动导入包下的所有模块
     
     Args:
         package_name: 包名
+        globals_dict: 全局命名空间（可选），如果提供则会自动更新
         
     Returns:
-        dict: 导出的符号字典
+        list: 导出的符号列表
     """
     exported = {}
 
@@ -47,5 +48,10 @@ def auto_import_package(package_name: str) -> Dict[str, Any]:
     except ImportError:
         # 忽略无法导入的包
         pass
+
+    if globals_dict is not None:
+        globals_dict.update(exported)
+
+    return sorted(list(exported.keys()))
 
     return exported

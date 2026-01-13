@@ -6,16 +6,23 @@
 
 ### IoC 容器与依赖注入
 
-- **[IOC_SINGLETON_GUIDE.md](IOC_SINGLETON_GUIDE.md)** - IoC 容器使用与单例服务管理
-    - IoC 容器基础
-    - 单例服务生命周期
-    - 自动依赖注入
-    - 服务发现机制
+- **[IOC_CONTAINER.md](IOC_CONTAINER.md)** ✨ *(Recommended)*
+    - IoC 容器深度解析
+    - 自动扫描与注册机制
+    - **启动加速 (Cache)** 与 **循环依赖防护** (v1.0.1)
 
-- **[IOC_CONFIG_GUIDE.md](IOC_CONFIG_GUIDE.md)** - IoC 容器配置详解
-    - container.yaml 配置
-    - 自动扫描配置
-    - 服务注册规则
+- **[AOP_GUIDE.md](AOP_GUIDE.md)** ✨ *(New)*
+    - AOP 切面编程指南
+    - Before/After/Around 通知的使用
+
+- **[IOC_SINGLETON_GUIDE.md](IOC_SINGLETON_GUIDE.md)**
+    - 单例模式的设计思考
+    - 结合 `ContextVars` 的并发安全实现
+    - 为什么你不需要 Prototype Scope？
+
+### 旧版文档 (Reference)
+
+- [IOC_CONFIG_GUIDE.md](IOC_CONFIG_GUIDE.md) (Container Config Ref)
 
 ### 项目架构
 

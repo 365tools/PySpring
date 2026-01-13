@@ -1,6 +1,6 @@
+﻿"""
+自动导入模块
 """
-PySpring CLI 命令行工具模块
-"""
-from .main import main, print_help
+from utils.auto_import import auto_import_package
 
-__all__ = ['main', 'print_help']
+__all__ = auto_import_package(__name__, globals())

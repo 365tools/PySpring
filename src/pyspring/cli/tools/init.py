@@ -8,44 +8,11 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-
-class Colors:
-    """终端颜色"""
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
-
-
-def print_header(text: str):
-    """打印标题"""
-    print(f"\n{Colors.HEADER}{Colors.BOLD}{'=' * 60}{Colors.ENDC}")
-    print(f"{Colors.HEADER}{Colors.BOLD}{text:^60}{Colors.ENDC}")
-    print(f"{Colors.HEADER}{Colors.BOLD}{'=' * 60}{Colors.ENDC}\n")
-
-
-def print_success(text: str):
-    """打印成功信息"""
-    print(f"{Colors.OKGREEN}✓ {text}{Colors.ENDC}")
-
-
-def print_info(text: str):
-    """打印信息"""
-    print(f"{Colors.OKCYAN}ℹ {text}{Colors.ENDC}")
-
-
-def print_warning(text: str):
-    """打印警告"""
-    print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
-
-
-def print_error(text: str):
-    """打印错误"""
-    print(f"{Colors.FAIL}✗ {text}{Colors.ENDC}")
+# Import UI utilities from core
+from pyspring.cli.core.ui import (
+    Colors, print_header, print_success, print_info,
+    print_warning, print_error
+)
 
 
 def get_template_dir() -> Path:
@@ -682,74 +649,96 @@ def init_project(
     print()
 
 
-def main():
-    """命令行入口"""
+def register_subcommand(subparsers):
+    """注册 init 子命令"""
     import argparse
+    parser = subparsers.add_parser(
+        'init',
+        help='Initialize PySpring project configuration',
+        description="""
+Initialize PySpring Project Structure and Configuration Files.
 
-    parser = argparse.ArgumentParser(
-        description="PySpring 框架初始化工具",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-示例:
-  # 在当前目录初始化
+Examples:
+  # Initialize current directory
   pyspring init
-  
-  # 在指定目录初始化
+
+  # Initialize specific directory
   pyspring init /path/to/project
-  
-  # 强制覆盖已存在的文件
+
+  # Force overwrite existing files
   pyspring init --force
   
-  # 只创建最小配置
+  # Create minimal configuration
   pyspring init --minimal
   
-  # 跳过 .env 文件生成
+  # Skip .env file generation
   pyspring init --skip-env
-        """
+        """,
+        formatter_class=argparse.RawDescriptionHelpFormatter
     )
 
     parser.add_argument(
         'target_dir',
         nargs='?',
         default=None,
-        help='目标目录（默认为当前目录）'
+        help='Target directory (default: current directory)'
     )
 
     parser.add_argument(
         '-f', '--force',
         action='store_true',
-        help='强制覆盖已存在的文件'
+        help='Force overwrite existing files'
     )
 
     parser.add_argument(
         '-m', '--minimal',
         action='store_true',
-        help='只创建最小配置（仅 security.yaml）'
+        help='Create minimal configuration only'
     )
 
     parser.add_argument(
         '--skip-env',
         action='store_true',
-        help='跳过 .env 文件生成'
+        help='Skip .env file generation'
     )
 
-    args = parser.parse_args()
+    parser.set_defaults(func=run)
 
+
+def run(args):
+    """运行初始化命令"""
+    # 处理 target_dir 为 None 的情况
+    target_dir = getattr(args, 'target_dir', None)
+    
     try:
         init_project(
-            target_dir=args.target_dir,
+            target_dir=target_dir,
             force=args.force,
             minimal=args.minimal,
             skip_env=args.skip_env
         )
     except KeyboardInterrupt:
-        print_error("\n初始化已取消")
+        print_error("\nUpdate cancelled")
         sys.exit(1)
     except Exception as e:
-        print_error(f"\n初始化失败: {e}")
+        print_error(f"\nInitialization failed: {e}")
         import traceback
         traceback.print_exc()
         sys.exit(1)
+
+
+def main():
+    """Independent entry point (legacy support)"""
+    import argparse
+    parser = argparse.ArgumentParser(description='PySpring Project Initialization Tool')
+
+    parser.add_argument('target_dir', nargs='?', default=None, help='Target directory')
+    parser.add_argument('-f', '--force', action='store_true', help='Force overwrite')
+    parser.add_argument('-m', '--minimal', action='store_true', help='Minimal config')
+    parser.add_argument('--skip-env', action='store_true', help='Skip .env')
+
+    args = parser.parse_args()
+    run(args)
 
 
 if __name__ == "__main__":

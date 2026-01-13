@@ -1,5 +1,6 @@
 import importlib
 import inspect
+import json
 import pkgutil
 import re
 import types as _types
@@ -9,9 +10,11 @@ from typing import Any, get_origin, get_args, get_type_hints, List, Dict
 
 import yaml
 
+from pyspring.aop.core import Aspect
+from pyspring.aop.proxy import create_proxy
 from pyspring.core.interfaces.IService import IService
-from pyspring.core.interfaces.ISingleton import ISingletonService
 from pyspring.ioc.container import DynamicContainer
+from pyspring.ioc.validator import IoCValidator
 from pyspring.log.instance import logger
 
 
@@ -51,6 +54,10 @@ class AppContainerManager:
         self._interface_impl_map: dict[type, type] = {}
         # 已注册的服务名称集合（避免重复注册）
         self._registered_services: set[str] = set()
+        # 服务依赖关系图 (name -> [dep_name])，用于检测循环依赖
+        self._service_dependencies: Dict[str, List[str]] = {}
+        # 已注册的切面
+        self._aspects: List[Any] = []
         # 加载配置（只加载一次）
         self._config = self._load_config()
         self._initialized = True
@@ -203,6 +210,14 @@ class AppContainerManager:
             logger.debug(f"🔍 扫描中: {package_path}")
             self.scan_and_register_services(package_path)
 
+        # 检测循环依赖
+        try:
+            IoCValidator.validate_dependencies(self._service_dependencies)
+        except Exception as e:
+            # 严重错误，直接抛出，阻止容器启动
+            logger.error(f"❌ Circular dependency detected: {e}")
+            raise e
+
         logger.debug("🔧 所有服务注册完成")
         return self.container
 
@@ -224,6 +239,25 @@ class AppContainerManager:
         #
         # return self.container
 
+    CACHE_DIR = Path(".pyspring_cache")
+
+    @staticmethod
+    def get_package_mtime(package_path_list: List[str]) -> float:
+        """获取包路径下最新的修改时间"""
+        max_mtime = 0.0
+        for path_str in package_path_list:
+            path = Path(path_str)
+            if not path.exists(): continue
+            if path.is_file():
+                mtime = path.stat().st_mtime
+                if mtime > max_mtime: max_mtime = mtime
+            else:
+                for p in path.rglob("*.py"):
+                    mtime = p.stat().st_mtime
+                    if mtime > max_mtime:
+                        max_mtime = mtime
+        return max_mtime
+
     def scan_and_register_services(self, base_package: str = "pyspring"):
         """
         扫描并注册服务
@@ -240,28 +274,80 @@ class AppContainerManager:
             # 导入基础包
             package = importlib.import_module(base_package)
 
-            # 如果是单个模块文件而不是包，直接扫描该模块
-            if not hasattr(package, '__path__'):
-                self._scan_module(package)
+            # --- 缓存逻辑 ---
+            cache_enabled = self._config.get('container', {}).get('scan_cache', True)
+            path_list = getattr(package, '__path__', [])
+            if not path_list and getattr(package, '__file__', None):
+                # 处理单文件模块的情况
+                path_list = [package.__file__]
+
+            cache_modules = None
+            current_mtime = 0.0
+
+            if cache_enabled and path_list:
+                try:
+                    current_mtime = self.get_package_mtime(path_list)
+                    cache_file = self.CACHE_DIR / f"{base_package}.json"
+                    if cache_file.exists():
+                        with open(cache_file, 'r') as f:
+                            data = json.load(f)
+                            if abs(data.get('mtime', 0) - current_mtime) < 0.001:
+                                cache_modules = data.get('modules')
+                                logger.debug(f"🚀 Using scan cache for {base_package}")
+                except Exception as e:
+                    logger.warning(f"Cache load failed: {e}")
+
+            # 命中缓存：直接加载指定模块
+            if cache_modules is not None:
+                for modname in cache_modules:
+                    try:
+                        m = importlib.import_module(modname)
+                        self._scan_module(m)
+                    except Exception:
+                        pass
                 return
 
-            # 使用pkgutil递归扫描所有子模块
-            for importer, modname, ispkg in pkgutil.walk_packages(
-                    path=package.__path__,
-                    prefix=package.__name__ + ".",
-                    onerror=lambda x: None
-            ):
+            # --- 未命中缓存：执行完整扫描 ---
+            useful_modules = []
+
+            # 如果是单个模块文件而不是包，直接扫描该模块
+            if not hasattr(package, '__path__'):
+                if self._scan_module(package):
+                    useful_modules.append(package.__name__)
+            else:
+                # 使用pkgutil递归扫描所有子模块
+                for importer, modname, ispkg in pkgutil.walk_packages(
+                        path=package.__path__,
+                        prefix=package.__name__ + ".",
+                        onerror=lambda x: None
+                ):
+                    try:
+                        # 导入模块
+                        module = importlib.import_module(modname)
+                        if self._scan_module(module):
+                            useful_modules.append(modname)
+                    except Exception as e:
+                        logger.error(f"Warning: Could not process module {modname}: {e}")
+
+            # --- 保存缓存 ---
+            if cache_enabled and path_list and useful_modules:
                 try:
-                    # 导入模块
-                    module = importlib.import_module(modname)
-                    self._scan_module(module)
-                except Exception as e:
-                    logger.error(f"Warning: Could not process module {modname}: {e}")
+                    self.CACHE_DIR.mkdir(exist_ok=True)
+                    with open(self.CACHE_DIR / f"{base_package}.json", 'w') as f:
+                        json.dump({'mtime': current_mtime, 'modules': useful_modules}, f)
+                        logger.debug(f"💾 Saved scan cache for {base_package}")
+                except Exception:
+                    pass
+
         except ImportError as e:
             logger.debug(f"Error importing base package {base_package}: {e}")
 
-    def _scan_module(self, module):
-        """扫描单个模块中的类"""
+    def _scan_module(self, module) -> bool:
+        """扫描单个模块中的类
+        Returns:
+            bool: 是否发现了有效的组件（Service/Aspect等）
+        """
+        found_any = False
         try:
             # 查找服务类
             from pyspring.core.interfaces.IService import IService
@@ -269,6 +355,19 @@ class AppContainerManager:
             for name, obj in vars(module).items():
                 # 检查是否为类，且在当前模块定义
                 if isinstance(obj, type) and obj.__module__ == module.__name__:
+                    # --- 检测切面 ---
+                    # 只要继承了 Aspect 或者是被 @aspect 装饰
+                    if (issubclass(obj, Aspect) and obj is not Aspect) or hasattr(obj, "__pyspring_aspect__"):
+                        try:
+                            # 实例化切面
+                            aspect_instance = obj()
+                            self._aspects.append(aspect_instance)
+                            logger.debug(f"📐 Found Aspect: {name}")
+                            found_any = True
+                        except Exception as e:
+                            logger.error(f"Failed to instantiate aspect {name}: {e}")
+                        
+                        
                     is_decorated = hasattr(obj, "__pyspring_component__")
 
                     # 判定逻辑：
@@ -300,8 +399,11 @@ class AppContainerManager:
                                     self._interface_impl_map.setdefault(base, obj)
                         # 根据类的特征决定注册方式
                         self.register_service_by_convention(obj)
+                        found_any = True
         except Exception as e:
             logger.error(f"Error scanning module {module.__name__}: {e}")
+
+        return found_any
 
     @staticmethod
     def unwrap_annotation(ann: Any):
@@ -347,22 +449,23 @@ class AppContainerManager:
 
         # 检查是否已经注册过，避免重复注册
         if service_name in self._registered_services:
-            # logger.debug(f"Service {service_name} already registered, skipping...")
             return
 
         # ✅ 立即标记为已注册，防止递归依赖解析时重复注册
         self._registered_services.add(service_name)
 
         sig = inspect.signature(service_class.__init__)
+
+        # 获取类型提示
         try:
             module_globals = vars(importlib.import_module(service_class.__module__))
             hints = get_type_hints(service_class.__init__, globalns=module_globals, include_extras=True)
-        except Exception as e:
-            # 类型解析失败不是致命错误，我们可以通过参数名来匹配依赖
-            logger.debug(f"Type hints resolution failed for {service_class.__name__}: {e}")
+        except Exception:
             module_globals = {}
             hints = {}
+
         dependencies = {}
+        dep_names = []  # 用于循环依赖检测
 
         for param_name, param in sig.parameters.items():
             if param_name == 'self':
@@ -374,104 +477,85 @@ class AppContainerManager:
                 raw = self.unwrap_annotation(ann)
                 if raw is None and isinstance(param.annotation, str):
                     raw = module_globals.get(param.annotation)
-            type_name = raw.__name__ if hasattr(raw, '__name__') else (str(raw) if raw is not None else str(param.annotation))
-            logger.debug(f"Parameter: {param_name}, Type: {type_name}")
 
-            injected = False
+            # --- 依赖解析逻辑 ---
+            resolved_name = None
+            provider = None
 
-            # 1) 接口/抽象 -> 实现 映射（优先）
-            try:
-                if isinstance(raw, type) and (inspect.isabstract(raw) or 'interfaces' in getattr(raw, '__module__', '')):
-                    impl = self._interface_impl_map.get(raw)
-                    if impl:
-                        impl_name = self.generate_name(impl)
-                        # ✅ 确保实现类已注册（内部有重复检查保护）
-                        if impl_name not in self._registered_services:
-                            self.register_service_by_convention(impl)
-                        # ✅ 获取 provider（延迟解析）
-                        if self.container.has_binding(impl_name):
-                            dependencies[param_name] = self.container.get_provider(impl_name)
-                            injected = True
-            except Exception as e:
-                logger.debug(f"Interface mapping inject failed for {type_name}: {e}")
+            # 1) 接口/抽象 -> 实现
+            if not resolved_name:
+                try:
+                    if isinstance(raw, type) and (inspect.isabstract(raw) or 'interfaces' in getattr(raw, '__module__', '')):
+                        impl = self._interface_impl_map.get(raw)
+                        if impl:
+                            impl_name = self.generate_name(impl)
+                            if impl_name not in self._registered_services:
+                                self.register_service_by_convention(impl)
+                            if self.container.has_binding(impl_name):
+                                resolved_name = impl_name
+                                provider = self.container.get_provider(impl_name)
+                except Exception:
+                    pass
 
-            if injected:
-                continue
+            # 2) 具体 Service 类型
+            if not resolved_name:
+                try:
+                    is_pyspring_component = False
+                    if isinstance(raw, type):
+                        if hasattr(raw, "__pyspring_component__"):
+                            is_pyspring_component = True
+                        elif raw is not IService and issubclass(raw, IService):
+                            is_pyspring_component = True
 
-            # 2) 具体 Service 类型直接注入 (基于类型或装饰器)
-            try:
-                # 判定条件：
-                # 1. 有装饰器标记
-                # 2. 或是 IService 的实现类
-                is_pyspring_component = False
-                if isinstance(raw, type):
-                    # 检查装饰器
-                    if hasattr(raw, "__pyspring_component__"):
-                        is_pyspring_component = True
-                    # 检查是否实现 IService (需排除 Protocol 本身以免误判)
-                    elif raw is not IService and issubclass(raw, IService):
-                        is_pyspring_component = True
+                    if is_pyspring_component and not inspect.isabstract(raw):
+                        raw_name = getattr(raw, "__pyspring_name__", None) or self.generate_name(raw)
+                        if raw_name not in self._registered_services:
+                            self.register_service_by_convention(raw)
+                        if self.container.has_binding(raw_name):
+                            resolved_name = raw_name
+                            provider = self.container.get_provider(raw_name)
+                except Exception:
+                    pass
 
-                if is_pyspring_component and not inspect.isabstract(raw):
-                    raw_name = getattr(raw, "__pyspring_name__", None) or self.generate_name(raw)
-                    # ✅ 确保服务已注册（内部有重复检查保护）
-                    if raw_name not in self._registered_services:
-                        self.register_service_by_convention(raw)
-                    # ✅ 获取 provider（延迟解析）
-                    if self.container.has_binding(raw_name):
-                        dependencies[param_name] = self.container.get_provider(raw_name)
-                        injected = True
-            except Exception as e:
-                logger.debug(f"Direct inject failed for {type_name}: {e}")
+            # 3) 参数名
+            if not resolved_name:
+                try:
+                    if self.container.has_binding(param_name):
+                        resolved_name = param_name
+                        provider = self.container.get_provider(param_name)
+                except Exception:
+                    pass
 
-            if injected:
-                continue
+            if resolved_name and provider:
+                dependencies[param_name] = provider
+                dep_names.append(resolved_name)
+                logger.debug(f"  - Injected dependency '{param_name}': {resolved_name}")
+            else:
+                # Optional parameters logic could go here
+                if param.default == inspect.Parameter.empty:
+                    logger.warning(f"  ⚠️ Missing dependency for '{service_name}': {param_name}")
 
-            # 3) 无注解或解析失败：按参数名从容器解析同名 provider
-            try:
-                # ✅ 从 _bindings 获取 provider
-                if self.container.has_binding(param_name):
-                    dependencies[param_name] = self.container.get_provider(param_name)
-                    injected = True
-            except Exception as e:
-                logger.debug(f"Name-based inject failed for {param_name}: {e}")
+        # 记录依赖关系
+        self._service_dependencies[service_name] = dep_names
 
-            if injected:
-                continue
+        # 绑定服务工厂
+        # 使用闭包捕获 dependencies 和切面
+        def service_factory():
+            # 1. 解析所有依赖
+            resolved_deps = {k: v() for k, v in dependencies.items()}
+            # 2. 创建实例
+            instance = service_class(**resolved_deps)
+            # 3. 创建代理 (AOP)
+            if self._aspects:
+                instance = create_proxy(instance, self._aspects)
+            return instance
 
-            # 4) 尝试按参数名模糊匹配 Service（如 db_manager -> d_b_manager_service）
-            try:
-                # 参数名可能是 db_manager、cache_manager 等
-                # 尝试转换为 service 名称：db_manager -> d_b_manager_service
-                service_name_candidate = param_name + "_service"
-                if service_name_candidate in self._registered_services:
-                    # ✅ 从 _bindings 获取 provider
-                    if self.container.has_binding(service_name_candidate):
-                        dependencies[param_name] = self.container.get_provider(service_name_candidate)
-                        injected = True
-                        logger.debug(f"Fuzzy match inject success: {param_name} -> {service_name_candidate}")
-            except Exception as e:
-                logger.debug(f"Fuzzy match inject failed for {param_name}: {e}")
+        # 判断作用域 (默认为 Singleton)
+        # TODO: 支持 Prototype scope if needed via decorator? 
+        # For now assume Singleton for all Services as per PySpring design usually
+        self.container.bind_factory(service_name, service_factory, cache_result=True)
+        logger.debug(f"✅ Registered service: {service_name}")
 
-        # 单例/工厂注册
-        is_singleton_attr = getattr(service_class, "__pyspring_singleton__", None)
-
-        is_singleton = False
-        if is_singleton_attr is True:
-            is_singleton = True
-        elif is_singleton_attr is False:
-            is_singleton = False
-        elif issubclass(service_class, ISingletonService):
-            is_singleton = True
-
-        if is_singleton:
-            self.container.bind_singleton(service_name, service_class, **dependencies)
-            logger.debug(f"Registered {service_name} as singleton service with dependencies: {list(dependencies.keys())}.")
-        else:
-            self.container.bind_factory(service_name, service_class, **dependencies)
-            logger.debug(f"Registered {service_name} as factory service with dependencies: {list(dependencies.keys())}.")
-
-        # 注意：服务已在方法开头标记为已注册，这里无需重复
 
     def register_service(self, service_class: type):
         """

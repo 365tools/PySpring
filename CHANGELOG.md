@@ -7,6 +7,30 @@ PySpring 的所有重要变更都将记录在此文件中。
 
 ---
 
+## [1.0.1] - 2026-01-13
+
+### 新增 (Features)
+
+* **AOP 切面编程支持**:
+    * 新增 `pyspring.aop` 模块，支持 `@Before`, `@After`, `@Around` 增强。
+    * 基于运行时期动态代理模式，实现业务与横切关注点（日志、事务）解耦。
+    * 支持基于正则表达式的 Pointcut 匹配。
+* **IoC 容器增强**:
+    * **启动性能优化**: 引入 `.pyspring_cache` 文件指纹缓存，智能跳过未变更模块的重复扫描，显著提升启动速度。
+    * **循环依赖检测**: 引入 DFS 算法构建依赖图，在启动阶段自动检测并拦截循环引用（Circular Dependency），避免运行时栈溢出。
+    * **类型安全**: 全面转向 `Protocol` + `@runtime_checkable` 接口约束，移除已废弃的"魔术后缀"（Suffix-based）扫描策略，强化基于类型和 `@Component` 装饰器的注册机制。
+
+### 优化 (Improvements)
+
+* **CLI 架构重构**:
+    * 重构 `pyspring` 命令行工具，采用模块化设计 (`src/pyspring/cli/commands`)。
+    * 移除 `init` 命令中的"上帝对象"，拆分为 `core`, `templates`, `keygen` 独立模块。
+    * 引入统一的 UI 工具库 (`src/pyspring/cli/core/ui.py`)，标准化终端输出风格。
+    * 改为基于 `argparse` Subparsers 的标准架构，提升扩展性。
+* **Service 单例语义明确化**: 明确所有 Service 默认为 Singleton（单例），并通过 `ContextVars` 解决 Web 并发场景下的上下文隔离问题。
+* **文档重构**: 全面更新项目文档，新增 AOP 指南、IoC 深度解析章节。
+* **代码规范**: 移除 `pyspring.system` 旧模块，修正 `src` 与 `tests` 导入路径不一致问题。
+
 ## [1.0.0] - 2025-12-24
 
 ### 新增

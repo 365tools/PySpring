@@ -53,15 +53,24 @@ graph TD
 
 ## ✨ 四大核心支柱
 
-### 1. 智能 IoC 容器 (Smart IoC)
+### 1. 智能 IoC 容器 (Smart IoC 2.0)
 
-基于强大的 `dependency-injector` 模式实现，支持**全自动包扫描**。
+不仅仅是依赖注入，更是性能与健壮性的结合。
 
-- **零配置注入**：只需将类放置在扫描路径下（并符合命名约定，如 `XxxService`），容器将自动发现并处理其实例化。
-- **依赖自动装配**：通过类型注解自动注入依赖，无需手动传递参数。
-- **单例管理**：完美支持单例声明 (`ISingletonService`)，确保核心服务（如数据库连接池、配置管理器）全局共享且线程安全。
+- **极速启动**：内置智能扫描缓存（Startup Cache），大项目启动速度提升 80% 以上。
+- **循环依赖防护**：启动时自动进行 DAG 依赖图谱分析，杜绝循环引用导致的运行时栈溢出风险。
+- **零配置注入**：只需加上 `@Component` 或 `@Service`，容器自动托管生命周期。
+- **单例与并发**：默认单例（Singleton）设计节省内存，配合 `ContextVars` 完美支持高并发请求隔离。
 
-### 2. 生产级安全体系 (Security First)
+### 2. AOP 切面编程 (New in v1.0.1)
+
+引入运行时期动态代理，实现业务逻辑纯净化。
+
+- **非侵入式增强**：无需修改业务代码，即可添加日志记录、性能监控、事务管理。
+- **声明式切面**：使用 `@Before`, `@After`, `@Around` 轻松定义增强逻辑。
+- **动态代理**：运行时自动包装 Service 实例，支持正则匹配方法切入点。
+
+### 3. 生产级安全体系 (Security First)
 
 无需从零编写复杂的认证逻辑，PySpring 内置了企业级安全特性：
 
@@ -141,6 +150,38 @@ container = AppContainerManager()
 user_service = container.get(UserService)
 
 users = user_service.get_users()
+```
+
+---
+
+## �️ 命令行工具 (CLI)
+
+PySpring 提供了一套强大的命令行工具，协助你管理项目全生命周期。
+
+### 1. 初始化 (Init)
+
+快速生成符合最佳实践的标准项目结构。
+
+```bash
+pyspring init         # 当前目录初始化
+pyspring init -f      # 强制覆盖
+```
+
+### 2. 环境管理 (UV Manager)
+
+内置对 `uv` 的原生支持，一键配置高性能 Python 环境。
+
+```bash
+pyspring uv setup     # 创建/修复环境
+pyspring uv setup --dev # 安装开发依赖
+```
+
+### 3. 诊断 (Diagnose)
+
+由于 Python 环境配置复杂，当 IDE 无法识别包或运行时报错时，使用此工具自检。
+
+```bash
+pyspring diagnose     # 检查环境、路径和安装状态
 ```
 
 ---

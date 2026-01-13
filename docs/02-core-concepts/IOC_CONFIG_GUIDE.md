@@ -20,27 +20,27 @@ PySpring 的 IoC 容器现在支持通过 YAML 配置文件管理服务扫描路
 # 服务扫描配置
 scan:
   # 需要扫描的包路径列表
+  # 注意：框架会自动包含 'pyspring.*' 核心包，此处只需添加你自己的业务包
   packages:
-    - src.pyspring.repositories
-    - src.pyspring.security
-    - src.pyspring.system
-    - src.pyspring.log
+    - app.services        # 用户服务
+    - app.repositories    # 用户数据层
+    - app.aspects         # 用户切面
   
   # 是否启用递归扫描（扫描子包）
   recursive: true
   
-  # 服务类名后缀（用于识别服务类）
-  service_suffix: "Service"
-
-# 容器配置
+# 容器行为配置
 container:
-  # 是否启用懒加载（首次使用时才实例化）
+  # 启用启动缓存 (v1.0.1+) - 显著提升二次启动速度
+  scan_cache: true
+  
+  # 启用懒加载 - 服务仅在首次注入或获取时实例化
   lazy_loading: true
   
-  # 是否启用接口自动映射
+  # 自动接口映射 - IService -> ServiceImpl
   auto_interface_mapping: true
   
-  # 是否记录详细日志
+  # 调试模式 - 打印更多 DI 细节
   debug: false
 ```
 
@@ -122,10 +122,9 @@ print(f"将扫描以下包: {packages}")
 ```yaml
 scan:
   packages:
-    - src.pyspring.repositories
-    - src.pyspring.security
-    - myapp.services  # 添加您的自定义包
+    - myapp.services      # 添加您的自定义包
     - myapp.repositories
+    # 注意：pyspring.* 核心包会自动被框架注册，无需在此列出
 ```
 
 ### 开发环境配置
@@ -137,8 +136,7 @@ scan:
 ```yaml
 scan:
   packages:
-    - src.pyspring.repositories
-    - src.pyspring.security
+    - myapp.services
 
 container:
   debug: true  # 开启调试日志

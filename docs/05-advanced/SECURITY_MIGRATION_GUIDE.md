@@ -71,8 +71,8 @@ app.add_middleware(
 **新版**：需要先初始化认证提供者链
 
 ```python
-from src.pyspring.security.auth.factory import AuthenticationInitializer
-from src.pyspring.security.auth.middleware.auth import AuthenticationMiddleware
+from pyspring.security.auth.factory import AuthenticationInitializer
+from pyspring.security.auth.middleware.auth import AuthenticationMiddleware
 
 # 1. 获取 TokenManagerService（通过 IoC 容器）
 token_manager = app_container.service(TokenManagerService)

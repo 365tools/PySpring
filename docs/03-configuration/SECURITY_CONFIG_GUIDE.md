@@ -116,8 +116,8 @@ set JWT_SECRET_KEY=your-super-secret-key-change-in-production
 在应用启动时初始化：
 
 ```python
-from src.pyspring.security.auth.factory import AuthenticationInitializer
-from src.pyspring.security.auth.impl.token import TokenManagerService
+from pyspring.security.auth.factory import AuthenticationInitializer
+from pyspring.security.auth.impl.token import TokenManagerService
 
 # 获取 TokenManagerService 实例（通过 IoC 容器）
 token_manager = app_container.service(TokenManagerService)
@@ -132,7 +132,7 @@ AuthenticationInitializer.initialize(token_manager)
 
 ```python
 from fastapi import FastAPI
-from src.pyspring.security.auth.middleware.auth import AuthenticationMiddleware
+from pyspring.security.auth.middleware.auth import AuthenticationMiddleware
 
 app = FastAPI()
 
@@ -505,7 +505,7 @@ role_hierarchy:
 ```python
 from typing import Optional, Any
 from fastapi import Request
-from src.pyspring.security.auth.providers.base import BaseAuthProvider, AuthenticationResult
+from pyspring.security.auth.providers.base import BaseAuthProvider, AuthenticationResult
 
 class CustomAuthProvider(BaseAuthProvider):
     """自定义认证提供者"""
@@ -685,7 +685,7 @@ role_mappings:
 启用详细的认证日志：
 
 ```python
-from src.pyspring.log.loguru.logger import logger
+from pyspring.log.loguru.logger import logger
 
 # 在认证失败时记录
 logger.warning(f"认证失败: {path} - {error_message}")
@@ -795,8 +795,8 @@ cat config/security.yaml | grep -A 10 role_mappings
 
 ```python
 # 测试白名单匹配
-from src.pyspring.security.auth.providers.base import PathMatcher
-from src.pyspring.security.auth.config_manager import security_config
+from pyspring.security.auth.providers.base import PathMatcher
+from pyspring.security.auth.config_manager import security_config
 
 whitelist = security_config.get_whitelist_config()
 path = "/api/auth/login"
@@ -849,7 +849,7 @@ auth_chain_manager.get_chain().reload_whitelist()
 
 ```python
 from src.pyspring.security.auth.chain import auth_chain_manager
-from src.pyspring.security.auth.providers.jwt_provider import JWTAuthProvider
+from pyspring.security.auth.providers.jwt_provider import JWTAuthProvider
 
 # 动态添加提供者
 custom_provider = JWTAuthProvider("custom_jwt", {...}, token_manager)

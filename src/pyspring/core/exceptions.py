@@ -80,3 +80,15 @@ class ValidationAppError(AppError):
 
     def __init__(self, message: str = "请求数据验证失败", *, details: Optional[Dict[str, Any]] = None):
         super().__init__(message, code=422, details=details)
+
+
+class CircularDependencyError(AppError):
+    """循环依赖异常"""
+
+    def __init__(self, message: str, cycle: list = None):
+        super().__init__(
+            message,
+            code=500,
+            details={"cycle": cycle} if cycle else None,
+            category="IoC"
+        )

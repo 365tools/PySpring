@@ -14,6 +14,11 @@
 
 ### 常见问题
 
+- **[CIRCULAR_DEPENDENCY.md](CIRCULAR_DEPENDENCY.md)** - 解决循环依赖问题 (v1.0.1)
+    - `CircularDependencyError` 的含义
+    - 重构代码解耦环状依赖
+    - 延迟获取的临时方案
+
 - **[FIX_UNRESOLVED_REFERENCE.md](FIX_UNRESOLVED_REFERENCE.md)** - 解决 IDE "Unresolved reference" 问题
     - PyCharm 配置
     - VS Code 配置
