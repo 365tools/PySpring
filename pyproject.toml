@@ -54,7 +54,7 @@ dev = [
 "Bug Tracker" = "https://github.com/365tools/PySpring/issues"
 
 [project.scripts]
-pyspring = "pyspring.cli:main"
+pyspring = "pyspring.cli.main:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

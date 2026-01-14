@@ -8,14 +8,7 @@ INIT_TEMPLATE = '''"""
 """
 from utils.auto_import import auto_import_package
 
-# 执行自动导入
-_exported_items = auto_import_package(__name__)
-
-# 更新全局命名空间
-globals().update(_exported_items)
-
-# 生成 __all__
-__all__ = sorted(list(_exported_items.keys()))
+__all__ = auto_import_package(__name__, globals())
 '''
 
 
@@ -24,10 +17,13 @@ def update_all_init_files():
     project_root = Path(__file__).parent.parent
 
     # 需要手动维护的 __init__.py（不自动更新）
+    # 这里维护白名单，防止 update_init_files.py 脚本覆盖了手动修改的特殊逻辑
     skip_paths = [
-        "pyspring/__init__.py",  # 根模块，手动导出
-        "pyspring/cli/__init__.py",  # CLI 入口，手动导出
-        "pyspring/cli/tools/__init__.py",  # CLI 工具模块
+        "pyspring/__init__.py",  # 根模块：手动控制导出，防止 import pyspring 时触发全量加载（如日志、安全模块）
+        "pyspring/cli/__init__.py",  # CLI 入口：防止 CLI 启动时自动导入所有子命令，保持启动轻量
+        "pyspring/cli/tools/__init__.py",  # CLI 工具模块：特殊用途
+        "pyspring/core/__init__.py",  # Core 模块：包含大量基础组件，避免 import pyspring.core 时触发如日志初始化等副作用
+        "pyspring/log/__init__.py",  # Log 模块：防止 import pyspring.log 时立即配置日志，应按需加载
     ]
 
     # 跳过的目录
