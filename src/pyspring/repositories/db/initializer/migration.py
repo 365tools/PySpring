@@ -9,7 +9,7 @@ from typing import Optional
 
 from sqlalchemy import text
 
-from pyspring.core.interfaces.initializer.startup import IStartupInitializer
+from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.manager import DBManagerService

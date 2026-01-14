@@ -29,7 +29,7 @@ def create_app_with_auth():
 
     @app.get("/api/profile")
     async def get_profile():
-        from pyspring.security.authentication.context import AuthContext
+        from pyspring.security.authentication.core.context import AuthContext
         user = AuthContext.get_current_user()
         return {"email": user.user.email if user else None}
 
@@ -163,7 +163,7 @@ app.add_middleware(
 
 @app.get("/api/profile")
 async def get_profile():
-    from pyspring.security.authentication.context import AuthContext
+    from pyspring.security.authentication.core.context import AuthContext
     user = AuthContext.get_current_user()
     return {"email": user.user.email}
 

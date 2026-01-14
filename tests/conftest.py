@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 import pytest
 
 from src.pyspring.log.providers.loguru.config.manager import LoggingConfigManager
-from src.pyspring.log.providers.loguru.impl.service import LoguruService
+from src.pyspring.log.providers.loguru.services.service import LoguruService
 from src.pyspring.ioc.manager import AppContainerManager
 
 

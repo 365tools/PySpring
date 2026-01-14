@@ -19,8 +19,8 @@ sys.path.insert(0, str(project_root / "src"))
 
 from fastapi import Request
 from pyspring.security.authentication.providers.base import BaseAuthenticationProvider, AuthenticationResult
-from pyspring.security.authentication.factory import AuthProviderFactory
-from pyspring.security.authentication.chain import AuthenticationChain
+from pyspring.security.authentication.core.factory import AuthProviderFactory
+from pyspring.security.authentication.core.chain import AuthenticationChain
 
 
 # =============================================================================

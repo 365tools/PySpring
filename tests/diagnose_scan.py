@@ -9,8 +9,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from pyspring.repositories.db.initializer.connection import DBConnectionInitializer
-from pyspring.core.interfaces.initializer.startup import IStartupInitializer
-from pyspring.core.interfaces.IService import IService
+from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
+from pyspring.core.abstracts.interfaces.IService import IService
 
 print(f"Class: {DBConnectionInitializer}")
 print(f"Bases: {DBConnectionInitializer.__bases__}")

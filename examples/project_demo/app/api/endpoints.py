@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.web.response import Response, HttpResponse
+from pyspring.web.core.response import Response, HttpResponse
 
 # 使用绝对路径导入，确保 IoC 能够正确解析（在实际项目中通常不需要这么长，因为有 sys.path 设置）
 from examples.project_demo.app.services.item_service import ItemService

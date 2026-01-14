@@ -3,7 +3,7 @@
 
 在应用启动时初始化数据库连接（PostgreSQL/SQLite）
 """
-from pyspring.core.interfaces.initializer.startup import IStartupInitializer
+from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.manager import DBManagerService
@@ -87,7 +87,7 @@ class DBConnectionInitializer(IStartupInitializer):
             bool: 是否成功
         """
         try:
-            from pyspring.repositories.db.providers.postgres.impl.service import PostgresService
+            from pyspring.repositories.db.providers.postgres.services.service import PostgresService
             postgres = PostgresService()
             # 测试 PostgreSQL 连接
             if await postgres.ping():
@@ -110,7 +110,7 @@ class DBConnectionInitializer(IStartupInitializer):
             bool: 是否成功（SQLite 总是成功）
         """
         try:
-            from pyspring.repositories.db.providers.sqlite.impl.service import SqliteService
+            from pyspring.repositories.db.providers.sqlite.services.service import SqliteService
             sqlite = SqliteService()
             # 测试 SQLite 连接
             if await sqlite.ping():

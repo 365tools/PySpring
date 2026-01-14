@@ -4,7 +4,7 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from pyspring.log.instance import logger
-from pyspring.web.response import Response, HttpResponse
+from pyspring.web.core.response import Response, HttpResponse
 
 
 class RoleCheckMiddleware:

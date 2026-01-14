@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from pyspring.core.interfaces.ISingleton import ISingletonService
 from typing import Any
+
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 
 
 class ICacheService(ISingletonService, ABC):

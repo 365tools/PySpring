@@ -13,8 +13,8 @@ PySpring 综合测试套件
 """
 import pytest
 
-from pyspring.core.interfaces.handler.shutdown import IShutdownHandler
-from pyspring.core.interfaces.initializer.startup import IStartupInitializer
+from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
+from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 

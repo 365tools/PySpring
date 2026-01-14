@@ -114,7 +114,7 @@ async def health():
 @app.get("/api/profile")
 async def get_profile():
     """获取当前用户信息（需要认证）"""
-    from pyspring.security.authentication.context import AuthContext
+    from pyspring.security.authentication.core.context import AuthContext
 
     user = AuthContext.get_current_user()
 
@@ -139,7 +139,7 @@ async def login():
 @app.get("/api/protected")
 async def protected():
     """受保护的路由"""
-    from pyspring.security.authentication.context import AuthContext
+    from pyspring.security.authentication.core.context import AuthContext
 
     user = AuthContext.get_current_user()
     return {

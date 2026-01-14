@@ -5,8 +5,8 @@
 """
 from fastapi import APIRouter, Depends
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.security.authentication.context import AuthContext
-from pyspring.security.authentication.impl.user.manager import UserManagerService
+from pyspring.security.authentication.core.context import AuthContext
+from pyspring.security.authentication.services.user.manager import UserManagerService
 
 router = APIRouter()
 

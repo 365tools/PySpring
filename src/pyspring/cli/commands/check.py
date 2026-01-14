@@ -2,6 +2,7 @@
 PySpring Check Command
 """
 from .check_ops.encoding import run_check_encoding
+from .check_ops.env import run as run_env_check
 from .check_ops.imports import run_check_import
 
 
@@ -20,6 +21,14 @@ def register_subcommand(subparsers):
         metavar='<check_command>'
     )
 
+    # Env check subcommand
+    env_parser = check_subparsers.add_parser(
+        'env',
+        help='Check development environment',
+        description='Diagnose Python environment, installation, and path issues'
+    )
+    env_parser.set_defaults(func=run_env_check)
+
     # Import check subcommand
     import_parser = check_subparsers.add_parser(
         'import',
@@ -31,6 +40,11 @@ def register_subcommand(subparsers):
         nargs='?',
         default='src',
         help='Target directory to scan (default: src)'
+    )
+    import_parser.add_argument(
+        '--static',
+        action='store_true',
+        help='Use static analysis (AST) instead of importing modules. Can detect imports inside functions.'
     )
     import_parser.set_defaults(func=run_check_import)
 

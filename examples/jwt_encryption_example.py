@@ -5,7 +5,7 @@ JWT 加密功能使用示例
 """
 from cryptography.fernet import Fernet
 # from pyspring.ioc.container import ServiceContainer  <-- REMOVED (Not used in this file anyway)
-from pyspring.security.authentication.encryption import JWTEncryption, JWTEncryptionManager
+from pyspring.security.authentication.crypto.encryption import JWTEncryption, JWTEncryptionManager
 
 
 def example_1_basic_encryption():

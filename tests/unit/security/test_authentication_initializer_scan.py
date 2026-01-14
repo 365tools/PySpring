@@ -1,10 +1,10 @@
 """
 Test AuthenticationInitializer scanning in IoC container.
 """
-from pyspring.core.interfaces.ISingleton import ISingletonService
-from pyspring.core.interfaces.initializer.startup import IStartupInitializer
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.security.authentication.initializer import AuthenticationInitializer
+from pyspring.security.authentication.core.initializer import AuthenticationInitializer
 
 
 def test_scan_initializer_inheritance():

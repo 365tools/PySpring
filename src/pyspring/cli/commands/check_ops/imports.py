@@ -7,6 +7,7 @@ import sys
 from typing import Generator
 
 from pyspring.cli.core.ui import print_section, print_success, print_error
+from .static_import import run_ast_check
 from .utils import suppress_specific_logs
 
 
@@ -57,10 +58,16 @@ def find_modules_in_dir(scan_dir: str, root_dir: str) -> Generator[str, None, No
 def run_check_import(args):
     """Run import check logic"""
     target_arg = getattr(args, 'target', 'src')
+    static_mode = getattr(args, 'static', False)
+
     if target_arg is None:
         target_arg = 'src'
 
     target_path = os.path.abspath(target_arg)
+    if static_mode:
+        run_ast_check(target_path)
+        return
+
     project_root = os.getcwd()
 
     if not os.path.exists(target_path):

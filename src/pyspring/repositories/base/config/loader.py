@@ -2,15 +2,15 @@
 数据仓储配置管理器
 从 YAML 文件加载缓存和数据库配置
 """
-import sys
-import yaml
 from typing import Dict, Any, Optional
 
-from pyspring.core.interfaces.ISingleton import ISingletonService
+import yaml
+
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
-from pyspring.utils.config_finder import find_config_file
 from pyspring.repositories.cache.config import CacheConfig
 from pyspring.repositories.db.config import DatabaseConfig
+from pyspring.utils.config_finder import find_config_file
 
 
 class RepositoriesConfigManager(ISingletonService):

@@ -3,7 +3,7 @@
 
 在应用关闭时关闭数据库连接
 """
-from pyspring.core.interfaces.handler.shutdown import IShutdownHandler
+from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 

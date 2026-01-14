@@ -7,7 +7,7 @@ import asyncio
 
 import pytest
 
-from src.pyspring.core.interfaces.handler.shutdown import IShutdownHandler
+from src.pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from src.pyspring.ioc.manager import AppContainerManager
 from src.pyspring.log.instance import logger
 

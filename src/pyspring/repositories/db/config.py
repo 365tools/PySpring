@@ -9,7 +9,7 @@ from typing import Optional
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
-from pyspring.core.config.base import ConfigSection
+from pyspring.core.configuration.base import ConfigSection
 
 
 class DatabasePoolConfig(ConfigSection):

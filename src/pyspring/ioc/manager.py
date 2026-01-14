@@ -1,8 +1,9 @@
 import importlib
+import inspect
 import re
 from typing import Any, List, Dict
 
-from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.ioc.core.config import IoCConfigLoader
 from pyspring.ioc.core.container import DynamicContainer
 from pyspring.ioc.core.lifecycle import LifecycleManager

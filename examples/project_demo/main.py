@@ -25,10 +25,10 @@ sys.path.insert(0, str(PROJECT_ROOT / "examples"))
 
 # 导入 PySpring 核心组件
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.core.config.registry import ConfigRegistry
-from pyspring.web.response import Response
-from pyspring.web.exception_handler import GlobalExceptionHandler
-from pyspring.core.exceptions import AppError
+from pyspring.core.configuration.registry import ConfigRegistry
+from pyspring.web.core.response import Response
+from pyspring.web.handlers.exception import GlobalExceptionHandler
+from pyspring.core.abstracts.exceptions import AppError
 
 # 导入应用路由(稍后注册)
 from examples.project_demo.app.api.endpoints import router as item_router

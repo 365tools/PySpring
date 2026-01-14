@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
-from pyspring.core.interfaces.ISingleton import ISingletonService
 from typing import Any, Optional, List, Dict
+
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 
 
 class IDBService(ISingletonService, ABC):

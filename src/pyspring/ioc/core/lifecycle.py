@@ -1,5 +1,5 @@
-from pyspring.core.interfaces.handler.shutdown import IShutdownHandler, ShutdownHandlerManager
-from pyspring.core.interfaces.initializer.startup import IStartupInitializer, StartupInitializerManager
+from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler, ShutdownHandlerManager
+from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer, StartupInitializerManager
 from pyspring.log.instance import logger
 
 

@@ -62,7 +62,7 @@ database:
 ## 使用示例
 
 ```python
-from pyspring.core.interfaces.IStartupInitializer import StartupInitializerManager
+from pyspring.core.abstracts.interfaces.IStartupInitializer import StartupInitializerManager
 from pyspring.repositories.db.initializer import DatabaseInitializer
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.repositories.common.config_loader import RepositoriesConfigManager

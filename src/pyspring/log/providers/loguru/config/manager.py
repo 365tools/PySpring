@@ -7,7 +7,7 @@ from typing import Dict, Any, Optional
 
 import yaml
 
-from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.utils.config_finder import find_config_file
 
 

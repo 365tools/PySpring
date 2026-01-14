@@ -3,7 +3,7 @@ IoC 验证器，用于检测循环依赖等问题
 """
 from typing import Dict, List
 
-from pyspring.core.exceptions import CircularDependencyError
+from pyspring.core.abstracts.exceptions import CircularDependencyError
 from pyspring.log.instance import logger
 
 

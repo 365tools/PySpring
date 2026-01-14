@@ -1,6 +1,6 @@
 from typing import List, Dict
 
-from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
 
 

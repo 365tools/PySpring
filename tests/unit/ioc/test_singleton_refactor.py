@@ -19,16 +19,16 @@ def test_imports():
         # 使用相对于 pyspring 的路径
         sys.path.insert(0, str(project_root / "src"))
 
-        from pyspring.core.interfaces.ISingleton import ISingletonService
+        from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
         print("  ✓ ISingletonService 导入成功")
 
-        from pyspring.security.base.config.loader import SecurityConfigManager
+        from pyspring.security.core.config.loader import SecurityConfigManager
         print("  ✓ SecurityConfigManager 导入成功")
 
-        from pyspring.security.authentication.chain import AuthenticationChain
+        from pyspring.security.authentication.core.chain import AuthenticationChain
         print("  ✓ AuthenticationChain 导入成功")
 
-        from pyspring.security.authentication.encryption import JWTEncryptionManager
+        from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
         print("  ✓ JWTEncryptionManager 导入成功")
 
         from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
@@ -37,13 +37,13 @@ def test_imports():
         from pyspring.repositories.base.config.loader import RepositoriesConfigManager
         print("  ✓ RepositoriesConfigManager 导入成功")
 
-        from pyspring.core.config.manager import BaseConfigManager
+        from pyspring.core.configuration.manager import BaseConfigManager
         print("  ✓ BaseConfigManager 导入成功")
 
-        from pyspring.core.config.registry import ConfigRegistry
+        from pyspring.core.configuration.registry import ConfigRegistry
         print("  ✓ ConfigRegistry 导入成功")
 
-        from pyspring.core.env import EnvConfigLoader
+        from pyspring.core.environment.loader import EnvConfigLoader
         print("  ✓ EnvConfigLoader 导入成功")
 
         from pyspring.ioc.manager import AppContainerManager
@@ -62,14 +62,14 @@ def test_inheritance():
     print("\n🔍 测试 2: 验证继承关系...")
 
     try:
-        from pyspring.core.interfaces.ISingleton import ISingletonService
-        from pyspring.security.base.config.loader import SecurityConfigManager
-        from pyspring.security.authentication.chain import AuthenticationChain
-        from pyspring.security.authentication.encryption import JWTEncryptionManager
+        from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+        from pyspring.security.core.config.loader import SecurityConfigManager
+        from pyspring.security.authentication.core.chain import AuthenticationChain
+        from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
         from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
         from pyspring.repositories.base.config.loader import RepositoriesConfigManager
-        from pyspring.core.config.registry import ConfigRegistry
-        from pyspring.core.env import EnvConfigLoader
+        from pyspring.core.configuration.registry import ConfigRegistry
+        from pyspring.core.environment.loader import EnvConfigLoader
         from pyspring.ioc.manager import AppContainerManager
 
         classes_to_test = [
@@ -104,9 +104,9 @@ def test_no_custom_singleton():
     print("\n🔍 测试 3: 验证移除自定义单例逻辑...")
 
     try:
-        from src.pyspring.security.base.config.loader import SecurityConfigManager
-        from src.pyspring.security.authentication.chain import AuthenticationChain
-        from src.pyspring.security.authentication.encryption import JWTEncryptionManager
+        from src.pyspring.security.core.config.loader import SecurityConfigManager
+        from src.pyspring.security.authentication.core.chain import AuthenticationChain
+        from src.pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
 
         classes_to_test = [
             ("SecurityConfigManager", SecurityConfigManager),

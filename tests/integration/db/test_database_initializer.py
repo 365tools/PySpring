@@ -10,10 +10,10 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from pyspring.core.interfaces.initializer.startup import StartupInitializerManager
+from pyspring.core.abstracts.interfaces.initializer.startup import StartupInitializerManager
 from pyspring.log.instance import logger
 from pyspring.repositories.db.initializer.migration import MigrationInitializer
-from pyspring.repositories.db.providers.sqlite.impl.service import SqliteService
+from pyspring.repositories.db.providers.sqlite.services.service import SqliteService
 
 
 @pytest.mark.asyncio

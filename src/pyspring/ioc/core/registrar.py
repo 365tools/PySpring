@@ -7,7 +7,7 @@ from typing import Any, get_origin, get_args, get_type_hints, List, Dict, Set
 
 from pyspring.aop.core import Aspect
 from pyspring.aop.proxy import create_proxy
-from pyspring.core.interfaces.IService import IService
+from pyspring.core.abstracts.interfaces.IService import IService
 from pyspring.log.instance import logger
 
 

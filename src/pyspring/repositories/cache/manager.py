@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.service import ICacheService
 

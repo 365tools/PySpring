@@ -11,10 +11,10 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from pyspring.core.exceptions import AppError
+from pyspring.core.abstracts.exceptions import AppError
 from pyspring.log.instance import logger
 from pyspring.log.providers.loguru.utils.trace_context import set_trace_id
-from pyspring.web.exception_handler import GlobalExceptionHandler
+from pyspring.web.handlers.exception import GlobalExceptionHandler
 
 REQUEST_ID_CTX: ContextVar[str | None] = ContextVar("request_id", default=None)
 
