@@ -22,8 +22,6 @@ def update_all_init_files():
         "pyspring/__init__.py",  # 根模块：手动控制导出，防止 import pyspring 时触发全量加载（如日志、安全模块）
         "pyspring/cli/__init__.py",  # CLI 入口：防止 CLI 启动时自动导入所有子命令，保持启动轻量
         "pyspring/cli/tools/__init__.py",  # CLI 工具模块：特殊用途
-        "pyspring/core/__init__.py",  # Core 模块：包含大量基础组件，避免 import pyspring.core 时触发如日志初始化等副作用
-        "pyspring/log/__init__.py",  # Log 模块：防止 import pyspring.log 时立即配置日志，应按需加载
     ]
 
     # 跳过的目录
