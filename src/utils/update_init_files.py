@@ -21,7 +21,6 @@ def update_all_init_files():
     skip_paths = [
         "pyspring/__init__.py",  # 根模块：手动控制导出，防止 import pyspring 时触发全量加载（如日志、安全模块）
         "pyspring/cli/__init__.py",  # CLI 入口：防止 CLI 启动时自动导入所有子命令，保持启动轻量
-        "pyspring/cli/tools/__init__.py",  # CLI 工具模块：特殊用途
     ]
 
     # 跳过的目录

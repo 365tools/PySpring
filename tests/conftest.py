@@ -7,8 +7,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 
 import pytest
 
-from src.pyspring.log.loguru.config.manager import LoggingConfigManager
-from src.pyspring.log.loguru.impl.service import LoguruService
+from src.pyspring.log.providers.loguru.config.manager import LoggingConfigManager
+from src.pyspring.log.providers.loguru.impl.service import LoguruService
+from src.pyspring.ioc.manager import AppContainerManager
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -60,3 +61,15 @@ def disable_loguru_enqueue():
     finally:
         # 还原 MonkeyPatch
         LoggingConfigManager.get = original_get
+
+
+@pytest.fixture(autouse=True)
+def cleanup_ioc_container():
+    """
+    每个测试结束后清理 IoC 容器单例，防止跨测试污染
+    """
+    yield
+
+    # 强制重置单例，确保每个测试使用新的容器实例
+    # 这避免了跨测试的 EventLoop 绑定问题
+    AppContainerManager._instance = None

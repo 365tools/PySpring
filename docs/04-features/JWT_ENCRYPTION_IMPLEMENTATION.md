@@ -332,6 +332,5 @@ export JWT_ENCRYPTION_KEY="$(python tools/generate_encryption_key.py)"
 
 ---
 
-**实现日期**: 2024-12-23  
 **版本**: PySpring 0.1.0  
 **状态**: ✅ 完成并测试通过

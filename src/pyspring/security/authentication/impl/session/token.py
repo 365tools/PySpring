@@ -1,15 +1,17 @@
 import json
 from datetime import datetime, timedelta, UTC
+from typing import Optional, Dict, Any
+
 from jose import JWTError, jwt
+from sqlalchemy import select, and_
+
 from pyspring.core.interfaces.ISingleton import ISingletonService
+from pyspring.core.service import SystemService
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authorization.rabc.orm.token_tables import TokenBlacklistTable, RefreshTokenTable
 from pyspring.security.authorization.rabc.schema.constant import RevokeTokenReason
-from pyspring.core.service import SystemService
-from sqlalchemy import select, and_
-from typing import Optional, Dict, Any
 
 
 class TokenManagerService(ISingletonService):
@@ -578,8 +580,11 @@ class TokenManagerService(ISingletonService):
                 # 。Redis 中删除（如果存在
                 try:
                     cache_key = f"token:refresh:{token_record.token}"
-                    deleted = await self.cache.ins.delete(cache_key)
-                    logger.debug(f"🔍 Redis删除结果: {deleted}")
+                    # Use service() to ensure initialization, or access provider directly if confident
+                    # Using provider directly to match previous behavior
+                    if self.cache.provider:
+                        deleted = await self.cache.provider.delete(cache_key)
+                        logger.debug(f"🔍 Redis删除结果: {deleted}")
                 except Exception as e:
                     logger.warning(f"⚠️ 删除Redis缓存失败: {e}")
 

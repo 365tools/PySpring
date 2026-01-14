@@ -5,10 +5,11 @@
 """
 from abc import ABC, abstractmethod
 
+from pyspring.core.interfaces.IService import IService
 from pyspring.log.instance import logger
 
 
-class IStartupInitializer(ABC):
+class IStartupInitializer(IService, ABC):
     """
     启动初始化器基类
     

@@ -17,11 +17,11 @@ class CacheManagerService(ISingletonService):
     def __init__(self):
         super().__init__()
         # 默认为 memory，由 ConnectionInitializer 设置实际使用的服务
-        self.ins: Optional[ICacheService] = None
+        self.provider: Optional[ICacheService] = None
 
     def set_provider(self, provider: ICacheService):
         """设置实际使用的缓存服务提供者"""
-        self.ins = provider
+        self.provider = provider
         logger.debug(f"✅ CacheManager: Provider set to {provider.__class__.__name__}")
 
     async def service(self) -> ICacheService:
@@ -33,13 +33,13 @@ class CacheManagerService(ISingletonService):
         Returns:
             缓存服务实例
         """
-        if self.ins is None:
+        if self.provider is None:
             raise RuntimeError(
                 "缓存服务未初始化！请在应用启动时调用 ConnectionInitializer.initialize()"
             )
 
-        # logger.debug(f"✅ cache({self.ins}) instance ready.")
-        return self.ins
+        # logger.debug(f"✅ cache({self.provider}) instance ready.")
+        return self.provider
 
     @staticmethod
     def key(*args, **kwargs) -> str:
@@ -52,20 +52,20 @@ class CacheManagerService(ISingletonService):
 
     async def close(self) -> None:
         """关闭所有缓存连接，释放资源"""
-        if self.ins:
+        if self.provider:
             # 尝试关闭服务
-            if hasattr(self.ins, 'close'):
+            if hasattr(self.provider, 'close'):
                 try:
-                    await self.ins.close()
-                    logger.debug(f"🔌 CacheManager: {self.ins.__class__.__name__} 连接已关闭")
+                    await self.provider.close()
+                    logger.debug(f"🔌 CacheManager: {self.provider.__class__.__name__} 连接已关闭")
                 except Exception as e:
-                    logger.error(f"🚨 关闭 {self.ins.__class__.__name__} 失败: {e}")
-            elif hasattr(self.ins, 'clear'):
+                    logger.error(f"🚨 关闭 {self.provider.__class__.__name__} 失败: {e}")
+            elif hasattr(self.provider, 'clear'):
                 try:
-                    await self.ins.clear()
-                    logger.debug(f"🔌 CacheManager: {self.ins.__class__.__name__} 已清空")
+                    await self.provider.clear()
+                    logger.debug(f"🔌 CacheManager: {self.provider.__class__.__name__} 已清空")
                 except Exception as e:
-                    logger.error(f"🚨 清理 {self.ins.__class__.__name__} 失败: {e}")
+                    logger.error(f"🚨 清理 {self.provider.__class__.__name__} 失败: {e}")
 
         # 重置实例
-        self.ins = None
+        self.provider = None

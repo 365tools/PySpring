@@ -1,4 +1,4 @@
-﻿"""
+"""
 PySpring CLI Package
 """
 # from utils.auto_import import auto_import_package

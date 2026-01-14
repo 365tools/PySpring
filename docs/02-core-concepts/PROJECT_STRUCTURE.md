@@ -337,5 +337,4 @@ pyspring init [options] [target_dir]
 
 ---
 
-**最后更新**: 2025-12-23  
 **适用版本**: PySpring 1.0+

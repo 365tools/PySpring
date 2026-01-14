@@ -6,7 +6,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from pyspring.log.loguru.middleware.request import RequestLoggingMiddleware
+from pyspring.log.providers.loguru.middleware.request import RequestLoggingMiddleware
 from pyspring.security.authentication.middleware.auth import AuthenticationMiddleware
 
 

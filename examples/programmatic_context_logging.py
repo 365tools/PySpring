@@ -24,7 +24,7 @@ register_context_var("trace_id", trace_id_ctx, default="no-trace")
 # 这里为了演示效果，我们临时修改一下 console handler
 try:
     from loguru import logger as _loguru
-    from pyspring.log.loguru.config.formatter import LoguruConfig
+    from pyspring.log.providers.loguru.config.formatter import LoguruConfig
 
     _loguru.remove()  # 移除旧的
 

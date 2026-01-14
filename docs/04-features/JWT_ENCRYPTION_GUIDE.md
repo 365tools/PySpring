@@ -626,5 +626,4 @@ echo $JWT_ENCRYPTION_KEY
 
 ---
 
-**最后更新**: 2024-12-23  
 **版本**: PySpring 0.1.0

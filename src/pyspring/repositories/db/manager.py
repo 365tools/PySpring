@@ -17,11 +17,11 @@ class DBManagerService(ISingletonService):
     def __init__(self):
         super().__init__()
         # 默认为 None，由 ConnectionInitializer 设置实际使用的服务
-        self.ins: Optional[IDBService] = None
+        self.provider: Optional[IDBService] = None
 
     def set_provider(self, provider: IDBService):
         """设置实际使用的数据库服务提供者"""
-        self.ins = provider
+        self.provider = provider
         logger.debug(f"✅ DBManager: Provider set to {provider.__class__.__name__}")
 
     async def service(self) -> IDBService:
@@ -36,13 +36,13 @@ class DBManagerService(ISingletonService):
         Raises:
             RuntimeError: 如果数据库未初始化
         """
-        if self.ins is None:
+        if self.provider is None:
             raise RuntimeError(
                 "数据库服务未初始化！请在应用启动时调用 ConnectionInitializer.initialize()"
             )
 
-        # logger.debug(f"✅ db({self.ins}) instance ready.")
-        return self.ins
+        # logger.debug(f"✅ db({self.provider}) instance ready.")
+        return self.provider
 
     async def get_session(self):
         """
@@ -80,11 +80,11 @@ class DBManagerService(ISingletonService):
         """
         关闭所有数据库连接, 释放资源
         """
-        if self.ins:
+        if self.provider:
             try:
-                await self.ins.close()
-                logger.debug(f"🔌 DBManager: {self.ins.__class__.__name__} 连接已关闭")
+                await self.provider.close()
+                logger.debug(f"🔌 DBManager: {self.provider.__class__.__name__} 连接已关闭")
             except Exception as e:
                 logger.error(f"🚨 关闭数据库连接失败: {e}")
             finally:
-                self.ins = None
+                self.provider = None

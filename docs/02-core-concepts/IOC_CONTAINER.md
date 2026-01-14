@@ -19,7 +19,7 @@ AppContainerManager 是 PySpring 框架的心脏，负责应用组件的发现�
 2. 类使用了 `@Component`（或 `@Service`, `@Repository`）装饰器。
 
 ```python
-from pyspring.ioc.decorators import Service
+from pyspring.ioc.annotations import Service
 from pyspring.core.interfaces import IService
 
 # 方式 A: 使用装饰器 (推荐)

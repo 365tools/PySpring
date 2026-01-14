@@ -1,4 +1,4 @@
-﻿"""
+"""
 PySpring - A SpringBoot-style scaffold for FastAPI with IoC and Auto-Configuration
 """
 

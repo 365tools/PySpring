@@ -87,7 +87,7 @@ class CacheConnectionInitializer(IStartupInitializer):
             bool: 是否成功
         """
         try:
-            from pyspring.repositories.cache.ins.redis.impl.service import RedisService
+            from pyspring.repositories.cache.providers.redis.impl.service import RedisService
             redis = RedisService()
             # 测试 Redis 连接
             if await redis.ping():
@@ -109,7 +109,7 @@ class CacheConnectionInitializer(IStartupInitializer):
         Returns:
             bool: 是否成功（Memory 总是成功）
         """
-        from pyspring.repositories.cache.ins.memory.impl.service import MemoryService
+        from pyspring.repositories.cache.providers.memory.impl.service import MemoryService
         memory = MemoryService()
         self.cache_manager.set_provider(memory)
         logger.info("✅ Memory 缓存已初始化")

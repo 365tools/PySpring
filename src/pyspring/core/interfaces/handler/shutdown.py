@@ -5,10 +5,11 @@
 """
 from abc import ABC, abstractmethod
 
+from pyspring.core.interfaces.IService import IService
 from pyspring.log.instance import logger
 
 
-class IShutdownHandler(ABC):
+class IShutdownHandler(IService, ABC):
     """
     关闭处理器基类
     

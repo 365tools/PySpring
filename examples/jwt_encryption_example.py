@@ -4,7 +4,7 @@ JWT 加密功能使用示例
 演示如何使用 JWT 加密功能
 """
 from cryptography.fernet import Fernet
-from pyspring.ioc.container import ServiceContainer
+# from pyspring.ioc.container import ServiceContainer  <-- REMOVED (Not used in this file anyway)
 from pyspring.security.authentication.encryption import JWTEncryption, JWTEncryptionManager
 
 

@@ -87,7 +87,7 @@ class DBConnectionInitializer(IStartupInitializer):
             bool: 是否成功
         """
         try:
-            from pyspring.repositories.db.ins.postgres.impl.service import PostgresService
+            from pyspring.repositories.db.providers.postgres.impl.service import PostgresService
             postgres = PostgresService()
             # 测试 PostgreSQL 连接
             if await postgres.ping():
@@ -110,7 +110,7 @@ class DBConnectionInitializer(IStartupInitializer):
             bool: 是否成功（SQLite 总是成功）
         """
         try:
-            from pyspring.repositories.db.ins.sqlite.impl.service import SqliteService
+            from pyspring.repositories.db.providers.sqlite.impl.service import SqliteService
             sqlite = SqliteService()
             # 测试 SQLite 连接
             if await sqlite.ping():

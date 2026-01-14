@@ -24,21 +24,25 @@ def run_tests(test_type="all"):
 
     test_files = {
         "all": str(tests_dir),
-        "comprehensive": str(tests_dir / "test_comprehensive.py"),
-        "lifecycle": str(tests_dir / "test_full_lifecycle.py"),
-        "auto-discover": [
-            str(tests_dir / "test_auto_discover_handlers.py"),
-            str(tests_dir / "test_auto_discover_initializers.py"),
-        ],
+        "comprehensive": str(tests_dir / "integration" / "test_comprehensive.py"),
+        "lifecycle": str(tests_dir / "integration" / "test_full_lifecycle.py"),
+        "ioc": str(tests_dir / "unit" / "ioc"),
+        "security": str(tests_dir / "unit" / "security"),
+        "cli": str(tests_dir / "cli"),
+        "db": str(tests_dir / "integration" / "db"),
+        "web": str(tests_dir / "integration" / "web"),
     }
 
     target = test_files.get(test_type, test_files["all"])
 
+    cmd = [sys.executable, "-m", "pytest"]
+    common_args = ["-v", "--tb=short"]
+
     if isinstance(target, list):
         for t in target:
-            subprocess.run(["pytest", t, "-v", "--tb=short"])
+            subprocess.run(cmd + [t] + common_args)
     else:
-        subprocess.run(["pytest", target, "-v", "--tb=short"])
+        subprocess.run(cmd + [target] + common_args)
 
 
 if __name__ == "__main__":

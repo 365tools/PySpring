@@ -4,7 +4,7 @@ PySpring CLI Main Entry Point
 import argparse
 import sys
 
-from .commands import init, diagnose, uv_manager, check
+from .commands import init, diagnose, uv, check
 
 
 def main():
@@ -25,7 +25,7 @@ def main():
     )
 
     # Register subcommands from tools
-    uv_manager.register_subcommand(subparsers)
+    uv.register_subcommand(subparsers)
     init.register_subcommand(subparsers)
     check.register_subcommand(subparsers)
     diagnose.register_subcommand(subparsers)
