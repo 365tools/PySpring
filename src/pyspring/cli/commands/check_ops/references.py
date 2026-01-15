@@ -83,7 +83,7 @@ BUILTINS = set(dir(builtins))
 
 
 class Scope:
-    """作用域管理"""
+    """Scope Management"""
 
     def __init__(self, parent: Optional['Scope'] = None, is_class_scope: bool = False):
         self.parent = parent
@@ -421,7 +421,7 @@ def run_check_references(args):
     target_dir = os.path.abspath(target_dir)  # Ensure absolute path
 
     if not os.path.exists(target_dir):
-        print_warning(f"目标目录不存在: {target_dir}")
+        print_warning(f"Target directory does not exist: {target_dir}")
         return
 
     issues_found = 0
@@ -466,11 +466,11 @@ def run_check_references(args):
         print_file_header(file_path)
         
         for name, line, col in errors:
-            msg = f"未解决的引用 '{name}' (col {col})"
+            msg = f"Unresolved reference '{name}' (col {col})"
             print_issue(str(line), msg, file_path, level='error')
 
             if args.fix and name in KNOWN_IMPORTS:
-                # 显示提示 (可选)
+                # Show hint (optional)
                 pass
 
         if args.fix:

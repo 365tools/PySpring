@@ -12,12 +12,12 @@ except ImportError:
 
 
 def generate_jwt_secret() -> str:
-    """生成 JWT 密钥"""
+    """Generate JWT secret"""
     return secrets.token_urlsafe(32)
 
 
 def generate_encryption_key() -> str:
-    """生成 JWT 加密密钥"""
+    """Generate JWT encryption key"""
     if HAS_CRYPTO:
         return Fernet.generate_key().decode('utf-8')
     return ""

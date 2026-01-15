@@ -1,4 +1,4 @@
-"""验证生成的 pyproject.toml 完整内容"""
+"""Verify generated pyproject.toml content"""
 import shutil
 import tempfile
 from pathlib import Path
@@ -9,7 +9,7 @@ from pyspring.cli.core.ui import print_title, print_section, print_error
 
 
 def verify_pyproject(args):
-    """验证 pyproject.toml 生成逻辑"""
+    """Verify pyproject.toml generation logic"""
     temp_dir = Path(tempfile.mkdtemp())
     try:
         create_pyproject_toml(temp_dir)

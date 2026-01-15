@@ -1,7 +1,7 @@
 """
-JWT 加密密钥生成工具
+JWT Encryption Key Generation Tool
 
-用于生成安全的 Fernet 加密密钥
+Used to generate secure Fernet encryption keys
 """
 from cryptography.fernet import Fernet
 
@@ -11,14 +11,14 @@ from pyspring.cli.core.ui import (
 
 
 def generate_encryption_key(args):
-    """生成 Fernet 加密密钥"""
+    """Generate Fernet encryption key"""
     key = Fernet.generate_key()
     key_str = key.decode('utf-8')
 
-    print_title("JWT 加密密钥生成成功")
-    print_success(f"密钥: {key_str}")
+    print_title("JWT Encryption Key Generated Successfully")
+    print_success(f"Key: {key_str}")
 
-    print_info("\n请将此密钥保存到环境变量中：")
+    print_info("\nPlease save this key to your environment variables:")
     print("-" * 60)
     print(f"# Linux/Mac")
     print(f'export JWT_ENCRYPTION_KEY="{key_str}"')
@@ -30,8 +30,8 @@ def generate_encryption_key(args):
     print(f'set JWT_ENCRYPTION_KEY={key_str}')
     print("-" * 60)
 
-    print_title("注意事项")
-    print_warning("1. 此密钥用于 JWT Token 的加密和解密")
-    print_warning("2. 生产环境必须妥善保管，不要提交到代码仓库")
-    print_warning("3. 密钥泄露会导致所有加密 Token 被破解")
-    print_warning("4. 更换密钥会使所有旧 Token 失效")
+    print_title("Important Notices")
+    print_warning("1. This key is used for encryption and decryption of JWT Tokens")
+    print_warning("2. Keep this key safe in production, do NOT commit to version control")
+    print_warning("3. Key leakage will allow all encrypted tokens to be cracked")
+    print_warning("4. Changing the key will invalidate all old tokens")

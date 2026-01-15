@@ -5,7 +5,7 @@ from .uv_ops.core import run
 
 
 def register_subcommand(subparsers):
-    """注册 uv 子命令"""
+    """Register uv subcommand"""
     parser = subparsers.add_parser(
         'uv',
         help='Manage uv virtual environment',

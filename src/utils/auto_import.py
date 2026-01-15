@@ -1,7 +1,7 @@
 """
-自动导入工具
+Auto Import Tool
 
-提供自动导入包下所有模块的功能
+Provides functionality to automatically import all modules under a package
 """
 import importlib
 import pkgutil
@@ -10,12 +10,12 @@ from typing import Dict, Any
 
 def auto_import_package(package_name: str, globals_dict: Dict[str, Any] = None, exclude: list = None) -> list:
     """
-    自动导入包下的所有模块
+    Automatically import all modules under a package
     
     Args:
-        package_name: 包名
-        globals_dict: 全局命名空间（可选），如果提供则会自动更新
-        exclude: 需要排除的模块名为列表（可选）
+        package_name: Name of the package
+        globals_dict: Global namespace (optional), if provided will be automatically updated
+        exclude: List of module names to exclude (optional)
         
     Returns:
         list: 导出的符号列表

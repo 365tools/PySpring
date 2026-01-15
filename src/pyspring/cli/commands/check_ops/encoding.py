@@ -13,7 +13,7 @@ from pyspring.cli.core.ui import (
 
 
 def collect_text_files(base_path: str) -> List[str]:
-    """收集所有需要检查的文本文件"""
+    """Collect all text files to check"""
     extensions = {'.py', '.md', '.txt', '.yaml', '.yml', '.toml', '.json', '.ini', '.cfg', '.xml', '.html', '.css', '.js', '.ts'}
     text_files = []
 
@@ -39,7 +39,7 @@ def collect_text_files(base_path: str) -> List[str]:
 
 def detect_encoding_issue(file_path: str) -> Tuple[bool, str, str]:
     """
-    检测文件编码问题
+    Detect file encoding issues
     Returns: (is_issue, issue_type, original_encoding)
     issue_type: 'BOM', 'Non-UTF8', None
     """
@@ -92,7 +92,7 @@ def convert_to_utf8(file_path: str, source_encoding: str, has_bom: bool) -> bool
 
 
 def run_check_encoding(args):
-    """运行编码检查命令"""
+    """Run encoding check command"""
     target_dir = os.path.abspath(args.target)
     do_fix = args.fix
 

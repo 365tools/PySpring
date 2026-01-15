@@ -1,5 +1,5 @@
 """
-自动导入模块
+Auto import modules
 """
 from utils.auto_import import auto_import_package
 

@@ -2,187 +2,187 @@
 PySpring CLI Init Command Templates
 """
 
-ENV_FILE_CONTENT = """# PySpring 框架环境变量配置
-# 复制此文件为 .env 并修改相应的值
+ENV_FILE_CONTENT = """# PySpring Framework Environment Configuration
+# Copy this file to .env and modify values accordingly
 
-# ==================== JWT 配置 ====================
-# JWT 签名密钥（必须设置，用于 Token 签名）
+# ==================== JWT Configuration ====================
+# JWT Signing Secret (Required for Token signing)
 JWT_SECRET_KEY={jwt_secret}
 
-# JWT 算法（可选，默认 HS256）
+# JWT Algorithm (Optional, default HS256)
 # JWT_ALGORITHM=HS256
 
-# Access Token 过期时间（秒，可选）
+# Access Token Expiration (seconds, optional)
 # ACCESS_TOKEN_EXPIRE=3600
 
-# Refresh Token 过期时间（秒，可选）
+# Refresh Token Expiration (seconds, optional)
 # REFRESH_TOKEN_EXPIRE=2592000
 
-# ==================== JWT 加密配置 ====================
-# 是否启用 JWT 加密（可选，默认 false）
+# ==================== JWT Encryption Configuration ====================
+# Enable JWT Encryption (Optional, default false)
 # JWT_ENCRYPTION_ENABLED=true
 
-# JWT 加密密钥（启用加密时必须设置）
+# JWT Encryption Key (Required when encryption is enabled)
 {jwt_encryption_key_line}
 
-# ==================== 数据库配置 ====================
-# PostgreSQL 配置
+# ==================== Database Configuration ====================
+# PostgreSQL Configuration
 # POSTGRES_HOST=localhost
 # POSTGRES_PORT=5432
 # POSTGRES_USER=postgres
 # POSTGRES_PASSWORD=your-password
 # POSTGRES_DB=your-database
 
-# MySQL 配置
+# MySQL Configuration
 # MYSQL_HOST=localhost
 # MYSQL_PORT=3306
 # MYSQL_USER=root
 # MYSQL_PASSWORD=your-password
 # MYSQL_DB=your-database
 
-# ==================== Redis 配置 ====================
-# Redis 主机
+# ==================== Redis Configuration ====================
+# Redis Host
 # REDIS_HOST=localhost
 # REDIS_PORT=6379
 # REDIS_PASSWORD=your-password
 # REDIS_DB=0
 
-# ==================== 应用配置 ====================
-# 应用环境（development, testing, production）
+# ==================== Application Configuration ====================
+# Application Environment (development, testing, production)
 # APP_ENV=development
 
-# 日志级别（DEBUG, INFO, WARNING, ERROR）
+# Log Level (DEBUG, INFO, WARNING, ERROR)
 # LOG_LEVEL=INFO
 """
 
-POSTGRES_INIT_SCRIPT = """-- PySpring 框架数据库初始化脚本 (PostgreSQL)
--- 自动生成于: {date}
--- 基于 PySpring ORM 模型定义
+POSTGRES_INIT_SCRIPT = """-- PySpring Framework Database Initialization Script (PostgreSQL)
+-- Generated at: {date}
+-- Based on PySpring ORM model definitions
 
--- ==================== 表结构 ====================
+-- ==================== Table Structure ====================
 {table_definitions}
 
--- ==================== 初始化数据 ====================
--- 插入默认角色
+-- ==================== Initial Data ====================
+-- Insert default roles
 INSERT INTO role (code, name, description, status, active, deleted, creator, created_time, modifier, modified_time) VALUES
-    ('admin', '管理员', '系统管理员，拥有所有权限', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('user', '普通用户', '普通用户角色', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP)
+    ('admin', 'Administrator', 'System Administrator with all permissions', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('user', 'User', 'Standard User Role', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP)
 ON CONFLICT (code) DO NOTHING;
 
--- 插入默认权限
+-- Insert default permissions
 INSERT INTO permission (code, name, description, status, active, deleted, creator, created_time, modifier, modified_time) VALUES
-    ('user:read', '查看用户', '查看用户信息', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('user:write', '编辑用户', '创建和编辑用户', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('user:delete', '删除用户', '删除用户', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('role:read', '查看角色', '查看角色信息', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('role:write', '编辑角色', '创建和编辑角色', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('role:delete', '删除角色', '删除角色', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP)
+    ('user:read', 'View User', 'View user information', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('user:write', 'Edit User', 'Create and edit users', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('user:delete', 'Delete User', 'Delete users', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('role:read', 'View Role', 'View role information', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('role:write', 'Edit Role', 'Create and edit roles', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('role:delete', 'Delete Role', 'Delete roles', TRUE, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP)
 ON CONFLICT (code) DO NOTHING;
 
--- 为管理员角色分配所有权限
+-- Assign all permissions to admin role
 INSERT INTO role_permission (role_code, permission_code, active, deleted, creator, created_time, modifier, modified_time)
 SELECT r.code, p.code, TRUE, FALSE, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP
 FROM role r, permission p
 WHERE r.code = 'admin'
 ON CONFLICT DO NOTHING;
 
--- 完成
-SELECT '✅ 数据库初始化完成' AS status;
+-- Complete
+SELECT '✅ Database initialization complete' AS status;
 """
 
-SQLITE_INIT_SCRIPT = """-- PySpring 框架数据库初始化脚本 (SQLite)
--- 自动生成于: {date}
--- 基于 PySpring ORM 模型定义
+SQLITE_INIT_SCRIPT = """-- PySpring Framework Database Initialization Script (SQLite)
+-- Generated at: {date}
+-- Based on PySpring ORM model definitions
 
--- ==================== 表结构 ====================
+-- ==================== Table Structure ====================
 {table_definitions}
 
--- ==================== 初始化数据 ====================
--- 插入默认角色
+-- ==================== Initial Data ====================
+-- Insert default roles
 INSERT OR IGNORE INTO role (code, name, description, status, active, deleted, creator, created_time, modifier, modified_time) VALUES
-    ('admin', '管理员', '系统管理员，拥有所有权限', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('user', '普通用户', '普通用户角色', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP);
+    ('admin', 'Administrator', 'System Administrator with all permissions', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('user', 'User', 'Standard User Role', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP);
 
--- 插入默认权限
+-- Insert default permissions
 INSERT OR IGNORE INTO permission (code, name, description, status, active, deleted, creator, created_time, modifier, modified_time) VALUES
-    ('user:read', '查看用户', '查看用户信息', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('user:write', '编辑用户', '创建和编辑用户', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('user:delete', '删除用户', '删除用户', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('role:read', '查看角色', '查看角色信息', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('role:write', '编辑角色', '创建和编辑角色', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
-    ('role:delete', '删除角色', '删除角色', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP);
+    ('user:read', 'View User', 'View user information', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('user:write', 'Edit User', 'Create and edit users', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('user:delete', 'Delete User', 'Delete users', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('role:read', 'View Role', 'View role information', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('role:write', 'Edit Role', 'Create and edit roles', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP),
+    ('role:delete', 'Delete Role', 'Delete roles', 1, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP);
 
--- 为管理员角色分配所有权限
+-- Assign all permissions to admin role
 INSERT OR IGNORE INTO role_permission (role_code, permission_code, active, deleted, creator, created_time, modifier, modified_time)
 SELECT r.code, p.code, 1, 0, 'system', CURRENT_TIMESTAMP, 'system', CURRENT_TIMESTAMP
 FROM role r, permission p
 WHERE r.code = 'admin';
 """
 
-DB_README_CONTENT = """# 数据库脚本
+DB_README_CONTENT = """# Database Scripts
 
-本目录包含 PySpring 框架的数据库初始化脚本。
+This directory contains database initialization scripts for the PySpring framework.
 
-## 文件说明
+## File Description
 
-- `init_postgresql.sql`: PostgreSQL 数据库初始化脚本
-- `init_sqlite.sql`: SQLite 数据库初始化脚本
+- `init_postgresql.sql`: PostgreSQL database initialization script
+- `init_sqlite.sql`: SQLite database initialization script
 
-## 使用方法
+## Usage
 
 ### PostgreSQL
 
 ```bash
-# 创建数据库
+# Create database
 createdb your_database_name
 
-# 执行初始化脚本
+# Execute initialization script
 psql -U your_username -d your_database_name -f init_postgresql.sql
 ```
 
 ### SQLite
 
 ```bash
-# 执行初始化脚本
+# Execute initialization script
 sqlite3 your_database.db < init_sqlite.sql
 ```
 
-## 数据库表说明
+## Database Table Description
 
-### 核心表
+### Core Tables
 
-- **users**: 用户表
-- **roles**: 角色表
-- **user_roles**: 用户角色关联表
-- **permissions**: 权限表
-- **role_permissions**: 角色权限关联表
+- **users**: User table
+- **roles**: Role table
+- **user_roles**: User-Role association table
+- **permissions**: Permission table
+- **role_permissions**: Role-Permission association table
 
-### 安全相关表
+### Security Tables
 
-- **refresh_tokens**: Refresh Token 表
+- **refresh_tokens**: Refresh Token table
 
-## 默认数据
+## Default Data
 
-脚本会自动创建以下默认数据：
+The scripts will automatically create the following default data:
 
-### 角色
-- `admin`: 管理员（拥有所有权限）
-- `user`: 普通用户
+### Roles
+- `admin`: Administrator (has all permissions)
+- `user`: Standard User
 
-### 权限
-- `user:read`: 查看用户
-- `user:write`: 编辑用户
-- `user:delete`: 删除用户
-- `role:read`: 查看角色
-- `role:write`: 编辑角色
-- `role:delete`: 删除角色
+### Permissions
+- `user:read`: View User
+- `user:write`: Edit User
+- `user:delete`: Delete User
+- `role:read`: View Role
+- `role:write`: Edit Role
+- `role:delete`: Delete Role
 
-## 注意事项
+## Important Notes
 
-1. 执行脚本前请确保数据库已创建
-2. 脚本支持重复执行，不会覆盖已有数据
-3. 生产环境请根据实际需求调整表结构和索引
-4. 建议定期备份数据库
+1. Please ensure the database is created before running the script.
+2. The script supports idempotent execution and will not overwrite existing data.
+3. For production environments, please adjust table structures and indexes according to actual needs.
+4. Regular database backups are recommended.
 """
 
 APP_INIT_FILE = '"""PySpring Application"""\n'

@@ -1,9 +1,10 @@
 """
-显式导入检查器
+Explicit Import Checker
 
-将 `from package import Symbol` 转换为 `from package.module import Symbol`
-当 Symbol 未在 package/__init__.py 中显式定义，但存在于 package/module.py 中时。
-这种转换有助于解决 IDE（如 PyCharm/VSCode）在处理动态导入或不完整的 __init__ 文件时无法识别符号的问题。
+Converts `from package import Symbol` to `from package.module import Symbol`
+when the Symbol is not explicitly defined in package/__init__.py but exists in package/module.py.
+This conversion helps resolve issues where IDEs (like PyCharm/VSCode) fail to recognize symbols
+when dealing with dynamic imports or incomplete __init__ files.
 """
 import ast
 import os
@@ -16,7 +17,7 @@ from pyspring.cli.core.ui import (
 
 
 def import_range(start, end):
-    """格式化行号范围"""
+    """Format line number range"""
     if start == end: return str(start)
     return f"{start}-{end}"
 
@@ -41,15 +42,15 @@ class SymbolDefinitionVisitor(ast.NodeVisitor):
 
 def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
     """
-    在包的 .py 文件中搜索符号（不包括 __init__.py）。
-    如果找到，返回找到该符号的所有子模块名称列表。
+    Search for a symbol in .py files within the package (excluding __init__.py).
+    If found, returns a list of all sub-module names where the symbol is found.
     """
     found_modules = []
     if not os.path.exists(package_dir):
         return []
 
     for root, _, files in os.walk(package_dir):
-        # 目前只扫描顶级子文件
+        # Currently only scans top-level child files
         if root != package_dir: 
             continue
 
@@ -62,7 +63,7 @@ def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     content = f.read()
 
-                # 先进行快速字符串检查
+                # Perform quick string check first
                 if symbol not in content:
                     continue
 
@@ -86,18 +87,18 @@ class ImportExpander(ast.NodeVisitor):
         self.warnings = []  # 收集歧义警告信息
 
     def resolve_package_path(self, module_name: str, level: int) -> Optional[str]:
-        """将模块名 + 层级解析为目录路径"""
-        # 计算当前目录
+        """Resolve module name + level to directory path"""
+        # Calculate current directory
         current_dir = os.path.dirname(self.file_path)
 
         target_dir = current_dir
 
-        # 处理相对导入
+        # Handle relative imports
         if level > 0:
-            for _ in range(level - 1):  # . -> 当前, .. -> 父级
+            for _ in range(level - 1):  # . -> current, .. -> parent
                 target_dir = os.path.dirname(target_dir)
 
-        # 现在追加模块部分
+        # Now append module part
         if module_name:
             parts = module_name.split('.')
             target_dir = os.path.join(target_dir, *parts)

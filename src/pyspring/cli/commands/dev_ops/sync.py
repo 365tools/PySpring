@@ -1,7 +1,7 @@
 """
-模板文件同步脚本
+Template File Synchronization Script
 
-用于将 PySpring 根目录的配置文件同步到 templates 目录
+Used to synchronize configuration files from the PySpring root directory to the templates directory.
 """
 import shutil
 from pathlib import Path
@@ -12,7 +12,7 @@ from pyspring.cli.core.ui import (
 
 
 def sync_templates(args):
-    """同步模板文件"""
+    """Synchronize template files"""
     current_file = Path(__file__)
     # Resolve root from this file location: src/pyspring/cli/commands/dev_ops/sync.py
     # Root is 6 levels up
@@ -28,17 +28,17 @@ def sync_templates(args):
 
     templates_dir = root / "src" / "pyspring" / "templates" / "project"
 
-    # 确保模板目录存在
+    # Ensure template directory exists
     templates_dir.mkdir(parents=True, exist_ok=True)
 
-    # 要同步的文件
+    # Files to sync
     files_to_sync = [
         (".gitignore", ".gitignore.template"),
         ("pyproject.toml", "pyproject.toml.template"),
         ("examples/main_with_db_init.py", "main.py.template"),
     ]
 
-    print_title("同步模板文件到 templates 目录")
+    print_title("Syncing Template Files to templates Directory")
 
     synced_count = 0
     issues_count = 0
@@ -48,24 +48,24 @@ def sync_templates(args):
         target_path = templates_dir / target_name
 
         if not source_path.exists():
-            print_issue("0", f"源文件不存在: {source_name}", level='error')
+            print_issue("0", f"Source file not found: {source_name}", level='error')
             issues_count += 1
             continue
 
-        # 复制文件
+        # Copy file
         try:
             shutil.copy2(source_path, target_path)
 
-            # 获取文件大小
+            # Get file size
             size = target_path.stat().st_size
-            print_issue("1", f"{source_name} → {target_name} ({size:,} bytes)", str(target_path), level='success')
+            print_issue("1", f"{source_name} -> {target_name} ({size:,} bytes)", str(target_path), level='success')
             synced_count += 1
         except Exception as e:
-            print_issue("0", f"同步失败: {e}", str(target_path), level='error')
+            print_issue("0", f"Sync failed: {e}", str(target_path), level='error')
             issues_count += 1
 
-    print_info(f"模板目录: {templates_dir}")
-    print_info("可用模板文件:")
+    print_info(f"Template directory: {templates_dir}")
+    print_info("Available template files:")
     for file_path in sorted(templates_dir.glob("*")):
         if file_path.is_file():
             print(f"  - {file_path.name}")
