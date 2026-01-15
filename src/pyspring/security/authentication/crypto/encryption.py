@@ -1,4 +1,6 @@
 """
+from pyspring.security.core.config.loader import SecurityConfigManager
+
 JWT 加密工具
 提供 JWT Token 的加密和解密功能，防止 Token 被轻易解析
 """
@@ -13,6 +15,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
+from pyspring.security.core.config.loader import SecurityConfigManager
 
 
 class JWTEncryption:
@@ -232,7 +235,6 @@ class JWTEncryptionManager(ISingletonService):
 
     def _load_config(self):
         """从配置文件加载加密设置"""
-        from pyspring.security.core.config.loader import SecurityConfigManager
 
         config_manager = SecurityConfigManager()
         encryption_config = config_manager.get("authentication.jwt.encryption", {})

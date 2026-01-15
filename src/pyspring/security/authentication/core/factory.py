@@ -1,10 +1,15 @@
 """
+from pyspring.security.authentication.core.chain import AuthenticationChain
+from pyspring.ioc.manager import AppContainerManager
+
 认证提供者工厂
 根据配置动态创建认证提供者实例
 """
 from typing import Dict, Type, List
 
+from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
+from pyspring.security.authentication.core.chain import AuthenticationChain
 from pyspring.security.authentication.providers.base import BaseAuthenticationProvider
 from pyspring.security.authentication.providers.jwt import JWTAuthenticationProvider
 from pyspring.security.authentication.services.session.token import TokenManagerService
@@ -154,7 +159,7 @@ class AuthProviderFactoryHelper:
             token_manager: Token 管理服务
             **kwargs: 其他依赖服务
         """
-        from pyspring.ioc.manager import AppContainerManager
+        # 注意：AppContainerManager 依赖整个安全模块，必须局部导入以打破循环
 
         logger.info("🚀 开始初始化认证提供者")
 
@@ -184,7 +189,6 @@ class AuthProviderFactoryHelper:
             providers.append(default_provider)
 
         # 2. 注册到认证链（通过 IoC 容器获取）
-        from pyspring.security.authentication.core.chain import AuthenticationChain
         container = AppContainerManager()
         chain = container.get(AuthenticationChain)
         chain.register_providers(providers)

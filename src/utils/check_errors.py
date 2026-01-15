@@ -1,13 +1,14 @@
 """
 Python文件错误检测脚本
 
-遍历项目文件夹，检测所有Python文件的语法错误和导入错误
+遍历项目文件夹，检测所有Python文件的语法错误、导入错误以及未定义的引用
 """
 import ast
+import builtins
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Set, Optional, Tuple
 
 
 @dataclass
@@ -17,6 +18,156 @@ class FileError:
     error_type: str
     line_number: int
     message: str
+
+
+class Scope:
+    """作用域管理"""
+
+    def __init__(self, parent: Optional['Scope'] = None, is_class_scope: bool = False):
+        self.parent = parent
+        self.definitions: Set[str] = set()
+        self.is_class_scope = is_class_scope
+        self.star_imported = False  # 是否包含 from module import *
+
+    def define(self, name: str):
+        self.definitions.add(name)
+
+    def is_defined(self, name: str) -> bool:
+        if name in self.definitions:
+            return True
+        if self.parent:
+            # 如果是类作用域，父级作用域的查找规则稍微不同，但简化起见，我们暂且允许向上查找
+            # 注意：类体中的变量对方法不可见，这是Python的特性
+            return self.parent.is_defined(name)
+        return False
+
+    def has_star_import(self) -> bool:
+        if self.star_imported:
+            return True
+        if self.parent:
+            return self.parent.has_star_import()
+        return False
+
+
+class ReferenceVisitor(ast.NodeVisitor):
+    """AST访问器，用于检查未定义的引用"""
+
+    def __init__(self):
+        self.current_scope = Scope()
+        # 将内建函数加入根作用域
+        for name in dir(builtins):
+            self.current_scope.define(name)
+        self.issues: List[Tuple[int, str]] = []  # (line, message)
+
+    def visit_FunctionDef(self, node):
+        self.current_scope.define(node.name)
+        # 进入新函数作用域
+        prev_scope = self.current_scope
+        self.current_scope = Scope(parent=prev_scope)
+
+        # 处理参数
+        # 1. 位置参数
+        for arg in node.args.args:
+            self.current_scope.define(arg.arg)
+        # 2. 仅位置参数 (Python 3.8+)
+        if hasattr(node.args, 'posonlyargs'):
+            for arg in node.args.posonlyargs:
+                self.current_scope.define(arg.arg)
+        # 3. 仅关键字参数
+        if hasattr(node.args, 'kwonlyargs'):
+            for arg in node.args.kwonlyargs:
+                self.current_scope.define(arg.arg)
+
+        # 处理 kwargs, varargs 等
+        if node.args.vararg: self.current_scope.define(node.args.vararg.arg)
+        if node.args.kwarg: self.current_scope.define(node.args.kwarg.arg)
+
+        self.generic_visit(node)
+        self.current_scope = prev_scope
+
+    def visit_AsyncFunctionDef(self, node):
+        self.visit_FunctionDef(node)
+
+    def visit_ClassDef(self, node):
+        self.current_scope.define(node.name)
+        # 进入类作用域
+        prev_scope = self.current_scope
+        self.current_scope = Scope(parent=prev_scope, is_class_scope=True)
+        self.generic_visit(node)
+        self.current_scope = prev_scope
+
+    def visit_Lambda(self, node):
+        prev_scope = self.current_scope
+        self.current_scope = Scope(parent=prev_scope)
+        for arg in node.args.args:
+            self.current_scope.define(arg.arg)
+        if node.args.vararg: self.current_scope.define(node.args.vararg.arg)
+        if node.args.kwarg: self.current_scope.define(node.args.kwarg.arg)
+        self.generic_visit(node)
+        self.current_scope = prev_scope
+
+    def visit_Import(self, node):
+        for alias in node.names:
+            name = alias.asname if alias.asname else alias.name.split('.')[0]
+            self.current_scope.define(name)
+
+    def visit_ImportFrom(self, node):
+        for alias in node.names:
+            if alias.name == '*':
+                self.current_scope.star_imported = True
+            else:
+                name = alias.asname if alias.asname else alias.name
+                self.current_scope.define(name)
+
+    def visit_Name(self, node):
+        if isinstance(node.ctx, (ast.Store, ast.Param)):
+            self.current_scope.define(node.id)
+        elif isinstance(node.ctx, ast.Load):
+            if not self.current_scope.is_defined(node.id) and not self.current_scope.has_star_import():
+                # 忽略一些特殊的魔法变量
+                if node.id not in ['__file__', '__name__', '__doc__', '__path__']:
+                    self.issues.append((node.lineno, f"未解析的引用: '{node.id}'"))
+
+    def visit_Attribute(self, node):
+        # 即使只访问属性，我们也只关心主对象是否定义
+        # 例如 self.config - 只检查 self 是否定义
+        # 我们让 visit_Name 处理 node.value
+        self.generic_visit(node)
+
+    def visit_ExceptHandler(self, node):
+        if node.name:
+            self.current_scope.define(node.name)
+        self.generic_visit(node)
+
+    # 处理列表推导式等的变量泄漏问题 (Python 3中它们有自己的作用域)
+    def visit_ListComp(self, node):
+        self._visit_comprehension(node)
+
+    def visit_SetComp(self, node):
+        self._visit_comprehension(node)
+
+    def visit_DictComp(self, node):
+        self._visit_comprehension(node)
+
+    def visit_GeneratorExp(self, node):
+        self._visit_comprehension(node)
+
+    def _visit_comprehension(self, node):
+        prev_scope = self.current_scope
+        self.current_scope = Scope(parent=prev_scope)
+        for generator in node.generators:
+            self.visit(generator)  # 先访问生成器，定义变量
+        # 访问元素表达式
+        if hasattr(node, 'elt'): self.visit(node.elt)
+        if hasattr(node, 'key'): self.visit(node.key)
+        if hasattr(node, 'value'): self.visit(node.value)
+        self.current_scope = prev_scope
+
+    def visit_comprehension(self, node):
+        self.visit(node.target)  # 定义目标变量
+        self.visit(node.iter)  # 访问迭代对象
+        for if_ in node.ifs:
+            self.visit(if_)
 
 
 class PythonFileChecker:
@@ -177,6 +328,39 @@ class PythonFileChecker:
 
         return errors
 
+    def check_undefined_vars(self, file_path: Path) -> List[FileError]:
+        """
+        检查未定义的变量引用
+        
+        Args:
+            file_path: Python文件路径
+            
+        Returns:
+            错误列表
+        """
+        errors = []
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                source_code = f.read()
+
+            tree = ast.parse(source_code, filename=str(file_path))
+            visitor = ReferenceVisitor()
+            visitor.visit(tree)
+
+            for lineno, msg in visitor.issues:
+                errors.append(FileError(
+                    file_path=str(file_path.relative_to(self.root_dir)),
+                    error_type="UnresolvedReference",
+                    line_number=lineno,
+                    message=msg
+                ))
+
+        except Exception:
+            # 语法错误已在 check_syntax 中处理
+            pass
+
+        return errors
+
     def scan_directory(self) -> Tuple[int, int]:
         """
         扫描目录中的所有Python文件
@@ -203,10 +387,13 @@ class PythonFileChecker:
             # 检查Unicode乱码
             unicode_errors = self.check_unicode_corruption(file_path)
 
+            # 检查未定义变量
+            undefined_errors = self.check_undefined_vars(file_path)
+
             # 检查导入错误
             import_errors = self.check_imports(file_path)
 
-            file_errors = syntax_errors + unicode_errors + import_errors
+            file_errors = syntax_errors + unicode_errors + undefined_errors + import_errors
 
             if file_errors:
                 error_files += 1
@@ -237,10 +424,11 @@ class PythonFileChecker:
             print(f"   错误数: {len(file_errors)}")
 
             for error in file_errors:
+                abs_path = (self.root_dir / file_path).resolve()
                 if error.line_number > 0:
-                    print(f"   └─ 行 {error.line_number}: [{error.error_type}] {error.message}")
+                    print(f"   └─ 行 {error.line_number}: [{error.error_type}] {error.message} -> {abs_path}:{error.line_number}")
                 else:
-                    print(f"   └─ [{error.error_type}] {error.message}")
+                    print(f"   └─ [{error.error_type}] {error.message} -> {abs_path}")
             print()
 
     def save_report(self, output_file: str = "error_report.txt"):

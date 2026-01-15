@@ -8,7 +8,8 @@ from typing import Dict, Any, Optional
 import yaml
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
-from pyspring.utils.config_finder import find_config_file
+from pyspring.log.core.config import LoggingConfig
+from pyspring.utils.config.finder import find_config_file
 
 
 class LoggingConfigManager(ISingletonService):
@@ -19,6 +20,7 @@ class LoggingConfigManager(ISingletonService):
     """
 
     _config: Optional[Dict[str, Any]] = None
+    _loaded_config_path: Optional[str] = None
     _instance: Optional['LoggingConfigManager'] = None
     _initialized: bool = False
 
@@ -49,10 +51,10 @@ class LoggingConfigManager(ISingletonService):
             try:
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f) or {}
-                    # 简单打印，避免循环依赖
-                    print(f"✅ 已加载日志配置: {config_path}", file=sys.stderr)
+                    self._loaded_config_path = str(config_path)
                     return config
             except Exception as e:
+                # 依然使用 stderr 打印错误，因为此时 logger 可能还没准备好
                 print(f"❌ 加载日志配置失败: {config_path}, 错误: {e}", file=sys.stderr)
 
         # 返回默认配置
@@ -65,45 +67,10 @@ class LoggingConfigManager(ISingletonService):
         获取默认配置
         
         Returns:
-            默认配置字典
+            默认配置字典（基于 Pydantic 模型生成）
         """
-        return {
-            'logging': {
-                'level': 'INFO',
-                'console': {
-                    'enabled': True,
-                    'colorize': True,
-                    'format': '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}'
-                },
-                'file': {
-                    'enabled': False,
-                    'path': 'logs/app.log',
-                    'rotation': '10 MB',
-                    'retention': '7 days',
-                    'compression': 'zip',
-                    'format': '{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]}:{line} | {message}'
-                },
-                'advanced': {
-                    'backtrace': True,
-                    'diagnose': True,
-                    'enqueue': True,
-                    'depth_offset': 1
-                },
-                'filters': {
-                    'health_check': True,
-                    'metrics': True,
-                    'favicon': True,
-                    'custom_paths': ['/health', '/metrics', '/favicon.ico']
-                },
-                'intercept': {
-                    'stdlib': True,
-                    'uvicorn': True,
-                    'fastapi': True,
-                    'watchfiles': True,
-                    'custom_loggers': []
-                }
-            }
-        }
+        # 将配置转换为字典并移除 None 值
+        return {'logging': LoggingConfig().model_dump(exclude_none=True)}
 
     @property
     def config(self) -> Dict[str, Any]:

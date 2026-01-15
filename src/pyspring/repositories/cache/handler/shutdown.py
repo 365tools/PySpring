@@ -1,11 +1,16 @@
 """
+from pyspring.core.services.system import SystemService
+from pyspring.security.authentication.services.session.token import TokenManagerService
+
 缓存关闭处理器
 
 在应用关闭时关闭缓存连接
 """
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
+from pyspring.core.services.system import SystemService
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
+from pyspring.security.authentication.services.session.token import TokenManagerService
 
 
 class CacheShutdownHandler(IShutdownHandler):
@@ -34,14 +39,12 @@ class CacheShutdownHandler(IShutdownHandler):
         try:
             # ✅ 1. 取消 TokenManagerService 的后台任务（如果存在）
             try:
-                from pyspring.security.authentication.services.session.token import TokenManagerService
                 await TokenManagerService.cancel_background_tasks()
             except Exception as e:
                 logger.debug(f"⏭️  取消 Token 后台任务时出现异常（可能未启用）: {e}")
 
             # ✅ 2. 取消 SystemService 的事件任务（如果存在）
             try:
-                from pyspring.core.abstracts.wrapper import SystemService
                 await SystemService.cancel_event_tasks()
             except Exception as e:
                 logger.debug(f"⏭️  取消事件任务时出现异常（可能未启用）: {e}")

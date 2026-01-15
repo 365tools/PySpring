@@ -11,7 +11,7 @@ import yaml
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
-from pyspring.utils.config_finder import find_config_file
+from pyspring.utils.config.finder import find_config_file
 
 
 class SecurityConfigManager(ISingletonService):

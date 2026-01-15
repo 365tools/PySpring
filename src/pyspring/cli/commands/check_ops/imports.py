@@ -57,11 +57,10 @@ def find_modules_in_dir(scan_dir: str, root_dir: str) -> Generator[str, None, No
 
 def run_check_import(args):
     """Run import check logic"""
-    target_arg = getattr(args, 'target', 'src')
+    target_arg = getattr(args, 'target', '.')
     static_mode = getattr(args, 'static', False)
 
-    if target_arg is None:
-        target_arg = 'src'
+    # Default is already handled by argparse to '.'
 
     target_path = os.path.abspath(target_arg)
     if static_mode:

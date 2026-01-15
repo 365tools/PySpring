@@ -2,7 +2,6 @@
 PySpring Unit Tests - IoC Container
 """
 import pytest
-from pyspring.ioc.annotations import component
 from pyspring.ioc.manager import AppContainerManager
 
 

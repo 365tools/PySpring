@@ -1,4 +1,8 @@
 """
+from pyspring.ioc.manager import AppContainerManager
+from pyspring.security.authentication.services.user.manager import UserManagerService
+from pyspring.security.authentication.core.chain import AuthenticationChain
+
 全局认证拦截中间件（重构版）
 
 基于认证提供者链（Chain of Responsibility Pattern）
@@ -10,8 +14,11 @@ from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
+from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
+from pyspring.security.authentication.core.chain import AuthenticationChain
 from pyspring.security.authentication.core.context import AuthContext
+from pyspring.security.authentication.services.user.manager import UserManagerService
 from pyspring.security.authorization.middleware.role import RoleCheckMiddleware
 from pyspring.security.core.config.loader import SecurityConfigManager
 
@@ -47,7 +54,6 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
 
         # 获取配置管理器（通过 IoC 容器）
-        from pyspring.ioc.manager import AppContainerManager
         container = AppContainerManager()
         self.config_manager = container.get(SecurityConfigManager)
 
@@ -57,7 +63,6 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             self.enable_role_check = enable_role_check
 
         # 获取认证链（通过 IoC 容器）
-        from pyspring.security.authentication.core.chain import AuthenticationChain
         self.auth_chain = container.get(AuthenticationChain)
 
         logger.info(f"🔒 全局认证中间件已启动 (基于认证链)")
@@ -150,8 +155,6 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # 3.5 【新增】设置认证上下文（类似 Spring Security 的 SecurityContextHolder）
         # 从 token 获取完整用户信息并设置到上下文
         try:
-            from pyspring.security.authentication.services.user.manager import UserManagerService
-            from pyspring.ioc.manager import AppContainerManager
 
             container = AppContainerManager()
             user_manager = container.get(UserManagerService)

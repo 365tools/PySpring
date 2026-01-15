@@ -5,6 +5,8 @@ import re
 import sys
 from contextlib import contextmanager
 
+from loguru import logger
+
 
 class OutputFilter:
     """过滤标准输出流中的特定内容"""
@@ -45,7 +47,6 @@ def suppress_specific_logs():
 
     # 尝试拦截 Loguru 的 sink
     try:
-        from loguru import logger
         # 我们不能简单移除，因为那样会影响后续可能的合法使用（虽然 check 本身可能不需要）
         # 但 check 一般是静态的，我们这里选择移除所有 sink，只保留我们自己可控的（如果需要）
         logger.remove()

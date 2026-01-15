@@ -5,7 +5,7 @@ from fastapi_users.password import PasswordHelper
 from sqlalchemy import select
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
-from pyspring.core.abstracts.wrapper import SystemService
+from pyspring.core.services.system import SystemService
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.services.core.context import SecurityContextManagerService

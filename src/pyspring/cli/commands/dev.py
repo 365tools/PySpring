@@ -25,8 +25,8 @@ def register_subcommand(subparsers):
     # Sync Exports (Auto-Init)
     init_parser = dev_subparsers.add_parser('sync-exports', help='Auto-generate __init__.py exports')
     init_parser.add_argument('path', help='Path to package directory')
-    init_parser.add_argument('--absolute', action='store_true', default=True, help='Use absolute imports (default)')
-    init_parser.add_argument('--relative', action='store_true', help='Use relative imports')
+    init_parser.add_argument('--fixed', action='store_true', help='Generate fixed explicit exports')
+    init_parser.add_argument('--dynamic', action='store_true', help='Use dynamic auto-import (default)')
     init_parser.set_defaults(func=sync_exports)
 
     # Refactor Imports

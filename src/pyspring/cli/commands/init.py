@@ -1,12 +1,13 @@
 """
 PySpring CLI Init Command Registration
 """
+import argparse
+
 from .init_ops.core import run
 
 
 def register_subcommand(subparsers):
     """注册 init 子命令"""
-    import argparse
     parser = subparsers.add_parser(
         'init',
         help='Initialize PySpring project configuration',

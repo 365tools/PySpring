@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 
+import pyspring
 from pyspring.cli.core.ui import print_section
 
 
@@ -69,7 +70,6 @@ def check_path_issues():
 def check_import_ability():
     print_section("4. Import Check")
     try:
-        import pyspring
         print(f"✅ PySpring package is importable")
         print(f"   Location: {os.path.dirname(pyspring.__file__)}")
         return True

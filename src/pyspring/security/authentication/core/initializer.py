@@ -1,11 +1,29 @@
 """
+import traceback
+from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
+from pyspring.security.authentication.services.core.context import SecurityContextManagerService
+from pyspring.security.authentication.core.chain import AuthenticationChain
+from pyspring.security.core.config.loader import SecurityConfigManager
+from pyspring.security.authentication.core.factory import AuthProviderFactory
+from pyspring.security.authentication.services.session.token import TokenManagerService
+from pyspring.ioc.manager import AppContainerManager
+
 认证系统启动初始化器
 
 负责在应用启动时初始化认证提供者链
 """
+import traceback
+
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
+from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
+from pyspring.security.authentication.core.chain import AuthenticationChain
+from pyspring.security.authentication.core.factory import AuthProviderFactory
+from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
+from pyspring.security.authentication.services.core.context import SecurityContextManagerService
+from pyspring.security.authentication.services.session.token import TokenManagerService
+from pyspring.security.core.config.loader import SecurityConfigManager
 
 
 class AuthenticationInitializer(IStartupInitializer, ISingletonService):
@@ -44,16 +62,12 @@ class AuthenticationInitializer(IStartupInitializer, ISingletonService):
             logger.info("🔐 正在初始化认证系统...")
 
             # 获取依赖服务
-            from pyspring.ioc.manager import AppContainerManager
-            from pyspring.security.authentication.services.session.token import TokenManagerService
 
             container = AppContainerManager()
             token_manager = container.get(TokenManagerService)
 
             # 初始化认证提供者链
             # 注意: AuthProviderFactoryHelper 需要在 factory.py 中实现或在此处实现逻辑
-            from pyspring.security.authentication.core.factory import AuthProviderFactory
-            from pyspring.security.core.config.loader import SecurityConfigManager
 
             config_manager = SecurityConfigManager()
             providers_config = config_manager.get_authentication_providers()
@@ -76,14 +90,11 @@ class AuthenticationInitializer(IStartupInitializer, ISingletonService):
                     providers.append(provider)
 
             # 注册到认证链
-            from pyspring.security.authentication.core.chain import AuthenticationChain
             auth_chain = container.get(AuthenticationChain)
             auth_chain.register_providers(providers)
 
             # [Auto-Discovery] 自动发现并注册安全上下文验证器
             # 这使得开发者只需编写 Validator 并继承 ISingletonService，无需手动注册
-            from pyspring.security.authentication.services.core.context import SecurityContextManagerService
-            from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
 
             # 使用 container.get() 确保服务已初始化
             context_manager = container.get(SecurityContextManagerService)
@@ -104,7 +115,6 @@ class AuthenticationInitializer(IStartupInitializer, ISingletonService):
 
         except Exception as e:
             logger.error(f"❌ 认证系统初始化失败: {e}")
-            import traceback
             logger.error(traceback.format_exc())
             return False
 

@@ -4,7 +4,7 @@ SystemService - 基于新配置系统的实现
 直接使用新的配置系统(ConfigManager).
 
 使用方式:
-    from pyspring.core.abstracts.wrapper import SystemService
+    from pyspring.core.services.system import SystemService
     
     service = SystemService()
     # 直接访问配置
@@ -13,10 +13,12 @@ SystemService - 基于新配置系统的实现
     # 或使用兼容方法
     server_config = service.get("server")
 """
+import asyncio
 import inspect
 from typing import Any, Optional, Dict, Callable, List
 
 from pyspring.core.abstracts.interfaces.ISystemService import ISystemService
+from pyspring.core.configuration.loader import ConfigLoader
 from pyspring.core.configuration.models import settings, AppSettings
 from pyspring.log.instance import logger
 
@@ -55,7 +57,6 @@ class SystemService(ISystemService):
         """
         if filename not in self._yaml_configs:
             if self._config_loader is None:
-                from pyspring.core.configuration.loader import ConfigLoader
                 self._config_loader = ConfigLoader()
 
             config_path = self._config_loader.project_root / "config" / filename
@@ -129,7 +130,6 @@ class SystemService(ISystemService):
             try:
                 if inspect.iscoroutinefunction(listener):
                     try:
-                        import asyncio
                         loop = asyncio.get_event_loop()
                         if loop.is_running():
                             # ✅ 跟踪事件任务
@@ -278,7 +278,6 @@ class SystemService(ISystemService):
         """
         ✅ 取消所有事件任务，用于程序退出时清理
         """
-        import asyncio
         if cls._event_tasks:
             logger.debug(f"🔄 正在取消 {len(cls._event_tasks)} 个事件任务...")
             for task in cls._event_tasks:

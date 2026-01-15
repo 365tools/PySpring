@@ -141,6 +141,11 @@ class LoguruService(ISingletonService, ILoggerService):
                 filter=self._add_relative_path
             )
 
+        # 如果从文件加载了配置，记录一条调试日志
+        if hasattr(config_manager, '_loaded_config_path') and config_manager._loaded_config_path:
+            # 使用 debug 级别，这样在 info 级别下默认不显示，实现了“静默”
+            _loguru.debug(f"✅ 已加载日志配置: {config_manager._loaded_config_path}")
+
     # 保留常量占位，若未来需要扩展可再启用动态跳过策。
     _SKIP_MODULE_PREFIXES = (
         __name__,

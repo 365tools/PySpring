@@ -1,0 +1,365 @@
+"""
+Import Lifting Logic
+"""
+import ast
+import os
+from collections import defaultdict, deque
+from typing import Dict, Set, Optional
+
+from pyspring.cli.core.ui import print_info, print_success, print_error
+
+
+class LoadTimeGraphBuilder(ast.NodeVisitor):
+    """
+    Builds the dependency graph based ONLY on top-level imports.
+    """
+
+    def __init__(self, module_name: str, resolve_import_callback):
+        self.module_name = module_name
+        self.resolve_import = resolve_import_callback
+        self.dependencies = set()
+        self.scope_depth = 0
+
+    def visit_FunctionDef(self, node):
+        self.scope_depth += 1
+        self.generic_visit(node)
+        self.scope_depth -= 1
+
+    def visit_AsyncFunctionDef(self, node):
+        self.scope_depth += 1
+        self.generic_visit(node)
+        self.scope_depth -= 1
+
+    def visit_ClassDef(self, node):
+        # Class definitions are executed at load time, so imports directly inside class
+        # (not in methods) ARE load-time dependencies.
+        # However, methods inside are not.
+        self.generic_visit(node)
+        # We don't increment scope_depth for ClassDef because we want to capture 
+        # class-level imports as load-time deps.
+        # But wait, visit_FunctionDef inside ClassDef will increment depth. Correct.
+
+    def visit_Import(self, node):
+        if self.scope_depth == 0:
+            for alias in node.names:
+                # import package.module
+                target = self.resolve_import(self.module_name, alias.name, 0)
+                if target:
+                    self.dependencies.add(target)
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node):
+        if self.scope_depth == 0:
+            target_module = self.resolve_import(self.module_name, node.module, node.level)
+            if target_module:
+                self.dependencies.add(target_module)
+        self.generic_visit(node)
+
+
+class LocalImportVisitor(ast.NodeVisitor):
+    """
+    Finds imports inside functions.
+    """
+
+    def __init__(self, module_name: str, resolve_import_callback):
+        self.module_name = module_name
+        self.resolve_import = resolve_import_callback
+        self.local_imports = []  # List[(node, scope_node, target_modules)]
+        self.scope_stack = []
+
+    def visit_FunctionDef(self, node):
+        self.scope_stack.append(node)
+        self.generic_visit(node)
+        self.scope_stack.pop()
+
+    def visit_AsyncFunctionDef(self, node):
+        self.scope_stack.append(node)
+        self.generic_visit(node)
+        self.scope_stack.pop()
+
+    def visit_ClassDef(self, node):
+        self.scope_stack.append(node)
+        self.generic_visit(node)
+        self.scope_stack.pop()
+
+    def visit_Import(self, node):
+        if self.is_in_function():
+            targets = []
+            for alias in node.names:
+                t = self.resolve_import(self.module_name, alias.name, 0)
+                if t: targets.append(t)
+            self.local_imports.append({
+                'node': node,
+                'scope': self.scope_stack[-1],
+                'targets': targets,
+                'type': 'import'
+            })
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node):
+        if self.is_in_function():
+            target = self.resolve_import(self.module_name, node.module, node.level)
+            targets = [target] if target else []
+            self.local_imports.append({
+                'node': node,
+                'scope': self.scope_stack[-1],
+                'targets': targets,
+                'type': 'from'
+            })
+        self.generic_visit(node)
+
+    def is_in_function(self):
+        # Check if any parent in stack is FunctionDef or AsyncFunctionDef
+        for scope in reversed(self.scope_stack):
+            if isinstance(scope, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                return True
+        return False
+
+
+class ImportLifter:
+    def __init__(self, root_path: str):
+        self.root_path = os.path.abspath(root_path)
+        self.files: Dict[str, str] = {}  # module -> file_path
+        self.graph: Dict[str, Set[str]] = defaultdict(set)
+
+    def get_module_name(self, file_path: str) -> str:
+        """Convert file path to dotted module name"""
+        rel_path = os.path.relpath(file_path, self.root_path)
+        if rel_path.startswith('..'):
+            return ""
+        name = os.path.splitext(rel_path)[0].replace(os.path.sep, '.')
+        if name.endswith('.__init__'):
+            name = name[:-9]
+        return name
+
+    def resolve_import(self, current_module: str, relative_name: Optional[str], level: int) -> Optional[str]:
+        # Reuse logic from circular checker roughly
+        if level == 0:
+            # Absolute
+            return self.find_internal_module(relative_name)
+
+        parts = current_module.split('.')
+        if level > len(parts): return None
+
+        base = '.'.join(parts[:-level]) if level > 0 else '.'.join(parts)
+        if not relative_name:
+            return self.find_internal_module(base)
+
+        target = f"{base}.{relative_name}"
+        return self.find_internal_module(target)
+
+    def find_internal_module(self, name: str) -> Optional[str]:
+        if not name: return None
+        # Exact match
+        if name in self.files: return name
+        # Package match (pyspring.core -> pyspring.core.__init__) mechanism
+        # In our files map, __init__ files are mapped to package name.
+        # But what if import is 'pyspring.core.utils' and we have 'pyspring.core.utils.py'?
+
+        # We need to support prefix matching if we don't scan everything? 
+        # No, we assume we scan everything internal.
+
+        if name in self.files:
+            return name
+
+        # Try finding if it is a prefix of some file? 
+        # Actually standard python resolution:
+        # If I import 'pyspring.core', and 'pyspring/core/__init__.py' exists, it is 'pyspring.core'.
+        # My get_module_name handles __init__ correctly.
+
+        return None
+
+    def scan_graph(self):
+        """Step 1: Build Load-Time Dependency Graph"""
+        print_info(f"Building load-time dependency graph for {self.root_path}...")
+
+        # 1. Discover all files
+        for root, _, files in os.walk(self.root_path):
+            if 'venv' in root or '.git' in root or '__pycache__' in root: continue
+            for file in files:
+                if file.endswith('.py'):
+                    full_path = os.path.join(root, file)
+                    mod_name = self.get_module_name(full_path)
+                    if mod_name:
+                        self.files[mod_name] = full_path
+
+        # 2. Parse for dependencies
+        for mod, path in self.files.items():
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                tree = ast.parse(content, filename=path)
+                visitor = LoadTimeGraphBuilder(mod, self.resolve_import)
+                visitor.visit(tree)
+                self.graph[mod] = visitor.dependencies
+            except Exception:
+                pass
+
+    def check_reachability(self, start_node: str, target_node: str) -> bool:
+        """Check if target_node is reachable from start_node in the graph (BFS)"""
+        queue = deque([start_node])
+        visited = {start_node}
+
+        while queue:
+            current = queue.popleft()
+            if current == target_node:
+                return True
+
+            for neighbor in self.graph.get(current, []):
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+        return False
+
+    def lift_imports(self, dry_run: bool = True):
+        """Step 2 & 3: Find Local Imports and Lift if Safe"""
+        self.scan_graph()
+
+        if dry_run:
+            print_info("[DRY RUN] No files will be modified.")
+
+        modified_count = 0
+        commented_count = 0
+
+        for mod, path in self.files.items():
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+
+                tree = ast.parse(content)
+                visitor = LocalImportVisitor(mod, self.resolve_import)
+                visitor.visit(tree)
+
+                if not visitor.local_imports:
+                    continue
+
+                # We need to process edits effectively. 
+                # Since we are modifying file, line numbers change.
+                # We should calculate all edits first, then apply from bottom to top?
+                # Or just split lines.
+
+                lines = content.splitlines()
+                # Imports to append to top (deduplicated)
+                top_imports_to_add = set()
+
+                # We will process modifications line by line.
+                # It's easier to modify 'lines' array.
+
+                # Sort local imports by line number descending to avoid interfering
+                visitor.local_imports.sort(key=lambda x: x['node'].lineno, reverse=True)
+
+                file_modified = False
+
+                added_top_imports = []
+
+                for item in visitor.local_imports:
+                    node = item['node']
+                    targets = item['targets']
+
+                    # Logic: Can we lift?
+                    # We need to check if ANY of the targets depends on current 'mod'.
+                    # If so, cycle!
+
+                    is_safe = True
+                    reason = ""
+
+                    for target in targets:
+                        if target == mod: continue  # Self import?
+                        if self.check_reachability(target, mod):
+                            is_safe = False
+                            reason = f"Cyclic dependency with {target}"
+                            break
+
+                    # Check if already has comment
+                    line_idx = node.lineno - 1
+                    current_line = lines[line_idx]
+
+                    if "# NOTE: Cannot lift" in current_line or "# Circular" in current_line:
+                        continue
+
+                    indentation = len(current_line) - len(current_line.lstrip())
+                    indent_str = current_line[:indentation]
+
+                    if is_safe:
+                        # Extract the import string
+                        # Handle multi-line imports? AST node has end_lineno in Python 3.8+
+                        end_line_idx = getattr(node, 'end_lineno', node.lineno) - 1
+
+                        # Get full text of import statement
+                        import_lines = lines[line_idx: end_line_idx + 1]
+                        import_text = "\n".join(import_lines).strip()
+
+                        if dry_run:
+                            print_info(f"[Dry Run] Would lift: {import_text} in {mod}")
+                        else:
+                            # Remove from local
+                            # We comment it out or delete? User said "lift".
+                            # Deleting is cleaner, but we must be careful with formatting.
+                            # Simple approach: Delete lines.
+                            del lines[line_idx: end_line_idx + 1]
+
+                            # Queue for adding to top
+                            # We just store the text to add it later
+                            if import_text not in added_top_imports:
+                                added_top_imports.append(import_text)
+
+                            file_modified = True
+                            modified_count += 1
+                            print_info(f"Lifting: {import_text} in {mod}")
+                    else:
+                        if dry_run:
+                            print_info(f"[Dry Run] Unsafe import in {mod}: {reason}")
+                        else:
+                            # Add comment
+                            # Verify we didn't already add it
+                            if "Cannot lift" not in lines[line_idx - 1] if line_idx > 0 else True:
+                                comment = f"{indent_str}# NOTE: Cannot lift due to circular dependency: {reason}"
+                                lines.insert(line_idx, comment)
+                                file_modified = True
+                                commented_count += 1
+
+                if file_modified and not dry_run:
+                    # Add lifted imports to top
+                    # Find last import or just put at top?
+                    # Put after __future__ or docstring.
+
+                    insert_pos = 0
+                    if len(lines) > 0 and (lines[0].startswith('"""') or lines[0].startswith("'''")):
+                        # Skip docstring (naive)
+                        for i, line in enumerate(lines):
+                            if (line.strip().endswith('"""') or line.strip().endswith("'''")) and i >= insert_pos:
+                                insert_pos = i + 1
+                                break
+
+                    # Insert collected imports
+                    if added_top_imports:
+                        lines.insert(insert_pos, "")
+                        for imp in reversed(added_top_imports):
+                            lines.insert(insert_pos, imp)
+
+                    # Write back
+                    with open(path, 'w', encoding='utf-8') as f:
+                        f.write("\n".join(lines) + "\n")
+
+            except SyntaxError:
+                print_error(f"Syntax error in {path}")
+            except Exception as e:
+                print_error(f"Error processing {path}: {e}")
+
+        if dry_run:
+            print_success(f"[Dry Run] Found {modified_count} liftable imports and {commented_count} unsafe imports.")
+        else:
+            print_success(f"Lifted {modified_count} imports. Marked {commented_count} unsafe imports.")
+
+
+def run_lift_imports(args):
+    apply = getattr(args, 'apply', False)
+
+    if apply:
+        user_input = input(f"Are you sure you want to lift safe imports in '{args.target}'? [y/N] ").strip().lower()
+        if user_input != 'y':
+            print("Operation cancelled.")
+            return
+
+    lifter = ImportLifter(args.target)
+    lifter.lift_imports(dry_run=not apply)

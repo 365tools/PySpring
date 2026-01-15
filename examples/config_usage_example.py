@@ -6,7 +6,7 @@
 2. 点号路径访问（新增 get_config）
 3. 配置重载
 """
-from pyspring.core.abstracts.wrapper import SystemService
+from pyspring.core.services.system import SystemService
 
 
 def example_direct_access():

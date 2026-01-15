@@ -3,20 +3,14 @@ from collections import OrderedDict
 from typing import Optional, Any
 
 from pyspring.log.instance import logger
-from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.cache.providers.memory.interfaces.service import IMemoryService
 
 
 class MemoryService(IMemoryService):
 
-    def __init__(self):
-        # 从 YAML 配置加载
-        config_manager = RepositoriesConfigManager()
-        cache_config = config_manager.get_cache_config()
-        memory_config = cache_config.get('memory', {})
-
-        self.max_size = memory_config.get('max_size', 1000)
-        self.default_ttl = memory_config.get('ttl', 3600)
+    def __init__(self, max_size: int = 1000, ttl: int = 3600):
+        self.max_size = max_size
+        self.default_ttl = ttl
 
         # 使用有序字典存储数据，支持按插入顺序排序
         self._store: OrderedDict[str, tuple[Any, Optional[float]]] = OrderedDict()

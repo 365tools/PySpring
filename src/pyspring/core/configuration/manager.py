@@ -4,6 +4,7 @@
 提供配置管理的通用接口和实现。
 完全通用，使用泛型支持任何配置类型。
 """
+import os
 from abc import ABC, abstractmethod
 from typing import Any, Optional, TypeVar, Generic
 
@@ -116,7 +117,6 @@ class BaseConfigManager(ISingletonService, ABC, Generic[TSettings]):
             key: 环境变量
             value: 环境变量
         """
-        import os
         os.environ[key] = value
         logger.debug(f"✅ 已设置环境变。 {key}")
 

@@ -3,6 +3,7 @@
 - 返回 JSON：{"code": <http_status>, "message": <string|optional>, "data": <payload|optional>}
 - code 使用 HTTP 状态码；message 为提示信息；data 为有效数据或错误信息
 """
+import traceback as _tb
 from typing import Any, Dict, Optional, Generic, TypeVar
 
 from fastapi.encoders import jsonable_encoder
@@ -102,7 +103,6 @@ class Response:
             payload.setdefault("reason", str(captured_exc))
             if include_trace:
                 try:
-                    import traceback as _tb
                     tb_text = "\n".join(_tb.TracebackException.from_exception(captured_exc).format())
                     lines = tb_text.strip().splitlines()
                     payload.setdefault("traceback", "\n".join(lines[-8:]) if lines else tb_text)

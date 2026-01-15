@@ -5,6 +5,26 @@ from fastapi import Request, HTTPException, status
 from pyspring.log.instance import logger
 
 
+def _check_single_permission(required: str, owned_list: List[str]) -> bool:
+    """
+    检查单个权限是否满足，支持简单的 * 通配符
+    Example: 
+      owned=['user:*'], required='user:read' -> True
+      owned=['user:read'], required='user:read' -> True
+    """
+    if required in owned_list:
+        return True
+
+    # 检查通配符
+    for owned in owned_list:
+        if owned.endswith('*'):
+            prefix = owned.rstrip('*')
+            if required.startswith(prefix):
+                return True
+
+    return False
+
+
 def require_permissions(permissions: Union[str, List[str]], logic: str = "OR") -> Callable:
     """
     创建一个依赖注入函数，用于检查当前用户是否具有指定权限。
@@ -71,26 +91,6 @@ def require_permissions(permissions: Union[str, List[str]], logic: str = "OR") -
         return True  # 验证通过
 
     return permission_dependency
-
-
-def _check_single_permission(required: str, owned_list: List[str]) -> bool:
-    """
-    检查单个权限是否满足，支持简单的 * 通配符
-    Example: 
-      owned=['user:*'], required='user:read' -> True
-      owned=['user:read'], required='user:read' -> True
-    """
-    if required in owned_list:
-        return True
-
-    # 检查通配符
-    for owned in owned_list:
-        if owned.endswith('*'):
-            prefix = owned.rstrip('*')
-            if required.startswith(prefix):
-                return True
-
-    return False
 
 
 # 别名

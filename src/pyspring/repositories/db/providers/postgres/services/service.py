@@ -1,11 +1,10 @@
-import os
+import asyncio
 from typing import Any, Optional, List, Dict
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from pyspring.log.instance import logger
-from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.providers.postgres.interfaces.service import IPostgresService
 
 
@@ -13,28 +12,25 @@ class PostgresService(IPostgresService):
     """PostgreSQL数据库服务实现"""
 
     def __init__(self, host: str = "localhost", port: int = 5432, database: str = "postgres",
-                 user: str = "postgres", password: Optional[str] = None):
-        # 从YAML配置加载
-        config_manager = RepositoriesConfigManager()
-        db_config = config_manager.get_database_config()
-        postgres_config = db_config.get('postgresql', {})
-
-        # 从配置文件获取连接参数，支持环境变量覆盖
-        self.host = os.getenv('POSTGRES_HOST', postgres_config.get('host', host))
-        self.port = int(os.getenv('POSTGRES_PORT', postgres_config.get('port', port)))
-        self.database = os.getenv('POSTGRES_DB', postgres_config.get('database', database))
-        self.user = os.getenv('POSTGRES_USER', postgres_config.get('user', user))
-        self.password = os.getenv('POSTGRES_PASSWORD', postgres_config.get('password', password))
+                 user: str = "postgres", password: Optional[str] = None, pool_config: Optional[dict] = None):
+        """
+        初始化 Postgres 服务 (纯粹的参数注入，不依赖配置管理器)
+        """
+        self.host = host
+        self.port = port
+        self.database = database
+        self.user = user
+        self.password = password
+        self.pool_config = pool_config or {}
 
         self.url = self._build_url()
 
         # 从配置中获取连接池参数
-        pool_config = postgres_config.get('pool', {})
-        pool_size = pool_config.get('size', 5)
-        max_overflow = pool_config.get('max_overflow', 10)
-        pool_recycle = pool_config.get('recycle', 3600)
-        pool_timeout = pool_config.get('timeout', 30)
-        pool_pre_ping = pool_config.get('pre_ping', True)
+        pool_size = self.pool_config.get('size', 5)
+        max_overflow = self.pool_config.get('max_overflow', 10)
+        pool_recycle = self.pool_config.get('recycle', 3600)
+        pool_timeout = self.pool_config.get('timeout', 30)
+        pool_pre_ping = self.pool_config.get('pre_ping', True)
 
         # 直接在构造函数中创建连接池
         self._engine = create_async_engine(
@@ -167,7 +163,6 @@ class PostgresService(IPostgresService):
         try:
             if self._engine is not None:
                 # ✅ 使用 asyncio.wait_for 添加超时保护
-                import asyncio
                 logger.debug("🔄 正在关闭 PostgreSQL 连接池...")
                 try:
                     await asyncio.wait_for(

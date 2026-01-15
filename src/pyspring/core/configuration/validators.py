@@ -1,8 +1,11 @@
 """
+import os
+
 配置验证
 
 提供配置验证的通用功能
 """
+import os
 from typing import Any, Callable, Dict, List
 
 from pydantic import ValidationError
@@ -111,7 +114,6 @@ class ConfigValidator:
         Returns:
             tuple[bool, List[str]]: (是否有效, 缺失变量列表)
         """
-        import os
         missing = []
 
         for var in required_vars:

@@ -1,7 +1,10 @@
 """
+import traceback
+
 Clean command core logic
 """
 import sys
+import traceback
 
 from .cache import clean_project_cache
 
@@ -16,7 +19,6 @@ def run(args):
 
     except Exception as e:
         if args.verbose:
-            import traceback
             traceback.print_exc()
         else:
             print(f"❌ Error: {e}")

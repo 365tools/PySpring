@@ -37,7 +37,6 @@ def test_imports():
         from pyspring.repositories.base.config.loader import RepositoriesConfigManager
         print("  ✓ RepositoriesConfigManager 导入成功")
 
-        from pyspring.core.configuration.manager import BaseConfigManager
         print("  ✓ BaseConfigManager 导入成功")
 
         from pyspring.core.configuration.registry import ConfigRegistry

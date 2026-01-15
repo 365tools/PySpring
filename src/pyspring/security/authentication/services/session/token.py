@@ -3,13 +3,16 @@ from datetime import datetime, timedelta, UTC
 from typing import Optional, Dict, Any
 
 from jose import JWTError, jwt
+from sqlalchemy import delete
 from sqlalchemy import select, and_
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
-from pyspring.core.abstracts.wrapper import SystemService
+from pyspring.core.services.system import SystemService
+from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
 from pyspring.security.authorization.rabc.orm.token_tables import TokenBlacklistTable, RefreshTokenTable
 from pyspring.security.authorization.rabc.schema.constant import RevokeTokenReason
 
@@ -64,8 +67,6 @@ class TokenManagerService(ISingletonService):
         self.db = db
 
         # 初始化 JWT 加密管理器（通过 IoC 容器）
-        from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
-        from pyspring.ioc.manager import AppContainerManager
         container = AppContainerManager()
         self.jwt_encryption = container.get(JWTEncryptionManager)
 
@@ -490,7 +491,6 @@ class TokenManagerService(ISingletonService):
                 now = datetime.now(UTC)
 
                 # 清理过期的黑名单
-                from sqlalchemy import delete
                 blacklist_stmt = delete(TokenBlacklistTable).where(
                     TokenBlacklistTable.expires_at < now
                 )

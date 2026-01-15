@@ -1,12 +1,19 @@
 """
+from pyspring.repositories.db.providers.sqlite.services.service import SqliteService
+from pyspring.repositories.db.providers.postgres.services.service import PostgresService
+
 数据库连接初始化器
 
 在应用启动时初始化数据库连接（PostgreSQL/SQLite）
 """
+import os
+
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.manager import DBManagerService
+from pyspring.repositories.db.providers.postgres.services.service import PostgresService
+from pyspring.repositories.db.providers.sqlite.services.service import SqliteService
 
 
 class DBConnectionInitializer(IStartupInitializer):
@@ -87,8 +94,21 @@ class DBConnectionInitializer(IStartupInitializer):
             bool: 是否成功
         """
         try:
-            from pyspring.repositories.db.providers.postgres.services.service import PostgresService
-            postgres = PostgresService()
+            # 解析配置
+            config_manager = RepositoriesConfigManager()
+            db_config = config_manager.get_database_config()
+            postgres_config = db_config.get('postgresql', {})
+
+            host = os.getenv('POSTGRES_HOST', postgres_config.get('host', "localhost"))
+            port = int(os.getenv('POSTGRES_PORT', postgres_config.get('port', 5432)))
+            database = os.getenv('POSTGRES_DB', postgres_config.get('database', "postgres"))
+            user = os.getenv('POSTGRES_USER', postgres_config.get('user', "postgres"))
+            password = os.getenv('POSTGRES_PASSWORD', postgres_config.get('password', None))
+            pool_config = postgres_config.get('pool', {})
+
+            # 注入参数
+            postgres = PostgresService(host=host, port=port, database=database, user=user, password=password, pool_config=pool_config)
+            
             # 测试 PostgreSQL 连接
             if await postgres.ping():
                 self.db_manager.set_provider(postgres)
@@ -110,8 +130,15 @@ class DBConnectionInitializer(IStartupInitializer):
             bool: 是否成功（SQLite 总是成功）
         """
         try:
-            from pyspring.repositories.db.providers.sqlite.services.service import SqliteService
-            sqlite = SqliteService()
+            config_manager = RepositoriesConfigManager()
+            db_config = config_manager.get_database_config()
+            sqlite_config = db_config.get('sqlite', {})
+
+            database = sqlite_config.get('database', "data/app.db")
+            pool_config = sqlite_config.get('pool', {})
+
+            sqlite = SqliteService(database=database, pool_config=pool_config)  # resolve_path 默认为 True
+            
             # 测试 SQLite 连接
             if await sqlite.ping():
                 self.db_manager.set_provider(sqlite)

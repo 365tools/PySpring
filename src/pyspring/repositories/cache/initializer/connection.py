@@ -1,12 +1,19 @@
 """
+from pyspring.repositories.cache.providers.memory.services.service import MemoryService
+from pyspring.repositories.cache.providers.redis.services.service import RedisService
+
 缓存初始化器
 
 在应用启动时初始化缓存服务（Redis/Memory）
 """
+import os
+
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.cache.manager import CacheManagerService
+from pyspring.repositories.cache.providers.memory.services.service import MemoryService
+from pyspring.repositories.cache.providers.redis.services.service import RedisService
 
 
 class CacheConnectionInitializer(IStartupInitializer):
@@ -87,8 +94,20 @@ class CacheConnectionInitializer(IStartupInitializer):
             bool: 是否成功
         """
         try:
-            from pyspring.repositories.cache.providers.redis.services.service import RedisService
-            redis = RedisService()
+            # 解析配置
+            config_manager = RepositoriesConfigManager()
+            cache_config = config_manager.get_cache_config()
+            redis_config = cache_config.get('redis', {})
+
+            host = os.getenv('REDIS_HOST', redis_config.get('host', "localhost"))
+            port = int(os.getenv('REDIS_PORT', redis_config.get('port', 6379)))
+            db = int(os.getenv('REDIS_DB', redis_config.get('db', 0)))
+            password = os.getenv('REDIS_PASSWORD', redis_config.get('password', None))
+            pool_config = redis_config.get('pool', {})
+
+            # 注入配置
+            redis = RedisService(host=host, port=port, db=db, password=password, pool_config=pool_config)
+            
             # 测试 Redis 连接
             if await redis.ping():
                 self.cache_manager.set_provider(redis)
@@ -109,8 +128,14 @@ class CacheConnectionInitializer(IStartupInitializer):
         Returns:
             bool: 是否成功（Memory 总是成功）
         """
-        from pyspring.repositories.cache.providers.memory.services.service import MemoryService
-        memory = MemoryService()
+        config_manager = RepositoriesConfigManager()
+        cache_config = config_manager.get_cache_config()
+        memory_config = cache_config.get('memory', {})
+
+        max_size = memory_config.get('max_size', 1000)
+        ttl = memory_config.get('ttl', 3600)
+
+        memory = MemoryService(max_size=max_size, ttl=ttl)
         self.cache_manager.set_provider(memory)
-        logger.info("✅ Memory 缓存已初始化")
+        logger.info(f"✅ Memory 缓存已初始化 (max_size={max_size})")
         return True

@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Optional, List
 
 from dotenv import load_dotenv, dotenv_values
-from loguru import logger
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.log.instance import logger
 
 
 # 实现提供了以下功能:

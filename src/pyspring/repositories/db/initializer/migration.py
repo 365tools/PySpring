@@ -13,7 +13,7 @@ from pyspring.core.abstracts.interfaces.initializer.startup import IStartupIniti
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.utils.config_finder import detect_project_root
+from pyspring.utils.config.finder import detect_project_root
 
 
 class MigrationInitializer(IStartupInitializer):

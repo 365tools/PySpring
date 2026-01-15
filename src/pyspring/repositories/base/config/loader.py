@@ -1,4 +1,7 @@
 """
+from pyspring.repositories.db.config import DatabaseConfig
+from pyspring.repositories.cache.config import CacheConfig
+
 数据仓储配置管理器
 从 YAML 文件加载缓存和数据库配置
 """
@@ -10,7 +13,7 @@ from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.config import CacheConfig
 from pyspring.repositories.db.config import DatabaseConfig
-from pyspring.utils.config_finder import find_config_file
+from pyspring.utils.config.finder import find_config_file
 
 
 class RepositoriesConfigManager(ISingletonService):
@@ -69,6 +72,9 @@ class RepositoriesConfigManager(ISingletonService):
         Returns:
             默认配置字典（基于 Pydantic 模型生成）
         """
+        # 注意：此处必须使用局部导入，否则会导致循环依赖
+        # CacheConfig -> initializer -> connection -> RepositoriesConfigManager(this) -> CacheConfig
+        
         return {
             'cache': CacheConfig().model_dump(by_alias=True),
             'database': DatabaseConfig().model_dump(by_alias=True)

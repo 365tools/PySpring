@@ -147,6 +147,62 @@ def generate_init_content(pkg_path: str, modules: dict, use_absolute: bool = Fal
     return "\n".join(lines)
 
 
+def process_fixed_recursive(target_path: str):
+    """
+    Recursively process directory for fixed exports.
+    """
+    # 1. Scan .py files
+    try:
+        files = [f for f in os.listdir(target_path) if f.endswith('.py') and f != '__init__.py']
+    except FileNotFoundError:
+        return
+
+    # 2. Scan Sub-directories (Packages)
+    dirs = [d for d in os.listdir(target_path) if os.path.isdir(os.path.join(target_path, d))
+            and os.path.exists(os.path.join(target_path, d, '__init__.py'))
+            and not d.startswith('_') and d != '__pycache__']
+
+    # Recurse first
+    for d in dirs:
+        process_fixed_recursive(os.path.join(target_path, d))
+
+    # Process current dir
+    items = sorted(files + dirs)
+    modules_map = {}
+
+    for item in items:
+        full_path = os.path.join(target_path, item)
+        is_pkg = os.path.isdir(full_path)
+
+        if is_pkg:
+            # Scheme B: Export sub-package name
+            mod_name = item
+            modules_map[mod_name] = [item]
+            continue
+
+        # If file, parse it
+        defined, explicit_all = get_defined_symbols(full_path)
+
+        if explicit_all is not None:
+            symbols = explicit_all
+        else:
+            symbols = defined
+
+        if symbols:
+            mod_name = item[:-3]
+            modules_map[mod_name] = symbols
+
+    if not modules_map:
+        return
+
+    content = generate_init_content(target_path, modules_map, use_absolute=False)
+    init_path = os.path.join(target_path, '__init__.py')
+
+    with open(init_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print_success(f"Updated {init_path} (Fixed Explicit)")
+
+
 def sync_exports(args):
     """
     Sync exported symbols in __init__.py for a given package directory.
@@ -157,85 +213,19 @@ def sync_exports(args):
         print_error(f"Target path is not a directory: {target_path}")
         return
 
-    print_info(f"Scanning package: {target_path}")
+    is_fixed = getattr(args, 'fixed', False)
 
-    # Check flags for mode
-    use_absolute = getattr(args, 'absolute', True)
-    use_relative = getattr(args, 'relative', False)
+    # Check for legacy flags if passed (though argparse should handle it, just in case of programmatic use)
+    # The new dev.py uses --fixed and --dynamic. 
 
-    # Special Case: --absolute requested to mean "Dynamic Auto Import"
-    # The user requested that "--absolute" generates the auto_import_package code.
-    # While confusing naming, we stick to the user's mapping.
-    # Logic: 
-    # If --relative is specified -> Use Explicit Relative
-    # If --absolute is specified (default) -> Use Dynamic (Auto Import) code as requested
-
-    if not use_relative:
-        # Dynamic Mode (mapped to "Absolute" flag per request)
+    if is_fixed:
+        print_info(f"Scanning package (Recursive Fixed): {target_path}")
+        process_fixed_recursive(target_path)
+    else:
+        # Dynamic Mode (Default)
+        print_info(f"Scanning package (Dynamic): {target_path}")
         content = generate_dynamic_content()
         init_path = os.path.join(target_path, '__init__.py')
         with open(init_path, 'w', encoding='utf-8') as f:
             f.write(content)
         print_success(f"Updated {init_path} (Dynamic Import)")
-        return
-
-    # Else: Explicit Relative Mode logic
-
-    # 1. Scan .py files
-    files = [f for f in os.listdir(target_path) if f.endswith('.py') and f != '__init__.py']
-
-    # 2. Scan Sub-directories (Packages)
-    dirs = [d for d in os.listdir(target_path) if os.path.isdir(os.path.join(target_path, d))
-            and os.path.exists(os.path.join(target_path, d, '__init__.py'))
-            and not d.startswith('_') and d != '__pycache__']
-
-    items = sorted(files + dirs)
-
-    modules_map = {}
-
-    for item in items:
-        full_path = os.path.join(target_path, item)
-        is_pkg = os.path.isdir(full_path)
-
-        if is_pkg:
-            # Scheme B: Do not flatten sub-packages.
-            # Just export the package name itself to allow 'from package import subpackage'
-            # and autocompletion support.
-            mod_name = item
-            modules_map[mod_name] = [item]  # Self-reference logic handled in generator
-            print(f"  - {item}: Found sub-package")
-            continue
-
-        # If file, parse it
-        defined, explicit_all = get_defined_symbols(full_path)
-
-        # Logic: If __all__ exists, use it. Else use defined public symbols.
-        if explicit_all is not None:
-            symbols = explicit_all
-        else:
-            symbols = defined
-
-        if symbols:
-            mod_name = item[:-3]
-            modules_map[mod_name] = symbols
-            print(f"  - {item}: Found {len(symbols)} exports")
-
-    if not modules_map:
-        print_info("No exports found.")
-        return
-
-    # Check flags
-    # use_absolute = getattr(args, 'absolute', True) # Legacy logic
-    # if getattr(args, 'relative', False):
-    #     use_absolute = False
-
-    # Force using relative for explicit generation if we are here
-    content = generate_init_content(target_path, modules_map, use_absolute=False)
-
-    init_path = os.path.join(target_path, '__init__.py')
-
-    with open(init_path, 'w', encoding='utf-8') as f:
-        f.write(content)
-    print_success(f"Updated {init_path} (Explicit Relative Import)")
-
-    print_success(f"Updated {init_path}")

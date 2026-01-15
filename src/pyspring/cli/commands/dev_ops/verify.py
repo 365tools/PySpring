@@ -1,4 +1,5 @@
 """验证生成的 pyproject.toml 完整内容"""
+import shutil
 import tempfile
 from pathlib import Path
 
@@ -25,5 +26,4 @@ def verify_pyproject(args):
             print("❌ Failed to generate pyproject.toml")
     finally:
         # Cleanup
-        import shutil
         shutil.rmtree(temp_dir, ignore_errors=True)

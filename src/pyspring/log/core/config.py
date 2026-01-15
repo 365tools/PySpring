@@ -5,7 +5,7 @@
 """
 from pydantic import Field
 
-from pyspring.core.configuration.base import ConfigSection
+from pyspring.core.abstracts.config import ConfigSection
 
 
 class ConsoleLoggingConfig(ConfigSection):

@@ -10,7 +10,7 @@ from typing import Optional
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
-from pyspring.core.configuration.base import ConfigSection
+from pyspring.core.abstracts.config import ConfigSection
 
 
 class RedisPoolConfig(ConfigSection):

@@ -1,10 +1,14 @@
 """
+from pyspring.log.instance import logger
+
 日志追踪上下文接口
 提供统一方式设置并使用带 trace_id 的日志
 """
 from contextlib import contextmanager
 from contextvars import ContextVar
 from typing import Optional
+
+from pyspring.log.instance import logger
 
 # 仅保留一个上下文变量，供过滤器使用（LoguruConfig 会读取它以填充 extra[trace_id]）
 _trace_id_ctx: ContextVar[Optional[str]] = ContextVar("trace_id", default=None)
@@ -16,7 +20,6 @@ def trace_logger(trace_id: str):
         log = trace_logger(trace_id)
         log.info("message")
     """
-    from pyspring.log.instance import logger
     _trace_id_ctx.set(trace_id)
     return logger.bind(trace_id=trace_id)
 
@@ -28,7 +31,6 @@ def trace_logging(trace_id: str):
         with trace_logging(trace_id) as log:
             log.info("message")
     """
-    from pyspring.log.instance import logger
     token = _trace_id_ctx.set(trace_id)
     try:
         yield logger.bind(trace_id=trace_id)

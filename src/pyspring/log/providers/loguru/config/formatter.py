@@ -2,9 +2,12 @@
 基于loguru的现代化日志系统
 采用主流的loguru解决方案，支持YAML配置
 """
+import importlib
 import logging
 import os
+import re
 import sys
+import time
 from pathlib import Path
 
 from loguru import logger
@@ -22,6 +25,9 @@ _CONTEXT_VARS_DEFINITIONS = []
 # 全局缓存已解析的 ContextVar 对象
 _CTX_VARS_CACHE = {}
 
+# 全局项目根目录缓存 (解决 LoguruConfig circular reference 问题)
+_PROJECT_ROOT = None
+
 
 def global_record_patcher(record):
     """
@@ -33,14 +39,9 @@ def global_record_patcher(record):
     if "file_relative" not in record["extra"]:
         try:
             # 尝试从 record['file'].path 计算
-            # 注意：LoguruConfig 可能还没 import 全，或者 project_root 尚未计算
-            # 为简单起见，这里先尝试简单计算，若需复杂逻辑可回调 LoguruConfig
             path_obj = Path(record["file"].path)
-            # 简单的向上查找标记 (简化版 root detection，避免 circular import 或复杂调用)
-            # 实际上 LoguruConfig._detect_project_root() 是缓存的类方法，可以尝试调用
-            # 但为了 patcher 的高性能和独立性，我们尽量只做必要操作
-            # 这里我们假设 LoguruConfig 已经初始化过 project_root
-            root = LoguruConfig.project_root
+            # 优先使用全局缓存的 root
+            root = _PROJECT_ROOT
             if root:
                 record["extra"]["file_relative"] = str(path_obj.relative_to(root))
             else:
@@ -67,7 +68,6 @@ def global_record_patcher(record):
             try:
                 if var_path:
                     module_name, var_name = var_path.rsplit('.', 1)
-                    import importlib
                     module = importlib.import_module(module_name)
                     ctx_var = getattr(module, var_name)
                     temp.append((key, ctx_var, default_val))
@@ -111,7 +111,6 @@ class LoguruConfig:
             try:
                 if var_path:
                     module_name, var_name = var_path.rsplit('.', 1)
-                    import importlib
                     module = importlib.import_module(module_name)
                     ctx_var = getattr(module, var_name)
                     merged[key] = (key, ctx_var, default_val)
@@ -159,7 +158,10 @@ class LoguruConfig:
     @classmethod
     def _detect_project_root(cls) -> Path:
         """检测项目根目录"""
+        global _PROJECT_ROOT
+        
         if cls.project_root is not None:
+            _PROJECT_ROOT = cls.project_root
             return cls.project_root
 
         try:
@@ -182,6 +184,7 @@ class LoguruConfig:
             else:
                 cls.project_root = p.parents[5] if len(p.parents) >= 6 else p.parent.parent.parent
 
+        _PROJECT_ROOT = cls.project_root
         return cls.project_root
 
     @classmethod
@@ -190,7 +193,6 @@ class LoguruConfig:
         解析配置中的 format 字符串，自动发现未注册的 extra 字段并注册默认值为 N/A
         防止因配置引用了不存在的 extra 字段导致 Crash
         """
-        import re
 
         # 1. 收集所有配置中使用的 format 字符串
         formats = []
@@ -250,7 +252,6 @@ class LoguruConfig:
         if cls.configured and not force:
             return
 
-        import time
         current_time = time.time()
         if hasattr(cls, '_last_config_time'):
             if current_time - cls._last_config_time < 1.0:
@@ -418,7 +419,6 @@ class LoguruConfig:
     @classmethod
     def resolve_file_path(cls, file_path: str) -> str:
         """解析日志文件路径"""
-        from pathlib import Path
 
         # 如果是绝对路径，直接返回
         file_path_obj = Path(file_path)

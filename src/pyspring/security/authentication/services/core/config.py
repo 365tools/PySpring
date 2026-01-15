@@ -1,4 +1,6 @@
 """
+from sqlalchemy import inspect, text
+
 认证服务初始化服务
 
 职责:
@@ -6,9 +8,12 @@
 
 注意: 数据库引擎和会话管理统一由 DBManagerService 负责
 """
+import inspect
+
+from sqlalchemy import text
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
-from pyspring.core.abstracts.wrapper import SystemService
+from pyspring.core.services.system import SystemService
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.repositories.db.models.common.define import Base
@@ -55,7 +60,6 @@ class AuthConfigService(ISingletonService):
             # 检查表是否已存在
             async with engine.begin() as conn:
                 # 检查所有需要的表是否存在
-                from sqlalchemy import inspect, text
 
                 def check_tables(sync_conn):
                     inspector = inspect(sync_conn)

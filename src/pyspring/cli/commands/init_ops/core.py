@@ -1,14 +1,26 @@
 """
 PySpring Project Initialization Core Logic
 """
+import datetime
 import shutil
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
+
+from sqlalchemy import create_engine
+from sqlalchemy.schema import CreateTable
 
 from pyspring.cli.core.ui import (
     Colors, print_header, print_success, print_info,
     print_warning, print_error
+)
+from pyspring.security.authorization.rabc.orm.tables import (
+    UserTable, RoleTable, PermissionTable, UserRoleTable,
+    RolePermissionTable
+)
+from pyspring.security.authorization.rabc.orm.token_tables import (
+    RefreshTokenTable, TokenBlacklistTable
 )
 from .keygen import generate_jwt_secret, generate_encryption_key
 from .templates import (
@@ -140,15 +152,6 @@ def create_database_scripts(target_dir: Path):
 
     try:
         # 尝试从 SQLAlchemy 模型生成 SQL 脚本
-        from pyspring.security.authorization.rabc.orm.tables import (
-            UserTable, RoleTable, PermissionTable, UserRoleTable,
-            RolePermissionTable
-        )
-        from pyspring.security.authorization.rabc.orm.token_tables import (
-            RefreshTokenTable, TokenBlacklistTable
-        )
-        from sqlalchemy import create_engine
-        from sqlalchemy.schema import CreateTable
 
         print_info("从 ORM 模型生成数据库脚本...")
 
@@ -178,7 +181,6 @@ def create_database_scripts(target_dir: Path):
         pg_scripts = []
         sqlite_scripts = []
 
-    from datetime import datetime
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # 格式化表定义
@@ -469,6 +471,5 @@ def run(args):
         sys.exit(1)
     except Exception as e:
         print_error(f"\nInitialization failed: {e}")
-        import traceback
         traceback.print_exc()
         sys.exit(1)

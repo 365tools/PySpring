@@ -1,3 +1,4 @@
+import asyncio
 import os
 from typing import Any, Optional, List, Dict
 
@@ -5,26 +6,25 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from pyspring.log.instance import logger
-from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.providers.sqlite.interfaces.service import ISqliteService
-from pyspring.utils.config_finder import detect_project_root
+from pyspring.utils.config.finder import detect_project_root
 
 
 class SqliteService(ISqliteService):
     """SQLite数据库服务实现"""
 
-    def __init__(self, database: str = "data/app.db"):
-        # 从YAML 配置加载
-        config_manager = RepositoriesConfigManager()
-        db_config = config_manager.get_database_config()
-        sqlite_config = db_config.get('sqlite', {})
-
-        self.database = sqlite_config.get('database', database)
+    def __init__(self, database: str = "data/app.db", resolve_path: bool = True, pool_config: Optional[dict] = None):
+        self.database = database
+        self.pool_config = pool_config or {}
 
         # 如果是相对路径, 基于项目根目录解析
-        if not os.path.isabs(self.database):
-            project_root = detect_project_root()
-            self.database = str(project_root / self.database)
+        if resolve_path and not os.path.isabs(self.database):
+            try:
+                project_root = detect_project_root()
+                self.database = str(project_root / self.database)
+            except Exception:
+                # Fallback if detection fails (e.g. in tests without project structure)
+                pass
 
         # 确保数据库目录存在
         db_dir = os.path.dirname(self.database)
@@ -34,10 +34,9 @@ class SqliteService(ISqliteService):
         self.url = self._build_url()
 
         # 从配置中获取连接池参数
-        pool_config = sqlite_config.get('pool', {})
-        pool_size = pool_config.get('size', 5)
-        max_overflow = pool_config.get('max_overflow', 10)
-        pool_recycle = pool_config.get('recycle', 3600)
+        pool_size = self.pool_config.get('size', 5)
+        max_overflow = self.pool_config.get('max_overflow', 10)
+        pool_recycle = self.pool_config.get('recycle', 3600)
 
         # 直接在构造函数中创建连接池
         self._engine = create_async_engine(
@@ -160,7 +159,6 @@ class SqliteService(ISqliteService):
         try:
             if self._engine is not None:
                 # ✅ 使用 asyncio.wait_for 添加超时保护
-                import asyncio
                 logger.debug("🔄 正在关闭 SQLite 连接池...")
                 try:
                     await asyncio.wait_for(
