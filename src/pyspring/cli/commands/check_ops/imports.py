@@ -7,7 +7,7 @@ import sys
 from typing import Generator
 
 from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.component.logging import suppress_specific_logs
+from pyspring.cli.component.logging.filter import suppress_specific_logs
 from pyspring.cli.core.ui import print_section, print_success, print_error
 from .static_import import run_ast_check
 

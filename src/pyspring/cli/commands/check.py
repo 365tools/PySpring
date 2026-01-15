@@ -4,6 +4,7 @@ PySpring Check Command
 from .check_ops.circular import run_check_circular
 from .check_ops.encoding import run_check_encoding
 from .check_ops.env import run as run_env_check
+from .check_ops.explicit_imports import run_check_explicit_imports
 from .check_ops.imports import run_check_import
 from .check_ops.lift import run_lift_imports
 from .check_ops.references import run_check_references
@@ -119,3 +120,22 @@ def register_subcommand(subparsers):
         help='Attempt to automatically fix missing imports for standard libraries'
     )
     ref_parser.set_defaults(func=run_check_references)
+
+    # Explicit Imports Check (Expand imports to full path)
+    explicit_parser = check_subparsers.add_parser(
+        'explicit-imports',
+        help='Expand imports to submodules',
+        description='Convert package-level imports (from pkg import Item) to submodule imports (from pkg.sub import Item) to bypass dynamic __init__ issues.'
+    )
+    explicit_parser.add_argument(
+        'path',
+        nargs='?',
+        default='.',
+        help='Target directory to scan (default: current directory)'
+    )
+    explicit_parser.add_argument(
+        '--fix',
+        action='store_true',
+        help='Apply changes modifying import statements'
+    )
+    explicit_parser.set_defaults(func=run_check_explicit_imports)

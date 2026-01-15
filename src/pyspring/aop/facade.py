@@ -3,8 +3,10 @@ PySpring AOP Main Entry Point
 """
 from typing import List, Any
 
-from .core import JoinPoint, Aspect, Advice, aspect, before, after, around
-from .proxy import AopProxy, create_proxy as _create_proxy_func
+from .core.decorators import aspect, before, after, around
+from .core.models import JoinPoint, Aspect, Advice
+from .proxy.factory import create_proxy as _create_proxy_func
+from .proxy.wrapper import AopProxy
 
 
 class Aop:

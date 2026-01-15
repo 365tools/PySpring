@@ -1,7 +1,10 @@
 """
 PySpring Internal Development Command
 """
-from .dev_ops import sync_templates, verify_pyproject, sync_exports, refactor_imports
+from .dev_ops.exports import sync_exports
+from .dev_ops.refactor import refactor_imports
+from .dev_ops.sync import sync_templates
+from .dev_ops.verify import verify_pyproject
 
 
 def register_subcommand(subparsers):

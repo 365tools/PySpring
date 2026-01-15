@@ -1,7 +1,7 @@
 """
 PySpring Security Command
 """
-from .security_ops import generate_encryption_key
+from .security_ops.encryption import generate_encryption_key
 
 
 def register_subcommand(subparsers):
