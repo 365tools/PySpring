@@ -5,6 +5,7 @@ Python文件错误检测脚本
 """
 import ast
 import builtins
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -260,7 +261,7 @@ class PythonFileChecker:
             with open(file_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
 
-            # 检查Unicode替换字符 U+FFFD (�)
+            # 检查Unicode替换字符 U+FFFD
             replacement_char = '\ufffd'
 
             for line_num, line in enumerate(lines, start=1):
@@ -276,7 +277,7 @@ class PythonFileChecker:
                         file_path=str(file_path.relative_to(self.root_dir)),
                         error_type="UnicodeCorruption",
                         line_number=line_num,
-                        message=f"发现乱码字符 '�' (U+FFFD) - 上下文: ...{context}..."
+                        message=f"发现乱码字符 '\\ufffd' (U+FFFD) - 上下文: ...{context}..."
                     ))
 
         except UnicodeDecodeError as e:
@@ -481,10 +482,17 @@ def main():
 
     # 可以通过命令行参数指定检查目录
     if len(sys.argv) > 1:
-        check_dir = Path(sys.argv[1])
+        # 支持相对路径和绝对路径
+        input_path = sys.argv[1]
+        if os.path.isabs(input_path):
+            check_dir = Path(input_path)
+        else:
+            check_dir = Path.cwd() / input_path
     else:
-        # 默认检查 src/pyspring 目录
-        check_dir = script_dir / "src" / "pyspring"
+        # 默认检查当前命令行所在的路径 (cwd)
+        check_dir = Path.cwd()
+
+    print(f"📂 检查目标: {check_dir.resolve()}")
 
     if not check_dir.exists():
         print(f"❌ 错误: 目录不存在: {check_dir}")

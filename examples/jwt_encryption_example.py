@@ -1,10 +1,10 @@
-﻿"""
+"""
 JWT 加密功能使用示例
 
 演示如何使用 JWT 加密功能
 """
 from cryptography.fernet import Fernet
-# from pyspring.ioc.container import ServiceContainer  <-- REMOVED (Not used in this file anyway)
+from pyspring.ioc.manager import AppContainerManager
 from pyspring.security.authentication.crypto.encryption import JWTEncryption, JWTEncryptionManager
 
 
@@ -99,9 +99,15 @@ def example_4_encryption_manager():
     print("示例 4: 使用加密管理器")
     print("=" * 60)
     # 通过 IoC 容器获取加密管理器单例
-    container = ServiceContainer()
-    manager = container.get(JWTEncryptionManager)
-    manager = jwt_encryption_manager
+    try:
+        container = AppContainerManager()
+        manager = container.get(JWTEncryptionManager)
+    except Exception as e:
+        print(f"⚠️ 无法获取容器或管理器: {e}")
+        # 用于演示的回退
+        print("💡 使用默认配置创建临时管理器用于演示")
+        from pyspring.core.conf import config
+        manager = JWTEncryptionManager(config)
 
     print(f"\n加密是否启用: {manager.is_enabled()}")
 

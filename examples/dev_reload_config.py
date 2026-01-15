@@ -3,11 +3,12 @@
 
 解决数据库文件变动导致的热重载卡死问题
 """
-
-# ==================== 方式1: 使用 watchfiles 配置（推荐） ====================
+import os
 
 # 在 uvicorn.run() 中配置
 import uvicorn
+
+# ==================== 方式1: 使用 watchfiles 配置（推荐） ====================
 
 if __name__ == "__main__":
     uvicorn.run(
@@ -137,7 +138,6 @@ uvicorn.run(
 # ==================== 方式5: 生产环境关闭热重载 ====================
 
 # 根据环境自动配置
-import os
 
 ENV = os.getenv("ENVIRONMENT", "development")
 

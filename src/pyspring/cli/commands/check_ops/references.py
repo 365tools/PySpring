@@ -302,69 +302,95 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
     Attempts to fix unresolved references by adding imports.
     Returns number of fixes applied.
     """
-    needed_imports = set()
-    for name, _, _ in unresolved:
+    # Map import_string -> min_line_needed
+    needed_imports = {}
+    for name, line, _ in unresolved:
         if name in KNOWN_IMPORTS:
-            needed_imports.add(KNOWN_IMPORTS[name])
+            imp_stmt = KNOWN_IMPORTS[name]
+            if imp_stmt not in needed_imports or line < needed_imports[imp_stmt]:
+                needed_imports[imp_stmt] = line
 
     if not needed_imports:
         return 0
 
-    # Use AST to find existing imports reliably, ignoring docstrings/comments
+    # Use AST to find existing imports and their locations
+    existing_imports = {}  # Map import_string -> min_lineno
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             code = f.read()
             tree = ast.parse(code)
 
-        existing_imports = set()
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    existing_imports.add(f"import {alias.name}")
+                    imp_str = f"import {alias.name}"
+                    if imp_str not in existing_imports or node.lineno < existing_imports[imp_str]:
+                        existing_imports[imp_str] = node.lineno
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ''
                 for alias in node.names:
                     name = alias.name
                     if module:
-                        existing_imports.add(f"from {module} import {name}")
+                        imp_str = f"from {module} import {name}"
                     else:
-                        existing_imports.add(f"from {name} import ...")  # approximation
+                        imp_str = f"from {name} import ..."
 
-        # Also simple text scan as fallback for lines that might look like imports but AST missed? 
-        # No, AST is the authority. If AST checks valid code, it knows what is imported.
+                    if imp_str not in existing_imports or node.lineno < existing_imports[imp_str]:
+                        existing_imports[imp_str] = node.lineno
 
     except SyntaxError:
         # Fallback to text scan if syntax error prevents parsing
+        # Note: Text scan doesn't provide reliable line numbers for multi-line logic easily
+        # For simplicity, we assume existing imports are "valid" if found by text
         with open(file_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        existing_imports = set(line.strip() for line in lines if line.strip().startswith('import ') or line.strip().startswith('from '))
-        code = "".join(lines)  # needed later? No, we read it.
+        existing_imports = {line.strip(): 1 for line in lines if line.strip().startswith('import ') or line.strip().startswith('from ')}
 
     imports_to_add = []
-    for imp in needed_imports:
-        # Check against existing to avoid duplication
-        # Normalize imp string (strip newline)
+    lines_to_remove_candidates = []  # List of (lineno, import_string)
+
+    for imp, need_line in needed_imports.items():
         imp_clean = imp.strip()
 
-        # Check if exactly this import statement exists
-        if imp_clean in existing_imports:
-            continue
+        # Determine if we should add it
+        should_add = False
 
-        # Check if the module is already imported (e.g. 'import os' vs 'from os import path')
-        # This is harder. simpler check:
-        if imp_clean.startswith('import '):
-            mod_name = imp_clean.split(' ')[1]
-            # If "import os" is needed, and "import os" is in existing, we skip.
-            # If "from os import path" is in existing, "os" is NOT defined as a name (unless "from os import path, os"? rare).
-            pass
+        if imp_clean not in existing_imports:
+            should_add = True
+        else:
+            # It exists, but is it early enough?
+            # If the existing import is AFTER the first usage, we need to add it (hoist it)
+            existing_line = existing_imports[imp_clean]
+            if existing_line > need_line:
+                should_add = True
+                # Mark for potential removal
+                lines_to_remove_candidates.append((existing_line, imp_clean))
 
-        imports_to_add.append(imp + '\n')
+        if should_add:
+            imports_to_add.append(imp + '\n')
 
     if not imports_to_add:
         return 0
 
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
+
+    # Process removals first
+    # We only remove lines if they strictly match the import statement to avoid deleting "import os, sys" when we only want "import os"
+    indices_to_drop = set()
+    for lineno, imp_content in lines_to_remove_candidates:
+        if lineno <= 0 or lineno > len(lines):
+            continue
+
+        line_content = lines[lineno - 1].strip()
+        # Remove comments for comparison
+        line_content_no_comment = line_content.split('#')[0].strip()
+
+        if line_content_no_comment == imp_content:
+            indices_to_drop.add(lineno - 1)
+
+    if indices_to_drop:
+        lines = [line for i, line in enumerate(lines) if i not in indices_to_drop]
 
     # logic to insert imports
     # 1. Find the docstring end

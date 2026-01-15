@@ -49,7 +49,10 @@ def detect_encoding_issue(file_path: str) -> Tuple[bool, str, str]:
 
         # Try decode as utf-8
         try:
-            raw.decode('utf-8')
+            content = raw.decode('utf-8')
+            # Check for Unicode Replacement Character (indicating previous corruption)
+            if '\ufffd' in content:
+                return True, 'Corrupted (U+FFFD)', 'utf-8'
             return False, None, 'utf-8'
         except UnicodeDecodeError:
             # Try to guess common encodings (simple fallback)
