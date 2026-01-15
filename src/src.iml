@@ -4,6 +4,8 @@
     <exclude-output />
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/pyspring.egg-info" />
+      <excludeFolder url="file://$MODULE_DIR$/pyspring_core.egg-info" />
     </content>
     <orderEntry type="jdk" jdkName="uv (PySpring)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />

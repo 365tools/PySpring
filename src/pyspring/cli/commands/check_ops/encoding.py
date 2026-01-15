@@ -5,6 +5,7 @@ import os
 import sys
 from typing import List, Tuple
 
+from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import print_section
 
 
@@ -17,7 +18,7 @@ def collect_text_files(base_path: str) -> List[str]:
     if not os.path.exists(abs_base):
         return []
 
-    ignored_dirs = {'.git', '.venv', 'venv', '__pycache__', 'build', 'dist', '.idea', '.vscode', 'node_modules'}
+    ignored_dirs = get_ignore_list(os.getcwd())
 
     if os.path.isfile(abs_base):
         return [abs_base]

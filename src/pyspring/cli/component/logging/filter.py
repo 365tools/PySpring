@@ -1,6 +1,3 @@
-"""
-Check utility functions
-"""
 import re
 import sys
 from contextlib import contextmanager

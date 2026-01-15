@@ -192,7 +192,9 @@ class PythonFileChecker:
             'node_modules',
             'dist',
             'build',
-            '.egg-info'
+            '.egg-info',
+            '.idea',
+            '.vscode'
         ]
         self.errors: List[FileError] = []
 
@@ -512,7 +514,9 @@ def main():
             'dist',
             'build',
             '.egg-info',
-            '.pytest_cache'
+            '.pytest_cache',
+            '.idea',
+            '.vscode'
         ]
     )
 

@@ -6,6 +6,7 @@ import os
 from collections import defaultdict, deque
 from typing import Dict, Set, Optional
 
+from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import print_info, print_success, print_error
 
 
@@ -173,9 +174,11 @@ class ImportLifter:
         """Step 1: Build Load-Time Dependency Graph"""
         print_info(f"Building load-time dependency graph for {self.root_path}...")
 
+        ignore_list = get_ignore_list(os.getcwd())
+
         # 1. Discover all files
-        for root, _, files in os.walk(self.root_path):
-            if 'venv' in root or '.git' in root or '__pycache__' in root: continue
+        for root, dirs, files in os.walk(self.root_path):
+            dirs[:] = [d for d in dirs if d not in ignore_list]
             for file in files:
                 if file.endswith('.py'):
                     full_path = os.path.join(root, file)

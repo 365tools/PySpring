@@ -7,6 +7,7 @@ import os
 from collections import defaultdict
 from typing import Optional, List, Set, Tuple
 
+from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import print_section, print_success, print_error, print_info
 
 # --- Knowledge Base for Auto-Fix ---
@@ -443,9 +444,12 @@ def run_check_references(args):
                 files_with_issues[target_dir] = unresolved
                 issues_found += len(unresolved)
     else:
+        # Determine strict ignore set from current dir .gitignore + defaults
+        ignore_set = get_ignore_list(cwd)
+
         for root, dirs, files in os.walk(target_dir):
             # Exclude common noise
-            dirs[:] = [d for d in dirs if d not in ('.venv', 'venv', '__pycache__', '.git', 'site-packages', 'node_modules')]
+            dirs[:] = [d for d in dirs if d not in ignore_set]
 
             for file in files:
                 if not file.endswith('.py'):

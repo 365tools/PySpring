@@ -6,9 +6,10 @@ import os
 import sys
 from typing import Generator
 
+from pyspring.cli.component.files.ignore import get_ignore_list
+from pyspring.cli.component.logging import suppress_specific_logs
 from pyspring.cli.core.ui import print_section, print_success, print_error
 from .static_import import run_ast_check
-from .utils import suppress_specific_logs
 
 
 def find_modules_in_dir(scan_dir: str, root_dir: str) -> Generator[str, None, None]:
@@ -28,7 +29,7 @@ def find_modules_in_dir(scan_dir: str, root_dir: str) -> Generator[str, None, No
         base_pkg = rel.replace(os.path.sep, '.') + '.'
         if base_pkg.startswith('.'): base_pkg = base_pkg[1:]
 
-    ignored_dirs = {'.git', '.venv', 'venv', '__pycache__', 'build', 'dist', '.idea', '.vscode', 'node_modules', 'site-packages'}
+    ignored_dirs = get_ignore_list(os.getcwd())
 
     for root, dirs, files in os.walk(scan_dir):
         # Filter directories in-place

@@ -7,6 +7,7 @@ import os
 import sys
 from typing import List
 
+from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import print_error
 
 
@@ -34,7 +35,7 @@ class ImportVisitor(ast.NodeVisitor):
 
 def find_python_files(root_dir: str) -> List[str]:
     py_files = []
-    ignored = {'.git', '.venv', 'venv', '__pycache__', 'build', 'dist', '.idea', '.vscode', 'node_modules'}
+    ignored = get_ignore_list(os.getcwd())
 
     for root, dirs, files in os.walk(root_dir):
         dirs[:] = [d for d in dirs if d not in ignored]

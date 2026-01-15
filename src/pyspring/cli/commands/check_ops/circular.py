@@ -7,6 +7,7 @@ import sys
 from collections import defaultdict
 from typing import Dict, Set, List, Optional
 
+from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import print_section, print_success, print_error, print_warning, print_info
 
 
@@ -39,9 +40,10 @@ class CircularDependencyChecker:
         """Scan all python files and build dependency graph"""
         print_info(f"Scanning {self.root_path}...")
 
-        for root, _, files in os.walk(self.root_path):
-            if 'venv' in root or '.git' in root or '__pycache__' in root:
-                continue
+        ignore_list = get_ignore_list(os.getcwd())
+
+        for root, dirs, files in os.walk(self.root_path):
+            dirs[:] = [d for d in dirs if d not in ignore_list]
 
             for file in files:
                 if file.endswith('.py'):
