@@ -5,10 +5,13 @@ import ast
 import os
 import sys
 from collections import defaultdict
-from typing import Dict, Set, List, Optional
+from typing import Dict, Set, Optional
 
 from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.core.ui import print_section, print_success, print_error, print_warning, print_info
+from pyspring.cli.core.ui import (
+    print_title, print_summary,
+    print_warning, print_info
+)
 
 
 class CircularDependencyChecker:
@@ -55,6 +58,7 @@ class CircularDependencyChecker:
                     try:
                         self._parse_file(full_path, module_name)
                     except Exception as e:
+                        # Use file header for error context if needed
                         print_warning(f"Failed to parse {full_path}: {e}")
 
     def _parse_file(self, file_path: str, current_module: str):
@@ -94,111 +98,37 @@ class CircularDependencyChecker:
     def _resolve_relative_import(self, current_module: str, relative_name: Optional[str], level: int) -> Optional[str]:
         parts = current_module.split('.')
         # level=1 (from .), pop 0. level=2 (from ..), pop 1.
-        # Logic: level is dot count. 
-        # For package.sub: 'from .' -> level 1.
-        # If current module is 'package.sub.mod', level 1 is 'package.sub'.
-
-        # If current module is a package (has __init__), path includes it. 
-        # But get_module_name strips __init__. 
-        # Let's assume standard behavior:
-        # module 'pkg.mod' -> from . -> 'pkg'
-        # module 'pkg' (__init__) -> from . -> 'pkg' (wait, usually relative imports work from package context)
-
-        # A simpler approximation:
         if level > len(parts):
-            return None  # Import beyond root
+            # Import goes beyond top level
+            return None
 
-        base = '.'.join(parts[:-level]) if level > 0 else '.'.join(parts)
+        base_parts = parts[:-level] if level > 0 else parts
 
+        base = ".".join(base_parts)
         if relative_name:
             if base:
                 return f"{base}.{relative_name}"
-            return relative_name
+            else:
+                return relative_name
         return base
-
-    def check_cycles(self) -> List[List[str]]:
-        cycles = []
-        visited = set()
-        path = []
-        path_set = set()
-
-        def visit(node):
-            if node in path_set:
-                # Cycle detected
-                cycle = path[path.index(node):] + [node]
-                # Canonical form to handle duplicates (rotate to start with min)
-                # But here we just want to report it.
-                cycles.append(cycle)
-                return
-
-            if node in visited:
-                return
-
-            visited.add(node)
-            path.append(node)
-            path_set.add(node)
-
-            # Check dependencies
-            # Note: dependencies might include external packages. We generally only care about internal cycles.
-            # Filter internal only?
-            for neighbor in self.dependencies.get(node, []):
-                # Simple filter: check if neighbor starts with known prefix or is in our scanned files
-                # Doing strict check: must be in scanned files
-
-                # Check direct match
-                is_internal = neighbor in self.files
-
-                # Check parent package match (imports often target a parent package)
-                if not is_internal:
-                    # Try to find if neighbor is a prefix of any scanned file 
-                    # (this is slow, maybe optimization needed for large codebases)
-                    # Better: check if neighbor acts as a package we scanned
-                    # We can use the fact that we constructed module names from root.
-                    # If start with same prefix... assume single project check usually.
-                    pass
-
-                # Often imports are like 'pyspring.core.configuration'. 
-                # If we scanned 'src/pyspring', 'pyspring.core' is internal.
-                # However, our module names map might rely on where we started scan.
-                # If we start at src, names are 'pyspring.core...'
-                # If we start at src/pyspring, names are 'core...' 
-                # Ideally user runs from src root so names align.
-
-                real_neighbor = self._find_internal_module(neighbor)
-                if real_neighbor:
-                    visit(real_neighbor)
-
-            path.pop()
-            path_set.remove(node)
 
     def _find_internal_module(self, import_name: str) -> Optional[str]:
         """
         Check if import_name maps to an internal module.
-        Handles case where import is a package (init) or module.
         """
         if import_name in self.files:
             return import_name
 
-        # Provide checking for Package imports that map to __init__
-        # get_module_name already strips __init__ so 'pyspring' maps to '.../__init__.py'
-
-        # If import is 'pyspring.core' and we have 'pyspring.core' in files (from __init__), it matches.
-
-        # Sometimes imports are broader than files, e.g. import pyspring
-        # We assume if it's in self.files keys, it's internal.
+        # Check parent packages recursively? 
+        # For circular dependency, strict match is safer to avoid false positives with libs
         return None
 
     def run_check(self) -> bool:
         """Returns True if no cycles found"""
-        print_section("Circular Dependency Check")
+        print_title("Circular Dependency Check")
         self.scan()
 
         print_info(f"Analyzed {len(self.files)} modules.")
-
-        cycles = []
-
-        # Helper to run DFS from each node
-        # We effectively implemented it in check_cycles but need to iterate all nodes
 
         visited_global = set()
         path_stack = []
@@ -232,15 +162,14 @@ class CircularDependencyChecker:
             dfs(node)
 
         if not found_cycles:
-            print_success("No circular dependencies found.")
+            print_summary(0, 0, 0, fixable=False)
             return True
-
-        print_error(f"Found {len(found_cycles)} circular dependencies:")
 
         # De-duplicate cycles (A->B->A is same as B->A->B)
         unique_cycles = set()
         count = 0
 
+        # Print detailed cycles
         for cycle in found_cycles:
             # Normalize tuple
             # Rotate to start with smallest string
@@ -254,16 +183,19 @@ class CircularDependencyChecker:
             count += 1
 
             print(f"\nCycle {count}:")
-            # Print visually
-            print("  " + " ->\n  ".join(cycle))
+            # Visual ASCII Arrow
+            for i, mod in enumerate(cycle):
+                prefix = "  "
+                if i > 0: prefix = "  ↓ "
+                print(f"{prefix}{mod}")
 
+        # Summary
+        print_summary(count, count, 0, fixable=False)  # Roughly file count is cycle count for this display
         return False
 
 
 def run_check_circular(args):
     path = args.path
-    # path default is already handled by argparse (default='.')
-
     checker = CircularDependencyChecker(path)
     success = checker.run_check()
     if not success:

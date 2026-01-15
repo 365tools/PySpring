@@ -7,7 +7,10 @@ from collections import defaultdict, deque
 from typing import Dict, Set, Optional
 
 from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.core.ui import print_info, print_success, print_error
+from pyspring.cli.core.ui import (
+    print_title, print_file_header, print_issue, print_summary,
+    print_info, print_warning
+)
 
 
 class LoadTimeGraphBuilder(ast.NodeVisitor):
@@ -32,18 +35,11 @@ class LoadTimeGraphBuilder(ast.NodeVisitor):
         self.scope_depth -= 1
 
     def visit_ClassDef(self, node):
-        # Class definitions are executed at load time, so imports directly inside class
-        # (not in methods) ARE load-time dependencies.
-        # However, methods inside are not.
         self.generic_visit(node)
-        # We don't increment scope_depth for ClassDef because we want to capture 
-        # class-level imports as load-time deps.
-        # But wait, visit_FunctionDef inside ClassDef will increment depth. Correct.
 
     def visit_Import(self, node):
         if self.scope_depth == 0:
             for alias in node.names:
-                # import package.module
                 target = self.resolve_import(self.module_name, alias.name, 0)
                 if target:
                     self.dependencies.add(target)
@@ -134,7 +130,6 @@ class ImportLifter:
         return name
 
     def resolve_import(self, current_module: str, relative_name: Optional[str], level: int) -> Optional[str]:
-        # Reuse logic from circular checker roughly
         if level == 0:
             # Absolute
             return self.find_internal_module(relative_name)
@@ -151,23 +146,7 @@ class ImportLifter:
 
     def find_internal_module(self, name: str) -> Optional[str]:
         if not name: return None
-        # Exact match
         if name in self.files: return name
-        # Package match (pyspring.core -> pyspring.core.__init__) mechanism
-        # In our files map, __init__ files are mapped to package name.
-        # But what if import is 'pyspring.core.utils' and we have 'pyspring.core.utils.py'?
-
-        # We need to support prefix matching if we don't scan everything? 
-        # No, we assume we scan everything internal.
-
-        if name in self.files:
-            return name
-
-        # Try finding if it is a prefix of some file? 
-        # Actually standard python resolution:
-        # If I import 'pyspring.core', and 'pyspring/core/__init__.py' exists, it is 'pyspring.core'.
-        # My get_module_name handles __init__ correctly.
-
         return None
 
     def scan_graph(self):
@@ -216,13 +195,15 @@ class ImportLifter:
 
     def lift_imports(self, dry_run: bool = True):
         """Step 2 & 3: Find Local Imports and Lift if Safe"""
+        print_title("Import Lifting Check")
         self.scan_graph()
 
         if dry_run:
-            print_info("[DRY RUN] No files will be modified.")
+            print_info("Mode: Dry Run (No changes will be applied)")
 
         modified_count = 0
         commented_count = 0
+        files_modified = 0
 
         for mod, path in self.files.items():
             try:
@@ -236,32 +217,18 @@ class ImportLifter:
                 if not visitor.local_imports:
                     continue
 
-                # We need to process edits effectively. 
-                # Since we are modifying file, line numbers change.
-                # We should calculate all edits first, then apply from bottom to top?
-                # Or just split lines.
-
                 lines = content.splitlines()
-                # Imports to append to top (deduplicated)
-                top_imports_to_add = set()
-
-                # We will process modifications line by line.
-                # It's easier to modify 'lines' array.
-
                 # Sort local imports by line number descending to avoid interfering
                 visitor.local_imports.sort(key=lambda x: x['node'].lineno, reverse=True)
 
                 file_modified = False
+                has_printed_header = False
 
                 added_top_imports = []
 
                 for item in visitor.local_imports:
                     node = item['node']
                     targets = item['targets']
-
-                    # Logic: Can we lift?
-                    # We need to check if ANY of the targets depends on current 'mod'.
-                    # If so, cycle!
 
                     is_safe = True
                     reason = ""
@@ -273,59 +240,53 @@ class ImportLifter:
                             reason = f"Cyclic dependency with {target}"
                             break
 
-                    # Check if already has comment
                     line_idx = node.lineno - 1
                     current_line = lines[line_idx]
 
                     if "# NOTE: Cannot lift" in current_line or "# Circular" in current_line:
                         continue
 
+                    if not has_printed_header:
+                        print_file_header(path)
+                        has_printed_header = True
+
                     indentation = len(current_line) - len(current_line.lstrip())
                     indent_str = current_line[:indentation]
 
+                    # Extract the import string
+                    end_line_idx = getattr(node, 'end_lineno', node.lineno) - 1
+                    import_lines = lines[line_idx: end_line_idx + 1]
+                    import_text = "\n".join(import_lines).strip()
+
                     if is_safe:
-                        # Extract the import string
-                        # Handle multi-line imports? AST node has end_lineno in Python 3.8+
-                        end_line_idx = getattr(node, 'end_lineno', node.lineno) - 1
-
-                        # Get full text of import statement
-                        import_lines = lines[line_idx: end_line_idx + 1]
-                        import_text = "\n".join(import_lines).strip()
-
                         if dry_run:
-                            print_info(f"[Dry Run] Would lift: {import_text} in {mod}")
+                            print_issue(str(node.lineno), f"Can lift: {import_text}", path, level='info')
                         else:
                             # Remove from local
-                            # We comment it out or delete? User said "lift".
-                            # Deleting is cleaner, but we must be careful with formatting.
-                            # Simple approach: Delete lines.
                             del lines[line_idx: end_line_idx + 1]
 
                             # Queue for adding to top
-                            # We just store the text to add it later
                             if import_text not in added_top_imports:
                                 added_top_imports.append(import_text)
 
                             file_modified = True
                             modified_count += 1
-                            print_info(f"Lifting: {import_text} in {mod}")
+                            print_issue(str(node.lineno), f"Lifting: {import_text}", path, level='success')
                     else:
                         if dry_run:
-                            print_info(f"[Dry Run] Unsafe import in {mod}: {reason}")
+                            print_issue(str(node.lineno), f"Unsafe: {reason}", path, level='error')
                         else:
                             # Add comment
-                            # Verify we didn't already add it
                             if "Cannot lift" not in lines[line_idx - 1] if line_idx > 0 else True:
                                 comment = f"{indent_str}# NOTE: Cannot lift due to circular dependency: {reason}"
                                 lines.insert(line_idx, comment)
                                 file_modified = True
                                 commented_count += 1
+                                print_issue(str(node.lineno), f"Marked Unsafe: {reason}", path, level='warning')
 
                 if file_modified and not dry_run:
+                    files_modified += 1
                     # Add lifted imports to top
-                    # Find last import or just put at top?
-                    # Put after __future__ or docstring.
-
                     insert_pos = 0
                     if len(lines) > 0 and (lines[0].startswith('"""') or lines[0].startswith("'''")):
                         # Skip docstring (naive)
@@ -345,14 +306,11 @@ class ImportLifter:
                         f.write("\n".join(lines) + "\n")
 
             except SyntaxError:
-                print_error(f"Syntax error in {path}")
+                print_warning(f"Syntax error in {path}")
             except Exception as e:
-                print_error(f"Error processing {path}: {e}")
+                print_warning(f"Error processing {path}: {e}")
 
-        if dry_run:
-            print_success(f"[Dry Run] Found {modified_count} liftable imports and {commented_count} unsafe imports.")
-        else:
-            print_success(f"Lifted {modified_count} imports. Marked {commented_count} unsafe imports.")
+        print_summary(modified_count + commented_count, files_modified, modified_count, fixable=dry_run)
 
 
 def run_lift_imports(args):
@@ -361,7 +319,7 @@ def run_lift_imports(args):
     if apply:
         user_input = input(f"Are you sure you want to lift safe imports in '{args.target}'? [y/N] ").strip().lower()
         if user_input != 'y':
-            print("Operation cancelled.")
+            print_info("Operation cancelled.")
             return
 
     lifter = ImportLifter(args.target)

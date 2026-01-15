@@ -8,7 +8,10 @@ from typing import Generator
 
 from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.component.logging.filter import suppress_specific_logs
-from pyspring.cli.core.ui import print_section, print_success, print_error
+from pyspring.cli.core.ui import (
+    print_title, print_file_header, print_issue, print_summary,
+    print_error, print_info
+)
 from .static_import import run_ast_check
 
 
@@ -61,12 +64,14 @@ def run_check_import(args):
     target_arg = getattr(args, 'target', '.')
     static_mode = getattr(args, 'static', False)
 
-    # Default is already handled by argparse to '.'
-
     target_path = os.path.abspath(target_arg)
+
+    # Static Mode Delegate
     if static_mode:
         run_ast_check(target_path)
         return
+
+    print_title(f"Dynamic Import Check: {target_arg}")
 
     project_root = os.getcwd()
 
@@ -88,18 +93,16 @@ def run_check_import(args):
     if os.path.exists(src_path) and target_path.startswith(src_path):
         import_root = src_path
 
-    print_section(f"Checking Imports in: {target_arg}")
-
     modules = list(find_modules_in_dir(target_path, import_root))
 
     if not modules:
-        print("No Python modules found to check.")
+        print_info("No Python modules found to check.")
         return
 
     total_modules = len(modules)
     failed_modules = []
 
-    print(f"Found {total_modules} modules. Import testing...\n")
+    print_info(f"Found {total_modules} modules. Import testing...")
 
     # Use our context manager to suppress specific logs
     with suppress_specific_logs():
@@ -120,15 +123,13 @@ def run_check_import(args):
 
                 failed_modules.append((module_name, str(e), full_path))
 
-    pass_count = total_modules - len(failed_modules)
-    print(f"\nResult: {pass_count}/{total_modules} passed.")
+    # Reporting
+    if failed_modules:
+        for mod, err, path in failed_modules:
+            print_file_header(path)
+            print_issue("0", f"Import failed: {mod} -> {err}", path, level='error')
+
+    print_summary(len(failed_modules), len(failed_modules), 0, fixable=False)
 
     if failed_modules:
-        print_error("\nImport Failures:")
-        for mod, err, path in failed_modules:
-            print(f"❌ {mod}")
-            print(f"   File: {path}")
-            print(f"   Error: {err}")
         sys.exit(1)
-    else:
-        print_success("All modules imported successfully.")

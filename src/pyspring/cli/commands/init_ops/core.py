@@ -1,10 +1,10 @@
 """
 PySpring Project Initialization Core Logic
 """
-import datetime
 import shutil
 import sys
 import traceback
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +13,7 @@ from sqlalchemy.schema import CreateTable
 
 from pyspring.cli.core.ui import (
     Colors, print_header, print_success, print_info,
-    print_warning, print_error
+    print_warning, print_error, print_title
 )
 from pyspring.security.authorization.rabc.orm.tables import (
     UserTable, RoleTable, PermissionTable, UserRoleTable,
@@ -367,7 +367,7 @@ def init_project(
     # 创建配置文件
     created_count = 0
     for filename, description in config_files:
-        print(f"\n→ {description}")
+        print_info(f"→ {description}")
         if create_config_file(config_dir / filename, filename, force):
             created_count += 1
 
@@ -406,7 +406,7 @@ def init_project(
 
     # 项目结构展示
     if not minimal:
-        print(f"\n{Colors.BOLD}项目结构:{Colors.ENDC}")
+        print_title("项目结构")
         print(f"""
   {target_path.name}/
   ├── app/              # 应用代码
@@ -427,7 +427,7 @@ def init_project(
         """)
 
     # 后续步骤提示
-    print(f"\n{Colors.BOLD}后续步骤:{Colors.ENDC}")
+    print_title("后续步骤")
     print(f"  1. 安装依赖: pip install -e .")
     print(f"  2. 或安装开发依赖: pip install -e .[dev]")
     print(f"  3. 检查并修改配置文件: {config_dir}")
@@ -435,17 +435,17 @@ def init_project(
     print(f"  5. 初始化数据库: 执行 scripts/db/ 下的SQL脚本")
     print(f"  6. 启动应用: python main.py")
 
-    print(f"\n{Colors.BOLD}数据库初始化:{Colors.ENDC}")
+    print_title("数据库初始化")
     print(f"  PostgreSQL: psql -U user -d dbname -f scripts/db/init_postgresql.sql")
     print(f"  SQLite:     sqlite3 data/app.db < scripts/db/init_sqlite.sql")
 
-    print(f"\n{Colors.BOLD}重要提醒:{Colors.ENDC}")
+    print_title("重要提醒")
     print(f"  {Colors.WARNING}• 请勿将 .env 文件提交到代码仓库{Colors.ENDC}")
     print(f"  {Colors.WARNING}• 生产环境请更换 JWT 密钥{Colors.ENDC}")
     print(f"  {Colors.WARNING}• 建议启用 JWT 加密（生产环境）{Colors.ENDC}")
     print(f"  {Colors.WARNING}• 初始化数据库前请先创建数据库{Colors.ENDC}")
 
-    print(f"\n{Colors.BOLD}文档参考:{Colors.ENDC}")
+    print_title("文档参考")
     print(f"  • 快速开始: https://github.com/365tools/PySpring/docs/")
     print(f"  • 认证配置: https://github.com/365tools/PySpring/docs/SECURITY_CONFIG_GUIDE.md")
     print(f"  • JWT 加密: https://github.com/365tools/PySpring/docs/JWT_ENCRYPTION_GUIDE.md")

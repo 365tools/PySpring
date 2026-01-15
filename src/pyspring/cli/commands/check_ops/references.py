@@ -8,7 +8,10 @@ from collections import defaultdict
 from typing import Optional, List, Set, Tuple
 
 from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.core.ui import print_section, print_success, print_error, print_info
+from pyspring.cli.core.ui import (
+    print_title, print_file_header, print_issue, print_summary,
+    print_success, print_warning
+)
 
 # --- Knowledge Base for Auto-Fix ---
 # Map symbol_name -> import_line
@@ -74,9 +77,6 @@ KNOWN_IMPORTS = {
 
     # Pathlib
     "Path": "from pathlib import Path",
-
-    # PySpring Common (Safe to add?)
-    # Maybe logger? but user has custom logger.
 }
 
 BUILTINS = set(dir(builtins))
@@ -341,8 +341,6 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
 
     except SyntaxError:
         # Fallback to text scan if syntax error prevents parsing
-        # Note: Text scan doesn't provide reliable line numbers for multi-line logic easily
-        # For simplicity, we assume existing imports are "valid" if found by text
         with open(file_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         existing_imports = {line.strip(): 1 for line in lines if line.strip().startswith('import ') or line.strip().startswith('from ')}
@@ -377,7 +375,6 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
         lines = f.readlines()
 
     # Process removals first
-    # We only remove lines if they strictly match the import statement to avoid deleting "import os, sys" when we only want "import os"
     indices_to_drop = set()
     for lineno, imp_content in lines_to_remove_candidates:
         if lineno <= 0 or lineno > len(lines):
@@ -405,9 +402,6 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
                 insert_idx = i + 1
                 break
 
-    # If there are existing imports after docstring, try to merge with them?
-    # For simplicity, we just insert at insert_idx
-
     # Sort imports to be nice
     imports_to_add.sort()
 
@@ -420,14 +414,14 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
 
 
 def run_check_references(args):
-    print_section("Checking Unresolved References")
+    print_title("Checking Unresolved References")
 
     cwd = os.getcwd()
     target_dir = getattr(args, 'path', '.')  # Default to current dir if not provided
     target_dir = os.path.abspath(target_dir)  # Ensure absolute path
 
     if not os.path.exists(target_dir):
-        print_error(f"Target directory not found: {target_dir}")
+        print_warning(f"目标目录不存在: {target_dir}")
         return
 
     issues_found = 0
@@ -459,35 +453,25 @@ def run_check_references(args):
                 unresolved = scan_file(file_path)
 
                 if unresolved:
-                    # Filter out likely false positives? 
-                    # e.g. 'logger' if not imported but injected? (Though it should be imported)
-                    # self, cls are handled by Visitor logic hopefully
-
                     # Sort by lineno
                     unresolved.sort(key=lambda x: x[1])
-                    # Note: We used to rely on file_path relative to cwd, now absolute
                     files_with_issues[file_path] = unresolved
                     issues_found += len(unresolved)
 
     if not files_with_issues:
-        print_success("No unresolved references found.")
+        print_summary(0, 0, 0, fixable=False)
         return
 
     for file_path, errors in files_with_issues.items():
-        rel_path = os.path.relpath(file_path, cwd).replace('\\', '/')
-
-        # Clickable link format: [path](path:line:col)
-        # Note: Standard markdown link [text](url)
-        # VS Code terminal link: outputting proper path allows clicking.
-
-        print_info(f"File: {file_path}")
+        print_file_header(file_path)
+        
         for name, line, col in errors:
-            # Output absolute path for clickable links in most IDE terminals
-            # Format: absolute_path:line:col
-            print(f"  ❌ Line {line}: Unresolved reference '{name}' -> {file_path}:{line}")
+            msg = f"未解决的引用 '{name}' (col {col})"
+            print_issue(str(line), msg, file_path, level='error')
 
             if args.fix and name in KNOWN_IMPORTS:
-                print(f"     💡 Auto-fix available: {KNOWN_IMPORTS[name]}")
+                # 显示提示 (可选)
+                pass
 
         if args.fix:
             applied = apply_fixes(file_path, errors)
@@ -495,9 +479,4 @@ def run_check_references(args):
                 print_success(f"     ✨ Applied {applied} fixes.")
                 fixed_count += applied
 
-    print_section("Summary")
-    print(f"Found {issues_found} unresolved references in {len(files_with_issues)} files.")
-    if args.fix:
-        print_success(f"Fixed {fixed_count} missing imports.")
-    else:
-        print_info("Tip: Run with --fix to automatically add missing standard library imports.")
+    print_summary(issues_found, len(files_with_issues), fixed_count, fixable=not args.fix)

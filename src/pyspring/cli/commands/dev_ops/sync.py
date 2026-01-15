@@ -6,25 +6,16 @@
 import shutil
 from pathlib import Path
 
+from pyspring.cli.core.ui import (
+    print_title, print_error, print_info, print_issue, print_summary
+)
+
 
 def sync_templates(args):
     """同步模板文件"""
-    # Assuming this is run from within the installed package or src
-    # We need to find the project root if running from source.
-    # Current file: src/pyspring/cli/commands/dev_ops/sync.py
-    # Root: ../../../../../
-
-    # However, if installed, we might not have access to source root files like .gitignore
-    # This command is typically run by developers working ON PySpring framework itself
-
     current_file = Path(__file__)
-    # src/pyspring/cli/commands/dev_ops/sync.py
-    # src/pyspring/cli/commands/dev_ops
-    # src/pyspring/cli/commands
-    # src/pyspring/cli
-    # src/pyspring
-    # src
-    # root
+    # Resolve root from this file location: src/pyspring/cli/commands/dev_ops/sync.py
+    # Root is 6 levels up
     root = current_file.parent.parent.parent.parent.parent.parent
 
     # If installed as package usage, this might fail to find root if not editable
@@ -32,7 +23,7 @@ def sync_templates(args):
         # Fallback try assuming CWD is root
         root = Path.cwd()
         if not (root / "pyproject.toml").exists():
-            print("❌ Could not search project root. Please run from project root directory.")
+            print_error("Could not search project root. Please run from project root directory.")
             return
 
     templates_dir = root / "src" / "pyspring" / "templates" / "project"
@@ -47,30 +38,36 @@ def sync_templates(args):
         ("examples/main_with_db_init.py", "main.py.template"),
     ]
 
-    print("=" * 80)
-    print("同步模板文件到 templates 目录")
-    print("=" * 80)
+    print_title("同步模板文件到 templates 目录")
+
+    synced_count = 0
+    issues_count = 0
 
     for source_name, target_name in files_to_sync:
         source_path = root / source_name
         target_path = templates_dir / target_name
 
         if not source_path.exists():
-            print(f"✗ 源文件不存在: {source_path}")
+            print_issue("0", f"源文件不存在: {source_name}", level='error')
+            issues_count += 1
             continue
 
         # 复制文件
-        shutil.copy2(source_path, target_path)
+        try:
+            shutil.copy2(source_path, target_path)
 
-        # 获取文件大小
-        size = target_path.stat().st_size
-        print(f"✓ {source_name:30} → {target_name:30} ({size:,} bytes)")
+            # 获取文件大小
+            size = target_path.stat().st_size
+            print_issue("1", f"{source_name} → {target_name} ({size:,} bytes)", str(target_path), level='success')
+            synced_count += 1
+        except Exception as e:
+            print_issue("0", f"同步失败: {e}", str(target_path), level='error')
+            issues_count += 1
 
-    print("\n" + "=" * 80)
-    print("✅ 模板文件同步完成！")
-    print("=" * 80)
-    print(f"模板目录: {templates_dir}")
-    print("\n可用模板文件:")
+    print_info(f"模板目录: {templates_dir}")
+    print_info("可用模板文件:")
     for file_path in sorted(templates_dir.glob("*")):
         if file_path.is_file():
-            print(f"- {file_path.name}")
+            print(f"  - {file_path.name}")
+
+    print_summary(issues_count, 0, synced_count, fixable=False)

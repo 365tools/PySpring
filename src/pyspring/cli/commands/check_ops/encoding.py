@@ -6,7 +6,10 @@ import sys
 from typing import List, Tuple
 
 from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.core.ui import print_section
+from pyspring.cli.core.ui import (
+    print_title, print_file_header, print_issue, print_summary,
+    print_info
+)
 
 
 def collect_text_files(base_path: str) -> List[str]:
@@ -84,7 +87,7 @@ def convert_to_utf8(file_path: str, source_encoding: str, has_bom: bool) -> bool
             f.write(content)
         return True
     except Exception as e:
-        print(f"    Failed to convert: {e}")
+        # print_error(f"Failed to convert: {e}") # Handled by caller
         return False
 
 
@@ -93,55 +96,37 @@ def run_check_encoding(args):
     target_dir = os.path.abspath(args.target)
     do_fix = args.fix
 
-    print_section(f"Checking encoding in: {target_dir}")
+    print_title(f"Checking Encoding: {target_dir}")
     if do_fix:
-        print("Auto-fix enabled: Will convert files to UTF-8 (no BOM)")
+        print_info("Auto-fix enabled: Will convert files to UTF-8 (no BOM)")
 
     files = collect_text_files(target_dir)
     total = len(files)
     issues = 0
     fixed = 0
 
-    print(f"\nScanning {total} files...\n")
+    print_info(f"Scanning {total} files...")
 
     for i, file_path in enumerate(files, 1):
-        rel_path = os.path.relpath(file_path, os.getcwd())
         is_issue, issue_type, enc = detect_encoding_issue(file_path)
 
         if is_issue:
             issues += 1
-            status_icon = "❌"
+            print_file_header(file_path)
+            
             msg = f"{issue_type} ({enc})"
+            level = 'error'
 
             if do_fix:
                 if convert_to_utf8(file_path, enc, issue_type == 'BOM'):
-                    status_icon = "✅"
-                    msg = f"Fixed: {issue_type} -> UTF-8"
+                    print_issue("1", f"{msg} -> Fixed: UTF-8", file_path, level='success')
                     fixed += 1
                 else:
-                    status_icon = "⚠️"
-                    msg = f"Failed to fix: {issue_type}"
+                    print_issue("1", f"{msg} -> Failed to fix", file_path, level='error')
+            else:
+                print_issue("1", msg, file_path, level='error')
 
-            print(f"[{i}/{total}] {status_icon} {rel_path}")
-            print(f"    Status: {msg}")
-            # 如果是只检查不修复， 或者修复失败了， 打印完整路径方便跳转
-            if not do_fix or "Failed" in msg:
-                print(f"    File: {file_path}")
-
-        # Optional: Verbose mode could print all files
-
-    print("\n" + "=" * 50)
-    print("Encoding Check Summary")
-    print("=" * 50)
-    print(f"Total Files: {total}")
-    print(f"Issues Found: {issues}")
-
-    if do_fix:
-        print(f"Fixed Files:  {fixed}")
-        if issues > fixed:
-            print(f"Remaining:    {issues - fixed}")
+    print_summary(issues, issues, fixed, fixable=not do_fix)
 
     if issues > fixed:
         sys.exit(1)
-    else:
-        print("\nAll files are clean UTF-8!")

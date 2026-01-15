@@ -5,7 +5,9 @@ import ast
 import os
 from typing import List
 
-from pyspring.cli.core.ui import print_info, print_success, print_warning, print_error
+from pyspring.cli.core.ui import (
+    print_success, print_title, print_file_header, print_issue, print_summary
+)
 
 
 class UnusedImportVisitor(ast.NodeVisitor):
@@ -61,7 +63,8 @@ def get_unused_imports(file_path: str) -> List[int]:
     visitor = UnusedImportVisitor()
     visitor.visit(tree)
 
-    # Files with __all__ usually export potential unused imports, skip them to be safe
+    # Files with __init__.py usually export potential unused imports, skip them to be safe
+    # Or if __all__ is defined.
     if visitor.has_all or file_path.endswith('__init__.py'):
         return []
 
@@ -79,16 +82,13 @@ def remove_unused_imports_in_file(file_path: str, verbose: bool = False) -> int:
         return 0
 
     if verbose:
-        print_info(f"Removing {len(unused_lines)} unused imports from {file_path}")
+        print_file_header(file_path)
+        for line in unused_lines:
+            print_issue(str(line), "Removing unused import", file_path, level='info')
 
     # Read lines
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
-
-    # Filter out lines. Logic implies whole line removal.
-    # Note: Multi-line imports and multiple imports on one line (import os, sys) are tricky.
-    # This simple version handles standard one-line imports reasonably well.
-    # For complex refactoring, libraries like autoflake are recommended.
 
     new_lines = []
     removed_count = 0
@@ -98,56 +98,45 @@ def remove_unused_imports_in_file(file_path: str, verbose: bool = False) -> int:
 
     for i, line in enumerate(lines):
         if i in unused_indices:
-            # Check if it's a multi-line import or comma separated? 
-            # Our simple visitor marks the START line of the import node.
-            # If we remove just that line, we might break syntax if it spans multiple lines.
-            # For Safety in this v1 implementation: We only remove strictly single-line imports
-            if line.strip().endswith('(') or line.strip().endswith('\\'):
-                if verbose: print_warning(f"Skipping multi-line import at line {i + 1} (Implementation limitation)")
-                new_lines.append(line)
-                continue
-
-            # TODO: Handle 'import os, sys' where only os is unused.
-            # Current logic: If 'os' is unused, the visitor marked the node.
-            # If 'sys' was used, it's NOT in visitor.imports mapping as a separate line?
-            # Actually AST nodes for `import os, sys` is ONE Import node.
-            # If ANY alias in that node is used, we shouldn't delete the node indiscriminately.
-            # This requires checking if ALL aliases in the import node are unused.
-
-            # Let's do a quick re-check logic here is hard without the node object.
-            # Optimization: We'll skip complex cases for safety.
             removed_count += 1
-            continue
-
-        new_lines.append(line)
+            if not verbose:
+                # If not verbose, we didn't print issues above, so maybe we should?
+                # But standard 'clean' might be quieter than 'check'.
+                pass
+        else:
+            new_lines.append(line)
 
     with open(file_path, 'w', encoding='utf-8') as f:
         f.writelines(new_lines)
 
     return removed_count
 
-
 def run_clean_imports(args):
-    target_path = args.path
-    if not os.path.exists(target_path):
-        print_error(f"Path not found: {target_path}")
-        return
+    """
+    Walk through directory and remove unused imports.
+    Note: 'clean' usually implies action.
+    """
+    target_dir = os.path.abspath(args.path)
+    print_title(f"Cleaning Unused Imports: {target_dir}")
 
-    print_info(f"Cleaning unused imports in: {target_path}")
+    files_checked = 0
+    files_modified = 0
+    total_removed = 0
 
-    clean_count = 0
-    if os.path.isfile(target_path):
-        if target_path.endswith('.py'):
-            clean_count += remove_unused_imports_in_file(target_path, args.verbose)
-    else:
-        for root, _, files in os.walk(target_path):
-            if 'venv' in root or '.git' in root: continue
-            for file in files:
-                if file.endswith('.py'):
-                    file_path = os.path.join(root, file)
-                    clean_count += remove_unused_imports_in_file(file_path, args.verbose)
+    for root, _, files in os.walk(target_dir):
+        if 'venv' in root or '.git' in root: continue
 
-    if clean_count > 0:
-        print_success(f"Cleaned {clean_count} unused import lines.")
-    else:
-        print_info("No unused imports found.")
+        for file in files:
+            if not file.endswith('.py'): continue
+
+            file_path = os.path.join(root, file)
+            files_checked += 1
+
+            removed = remove_unused_imports_in_file(file_path, verbose=args.verbose)
+            if removed > 0:
+                files_modified += 1
+                total_removed += removed
+                if not args.verbose:
+                    print_success(f"Cleaned {removed} imports in {os.path.relpath(file_path)}")
+
+    print_summary(total_removed, files_modified, total_removed, fixable=False)

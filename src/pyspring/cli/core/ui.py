@@ -17,13 +17,63 @@ class Colors:
 
 def print_header(text: str):
     """Print header with formatting"""
-    print(f"\n{Colors.HEADER}{Colors.BOLD}{'=' * 60}{Colors.ENDC}")
-    print(f"{Colors.HEADER}{Colors.BOLD}{text:^60}{Colors.ENDC}")
-    print(f"{Colors.HEADER}{Colors.BOLD}{'=' * 60}{Colors.ENDC}\n")
+    print(f"\n{Colors.HEADER}{Colors.BOLD}{'=' * 70}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{text:^70}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{'=' * 70}{Colors.ENDC}\n")
+
+
+def print_title(text: str):
+    """Print standard command title"""
+    print_header(text)
+
+
+def print_file_header(file_path: str):
+    """Print standard file header"""
+    print(f"{Colors.OKCYAN}ℹ File: {file_path}{Colors.ENDC}")
+
+
+def print_issue(line: str, message: str, file_path: str = None, level: str = 'error'):
+    """
+    Print standard issue format
+    Level: 'error', 'warning', 'success', 'info'
+    """
+    if level == 'error':
+        icon = "❌"
+        color = Colors.FAIL
+    elif level == 'warning':
+        icon = "⚠"
+        color = Colors.WARNING
+    elif level == 'success':
+        icon = "✅"
+        color = Colors.OKGREEN
+    else:  # info
+        icon = "ℹ"
+        color = Colors.OKCYAN
+
+    location_suffix = ""
+    if file_path:
+        # Standardize clickable link (VSCode/PyCharm compatible: path:line)
+        # Assuming line is convertible to str
+        location_suffix = f" -> {file_path}:{line}"
+
+    print(f"  {color}{icon} Line {line}: {message}{Colors.ENDC}{location_suffix}")
+
+
+def print_summary(total_issues: int, files_count: int = 0, fixed_count: int = 0, fixable: bool = False):
+    """Print standard summary footer"""
+    print_section("Summary")
+    if total_issues == 0:
+        print_success("No issues found.")
+    else:
+        print(f"Found {total_issues} issues in {files_count} files.")
+        if fixed_count > 0:
+            print_success(f"Fixed {fixed_count} issues.")
+        elif fixable:
+            print_info("Run with --fix to apply automated fixes.")
 
 
 def print_section(title: str):
-    """Print section divider (simpler header)"""
+    """Print section divider"""
     print("\n" + "=" * 70)
     print(title)
     print("=" * 70)

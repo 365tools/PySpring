@@ -5,6 +5,7 @@ from pathlib import Path
 
 # Correct import path assuming internal usage
 from pyspring.cli.commands.init_ops.core import create_pyproject_toml
+from pyspring.cli.core.ui import print_title, print_section, print_error
 
 
 def verify_pyproject(args):
@@ -17,13 +18,11 @@ def verify_pyproject(args):
         if pyproject_path.exists():
             content = pyproject_path.read_text(encoding='utf-8')
 
-            print("=" * 80)
-            print("完整的 pyproject.toml 内容:")
-            print("=" * 80)
+            print_title("Verified pyproject.toml Content")
             print(content)
-            print("=" * 80)
+            print_section("End of Content")
         else:
-            print("❌ Failed to generate pyproject.toml")
+            print_error("Failed to generate pyproject.toml")
     finally:
         # Cleanup
         shutil.rmtree(temp_dir, ignore_errors=True)

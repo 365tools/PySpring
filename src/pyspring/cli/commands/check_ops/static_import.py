@@ -8,7 +8,10 @@ import sys
 from typing import List
 
 from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.core.ui import print_error
+from pyspring.cli.core.ui import (
+    print_title, print_file_header, print_issue, print_summary,
+    print_warning, print_info
+)
 
 
 class ImportVisitor(ast.NodeVisitor):
@@ -95,11 +98,11 @@ def check_relative_import_exists(file_path: str, module_name: str, level: int) -
 
 
 def run_ast_check(target_path: str):
-    print(f"Running Static Analysis (AST) on: {target_path}...\n")
+    print_title(f"Static Analysis (AST): {target_path}")
 
     files = find_python_files(target_path)
     if not files:
-        print("No Python files found.")
+        print_info("No Python files found.")
         return
 
     sys_path = sys.path
@@ -113,9 +116,11 @@ def run_ast_check(target_path: str):
 
     total_files = 0
     issues_found = 0
+    files_with_issues_count = 0
 
     for file_path in files:
         total_files += 1
+        has_file_issue = False
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 source = f.read()
@@ -146,24 +151,28 @@ def run_ast_check(target_path: str):
                     file_issues.append((mod_name, lineno))
 
             if file_issues:
-                issues_found += 1
-                rel_path = os.path.relpath(file_path, cwd)
-                print(f"❌ {rel_path}")
+                has_file_issue = True
+                files_with_issues_count += 1
+                issues_found += len(file_issues)
+
+                print_file_header(file_path)
                 for mod, line in file_issues:
-                    print(f"   Line {line}: Module '{mod}' not found")
-                    print(f"   Path: {file_path}:{line}")
+                    print_issue(str(line), f"Module '{mod}' not found", file_path, level='error')
 
         except SyntaxError as e:
+            has_file_issue = True
+            files_with_issues_count += 1
             issues_found += 1
-            print(f"❌ Syntax Error in {os.path.relpath(file_path, cwd)}: {e}")
+            print_file_header(file_path)
+            print_issue(str(e.lineno or 0), f"Syntax Error: {e.msg}", file_path, level='error')
         except Exception as e:
-            print(f"warning: could not parse {file_path}: {e}")
+            if not has_file_issue:
+                # Only warn if we didn't already flag the file
+                print_warning(f"Could not parse {file_path}: {e}")
 
-    print("\n" + "-" * 50)
+    print_summary(issues_found, files_with_issues_count, 0, fixable=False)
     if issues_found:
-        print_error(f"Static check finished. Issues found in {issues_found}/{total_files} files.")
-        print("Note: Static analysis checks top-level packages. Dynamic imports might still fail at runtime.")
+        print_info("Note: Static analysis checks top-level packages. Dynamic imports might still fail at runtime.")
         sys.exit(1)
     else:
-        print(f"✅ Static check passed! Scanned {total_files} files.")
-        print("(Verifies that top-level packages of all imports exist in environment)")
+        print_info("(Verifies that top-level packages of all imports exist in environment)")

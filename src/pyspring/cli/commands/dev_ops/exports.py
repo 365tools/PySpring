@@ -2,7 +2,10 @@ import ast
 import os
 from typing import List, Tuple, Optional
 
-from pyspring.cli.core.ui import print_success, print_error, print_info
+from pyspring.cli.core.ui import (
+    print_error, print_info, print_title,
+    print_issue, print_summary
+)
 
 
 def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]:
@@ -14,8 +17,8 @@ def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]
     with open(file_path, 'r', encoding='utf-8') as f:
         try:
             tree = ast.parse(f.read(), filename=file_path)
-        except SyntaxError:
-            print_error(f"Syntax error in {file_path}")
+        except SyntaxError as e:
+            print_issue(str(e.lineno or 0), f"Syntax Error: {e.msg}", file_path, level='error')
             return [], None
 
     defined = []
@@ -71,8 +74,7 @@ def get_package_name(pkg_path: str) -> str:
             pkgs = parts[idx + 1:]
             return ".".join(pkgs)
         else:
-            # Fallback: Assume the directory name is the package name (top level?)
-            # This might be incorrect for nested packages outside src structure.
+            # Fallback
             return os.path.basename(abs_path)
     except Exception:
         return os.path.basename(abs_path)
@@ -147,15 +149,17 @@ def generate_init_content(pkg_path: str, modules: dict, use_absolute: bool = Fal
     return "\n".join(lines)
 
 
-def process_fixed_recursive(target_path: str):
+def process_fixed_recursive(target_path: str) -> int:
     """
     Recursively process directory for fixed exports.
+    Returns count of updated files.
     """
+    updated_count = 0
     # 1. Scan .py files
     try:
         files = [f for f in os.listdir(target_path) if f.endswith('.py') and f != '__init__.py']
     except FileNotFoundError:
-        return
+        return 0
 
     # 2. Scan Sub-directories (Packages)
     dirs = [d for d in os.listdir(target_path) if os.path.isdir(os.path.join(target_path, d))
@@ -164,7 +168,7 @@ def process_fixed_recursive(target_path: str):
 
     # Recurse first
     for d in dirs:
-        process_fixed_recursive(os.path.join(target_path, d))
+        updated_count += process_fixed_recursive(os.path.join(target_path, d))
 
     # Process current dir
     items = sorted(files + dirs)
@@ -193,14 +197,18 @@ def process_fixed_recursive(target_path: str):
             modules_map[mod_name] = symbols
 
     if not modules_map:
-        return
+        return updated_count
 
     content = generate_init_content(target_path, modules_map, use_absolute=False)
     init_path = os.path.join(target_path, '__init__.py')
 
     with open(init_path, 'w', encoding='utf-8') as f:
         f.write(content)
-    print_success(f"Updated {init_path} (Fixed Explicit)")
+
+    # print_file_header(init_path) # Too verbose if recursive? 
+    # Let's just print a success issue
+    print_issue("1", "Updated Explicit Exports", init_path, level='success')
+    return updated_count + 1
 
 
 def sync_exports(args):
@@ -215,17 +223,18 @@ def sync_exports(args):
 
     is_fixed = getattr(args, 'fixed', False)
 
-    # Check for legacy flags if passed (though argparse should handle it, just in case of programmatic use)
-    # The new dev.py uses --fixed and --dynamic. 
+    print_title(f"Sync Exports: {target_path}")
 
     if is_fixed:
-        print_info(f"Scanning package (Recursive Fixed): {target_path}")
-        process_fixed_recursive(target_path)
+        print_info("Mode: Recursive Fixed")
+        count = process_fixed_recursive(target_path)
+        print_summary(0, 0, count, fixable=False)
     else:
         # Dynamic Mode (Default)
-        print_info(f"Scanning package (Dynamic): {target_path}")
+        print_info("Mode: Dynamic")
         content = generate_dynamic_content()
         init_path = os.path.join(target_path, '__init__.py')
         with open(init_path, 'w', encoding='utf-8') as f:
             f.write(content)
-        print_success(f"Updated {init_path} (Dynamic Import)")
+        print_issue("1", "Updated Dynamic Import", init_path, level='success')
+        print_summary(0, 0, 1, fixable=False)

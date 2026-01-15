@@ -10,7 +10,9 @@ import os
 from typing import List, Optional
 
 from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.core.ui import print_section, print_success, print_warning, print_info
+from pyspring.cli.core.ui import (
+    print_title, print_file_header, print_issue, print_summary
+)
 
 
 def import_range(start, end):
@@ -36,8 +38,6 @@ class SymbolDefinitionVisitor(ast.NodeVisitor):
         if node.name == self.target_symbol:
             self.found = True
 
-    # 也可以检查赋值语句，但这对于变量来说可能有风险。
-
 
 def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
     """
@@ -50,7 +50,7 @@ def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
 
     for root, _, files in os.walk(package_dir):
         # 目前只扫描顶级子文件
-        if root != package_dir:
+        if root != package_dir: 
             continue
 
         for file in files:
@@ -131,7 +131,6 @@ class ImportExpander(ast.NodeVisitor):
 
             for alias in node.names:
                 if alias.name == '*': continue
-
                 found_modules = find_symbol_in_package(target_path, alias.name)
 
                 if not found_modules:
@@ -193,10 +192,11 @@ class ImportExpander(ast.NodeVisitor):
 
 
 def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
-    print_section("检查并扩展导入路径")
-
+    print_title("Checking and Expanding Imports")
+    
     ignore_list = get_ignore_list(root_path)
-    count = 0
+    total_issues = 0  # Logical count of replacements
+    files_with_issues = 0
     files_fixed = 0
 
     abs_scan_path = os.path.abspath(scan_path)
@@ -221,16 +221,23 @@ def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
                 expander = ImportExpander(file_path, root_path)
                 expander.visit(tree)
 
-                if expander.replacements or expander.warnings:
-                    if expander.replacements:
-                        count += len(expander.replacements)
+                has_issues = False
 
-                    print_info(f"文件: {os.path.relpath(file_path, root_path)}")
-
-                    # 首先打印警告
+                # Handling Warnings
+                if expander.warnings:
+                    has_issues = True
+                    print_file_header(file_path)
                     for w in expander.warnings:
-                        print_warning(f"  ⚠ {w}")
+                        print_issue("0", w, file_path, level='warning')
 
+                # Handling Replacements
+                if expander.replacements:
+                    has_issues = True
+                    if not expander.warnings:  # Print header if not already printed
+                        print_file_header(file_path)
+
+                    total_issues += len(expander.replacements)
+                    
                     # 倒序排序替换，以保持行号有效
                     expander.replacements.sort(key=lambda x: x['lineno'], reverse=True)
 
@@ -243,32 +250,26 @@ def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
                         orig_text = "\n".join(lines[start:end])
                         new_text = "\n".join(rep['new_lines'])
 
-                        print_warning(f"  行 {import_range(start + 1, end)}: {orig_text.strip()} -> {new_text.replace(chr(10), ' | ')}")
-
+                        rng = import_range(start + 1, end)
+                        msg = f"{orig_text.strip()} -> {new_text.replace(chr(10), ' | ')}"
+                        print_issue(rng, msg, file_path, level='warning')
+                        
                         if fix:
                             # 替换行
-                            # 注意：简单的替换，如果不小心可能会搞乱多行导入的格式
-                            # 但我们生成的是干净的新行。
                             lines[start:end] = rep['new_lines']
 
-                    if fix and expander.replacements:
+                    if fix:
                         with open(file_path, 'w', encoding='utf-8') as f:
                             f.write("\n".join(lines) + "\n")  # 规范化换行符
                         files_fixed += 1
 
+                if has_issues:
+                    files_with_issues += 1
+                        
             except Exception as e:
-                # logger.debug(e)
                 pass
 
-    if count == 0:
-        print_success("未发现模糊导入。")
-    else:
-        print_section("摘要")
-        print(f"发现可扩展的导入: {count}")
-        if fix:
-            print(f"已修复文件数: {files_fixed}")
-        else:
-            print_info("请运行 --fix 以应用更改。")
+    print_summary(total_issues, files_with_issues, files_fixed, fixable=not fix)
 
 
 def run_check_explicit_imports(args):

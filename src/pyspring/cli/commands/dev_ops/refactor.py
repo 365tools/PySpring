@@ -5,7 +5,7 @@ import ast
 import os
 from typing import Optional
 
-from pyspring.cli.core.ui import print_success, print_error, print_info
+from pyspring.cli.core.ui import print_success, print_error, print_info, print_warning
 
 
 def get_project_root_package(src_path: str) -> str:
@@ -274,7 +274,7 @@ def refactor_file(file_path: str, src_root: str, root_pkg: str, mode: str):
 
     # Apply edits (reverse order to keep indices valid if line count changed? No, line count won't change here)
     if edits:
-        print(f"Refactoring {os.path.basename(file_path)}: {len(edits)} changes")
+        print_info(f"Refactoring {os.path.basename(file_path)}: {len(edits)} changes")
         for idx, new_content in edits:
             lines[idx] = new_content
 
@@ -309,7 +309,7 @@ def refactor_imports(args):
 
     confirm = input("This will modify files in place. Continue? [y/N] ")
     if confirm.lower() != 'y':
-        print("Aborted.")
+        print_warning("Aborted.")
         return
 
     count = 0
