@@ -18,6 +18,7 @@ class CircularChecker(BaseChecker):
         super().__init__(target_path, ['.py'])
 
         project_root = os.getcwd()
+        self.root_path = project_root
         # Smart detection for source root
         self.package_root = self.target_path
         if self.target_path == project_root:
