@@ -69,7 +69,7 @@ def run_check_import(args):
 
     target_path = os.path.abspath(target_arg)
 
-    print_title(f"Dynamic Import Check: {target_arg}")
+    print_title(f"Dynamic Import Check: {target_path}")
 
     project_root = os.getcwd()
 

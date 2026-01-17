@@ -103,9 +103,9 @@ def test_no_custom_singleton():
     print("\n🔍 测试 3: 验证移除自定义单例逻辑...")
 
     try:
-        from src.pyspring.security.core.config.loader import SecurityConfigManager
-        from src.pyspring.security.authentication.core.chain import AuthenticationChain
-        from src.pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
+        from pyspring.security.core.config.loader import SecurityConfigManager
+        from pyspring.security.authentication.core.chain import AuthenticationChain
+        from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
 
         classes_to_test = [
             ("SecurityConfigManager", SecurityConfigManager),

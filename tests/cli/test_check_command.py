@@ -4,7 +4,9 @@ PySpring CLI Tests - Check Command
 from unittest.mock import patch
 
 import pytest
-from pyspring.cli.commands.check import run_check_import, run_check_encoding
+
+from pyspring.cli.commands.check_ops.encoding import run_check_encoding
+from pyspring.cli.commands.check_ops.imports.dynamic import run_check_import
 
 
 class MockArgs:

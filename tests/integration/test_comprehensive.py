@@ -95,7 +95,7 @@ class TestDependencyInjection:
         manager.register_all_services()
 
         # 尝试获取一个已注册的服务
-        from src.pyspring.repositories.cache.manager import CacheManagerService
+        from pyspring.repositories.cache.manager import CacheManagerService
         cache_manager = AppContainerManager.service(CacheManagerService)
         assert cache_manager is not None
         logger.info("✅ CacheManagerService 获取成功")
@@ -171,7 +171,7 @@ class TestConfigManagement:
 
     def test_repositories_config(self):
         """测试仓储配置"""
-        from src.pyspring.repositories.base.config.loader import RepositoriesConfigManager
+        from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 
         config_manager = RepositoriesConfigManager()
 

@@ -86,13 +86,24 @@ def load_reload_config():
     return config
 
 
-config = load_reload_config()
-uvicorn.run(
-    "main:app",
-    reload=True,
-    reload_dirs=config["paths"],
-    reload_excludes=config["exclude"],
-)
+def run_method_3():
+    """方式3: 配置文件方式"""
+    # 模拟 watchfiles.yaml 存在或用户需自行创建
+    if not os.path.exists("watchfiles.yaml"):
+        print("未找到 watchfiles.yaml，跳过方式3示例")
+        return
+
+    config = load_reload_config()
+    uvicorn.run(
+        "main:app",
+        reload=True,
+        reload_dirs=config["paths"],
+        reload_excludes=config["exclude"],
+    )
+
+
+# config = load_reload_config()  # 注释掉，避免导入时报错
+# uvicorn.run(...)               # 移入 run_method_3
 
 # ==================== 方式4: 手动控制热重载（最灵活） ====================
 
@@ -123,45 +134,47 @@ class DevConfig(BaseSettings):
 
 
 # 使用
-config = DevConfig()
+# config = DevConfig()
 
-uvicorn.run(
-    "main:app",
-    host="0.0.0.0",
-    port=8000,
-    reload=config.reload_enabled,
-    reload_delay=config.reload_delay,
-    reload_dirs=config.reload_dirs,
-    reload_excludes=config.reload_excludes,
-)
+def run_method_4():
+    """方式4: 手动控制热重载（最灵活）"""
+    config = DevConfig()
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=config.reload_enabled,
+        reload_delay=config.reload_delay,
+        reload_dirs=config.reload_dirs,
+        reload_excludes=config.reload_excludes,
+    )
 
 # ==================== 方式5: 生产环境关闭热重载 ====================
+def run_method_5():
+    """方式5: 生产环境关闭热重载"""
+    ENV = os.getenv("ENVIRONMENT", "development")
 
-# 根据环境自动配置
-
-ENV = os.getenv("ENVIRONMENT", "development")
-
-if ENV == "production":
-    # 生产环境：关闭热重载
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=False,
-        workers=4,  # 多进程
-    )
-else:
-    # 开发环境：启用热重载，但排除数据文件
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        reload_excludes=[
-            "*.db", "*.sqlite", "data/*",
-            "*.log", "logs/*",
-        ],
-    )
+    if ENV == "production":
+        # 生产环境：关闭热重载
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=False,
+            workers=4,  # 多进程
+        )
+    else:
+        # 开发环境：启用热重载，但排除数据文件
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            reload_excludes=[
+                "*.db", "*.sqlite", "data/*",
+                "*.log", "logs/*",
+            ],
+        )
 
 # ==================== 推荐的完整配置 ====================
 
