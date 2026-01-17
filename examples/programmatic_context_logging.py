@@ -28,13 +28,11 @@ try:
 
     _loguru.remove()  # 移除旧的
 
-    # 注意：必须添加 filter=LoguruConfig._add_relative_path_to_record
-    # 因为这个函数负责将 ContextVar 的值注入到 record["extra"] 中
+    # 注意：现在不需要手动添加 filter，全局 patcher 会自动处理上下文注入
     _loguru.add(
         sys.stdout,
         format="<green>{time:HH:mm:ss}</green> | trace:<cyan>{extra[trace_id]}</cyan> | <level>{message}</level>",
-        level="INFO",
-        filter=LoguruConfig._add_relative_path_to_record
+        level="INFO"
     )
 except Exception as e:
     print(f"Error reconfiguring logger: {e}")

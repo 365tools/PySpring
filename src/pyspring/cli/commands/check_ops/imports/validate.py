@@ -89,6 +89,7 @@ def run_static_validation(target_path: str, do_fix: bool):
         except SyntaxError as e:
             print_file_header(file_path)
             print_issue(str(e.lineno), f"Syntax Error: {e.msg}", file_path, level='error')
+            total_issues += 1
             continue
         except Exception:
             continue
