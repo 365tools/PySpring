@@ -109,8 +109,13 @@ def run(args):
     print()
     check_path_issues()
     print()
-    if not check_import_ability():
+    checklist = []
+    checklist.append(check_import_ability())
+
+    if not all(checklist):
         suggest_solution()
+        return False
 
     # Not using standard summary here as it's info-based, but could add footer
     print()
+    return True

@@ -3,6 +3,46 @@ import re
 import sys
 
 
+def print_friendly_subcommand_help(action, prog_name=None):
+    """
+    Print a friendly list of available subcommands to stderr.
+    Args:
+        action: The argparse._SubParsersAction object
+        prog_name: The program name (e.g. 'pyspring')
+    """
+    if prog_name is None:
+        prog_name = sys.argv[0] if sys.argv else 'pyspring'
+
+    print(f"\n⚠️  Missing command. Please specify one of the following:\n", file=sys.stderr)
+
+    # Get choices and calculate padding
+    choices = action.choices
+    if not choices:
+        return
+
+    max_len = max(len(c) for c in choices.keys())
+
+    # Create a lookup for help messages
+    help_lookup = {}
+    if hasattr(action, '_choices_actions'):
+        for sub_action in action._choices_actions:
+            help_lookup[sub_action.dest] = sub_action.help
+
+    # Print sorted commands
+    for name in sorted(choices.keys()):
+        help_msg = help_lookup.get(name, '')
+        # If help is None, skip or show empty
+        if help_msg is None:
+            help_msg = ""
+        print(f"  ➜ {name:<{max_len}} : {help_msg}", file=sys.stderr)
+
+    if action.dest == 'check_command':
+        print(f"\n💡 Tip: Use --all to run all checks: '{prog_name} check --all'", file=sys.stderr)
+        print(f"        Use '{prog_name} check <command> --help' for details on a specific command.", file=sys.stderr)
+    else:
+        print(f"\n💡 Tip: Use '{prog_name} <command> --help' for details on a specific command.", file=sys.stderr)
+
+
 class FriendlyArgumentParser(argparse.ArgumentParser):
     """
     Custom ArgumentParser that provides friendlier error messages and suggestions.
@@ -59,26 +99,4 @@ class FriendlyArgumentParser(argparse.ArgumentParser):
 
     def _print_friendly_subcommand_help(self, action):
         """Print a friendly list of available subcommands"""
-        print(f"\n⚠️  Missing command. Please specify one of the following:\n", file=sys.stderr)
-
-        # Get choices and calculate padding
-        choices = action.choices
-        if not choices:
-            return
-
-        max_len = max(len(c) for c in choices.keys())
-
-        # Create a lookup for help messages
-        help_lookup = {}
-        for sub_action in action._choices_actions:
-            help_lookup[sub_action.dest] = sub_action.help
-
-        # Print sorted commands
-        for name in sorted(choices.keys()):
-            help_msg = help_lookup.get(name, '')
-            # If help is None, skip or show empty
-            if help_msg is None:
-                help_msg = ""
-            print(f"  ➜ {name:<{max_len}} : {help_msg}", file=sys.stderr)
-
-        print(f"\n💡 Tip: Use '{self.prog} <command> --help' for details on a specific command.", file=sys.stderr)
+        print_friendly_subcommand_help(action, self.prog)

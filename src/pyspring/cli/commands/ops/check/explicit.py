@@ -50,14 +50,14 @@ class ImportExpander(ast.NodeVisitor):
 
     def visit_ImportFrom(self, node: ast.ImportFrom):
         # 检查是否从包中导入
-        # node.module: 'security_ops'
+        # node.module: 'security'
         # node.level: 1 (表示 .), 0 表示绝对导入
 
         # 我们针对可能是包的导入。
         target_path = self.resolve_package_path(node.module or "", node.level)
 
         # 检查 target_path 是否指向目录
-        # 它可能是文件 (security_ops.py) 或目录 (security_ops/)
+        # 它可能是文件 (security.py) 或目录 (security/)
         if not target_path or not os.path.isdir(target_path):
             # 尝试检查如果是绝对导入，是否存在于项目根目录相对路径
             if node.level == 0 and node.module:
@@ -178,10 +178,9 @@ class ExplicitImportChecker(BaseChecker):
 
         has_issues = False
 
-        if expander.warnings:
-            has_issues = True
+        if expander.warnings and fix:
             for w in expander.warnings:
-                self.add_issue(file_path, 0, w, level='warning')
+                self.add_issue(file_path, 0, f"{w} -> Manual resolution required", level='error')
 
         if expander.replacements:
             has_issues = True
@@ -214,6 +213,11 @@ class ExplicitImportChecker(BaseChecker):
                     self.record_fix(file_path, rep['lineno'], f"{msg} -> Fixed")
                 else:
                     self.add_issue(file_path, rep['lineno'], msg, level='warning')
+        else:
+            # If no replacements found but issues might exist (e.g. only warnings or not found)
+            if not expander.warnings and not expander.replacements:
+                # Check for potentials that failed
+                pass  # Currently visitor doesn't track "failed candidates" explicitly except via warnings
         
             if fix and file_modifications:
                 try:
@@ -228,4 +232,4 @@ class ExplicitImportChecker(BaseChecker):
 def run_check_explicit_imports(args):
     target_path = getattr(args, 'path', '.')
     checker = ExplicitImportChecker(target_path)
-    checker.run(fix=args.fix)
+    return checker.run(fix=args.fix)

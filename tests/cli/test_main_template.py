@@ -8,7 +8,7 @@ PROJ_ROOT = Path(__file__).parent.parent.parent
 if str(PROJ_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(PROJ_ROOT / "src"))
 
-from pyspring.cli.commands.init_ops.core import create_main_file, get_template_dir
+from pyspring.cli.commands.ops.init.core import create_main_file, get_template_dir
 
 
 def test_create_main_file_from_template():

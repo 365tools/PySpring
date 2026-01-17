@@ -3,7 +3,6 @@ Circular Dependency Checker using AST
 """
 import ast
 import os
-import sys
 from collections import defaultdict
 from typing import Dict, Set, Optional, List
 
@@ -172,5 +171,6 @@ def run_check_circular(args):
         print_info("To resolve circular dependencies:")
         print("  1. Refactor common logic into a separate module")
         print("  2. Move imports inside functions/methods (delayed import)")
-        sys.exit(1)
+        # sys.exit(1) removed for check --all compatibility
 
+    return success

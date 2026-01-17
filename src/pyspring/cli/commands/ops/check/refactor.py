@@ -313,4 +313,4 @@ def run_check_refactor(args):
     level = int(getattr(args, 'level', 2))
 
     checker = RefactorImportsChecker(target_path, mode=mode, level=level)
-    checker.run(fix=args.fix)
+    return checker.run(fix=args.fix)

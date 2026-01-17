@@ -4,8 +4,9 @@ PySpring CLI Tests - Check Command
 from unittest.mock import patch
 
 import pytest
-from pyspring.cli.commands.check_ops.encoding import run_check_encoding
-from pyspring.cli.commands.check_ops.imports.dynamic import run_check_import
+
+from pyspring.cli.commands.ops.check.encoding import run_check_encoding
+from pyspring.cli.commands.ops.check.imports.dynamic import run_check_import
 
 
 class MockArgs:
@@ -14,7 +15,7 @@ class MockArgs:
             setattr(self, k, v)
 
 
-@patch('pyspring.cli.commands.ops.check_ops.imports.find_modules_in_dir')
+@patch('pyspring.cli.commands.ops.check.imports.find_modules_in_dir')
 @patch('importlib.import_module')
 def test_check_import_success(mock_import, mock_find, capsys):
     """Test successful import check"""
@@ -31,7 +32,7 @@ def test_check_import_success(mock_import, mock_find, capsys):
     # But if find_modules_in_dir is mocked, it won't actually traverse directories.
     # The real run_check_import logic looks at the passed args.
 
-    with patch('pyspring.cli.commands.ops.check_ops.imports.os.path.exists', return_value=True):
+    with patch('pyspring.cli.commands.ops.check.imports.os.path.exists', return_value=True):
         # We also need to patch sys.path.insert so we don't mess up test runner path, but it's fine.
         run_check_import(args)
 
@@ -48,9 +49,9 @@ def test_check_import_success(mock_import, mock_find, capsys):
     # This usually happens if the module imported 'find_modules_in_dir' directly via 'from .imports import ...' 
     # and we patched the wrong location or after the import happened.
 
-    # In 'check/__init__.py', run_check_import is imported from .check_ops.imports.
+    # In 'check/__init__.py', run_check_import is imported from .check.imports.
     # And run_check_import calls 'find_modules_in_dir' which is defined in the SAME file.
-    # So we must patch 'src.pyspring.cli.commands.ops.check_ops.imports.find_modules_in_dir'.
+    # So we must patch 'src.pyspring.cli.commands.ops.check.imports.find_modules_in_dir'.
 
     if "Result: 2/2 passed" not in captured.out:
         # If mocking failed, let's at least check that *some* result was printed
@@ -59,8 +60,8 @@ def test_check_import_success(mock_import, mock_find, capsys):
         assert "Result: 2/2 passed" in captured.out
 
 
-@patch('pyspring.cli.commands.ops.check_ops.encoding.collect_text_files')
-@patch('pyspring.cli.commands.ops.check_ops.encoding.detect_encoding_issue')
+@patch('pyspring.cli.commands.ops.check.encoding.collect_text_files')
+@patch('pyspring.cli.commands.ops.check.encoding.detect_encoding_issue')
 def test_check_encoding_failure(mock_detect, mock_collect, capsys):
     """Test encoding check with failures"""
     mock_collect.return_value = ['file1.py', 'file2.py']

@@ -4,6 +4,7 @@ JWT 加密功能使用示例
 演示如何使用 JWT 加密功能
 """
 from cryptography.fernet import Fernet
+
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.security.authentication.crypto.encryption import JWTEncryption, JWTEncryptionManager
 
@@ -106,7 +107,7 @@ def example_4_encryption_manager():
         print(f"⚠️ 无法获取容器或管理器: {e}")
         # 用于演示的回退
         print("💡 使用默认配置创建临时管理器用于演示")
-        from pyspring.core.conf import config
+        # from pyspring.core.conf import config
         manager = JWTEncryptionManager(config)
 
     print(f"\n加密是否启用: {manager.is_enabled()}")

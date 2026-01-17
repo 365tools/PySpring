@@ -10,13 +10,13 @@ CLI 模块的组织结构如下：
 pyspring/cli/
 ├── commands/           # 命令实现
 │   ├── check.py        # 'check' 命令入口
-│   ├── check_ops/      # 'check' 命令逻辑 (导入检查, 编码检查等)
+│   ├── check/      # 'check' 命令逻辑 (导入检查, 编码检查等)
 │   ├── diagnose.py     # 'diagnose' 命令入口
-│   ├── diagnose_ops/   # 'diagnose' 命令逻辑
+│   ├── diagnose/   # 'diagnose' 命令逻辑
 │   ├── init.py         # 'init' 命令入口
-│   ├── init_ops/       # 'init' 命令逻辑 (模板, 密钥生成等)
+│   ├── init/       # 'init' 命令逻辑 (模板, 密钥生成等)
 │   ├── uv.py           # 'uv' 命令入口
-│   └── uv_ops/         # 'uv' 命令逻辑
+│   └── uv/         # 'uv' 命令逻辑
 ├── core/               # 共享 CLI 核心工具 (UI, 格式化)
 └── main.py             # CLI 主入口 (参数解析与分发)
 ```
@@ -64,6 +64,6 @@ pyspring/cli/
 如何添加新命令：
 
 1. 在 `commands/` 目录下创建一个 `new_command.py` 文件。
-2. 如果逻辑复杂，创建一个 `new_command_ops/` 包来存放具体实现。
+2. 如果逻辑复杂，创建一个 `new_command/` 包来存放具体实现。
 3. 在 `new_command.py` 中实现 `register_subcommand(subparsers)` 函数。
 4. 在 `pyspring/cli/main.py` 中注册新命令。

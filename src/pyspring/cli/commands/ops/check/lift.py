@@ -282,7 +282,7 @@ class ImportLifter:
                                 lines.insert(line_idx, comment)
                                 file_modified = True
                                 commented_count += 1
-                                print_issue(str(node.lineno), f"Marked Unsafe: {reason}", path, level='warning')
+                                print_issue(str(node.lineno), f"Unsafe to lift: {reason} -> Marked with comment (Manual review needed)", path, level='warning')
 
                 if file_modified and not dry_run:
                     files_modified += 1
@@ -320,13 +320,14 @@ class ImportLifter:
 
 
 def run_lift_imports(args):
-    apply = getattr(args, 'apply', False)
+    do_fix = getattr(args, 'fix', False)
 
-    if apply:
+    if do_fix:
         user_input = input(f"Are you sure you want to lift safe imports in '{args.target}'? [y/N] ").strip().lower()
         if user_input != 'y':
             print_info("Operation cancelled.")
             return
 
     lifter = ImportLifter(args.target)
-    lifter.lift_imports(dry_run=not apply)
+    lifter.lift_imports(dry_run=not do_fix)
+    return True

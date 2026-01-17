@@ -1,7 +1,7 @@
 """
 PySpring uv Command
 """
-from .uv_ops.core import run
+from .ops.uv.core import run
 
 
 def register_subcommand(subparsers):

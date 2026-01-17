@@ -22,7 +22,7 @@ def load_commands(subparsers, package_path='pyspring.cli.commands'):
     # Iterate through all modules in the package
     for _, name, is_pkg in pkgutil.iter_modules(package.__path__):
         # specific skip rules
-        if name.startswith('_') or name.endswith('_ops'):
+        if name.startswith('_'):
             continue
 
         full_module_name = f"{package_path}.{name}"

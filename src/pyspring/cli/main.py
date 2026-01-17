@@ -38,8 +38,8 @@ def main():
     # Parse arguments
     args = parser.parse_args()
 
-    # Handle --all flag
-    if hasattr(args, 'all') and args.all:
+    # Handle --all flag (Global Help) ONLY if no subcommand is selected
+    if hasattr(args, 'all') and args.all and not args.command:
         from .core.utils.help import print_recursive_help
         print_recursive_help(parser)
         sys.exit(0)

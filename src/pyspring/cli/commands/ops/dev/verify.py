@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pyspring.cli.core.ui import print_title, print_section, print_error
 # Correct import path assuming internal usage
-from ..init_ops.core import create_pyproject_toml
+from ..init.core import create_pyproject_toml
 
 
 def verify_pyproject(args):

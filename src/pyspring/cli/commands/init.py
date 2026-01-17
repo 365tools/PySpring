@@ -3,7 +3,7 @@ PySpring CLI Init Command Registration
 """
 import argparse
 
-from .init_ops.core import run
+from .ops.init.core import run
 
 
 def register_subcommand(subparsers):

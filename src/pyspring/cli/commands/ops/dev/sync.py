@@ -14,7 +14,7 @@ from pyspring.cli.core.ui import (
 def sync_templates(args):
     """Synchronize template files"""
     current_file = Path(__file__)
-    # Resolve root from this file location: src/pyspring/cli/commands/dev_ops/sync.py
+    # Resolve root from this file location: src/pyspring/cli/commands/dev/sync.py
     # Root is 6 levels up
     root = current_file.parent.parent.parent.parent.parent.parent
 

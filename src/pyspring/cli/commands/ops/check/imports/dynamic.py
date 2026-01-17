@@ -186,4 +186,6 @@ def run_check_import(args):
         print_success("To diagnose import errors, try:")
         print("  1. Check for circular dependencies: pyspring check circular")
         print("  2. Check for missing references:    pyspring check references")
-        sys.exit(1)
+        return False
+
+    return True

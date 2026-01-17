@@ -19,12 +19,27 @@ def is_module_available(module_name: str, sys_path: list) -> bool:
     if module_name in sys.builtin_module_names:
         return True
 
-    # 3. Use importlib machinery to search in specific path
+    # 3. Use importlib machinery to search recursively
     try:
-        top_level = module_name.split('.')[0]
-        # Use PathFinder explicitly to respect the provided sys_path
-        spec = importlib.machinery.PathFinder.find_spec(top_level, path=sys_path)
-        return spec is not None
+        parts = module_name.split('.')
+        current_path = sys_path
+
+        for i, part in enumerate(parts):
+            # find_spec does not import the module
+            spec = importlib.machinery.PathFinder.find_spec(part, path=current_path)
+
+            if spec is None:
+                return False
+
+            # If valid spec, prepare path for next submodule
+            if spec.submodule_search_locations:
+                current_path = list(spec.submodule_search_locations)
+            elif i < len(parts) - 1:
+                # If it's not a package (no search locations) but we have more parts -> Fail
+                # e.g. import mod.foo but mod is a file
+                return False
+
+        return True
     except (ValueError, ImportError, AttributeError):
         return False
 

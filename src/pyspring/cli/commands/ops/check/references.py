@@ -468,11 +468,16 @@ class ReferencesChecker(BaseChecker):
             if applied:
                 self.resolved_count += applied
                 self.add_issue(file_path, 0, f"Applied {applied} fixes (added imports).", level='success')
-
+            else:
+                # Provide specific feedback for unfixable items
+                for name, line, col in unresolved:
+                    if name not in KNOWN_IMPORTS:
+                        self.add_issue(file_path, line, f"Cannot auto-fix unresolved reference '{name}' -> Manual correction required", level='warning')
+        
         return True
 
 
 def run_check_references(args):
     target = getattr(args, 'path', '.')
     checker = ReferencesChecker(target)
-    checker.run(fix=args.fix)
+    return checker.run(fix=args.fix)

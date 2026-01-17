@@ -1,7 +1,6 @@
 """
 PySpring Encoding Checker Command
 """
-import sys
 from typing import Tuple
 
 from pyspring.cli.core.ui import (
@@ -38,7 +37,7 @@ class EncodingChecker(BaseChecker):
             elif self._convert_to_utf8(file_path, enc, issue_type == 'BOM'):
                 self.record_fix(file_path, line_no, f"{msg} -> Fixed: UTF-8")
             else:
-                self.add_issue(file_path, line_no, f"{msg} -> Failed to fix", level='error')
+                self.add_issue(file_path, line_no, f"{msg} -> Fix failed (conversion error)", level='error')
         else:
             self.add_issue(file_path, line_no, msg, level='error')
 
@@ -119,5 +118,7 @@ def run_check_encoding(args):
         print_success("Encoding fixed. Reload modified files in your editor if they are open.")
 
     if not success and checker.resolved_count < checker.total_issues:
-        sys.exit(1)
+        # sys.exit(1)
+        pass
 
+    return success

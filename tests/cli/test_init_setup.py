@@ -62,8 +62,8 @@ def test_init_module():
     print("\n🔍 测试初始化模块...")
 
     try:
-        from pyspring.cli.commands.init_ops import core as init
-        print("  ✓ init_ops/core 可导入")
+        from pyspring.cli.commands.init import core as init
+        print("  ✓ init/core 可导入")
 
         # 检查主要函数
         required_functions = [

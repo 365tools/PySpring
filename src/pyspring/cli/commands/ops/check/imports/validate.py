@@ -178,6 +178,7 @@ class StaticImportChecker(BaseChecker):
             # --- Handling Missing Imports ---
             all_resolved = True
             new_modules = set()
+            analysis_errors = []
 
             for name, asname in names:
                 if name == '*':
@@ -193,9 +194,9 @@ class StaticImportChecker(BaseChecker):
                 else:
                     all_resolved = False
                     if not valid_candidates:
-                        self.add_issue(file_path, lineno, f"Module '{old_mod}' not found. Symbol '{name}' not found.", level='error')
+                        analysis_errors.append(f"Module '{old_mod}' not found. Symbol '{name}' not found.")
                     else:
-                        self.add_issue(file_path, lineno, f"Ambiguous symbol '{name}': {valid_candidates}", level='warning')
+                        analysis_errors.append(f"Ambiguous symbol '{name}': {valid_candidates}")
 
             # Fix Logic
             if all_resolved and len(new_modules) == 1:
@@ -219,11 +220,33 @@ class StaticImportChecker(BaseChecker):
                 else:
                     self.add_issue(file_path, lineno, f"{msg} -> Run --fix to apply", level='info')
 
+            elif fix:
+                # If cannot resolve automatically, inform the user instead of deleting blindy
+                # Only report as error/manual fix required
+                if analysis_errors:
+                    for err in analysis_errors:
+                        self.add_issue(file_path, lineno, f"{err} -> Manual fix required", level='error')
+                else:
+                    # Ambiguous or complex
+                    self.add_issue(file_path, lineno, f"Cannot auto-resolve '{old_mod}' -> Manual fix required", level='error')
+
+            else:
+                # Report Errors
+                for err in analysis_errors:
+                    self.add_issue(file_path, lineno, err, level='error')
+                if not analysis_errors and not all_resolved:
+                    self.add_issue(file_path, lineno, f"Cannot verify availability of '{old_mod}'", level='warning')
+
         if file_modifications:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.writelines(lines)
 
         return issues_found
+
+    def post_check(self, files: List[str], **kwargs):
+        print("\nTo diagnose import errors, try:")
+        print("  1. Check for circular dependencies: pyspring check circular")
+        print("  2. Check for missing references:    pyspring check references")
 
 
 def run_validate_imports(args):
@@ -241,9 +264,12 @@ def run_validate_imports(args):
     should_run_static = mode in ('static', 'all')
     should_run_dynamic = mode in ('dynamic', 'all')
 
+    success = True
+
     if should_run_static:
         checker = StaticImportChecker(target_path)
-        checker.run(fix=do_fix)
+        if not checker.run(fix=do_fix):
+            success = False
         
         if should_run_dynamic:
             print("\n" + "-" * 60 + "\n")
@@ -251,4 +277,7 @@ def run_validate_imports(args):
     if should_run_dynamic:
         # Dynamic check delegate
         args.static = False
-        run_dynamic_check(args)
+        if not run_dynamic_check(args):
+            success = False
+
+    return success

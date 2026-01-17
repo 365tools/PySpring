@@ -1,8 +1,8 @@
 """
 PySpring Clean Command
 """
-from .clean_ops.cache import clean_project_cache
-from .clean_ops.imports import run_clean_imports
+from .ops.clean.cache import clean_project_cache
+from .ops.clean.imports import run_clean_imports
 
 
 def register_subcommand(subparsers):
