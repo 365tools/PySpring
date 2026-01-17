@@ -10,6 +10,7 @@ import ast
 import os
 from typing import Optional
 
+from pyspring.cli.core.utils.code import get_indentation, apply_indentation
 from .base import BaseChecker
 from .imports.static import find_symbol_in_package
 
@@ -178,21 +179,29 @@ class ExplicitImportChecker(BaseChecker):
                 if start < 0: start = 0
                 if end > len(lines): end = len(lines)
 
+                # Capture original indentation from the first line of the block
+                indentation = get_indentation(lines[start])
+                
                 orig_text = " | ".join(lines[start:end])
                 new_text = " | ".join(rep['new_lines'])
 
                 msg = f"Implicit import -> Explicit: {orig_text.strip()} => {new_text}"
-                self.add_issue(file_path, rep['lineno'], msg, level='warning')
 
                 if fix:
-                    lines[start:end] = rep['new_lines']
+                    # Apply indentation to new lines
+                    fixed_new_lines = apply_indentation(rep['new_lines'], indentation)
+                    lines[start:end] = fixed_new_lines
                     file_modifications = True
-                    self.resolved_count += 1
-
+                    self.record_fix(file_path, rep['lineno'], f"{msg} -> Fixed")
+                else:
+                    self.add_issue(file_path, rep['lineno'], msg, level='warning')
+        
             if fix and file_modifications:
-                with open(file_path, 'w', encoding='utf-8') as f:
-                    f.write("\n".join(lines) + "\n")
-                self.add_issue(file_path, 0, "Imports expanded and saved", level='success')
+                try:
+                    with open(file_path, 'w', encoding='utf-8') as f:
+                        f.write('\n'.join(lines))
+                except Exception as e:
+                    self.add_issue(file_path, 0, f"Error saving file: {e}", level='error')
 
         return has_issues
 

@@ -5,9 +5,6 @@ import ast
 import builtins
 from typing import Optional, List, Set, Tuple
 
-from pyspring.cli.core.ui import (
-    print_success
-)
 from .base import BaseChecker
 
 # --- Knowledge Base for Auto-Fix ---
@@ -470,7 +467,7 @@ class ReferencesChecker(BaseChecker):
             applied = apply_fixes(file_path, unresolved)
             if applied:
                 self.resolved_count += applied
-                print_success(f"     ✨ Applied {applied} fixes.")
+                self.add_issue(file_path, 0, f"Applied {applied} fixes (added imports).", level='success')
 
         return True
 

@@ -16,6 +16,16 @@ def find_files(root_dir: str, extensions: List[str] = None) -> List[str]:
     # Navigate one level up if root_dir is not absolute or current
     abs_root = os.path.abspath(root_dir)
 
+    if os.path.isfile(abs_root):
+        # Single file check
+        if extensions:
+            _, ext = os.path.splitext(abs_root)
+            if ext.lower() in extensions:
+                return [abs_root]
+        else:
+            return [abs_root]
+        return []
+
     for root, dirs, files in os.walk(abs_root):
         # Filter directories in-place
         dirs[:] = [d for d in dirs if d not in ignored and not d.startswith('.')]

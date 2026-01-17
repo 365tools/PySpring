@@ -65,13 +65,13 @@ def print_issue(line: str, message: str, file_path: str = None, level: str = 'er
     Level: 'error', 'warning', 'success', 'info'
     """
     if level == 'error':
-        icon = "❌"
+        icon = "✗"  # Changed from ❌ for consistency
         color = Colors.FAIL
     elif level == 'warning':
         icon = "⚠"
         color = Colors.WARNING
     elif level == 'success':
-        icon = "✅"
+        icon = "✓"  # Changed from ✅ for consistency
         color = Colors.OKGREEN
     else:  # info
         icon = "ℹ"

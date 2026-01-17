@@ -10,6 +10,7 @@ from typing import List
 from pyspring.cli.core.ui import (
     print_error
 )
+from pyspring.cli.core.utils.code import get_indentation, apply_indentation
 from .dynamic import run_check_import as run_dynamic_check
 from .indexer import ProjectIndexer
 from .static import is_module_available, check_relative_import_exists
@@ -144,7 +145,7 @@ class StaticImportChecker(BaseChecker):
 
                 new_line = ""
                 original_line = lines[lineno - 1]
-                indentation = original_line[:len(original_line) - len(original_line.lstrip())]
+                indentation = get_indentation(original_line)
 
                 if isinstance(issue['node'], ast.ImportFrom):
                     import_parts = []
@@ -153,7 +154,7 @@ class StaticImportChecker(BaseChecker):
                             import_parts.append(f"{name} as {asname}")
                         else:
                             import_parts.append(name)
-                    new_line = f"{indentation}from {new_mod} import {', '.join(import_parts)}\n"
+                    new_line = f"from {new_mod} import {', '.join(import_parts)}\n"
                 elif isinstance(issue['node'], ast.Import):
                     import_parts = []
                     for name, asname in names:
@@ -161,7 +162,7 @@ class StaticImportChecker(BaseChecker):
                             import_parts.append(f"{new_mod} as {asname}")
                         else:
                             import_parts.append(new_mod)
-                    new_line = f"{indentation}import {', '.join(import_parts)}\n"
+                    new_line = f"import {', '.join(import_parts)}\n"
 
                 msg = f"Bad Layout: '{old_mod}' contains 'src.'"
 
@@ -169,7 +170,7 @@ class StaticImportChecker(BaseChecker):
                 self.add_issue(file_path, lineno, msg + (f" -> Fixed to '{new_mod}'" if fix else " -> Run --fix to remove"), level='warning' if not fix else 'success')
 
                 if fix and new_line:
-                    lines[lineno - 1] = new_line
+                    lines[lineno - 1] = apply_indentation([new_line], indentation)[0]
                     self.resolved_count += 1
                     file_modifications = True
                 continue
@@ -200,18 +201,18 @@ class StaticImportChecker(BaseChecker):
             if all_resolved and len(new_modules) == 1:
                 new_mod = list(new_modules)[0]
                 original_line = lines[lineno - 1]
-                indentation = original_line[:len(original_line) - len(original_line.lstrip())]
+                indentation = get_indentation(original_line)
                 import_parts = []
                 for name, asname in names:
                     if asname:
                         import_parts.append(f"{name} as {asname}")
                     else:
                         import_parts.append(name)
-                new_line = f"{indentation}from {new_mod} import {', '.join(import_parts)}\n"
+                new_line = f"from {new_mod} import {', '.join(import_parts)}\n"
                 msg = f"Broken: '{old_mod}' -> Suggest: '{new_mod}'"
 
                 if fix:
-                    lines[lineno - 1] = new_line
+                    lines[lineno - 1] = apply_indentation([new_line], indentation)[0]
                     self.add_issue(file_path, lineno, f"{msg} -> Fixed", level='success')
                     self.resolved_count += 1
                     file_modifications = True

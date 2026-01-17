@@ -5,8 +5,8 @@ import types as _types
 import typing as _typing
 from typing import Any, get_origin, get_args, get_type_hints, List, Dict, Set
 
-from pyspring.aop.core import Aspect
-from pyspring.aop.proxy import create_proxy
+from pyspring.aop.core.models import Aspect
+from pyspring.aop.proxy.factory import create_proxy
 from pyspring.core.abstracts.interfaces.IService import IService
 from pyspring.log.instance import logger
 

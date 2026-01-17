@@ -115,6 +115,11 @@ class BaseChecker(ABC):
         print_issue(str(line), message, file_path, level=level)
         self.total_issues += 1
 
+    def record_fix(self, file_path: str, line: int, message: str):
+        """Helper to record a successful fix."""
+        self.add_issue(file_path, line, message, level='success')
+        self.resolved_count += 1
+
     def print_report(self, fixable: bool = False):
         """Print summary stats"""
         print_summary(

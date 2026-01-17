@@ -41,7 +41,7 @@ def test_cli_module():
     print("\n🔍 测试 CLI 模块...")
 
     try:
-        from pyspring.cli import main as cli_main
+        from pyspring.cli.main import main as cli_main
         print("  ✓ cli.main 可导入")
 
         # 检查 main 函数

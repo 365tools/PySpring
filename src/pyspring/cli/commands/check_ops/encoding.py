@@ -36,8 +36,7 @@ class EncodingChecker(BaseChecker):
             if 'Corrupted' in str(issue_type):
                 self.add_issue(file_path, line_no, f"{msg} -> Cannot auto-fix: File contains replacement characters. Manual repair required.", level='error')
             elif self._convert_to_utf8(file_path, enc, issue_type == 'BOM'):
-                self.add_issue(file_path, line_no, f"{msg} -> Fixed: UTF-8", level='success')
-                self.resolved_count += 1
+                self.record_fix(file_path, line_no, f"{msg} -> Fixed: UTF-8")
             else:
                 self.add_issue(file_path, line_no, f"{msg} -> Failed to fix", level='error')
         else:

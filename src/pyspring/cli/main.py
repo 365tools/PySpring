@@ -40,7 +40,7 @@ def main():
 
     # Handle --all flag
     if hasattr(args, 'all') and args.all:
-        from .core.help_utils import print_recursive_help
+        from pyspring.cli.core.utils.help import print_recursive_help
         print_recursive_help(parser)
         sys.exit(0)
 
