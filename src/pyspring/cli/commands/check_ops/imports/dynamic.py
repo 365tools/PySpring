@@ -12,7 +12,6 @@ from pyspring.cli.core.ui import (
     print_title, print_file_header, print_issue, print_summary,
     print_error, print_info, print_success
 )
-from .static_import import run_ast_check
 
 
 def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list = None) -> Generator[str, None, None]:
@@ -66,18 +65,11 @@ def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list = None)
 def run_check_import(args):
     """Run import check logic"""
     target_arg = getattr(args, 'target', '.')
-    static_mode = getattr(args, 'static', False)
+    # static_mode = getattr(args, 'static', False) # Legacy argument
 
     target_path = os.path.abspath(target_arg)
 
-    # Static Mode Delegate
-    if static_mode:
-        run_ast_check(target_path)
-        return
-
     print_title(f"Dynamic Import Check: {target_arg}")
-
-    # ... existing code ...
 
     project_root = os.getcwd()
 
@@ -137,22 +129,54 @@ def run_check_import(args):
             except Exception as e:
                 # Try to map module back to file for display
                 try:
-                    rel_path = module_name.replace('.', os.sep)
-                    possible_path = os.path.join(import_root, rel_path + ".py")
-                    if not os.path.exists(possible_path):
-                        possible_path = os.path.join(import_root, rel_path, "__init__.py")
+                    # Decide which root to use for path resolution
+                    # When we built 'modules', we used either src_path or project_root
+                    # If the module starts with a package found in src, try src_path first
 
-                    full_path = possible_path if os.path.exists(possible_path) else "Unknown file"
+                    search_roots = []
+                    if os.path.exists(src_path):
+                        search_roots.append(src_path)
+                    search_roots.append(project_root)
+
+                    full_path = "Unknown file"
+
+                    rel_path = module_name.replace('.', os.sep)
+
+                    for root in search_roots:
+                        # Check module.py
+                        candidate = os.path.join(root, rel_path + ".py")
+                        if os.path.exists(candidate):
+                            full_path = candidate
+                            break
+                        # Check package/__init__.py
+                        candidate = os.path.join(root, rel_path, "__init__.py")
+                        if os.path.exists(candidate):
+                            full_path = candidate
+                            break
                 except:
                     full_path = "Unknown file"
 
-                failed_modules.append((module_name, str(e), full_path))
+                lineno = "0"
+                if full_path != "Unknown file":
+                    try:
+                        tb = e.__traceback__
+                        target_file = os.path.normcase(os.path.abspath(full_path))
+                        while tb:
+                            frame = tb.tb_frame
+                            frame_file = os.path.normcase(os.path.abspath(frame.f_code.co_filename))
+                            if frame_file == target_file:
+                                lineno = str(tb.tb_lineno)
+                            tb = tb.tb_next
+                    except:
+                        pass
+
+                failed_modules.append((module_name, str(e), full_path, lineno))
 
     # Reporting
     if failed_modules:
-        for mod, err, path in failed_modules:
+        for mod, err, path, lineno in failed_modules:
             print_file_header(path)
-            print_issue("0", f"Import failed: {mod} -> {err}", path, level='error')
+            print_issue(lineno, f"Import failed: {mod} -> {err}", path, level='error')
 
     print_summary(len(failed_modules), len(failed_modules), 0, fixable=False)
 

@@ -1,6 +1,7 @@
 from typing import Any
 
-from pyspring.log.instance import logger, LogManager, ILoggerService
+from pyspring.log.core.interface import ILoggerService
+from pyspring.log.instance import logger, LogManager
 
 # 1. 正常使用 (默认 Loguru)
 print("--- Default Logger (Loguru) ---")

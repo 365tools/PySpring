@@ -4,8 +4,8 @@ PySpring Check Command
 from .check_ops.circular import run_check_circular
 from .check_ops.encoding import run_check_encoding
 from .check_ops.env import run as run_env_check
-from .check_ops.explicit_imports import run_check_explicit_imports
-from .check_ops.imports import run_check_import
+from .check_ops.explicit import run_check_explicit_imports
+from .check_ops.imports.validate import run_validate_imports
 from .check_ops.lift import run_lift_imports
 from .check_ops.references import run_check_references
 
@@ -33,30 +33,36 @@ def register_subcommand(subparsers):
     )
     env_parser.set_defaults(func=run_env_check)
 
-    # Import check subcommand
-    import_parser = check_subparsers.add_parser(
-        'imports-scan',
-        help='Scan project for invalid or unused imports',
-        description='Scan and verify imports for all Python files in the target directory'
+    # Imports Validation (Unified Check & Fix)
+    validate_parser = check_subparsers.add_parser(
+        'imports-validate',
+        help='Validate imports and resolve missing modules',
+        description='Comprehensive imports check. Detects missing modules (ModuleNotFoundError) and can auto-resolve broken paths.'
     )
-    import_parser.add_argument(
+    validate_parser.add_argument(
         'target',
         nargs='?',
         default='.',
         help='Target directory to scan (default: current directory)'
     )
-    import_parser.add_argument(
-        '--static',
-        action='store_true',
-        help='Use static analysis (AST) instead of importing modules. Can detect imports inside functions.'
+    validate_parser.add_argument(
+        '--mode',
+        choices=['static', 'dynamic', 'all'],
+        default='all',
+        help='Check mode: all (default), static (AST-based, supports fix), or dynamic (Import-based)'
     )
-    import_parser.add_argument(
+    validate_parser.add_argument(
+        '--fix',
+        action='store_true',
+        help='Auto-resolve broken imports by searching project index (only in static mode)'
+    )
+    validate_parser.add_argument(
         '--exclude',
         default='',
         metavar='',
-        help='Comma-separated list of directories to exclude from scan (e.g. tests,examples)'
+        help='Comma-separated list of directories to exclude from scan'
     )
-    import_parser.set_defaults(func=run_check_import)
+    validate_parser.set_defaults(func=run_validate_imports)
 
     # Encoding check subcommand
     encoding_parser = check_subparsers.add_parser(
@@ -109,6 +115,9 @@ def register_subcommand(subparsers):
         help='Attempt to automatically fix missing imports for standard libraries'
     )
     ref_parser.set_defaults(func=run_check_references)
+
+    # Imports Resolution (Smart Fix)
+    # Merged into imports-validate
 
     # Lift imports subcommand (Refactoring)
     lift_parser = check_subparsers.add_parser(

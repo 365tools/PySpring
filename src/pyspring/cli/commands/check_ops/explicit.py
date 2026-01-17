@@ -8,75 +8,19 @@ when dealing with dynamic imports or incomplete __init__ files.
 """
 import ast
 import os
-from typing import List, Optional
+from typing import Optional
 
 from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import (
     print_title, print_file_header, print_issue, print_summary, print_success
 )
+from .imports.static import find_symbol_in_package
 
 
 def import_range(start, end):
     """Format line number range"""
     if start == end: return str(start)
     return f"{start}-{end}"
-
-
-class SymbolDefinitionVisitor(ast.NodeVisitor):
-    def __init__(self, target_symbol: str):
-        self.target_symbol = target_symbol
-        self.found = False
-
-    def visit_ClassDef(self, node: ast.ClassDef):
-        if node.name == self.target_symbol:
-            self.found = True
-
-    def visit_FunctionDef(self, node: ast.FunctionDef):
-        if node.name == self.target_symbol:
-            self.found = True
-
-    def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef):
-        if node.name == self.target_symbol:
-            self.found = True
-
-
-def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
-    """
-    Search for a symbol in .py files within the package (excluding __init__.py).
-    If found, returns a list of all sub-module names where the symbol is found.
-    """
-    found_modules = []
-    if not os.path.exists(package_dir):
-        return []
-
-    for root, _, files in os.walk(package_dir):
-        # Currently only scans top-level child files
-        if root != package_dir: 
-            continue
-
-        for file in files:
-            if file == '__init__.py' or not file.endswith('.py'):
-                continue
-
-            file_path = os.path.join(root, file)
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-
-                # Perform quick string check first
-                if symbol not in content:
-                    continue
-
-                tree = ast.parse(content)
-                visitor = SymbolDefinitionVisitor(symbol)
-                visitor.visit(tree)
-
-                if visitor.found:
-                    found_modules.append(file[:-3])
-            except Exception:
-                continue
-
-    return found_modules
 
 
 class ImportExpander(ast.NodeVisitor):
@@ -111,7 +55,7 @@ class ImportExpander(ast.NodeVisitor):
         # node.level: 1 (表示 .), 0 表示绝对导入
 
         # 我们针对可能是包的导入。
-        target_path = self.resolve_package_path(node.module, node.level)
+        target_path = self.resolve_package_path(node.module or "", node.level)
 
         # 检查 target_path 是否指向目录
         # 它可能是文件 (security_ops.py) 或目录 (security_ops/)
@@ -197,7 +141,7 @@ class ImportExpander(ast.NodeVisitor):
 
 def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
     print_title("Checking and Expanding Imports")
-    
+
     ignore_list = get_ignore_list(root_path)
     total_issues = 0  # Logical count of replacements
     files_with_issues = 0
@@ -211,7 +155,7 @@ def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
         for file in files:
             if not file.endswith('.py'): continue
 
-            file_path = os.path.join(root, file)
+            file_path = str(os.path.join(root, file))
 
             try:
                 with open(file_path, 'r', encoding='utf-8') as f:
@@ -241,7 +185,7 @@ def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
                         print_file_header(file_path)
 
                     total_issues += len(expander.replacements)
-                    
+
                     # 倒序排序替换，以保持行号有效
                     expander.replacements.sort(key=lambda x: x['lineno'], reverse=True)
 
@@ -257,7 +201,7 @@ def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
                         rng = import_range(start + 1, end)
                         msg = f"{orig_text.strip()} -> {new_text.replace(chr(10), ' | ')}"
                         print_issue(rng, msg, file_path, level='warning')
-                        
+
                         if fix:
                             # 替换行
                             lines[start:end] = rep['new_lines']
@@ -269,7 +213,7 @@ def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
 
                 if has_issues:
                     files_with_issues += 1
-                        
+
             except Exception as e:
                 pass
 
