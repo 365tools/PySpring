@@ -200,6 +200,6 @@ if __name__ == "__main__":
     # 环境变量
     example_environment_variables()
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例完成！")
     print("=" * 60)

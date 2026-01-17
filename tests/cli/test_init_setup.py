@@ -151,7 +151,7 @@ def main():
         "MANIFEST.in": test_manifest(),
     }
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("测试结果汇总")
     print("=" * 60)
 
@@ -161,7 +161,7 @@ def main():
 
     all_passed = all(results.values())
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     if all_passed:
         print("🎉 所有测试通过！")
     else:

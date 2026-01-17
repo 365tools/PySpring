@@ -11,7 +11,7 @@ from pyspring.security.authentication.crypto.encryption import JWTEncryption, JW
 
 def example_1_basic_encryption():
     """示例 1: 基本的 Fernet 加密/解密"""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例 1: 基本的 Fernet 加密/解密")
     print("=" * 60)
 
@@ -47,7 +47,7 @@ def example_1_basic_encryption():
 
 def example_2_aes_gcm_encryption():
     """示例 2: AES-GCM 加密"""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例 2: AES-GCM 加密")
     print("=" * 60)
 
@@ -79,7 +79,7 @@ def example_2_aes_gcm_encryption():
 
 def example_3_token_detection():
     """示例 3: Token 类型检测"""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例 3: Token 类型检测")
     print("=" * 60)
 
@@ -96,7 +96,7 @@ def example_3_token_detection():
 
 def example_4_encryption_manager():
     """示例 4: 使用加密管理器（单例）"""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例 4: 使用加密管理器")
     print("=" * 60)
     # 通过 IoC 容器获取加密管理器单例
@@ -132,7 +132,7 @@ def example_4_encryption_manager():
 
 def example_5_performance_test():
     """示例 5: 性能测试"""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例 5: 性能测试")
     print("=" * 60)
 
@@ -176,7 +176,7 @@ def example_5_performance_test():
 
 def example_6_key_generation():
     """示例 6: 密钥生成"""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例 6: 密钥生成")
     print("=" * 60)
 
@@ -206,7 +206,7 @@ def main():
         example_5_performance_test()
         example_6_key_generation()
 
-        print("\n" + "=" * 60)
+        print("\n" + "=" * 70)
         print("✅ 所有示例运行成功！")
         print("=" * 60)
 

@@ -124,6 +124,6 @@ if __name__ == "__main__":
     # 过滤日志
     filtered_logging_example()
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("示例运行完成！")
     print("=" * 60)

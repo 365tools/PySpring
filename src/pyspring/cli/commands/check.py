@@ -79,9 +79,9 @@ def run_all_checks(args, subparsers_action=None):
             print_error(f"Check '{name}' crashed: {e}")
             results.append((name, False))
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("CHECK SUMMARY")
-    print("=" * 60)
+    print("=" * 70)
 
     all_passed = True
     for name, success in results:
@@ -89,7 +89,7 @@ def run_all_checks(args, subparsers_action=None):
         if not success: all_passed = False
         print(f"{name:<20} : {status}")
 
-    print("-" * 60)
+    print("-" * 70)
 
     if all_passed:
         print_success("All checks passed! Project is healthy.")
@@ -113,7 +113,7 @@ def run_all_checks(args, subparsers_action=None):
 
     # Add final separator for clean UI
     print()
-    print("-" * 60)
+    print("-" * 70)
 
 
 

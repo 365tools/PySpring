@@ -39,7 +39,7 @@ from examples.project_demo.app.api.endpoints import router as item_router
 # -----------------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("🚀 Demo App 启动中...")
 
     # [关键] 设置配置文件所在的目录 (模拟实际项目的 config 文件夹)
@@ -60,7 +60,7 @@ async def lifespan(app: FastAPI):
 
     yield
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("🛑 Demo App 关闭中...")
     await manager.run_shutdown_handlers()
     print("=" * 60 + "\n")

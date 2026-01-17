@@ -6,6 +6,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+
 from pyspring.log.providers.loguru.middleware.request import RequestLoggingMiddleware
 from pyspring.security.authentication.middleware.auth import AuthenticationMiddleware
 
@@ -153,7 +154,7 @@ async def protected():
 if __name__ == "__main__":
     import uvicorn
 
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 70)
     print("🎯 启动 PySpring 应用")
     print("=" * 60)
     print("📝 文档地址: http://localhost:8000/docs")
