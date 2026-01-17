@@ -10,10 +10,7 @@ import ast
 import os
 from typing import Optional
 
-from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.core.ui import (
-    print_title, print_file_header, print_issue, print_summary, print_success
-)
+from .base import BaseChecker
 from .imports.static import find_symbol_in_package
 
 
@@ -139,93 +136,68 @@ class ImportExpander(ast.NodeVisitor):
                 })
 
 
-def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
-    print_title("Checking and Expanding Imports")
+class ExplicitImportChecker(BaseChecker):
+    @property
+    def title(self):
+        return "Explicit Import Expansion"
 
-    ignore_list = get_ignore_list(root_path)
-    total_issues = 0  # Logical count of replacements
-    files_with_issues = 0
-    files_fixed = 0
+    def __init__(self, target_path):
+        super().__init__(target_path, ['.py'])
+        self.root_path = os.getcwd()
 
-    abs_scan_path = os.path.abspath(scan_path)
+    def check_file(self, file_path: str, fix: bool = False, **kwargs) -> bool:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            tree = ast.parse(content)
+        except Exception:
+            return False
 
-    for root, dirs, files in os.walk(abs_scan_path):
-        dirs[:] = [d for d in dirs if d not in ignore_list]
+        expander = ImportExpander(file_path, self.root_path)
+        expander.visit(tree)
 
-        for file in files:
-            if not file.endswith('.py'): continue
+        has_issues = False
 
-            file_path = str(os.path.join(root, file))
+        if expander.warnings:
+            has_issues = True
+            for w in expander.warnings:
+                self.add_issue(file_path, 0, w, level='warning')
 
-            try:
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
+        if expander.replacements:
+            has_issues = True
+            expander.replacements.sort(key=lambda x: x['lineno'], reverse=True)
+            lines = content.splitlines()
 
-                try:
-                    tree = ast.parse(content)
-                except SyntaxError:
-                    continue
+            file_modifications = False
 
-                expander = ImportExpander(file_path, root_path)
-                expander.visit(tree)
+            for rep in expander.replacements:
+                start = rep['lineno'] - 1
+                end = rep['end_lineno']
 
-                has_issues = False
+                # Handling safe slice
+                if start < 0: start = 0
+                if end > len(lines): end = len(lines)
 
-                # Handling Warnings
-                if expander.warnings:
-                    has_issues = True
-                    print_file_header(file_path)
-                    for w in expander.warnings:
-                        print_issue("0", w, file_path, level='warning')
+                orig_text = " | ".join(lines[start:end])
+                new_text = " | ".join(rep['new_lines'])
 
-                # Handling Replacements
-                if expander.replacements:
-                    has_issues = True
-                    if not expander.warnings:  # Print header if not already printed
-                        print_file_header(file_path)
+                msg = f"Implicit import -> Explicit: {orig_text.strip()} => {new_text}"
+                self.add_issue(file_path, rep['lineno'], msg, level='warning')
 
-                    total_issues += len(expander.replacements)
+                if fix:
+                    lines[start:end] = rep['new_lines']
+                    file_modifications = True
+                    self.resolved_count += 1
 
-                    # 倒序排序替换，以保持行号有效
-                    expander.replacements.sort(key=lambda x: x['lineno'], reverse=True)
+            if fix and file_modifications:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write("\n".join(lines) + "\n")
+                self.add_issue(file_path, 0, "Imports expanded and saved", level='success')
 
-                    lines = content.splitlines()
-
-                    for rep in expander.replacements:
-                        start = rep['lineno'] - 1
-                        end = rep['end_lineno']
-
-                        orig_text = "\n".join(lines[start:end])
-                        new_text = "\n".join(rep['new_lines'])
-
-                        rng = import_range(start + 1, end)
-                        msg = f"{orig_text.strip()} -> {new_text.replace(chr(10), ' | ')}"
-                        print_issue(rng, msg, file_path, level='warning')
-
-                        if fix:
-                            # 替换行
-                            lines[start:end] = rep['new_lines']
-
-                    if fix:
-                        with open(file_path, 'w', encoding='utf-8') as f:
-                            f.write("\n".join(lines) + "\n")  # 规范化换行符
-                        files_fixed += 1
-
-                if has_issues:
-                    files_with_issues += 1
-
-            except Exception as e:
-                pass
-
-    print_summary(total_issues, files_with_issues, files_fixed, fixable=not fix)
-
-    if files_fixed > 0:
-        print()
-        print_title("Next Steps")
-        print_success("Imports expanded. Verify imports are still valid:")
-        print("  pyspring test")
+        return has_issues
 
 
 def run_check_explicit_imports(args):
-    """入口点"""
-    check_and_fix_imports(os.getcwd(), args.path, fix=args.fix)
+    target_path = getattr(args, 'path', '.')
+    checker = ExplicitImportChecker(target_path)
+    checker.run(fix=args.fix)

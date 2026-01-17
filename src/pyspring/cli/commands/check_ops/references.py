@@ -3,15 +3,12 @@ Check for unresolved references and optionally fix them.
 """
 import ast
 import builtins
-import os
-from collections import defaultdict
 from typing import Optional, List, Set, Tuple
 
-from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import (
-    print_title, print_file_header, print_issue, print_summary,
-    print_success, print_warning
+    print_success
 )
+from .base import BaseChecker
 
 # --- Knowledge Base for Auto-Fix ---
 # Map symbol_name -> import_line
@@ -448,76 +445,37 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
     return len(imports_to_add)
 
 
-def run_check_references(args):
-    print_title("Checking Unresolved References")
+class ReferencesChecker(BaseChecker):
+    @property
+    def title(self):
+        return "Unresolved References Check"
 
-    cwd = os.getcwd()
-    target_dir = getattr(args, 'path', '.')  # Default to current dir if not provided
-    target_dir = os.path.abspath(target_dir)  # Ensure absolute path
+    def __init__(self, target_path):
+        super().__init__(target_path, ['.py'])
 
-    if not os.path.exists(target_dir):
-        print_warning(f"Target directory does not exist: {target_dir}")
-        return
+    def check_file(self, file_path: str, fix: bool = False, **kwargs) -> bool:
+        unresolved = scan_file(file_path)
+        if not unresolved:
+            return False
 
-    issues_found = 0
-    fixed_count = 0
+        unresolved.sort(key=lambda x: x[1])
 
-    files_with_issues = defaultdict(list)
-
-    if os.path.isfile(target_dir):
-        # Single file check
-        if target_dir.endswith('.py'):
-            unresolved = scan_file(target_dir)
-            if unresolved:
-                unresolved.sort(key=lambda x: x[1])
-                files_with_issues[target_dir] = unresolved
-                issues_found += len(unresolved)
-    else:
-        # Determine strict ignore set from current dir .gitignore + defaults
-        ignore_set = get_ignore_list(cwd)
-
-        for root, dirs, files in os.walk(target_dir):
-            # Exclude common noise
-            dirs[:] = [d for d in dirs if d not in ignore_set]
-
-            for file in files:
-                if not file.endswith('.py'):
-                    continue
-
-                file_path = os.path.join(root, file)
-                unresolved = scan_file(file_path)
-
-                if unresolved:
-                    # Sort by lineno
-                    unresolved.sort(key=lambda x: x[1])
-                    files_with_issues[file_path] = unresolved
-                    issues_found += len(unresolved)
-
-    if not files_with_issues:
-        print_summary(0, 0, 0, fixable=False)
-        return
-
-    for file_path, errors in files_with_issues.items():
-        print_file_header(file_path)
-        
-        for name, line, col in errors:
+        for name, line, col in unresolved:
             msg = f"Unresolved reference '{name}' (col {col})"
-            print_issue(str(line), msg, file_path, level='error')
+            if name in KNOWN_IMPORTS:
+                msg += f" (Fixable: {KNOWN_IMPORTS[name]})"
+            self.add_issue(file_path, line, msg, level='error')
 
-            if args.fix and name in KNOWN_IMPORTS:
-                # Show hint (optional)
-                pass
-
-        if args.fix:
-            applied = apply_fixes(file_path, errors)
-            if applied > 0:
+        if fix:
+            applied = apply_fixes(file_path, unresolved)
+            if applied:
+                self.resolved_count += applied
                 print_success(f"     ✨ Applied {applied} fixes.")
-                fixed_count += applied
 
-    print_summary(issues_found, len(files_with_issues), fixed_count, fixable=not args.fix)
+        return True
 
-    if fixed_count > 0:
-        print()
-        print_title("Next Steps")
-        print_success("Auto-fix complete. Please run tests to verify changes:")
-        print("  pyspring test")
+
+def run_check_references(args):
+    target = getattr(args, 'path', '.')
+    checker = ReferencesChecker(target)
+    checker.run(fix=args.fix)

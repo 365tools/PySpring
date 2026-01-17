@@ -7,14 +7,13 @@ import os
 import sys
 from typing import List
 
-from pyspring.cli.component.files.search import find_python_files
 from pyspring.cli.core.ui import (
-    print_title, print_file_header, print_issue, print_summary,
     print_error
 )
 from .dynamic import run_check_import as run_dynamic_check
 from .indexer import ProjectIndexer
 from .static import is_module_available, check_relative_import_exists
+from ..base import BaseChecker
 
 
 class BrokenImportVisitor(ast.NodeVisitor):
@@ -87,57 +86,53 @@ class BrokenImportVisitor(ast.NodeVisitor):
                 })
 
 
-def run_static_validation(target_path: str, do_fix: bool):
-    """Run static validation with auto-fix capability"""
-    print_title(f"Import Validation (Static): {target_path}")
+class StaticImportChecker(BaseChecker):
+    @property
+    def title(self):
+        return "Import Validation (Static)"
 
-    # 1. Build Index (Only needed if we are fixing or suggesting)
-    indexer = ProjectIndexer(os.getcwd())
-    indexer.build_index()
+    def __init__(self, target_path, sys_path=None):
+        super().__init__(target_path, ['.py'])
+        self.indexer = None
+        self.sys_path = sys_path or sys.path.copy()
 
-    # 2. Scan files
-    files = find_python_files(target_path)
+        # Setup sys path
+        cwd = os.getcwd()
+        if cwd not in self.sys_path: self.sys_path.insert(0, cwd)
+        src_path = os.path.join(cwd, 'src')
+        if os.path.exists(src_path) and src_path not in self.sys_path:
+            self.sys_path.insert(0, src_path)
 
-    # Setup sys path for static resolution
-    sys_path = sys.path.copy()
-    cwd = os.getcwd()
-    if cwd not in sys_path: sys_path.insert(0, cwd)
-    src_path = os.path.join(cwd, 'src')
-    if os.path.exists(src_path) and src_path not in sys_path: sys_path.insert(0, src_path)
+    def pre_check(self, files: List[str], **kwargs):
+        # Build index
+        self.indexer = ProjectIndexer(os.getcwd())
+        self.indexer.build_index()
 
-    total_issues = 0
-    resolved_count = 0
-    files_changed = 0
-
-    for file_path in files:
-        # File processing loop ...
+    def check_file(self, file_path: str, fix: bool = False, **kwargs) -> bool:
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 lines = f.readlines()
             tree = ast.parse("".join(lines), filename=file_path)
         except SyntaxError as e:
-            print_file_header(file_path)
-            print_issue(str(e.lineno), f"Syntax Error: {e.msg}", file_path, level='error')
-            total_issues += 1
-            continue
+            self.add_issue(file_path, e.lineno, f"Syntax Error: {e.msg}")
+            return True
         except Exception:
-            continue
+            return False
 
-        visitor = BrokenImportVisitor(file_path, sys_path)
+        visitor = BrokenImportVisitor(file_path, self.sys_path)
         visitor.visit(tree)
 
         if not visitor.broken_imports:
-            continue
-
-        print_file_header(file_path)
+            return False
 
         # Sort issues
         visitor.broken_imports.sort(key=lambda x: x['lineno'], reverse=True)
 
         file_modifications = False
+        issues_found = False
 
         for issue in visitor.broken_imports:
-            total_issues += 1
+            issues_found = True
             lineno = issue['lineno']
             old_mod = issue['module']
             names = issue['names']
@@ -147,12 +142,10 @@ def run_static_validation(target_path: str, do_fix: bool):
             if issue_type == 'bad_practice_src':
                 new_mod = old_mod[4:]  # Remove 'src.'
 
-                # Capture indentation
+                new_line = ""
                 original_line = lines[lineno - 1]
                 indentation = original_line[:len(original_line) - len(original_line.lstrip())]
 
-                # Reconstruct import line for fix
-                new_line = ""
                 if isinstance(issue['node'], ast.ImportFrom):
                     import_parts = []
                     for name, asname in names:
@@ -172,21 +165,16 @@ def run_static_validation(target_path: str, do_fix: bool):
 
                 msg = f"Bad Layout: '{old_mod}' contains 'src.'"
 
-                if do_fix:
-                    if new_line:
-                        lines[lineno - 1] = new_line
-                        print_issue(str(lineno), f"{msg} -> Fixed to '{new_mod}'", file_path, level='success')
-                        resolved_count += 1
-                        file_modifications = True
-                    else:
-                        print_issue(str(lineno), f"{msg} -> Fix failed (could not reconstruct)", file_path, level='error')
-                else:
-                    print_issue(str(lineno), f"{msg} -> Run --fix to remove prefix", file_path, level='warning')
+                # Report
+                self.add_issue(file_path, lineno, msg + (f" -> Fixed to '{new_mod}'" if fix else " -> Run --fix to remove"), level='warning' if not fix else 'success')
 
+                if fix and new_line:
+                    lines[lineno - 1] = new_line
+                    self.resolved_count += 1
+                    file_modifications = True
                 continue
 
             # --- Handling Missing Imports ---
-            # Suggestion Logic
             all_resolved = True
             new_modules = set()
 
@@ -195,7 +183,7 @@ def run_static_validation(target_path: str, do_fix: bool):
                     all_resolved = False  # Cannot auto-resolve import *
                     continue
 
-                candidates = indexer.find_symbol(name)
+                candidates = self.indexer.find_symbol(name)
                 # Filter candidates: remove self
                 valid_candidates = [c for c in candidates if c != old_mod]
 
@@ -204,46 +192,37 @@ def run_static_validation(target_path: str, do_fix: bool):
                 else:
                     all_resolved = False
                     if not valid_candidates:
-                        # Report plain error
-                        print_issue(str(lineno), f"Module '{old_mod}' not found. Symbol '{name}' also not found in index.", file_path, level='error')
+                        self.add_issue(file_path, lineno, f"Module '{old_mod}' not found. Symbol '{name}' not found.", level='error')
                     else:
-                        print_issue(str(lineno), f"Module '{old_mod}' not found. Ambiguous symbol '{name}': {valid_candidates}", file_path, level='warning')
+                        self.add_issue(file_path, lineno, f"Ambiguous symbol '{name}': {valid_candidates}", level='warning')
 
             # Fix Logic
             if all_resolved and len(new_modules) == 1:
                 new_mod = list(new_modules)[0]
-
-                # Capture indentation
                 original_line = lines[lineno - 1]
                 indentation = original_line[:len(original_line) - len(original_line.lstrip())]
-
                 import_parts = []
                 for name, asname in names:
                     if asname:
                         import_parts.append(f"{name} as {asname}")
                     else:
                         import_parts.append(name)
-
                 new_line = f"{indentation}from {new_mod} import {', '.join(import_parts)}\n"
                 msg = f"Broken: '{old_mod}' -> Suggest: '{new_mod}'"
 
-                if do_fix:
+                if fix:
                     lines[lineno - 1] = new_line
-                    print_issue(str(lineno), f"{msg} -> Fixed", file_path, level='success')
-                    resolved_count += 1
+                    self.add_issue(file_path, lineno, f"{msg} -> Fixed", level='success')
+                    self.resolved_count += 1
                     file_modifications = True
                 else:
-                    print_issue(str(lineno), f"{msg} -> Run with --fix to apply", file_path, level='info')
-            elif not all_resolved and not new_modules:
-                # Issue already reported above
-                pass
+                    self.add_issue(file_path, lineno, f"{msg} -> Run --fix to apply", level='info')
 
         if file_modifications:
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.writelines(lines)
-            files_changed += 1
 
-    print_summary(total_issues, files_changed, resolved_count, fixable=not do_fix)
+        return issues_found
 
 
 def run_validate_imports(args):
@@ -251,8 +230,8 @@ def run_validate_imports(args):
     Run import validation (Static or Dynamic or Both)
     """
     target_path = os.path.abspath(args.target)
-    mode = args.mode
-    do_fix = args.fix
+    mode = getattr(args, 'mode', 'static')
+    do_fix = getattr(args, 'fix', False)
 
     if mode == 'dynamic' and do_fix:
         print_error("Cannot use --fix with --mode dynamic")
@@ -262,7 +241,9 @@ def run_validate_imports(args):
     should_run_dynamic = mode in ('dynamic', 'all')
 
     if should_run_static:
-        run_static_validation(target_path, do_fix)
+        checker = StaticImportChecker(target_path)
+        checker.run(fix=do_fix)
+        
         if should_run_dynamic:
             print("\n" + "-" * 60 + "\n")
 
