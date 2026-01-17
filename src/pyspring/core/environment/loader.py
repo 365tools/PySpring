@@ -3,8 +3,8 @@ from typing import Optional, List
 
 from dotenv import load_dotenv, dotenv_values
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
+from ..abstracts.interfaces.ISingleton import ISingletonService
 
 
 # 实现提供了以下功能:

@@ -1,8 +1,8 @@
 from typing import Type, Optional
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
-from pyspring.log.core.interface import ILoggerService
-from pyspring.log.providers.loguru.services.service import LoguruService
+from .core.interface import ILoggerService
+from .providers.loguru.services.service import LoguruService
+from ..core.abstracts.interfaces.ISingleton import ISingletonService
 
 
 class LogManager(ISingletonService):

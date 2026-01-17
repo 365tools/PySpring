@@ -2,7 +2,7 @@ from typing import Protocol
 
 from typing_extensions import runtime_checkable
 
-from pyspring.core.abstracts.interfaces.IService import IService
+from .IService import IService
 
 
 @runtime_checkable

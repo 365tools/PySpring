@@ -3,7 +3,7 @@ from collections import OrderedDict
 from typing import Optional, Any
 
 from pyspring.log.instance import logger
-from pyspring.repositories.cache.providers.memory.interfaces.service import IMemoryService
+from ..interfaces.service import IMemoryService
 
 
 class MemoryService(IMemoryService):

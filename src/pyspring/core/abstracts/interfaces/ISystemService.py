@@ -1,6 +1,6 @@
 from abc import ABC
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from .ISingleton import ISingletonService
 
 
 class ISystemService(ISingletonService, ABC):

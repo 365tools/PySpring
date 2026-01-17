@@ -5,7 +5,7 @@
 """
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.log.instance import logger
-from pyspring.repositories.db.manager import DBManagerService
+from ..manager import DBManagerService
 
 
 class DBShutdownHandler(IShutdownHandler):

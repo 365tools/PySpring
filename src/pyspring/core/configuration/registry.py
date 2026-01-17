@@ -8,8 +8,8 @@ from typing import Dict, Type, Optional
 
 from pydantic_settings import BaseSettings
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
+from ..abstracts.interfaces.ISingleton import ISingletonService
 
 
 class ConfigRegistry(ISingletonService):

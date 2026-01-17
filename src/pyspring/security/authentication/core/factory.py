@@ -9,11 +9,11 @@ from typing import Dict, Type, List
 
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
-from pyspring.security.authentication.core.chain import AuthenticationChain
-from pyspring.security.authentication.providers.base import BaseAuthenticationProvider
-from pyspring.security.authentication.providers.jwt import JWTAuthenticationProvider
-from pyspring.security.authentication.services.session.token import TokenManagerService
 from pyspring.security.core.config.loader import SecurityConfigManager
+from .chain import AuthenticationChain
+from ..providers.base import BaseAuthenticationProvider
+from ..providers.jwt import JWTAuthenticationProvider
+from ..services.session.token import TokenManagerService
 
 
 class AuthProviderFactory:

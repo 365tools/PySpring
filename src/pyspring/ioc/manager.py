@@ -3,14 +3,14 @@ import inspect
 import re
 from typing import Any, List, Dict
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
-from pyspring.ioc.core.config import IoCConfigLoader
-from pyspring.ioc.core.container import DynamicContainer
-from pyspring.ioc.core.lifecycle import LifecycleManager
-from pyspring.ioc.core.registrar import ServiceRegistrar
-from pyspring.ioc.core.scanner import ModuleScanner
-from pyspring.ioc.core.validator import IoCValidator
-from pyspring.log.instance import logger
+from .core.config import IoCConfigLoader
+from .core.container import DynamicContainer
+from .core.lifecycle import LifecycleManager
+from .core.registrar import ServiceRegistrar
+from .core.scanner import ModuleScanner
+from .core.validator import IoCValidator
+from ..core.abstracts.interfaces.ISingleton import ISingletonService
+from ..log.instance import logger
 
 
 class AppContainerManager(ISingletonService):

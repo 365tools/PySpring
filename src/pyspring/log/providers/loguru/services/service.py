@@ -6,7 +6,7 @@ from loguru import logger as _loguru
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.core.interface import ILoggerService
-from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
+from ..config.manager import LoggingConfigManager
 
 
 class _BoundLogger(ILoggerService):

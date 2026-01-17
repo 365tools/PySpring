@@ -9,8 +9,8 @@ from pyspring.security.authentication.services.session.token import TokenManager
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.core.services.system import SystemService
 from pyspring.log.instance import logger
-from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.security.authentication.services.session.token import TokenManagerService
+from ..manager import CacheManagerService
 
 
 class CacheShutdownHandler(IShutdownHandler):

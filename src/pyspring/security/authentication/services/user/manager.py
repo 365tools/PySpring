@@ -10,9 +10,9 @@ from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.core.context import AuthContext
-from pyspring.security.authentication.services.session.token import TokenManagerService
 from pyspring.security.authorization.rabc.orm.tables import UserTable, RoleTable, UserRoleTable
 from pyspring.security.authorization.rabc.schema.requests import UserInfo, User, Role
+from ..session.token import TokenManagerService
 
 
 class UserManagerService(ISingletonService):

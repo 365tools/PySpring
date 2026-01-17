@@ -6,7 +6,7 @@ import redis.asyncio as redis
 from redis.asyncio.connection import ConnectionPool
 
 from pyspring.log.instance import logger
-from pyspring.repositories.cache.providers.redis.interfaces.service import IRedisService
+from ..interfaces.service import IRedisService
 
 
 class RedisService(IRedisService):

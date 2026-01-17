@@ -18,12 +18,12 @@ from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
-from pyspring.security.authentication.core.chain import AuthenticationChain
-from pyspring.security.authentication.core.factory import AuthProviderFactory
-from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
-from pyspring.security.authentication.services.core.context import SecurityContextManagerService
-from pyspring.security.authentication.services.session.token import TokenManagerService
 from pyspring.security.core.config.loader import SecurityConfigManager
+from .chain import AuthenticationChain
+from .factory import AuthProviderFactory
+from ..interfaces.validator import ISecurityContextValidator
+from ..services.core.context import SecurityContextManagerService
+from ..services.session.token import TokenManagerService
 
 
 class AuthenticationInitializer(IStartupInitializer, ISingletonService):

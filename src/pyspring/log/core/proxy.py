@@ -1,7 +1,7 @@
 from typing import Any
 
-from pyspring.log.core.interface import ILoggerService
-from pyspring.log.manager import LogManager
+from .interface import ILoggerService
+from ..manager import LogManager
 
 
 class LoggerProxy(ILoggerService):

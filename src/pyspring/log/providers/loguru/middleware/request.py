@@ -13,8 +13,8 @@ from starlette.types import ASGIApp
 
 from pyspring.core.abstracts.exceptions import AppError
 from pyspring.log.instance import logger
-from pyspring.log.providers.loguru.utils.trace_context import set_trace_id
 from pyspring.web.handlers.exception import GlobalExceptionHandler
+from ..utils.trace_context import set_trace_id
 
 REQUEST_ID_CTX: ContextVar[str | None] = ContextVar("request_id", default=None)
 

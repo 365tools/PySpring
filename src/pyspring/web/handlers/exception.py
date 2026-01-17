@@ -15,7 +15,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from pyspring.core.abstracts.exceptions import AppError, ValidationAppError
 from pyspring.log.instance import logger
-from pyspring.web.core.response import Response, HttpResponse
+from ..core.response import Response, HttpResponse
 
 
 class GlobalExceptionHandler:

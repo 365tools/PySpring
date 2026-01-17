@@ -10,6 +10,7 @@ import ast
 import os
 from typing import Optional
 
+from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.utils.code import get_indentation, apply_indentation
 from .base import BaseChecker
 from .imports.static import find_symbol_in_package
@@ -71,6 +72,24 @@ class ImportExpander(ast.NodeVisitor):
                         target_path = src_abs_path
 
         if target_path and os.path.isdir(target_path) and os.path.exists(os.path.join(target_path, '__init__.py')):
+            # Check if target_path is ignored
+            ignored_set = get_ignore_list(self.root_path)
+            # Normalize path for checking
+            norm_target = os.path.normpath(target_path)
+            parts = norm_target.split(os.sep)
+
+            # If any part of the path is in ignored set (like .venv), skip it
+            # We also check for hidden directories starting with '.' which are implicitly ignored
+            should_ignore = False
+            for part in parts:
+                if part in ignored_set or (part.startswith('.') and part != '.' and part != '..'):
+                    # Only ignore if it is not current/parent dir marker
+                    should_ignore = True
+                    break
+
+            if should_ignore:
+                return
+
             # 这是一个包。
 
             names_to_rewrite = []  # (name, alias, sub_mod)

@@ -13,7 +13,7 @@ from pathlib import Path
 from loguru import logger
 
 from pyspring.core.context.registry import ContextRegistry
-from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
+from .manager import LoggingConfigManager
 
 # 全局存储为了兼容性自动注入的默认值 (key: default_value)
 # 使用模块级变量以确保在多进程(Spawn)重建模块时，只要运行了setup就能访问

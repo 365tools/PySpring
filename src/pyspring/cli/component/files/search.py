@@ -1,7 +1,7 @@
 import os
 from typing import List
 
-from pyspring.cli.component.files.ignore import get_ignore_list
+from .ignore import get_ignore_list
 
 
 def find_files(root_dir: str, extensions: List[str] = None) -> List[str]:

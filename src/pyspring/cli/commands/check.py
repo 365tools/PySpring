@@ -1,14 +1,15 @@
 """
 PySpring Check Command
 """
-from pyspring.cli.core.formatter import SortedHelpFormatter
 from .check_ops.circular import run_check_circular
 from .check_ops.encoding import run_check_encoding
 from .check_ops.env import run as run_env_check
 from .check_ops.explicit import run_check_explicit_imports
 from .check_ops.imports.validate import run_validate_imports
 from .check_ops.lift import run_lift_imports
+from .check_ops.refactor import run_check_refactor
 from .check_ops.references import run_check_references
+from ..core.formatter import SortedHelpFormatter
 
 
 def register_subcommand(subparsers):
@@ -105,6 +106,42 @@ def register_subcommand(subparsers):
         help='Apply changes modifying import statements'
     )
     explicit_parser.set_defaults(func=run_check_explicit_imports)
+
+    # 8. Imports Refactor subcommand
+    refactor_parser = check_subparsers.add_parser(
+        'imports-refactor',
+        help='Convert between absolute and relative imports',
+        description='Refactor imports to be either absolute (default) or relative.'
+    )
+    refactor_parser.add_argument(
+        'path',
+        nargs='?',
+        default='.',
+        help='Target directory (default: current directory)'
+    )
+    refactor_parser.add_argument(
+        '--to-relative',
+        action='store_true',
+        help='Convert absolute imports to relative imports'
+    )
+    refactor_parser.add_argument(
+        '--to-absolute',
+        action='store_true',
+        help='Convert relative imports to absolute imports (Default mode)'
+    )
+    refactor_parser.add_argument(
+        '--level',
+        type=int,
+        default=2,
+        metavar='',
+        help='Max relative level allowed when converting to relative (default: 2)'
+    )
+    refactor_parser.add_argument(
+        '--fix',
+        action='store_true',
+        help='Apply changes to files'
+    )
+    refactor_parser.set_defaults(func=run_check_refactor)
 
     # 5. Lift imports subcommand (Refactoring)
     lift_parser = check_subparsers.add_parser(

@@ -10,9 +10,9 @@ from typing import Any, Optional, TypeVar, Generic
 
 from pydantic_settings import BaseSettings
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
 from .loader import ConfigLoader
+from ..abstracts.interfaces.ISingleton import ISingletonService
 
 TSettings = TypeVar('TSettings', bound=BaseSettings)
 

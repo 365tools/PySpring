@@ -11,9 +11,9 @@ import os
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
-from pyspring.repositories.cache.manager import CacheManagerService
-from pyspring.repositories.cache.providers.memory.services.service import MemoryService
-from pyspring.repositories.cache.providers.redis.services.service import RedisService
+from ..manager import CacheManagerService
+from ..providers.memory.services.service import MemoryService
+from ..providers.redis.services.service import RedisService
 
 
 class CacheConnectionInitializer(IStartupInitializer):

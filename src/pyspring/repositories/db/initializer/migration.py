@@ -12,8 +12,8 @@ from sqlalchemy import text
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
-from pyspring.repositories.db.manager import DBManagerService
 from pyspring.utils.config.finder import detect_project_root
+from ..manager import DBManagerService
 
 
 class MigrationInitializer(IStartupInitializer):

@@ -7,8 +7,8 @@ from typing import Optional
 from fastapi import Request
 
 from pyspring.log.instance import logger
-from pyspring.security.authentication.providers.base import BaseAuthenticationProvider, AuthenticationResult
-from pyspring.security.authentication.services.session.token import TokenManagerService
+from .base import BaseAuthenticationProvider, AuthenticationResult
+from ..services.session.token import TokenManagerService
 
 
 class JWTAuthenticationProvider(BaseAuthenticationProvider):

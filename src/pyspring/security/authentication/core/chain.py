@@ -8,8 +8,8 @@ from fastapi import Request
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
-from pyspring.security.authentication.providers.base import BaseAuthenticationProvider, AuthenticationResult, PathMatcher
 from pyspring.security.core.config.loader import SecurityConfigManager
+from ..providers.base import BaseAuthenticationProvider, AuthenticationResult, PathMatcher
 
 
 class AuthenticationChain(ISingletonService):

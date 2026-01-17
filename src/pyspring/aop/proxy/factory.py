@@ -1,6 +1,6 @@
 from typing import Any, List
 
-from pyspring.aop.proxy.wrapper import AopProxy
+from .wrapper import AopProxy
 
 
 def create_proxy(target: Any, aspects: List[Any]) -> Any:

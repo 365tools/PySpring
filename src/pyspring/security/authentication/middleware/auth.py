@@ -16,11 +16,11 @@ from starlette.responses import JSONResponse
 
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
-from pyspring.security.authentication.core.chain import AuthenticationChain
-from pyspring.security.authentication.core.context import AuthContext
-from pyspring.security.authentication.services.user.manager import UserManagerService
 from pyspring.security.authorization.middleware.role import RoleCheckMiddleware
 from pyspring.security.core.config.loader import SecurityConfigManager
+from ..core.chain import AuthenticationChain
+from ..core.context import AuthContext
+from ..services.user.manager import UserManagerService
 
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):

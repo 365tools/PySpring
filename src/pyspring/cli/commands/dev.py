@@ -2,7 +2,6 @@
 PySpring Internal Development Command
 """
 from .dev_ops.exports import sync_exports
-from .dev_ops.refactor import refactor_imports
 from .dev_ops.sync import sync_templates
 from .dev_ops.verify import verify_pyproject
 
@@ -32,9 +31,3 @@ def register_subcommand(subparsers):
     init_parser.add_argument('--dynamic', action='store_true', help='Use dynamic auto-import (default)')
     init_parser.set_defaults(func=sync_exports)
 
-    # Refactor Imports
-    refactor_parser = dev_subparsers.add_parser('imports-refactor', help='Convert between absolute and relative imports')
-    refactor_parser.add_argument('path', nargs='?', default='src', help='Directory to refactor (default: src)')
-    refactor_parser.add_argument('--to-relative', action='store_true', help='Convert absolute imports to relative')
-    refactor_parser.add_argument('--to-absolute', action='store_true', help='Convert relative imports to absolute')
-    refactor_parser.set_defaults(func=refactor_imports)

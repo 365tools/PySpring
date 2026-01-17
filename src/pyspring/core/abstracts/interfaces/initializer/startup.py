@@ -5,8 +5,8 @@
 """
 from abc import ABC, abstractmethod
 
-from pyspring.core.abstracts.interfaces.IService import IService
 from pyspring.log.instance import logger
+from ..IService import IService
 
 
 class IStartupInitializer(IService, ABC):

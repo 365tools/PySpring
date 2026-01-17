@@ -6,8 +6,8 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from pyspring.log.instance import logger
-from pyspring.repositories.db.providers.sqlite.interfaces.service import ISqliteService
 from pyspring.utils.config.finder import detect_project_root
+from ..interfaces.service import ISqliteService
 
 
 class SqliteService(ISqliteService):

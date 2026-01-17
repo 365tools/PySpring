@@ -17,10 +17,10 @@ import asyncio
 import inspect
 from typing import Any, Optional, Dict, Callable, List
 
-from pyspring.core.abstracts.interfaces.ISystemService import ISystemService
-from pyspring.core.configuration.loader import ConfigLoader
-from pyspring.core.configuration.models import settings, AppSettings
 from pyspring.log.instance import logger
+from ..abstracts.interfaces.ISystemService import ISystemService
+from ..configuration.loader import ConfigLoader
+from ..configuration.models import settings, AppSettings
 
 
 class SystemService(ISystemService):

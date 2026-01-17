@@ -11,9 +11,9 @@ import os
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
-from pyspring.repositories.db.manager import DBManagerService
-from pyspring.repositories.db.providers.postgres.services.service import PostgresService
-from pyspring.repositories.db.providers.sqlite.services.service import SqliteService
+from ..manager import DBManagerService
+from ..providers.postgres.services.service import PostgresService
+from ..providers.sqlite.services.service import SqliteService
 
 
 class DBConnectionInitializer(IStartupInitializer):

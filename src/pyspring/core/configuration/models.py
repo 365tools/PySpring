@@ -7,12 +7,12 @@
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from pyspring.core.abstracts.config import ConfigSection
 # 从各子系统导入配置类
 from pyspring.log.core.config import LoggingConfig
 from pyspring.repositories.cache.config import RedisConfig, CacheConfig
 from pyspring.repositories.db.config import DatabaseConfig
 from pyspring.security.authorization.rabc.schema.config import JWTConfig, AuthenticationConfig
+from ..abstracts.config import ConfigSection
 
 
 # ==================== 应用基础配置（仅定义顶层应用相关配置）====================
