@@ -140,3 +140,9 @@ def run_clean_imports(args):
                     print_success(f"Cleaned {removed} imports in {os.path.relpath(file_path)}")
 
     print_summary(total_removed, files_modified, total_removed, fixable=False)
+
+    if total_removed > 0:
+        print()
+        print_title("Next Steps")
+        print_success("Unused imports removed. Please verify your code:")
+        print("  pyspring test")

@@ -1,16 +1,16 @@
 """
 PySpring CLI Main Entry Point
 """
-import argparse
 import sys
 
-from .commands import init, uv, check, clean, security, dev
+from .core.arg_parser import FriendlyArgumentParser
 from .core.formatter import GroupedHelpFormatter
+from .core.loader import load_commands
 
 
 def main():
     """CLI Entry Point"""
-    parser = argparse.ArgumentParser(
+    parser = FriendlyArgumentParser(
         prog='pyspring',
         description='PySpring Framework Command Line Interface',
         epilog='For more information, visit https://github.com/365tools/PySpring',
@@ -18,23 +18,17 @@ def main():
     )
 
     parser.add_argument('-v', '--version', action='version', version='PySpring 1.0.0')
+    parser.add_argument('--all', action='store_true', help='Show detailed help for all commands')
 
     subparsers = parser.add_subparsers(
         title='Available Commands',
         dest='command',
-        required=True,
+        required=False,
         metavar='<command>'
     )
 
-    # Register subcommands from tools
-    uv.register_subcommand(subparsers)
-    init.register_subcommand(subparsers)
-    check.register_subcommand(subparsers)
-    clean.register_subcommand(subparsers)
-    security.register_subcommand(subparsers)
-
-    # Internal tools for PySpring framework development
-    dev.register_subcommand(subparsers)
+    # Register subcommands dynamically
+    load_commands(subparsers)
 
     # Show help if no arguments provided
     if len(sys.argv) == 1:
@@ -43,6 +37,17 @@ def main():
 
     # Parse arguments
     args = parser.parse_args()
+
+    # Handle --all flag
+    if hasattr(args, 'all') and args.all:
+        from .core.help_utils import print_recursive_help
+        print_recursive_help(parser)
+        sys.exit(0)
+
+    # If no command is selected (and not --all), show help
+    if not args.command:
+        parser.print_help(sys.stderr)
+        sys.exit(1)
 
     # Execute the registered function for the subcommand
     if hasattr(args, 'func'):

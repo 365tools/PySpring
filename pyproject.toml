@@ -49,6 +49,15 @@ dev = [
     "mypy>=1.5.0",
 ]
 
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.uv]
+package = true
+
 [project.urls]
 "Homepage" = "https://github.com/365tools/PySpring"
 "Bug Tracker" = "https://github.com/365tools/PySpring/issues"

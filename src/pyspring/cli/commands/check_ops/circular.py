@@ -195,8 +195,25 @@ class CircularDependencyChecker:
 
 
 def run_check_circular(args):
-    path = args.path
-    checker = CircularDependencyChecker(path)
+    path = os.path.abspath(args.path)
+    project_root = os.getcwd()
+
+    # Smart detection for source root
+    # If scanning project root and 'src' exists, treat 'src' as the package root
+    # This ensures modules are named 'pyspring.xxx' instead of 'src.pyspring.xxx'
+    package_root = None
+    if path == project_root:
+        src_path = os.path.join(project_root, 'src')
+        if os.path.exists(src_path):
+            package_root = src_path
+
+    checker = CircularDependencyChecker(path, package_root=package_root)
     success = checker.run_check()
     if not success:
+        print()
+        print_title("Next Steps")
+        print_info("To resolve circular dependencies:")
+        print("  1. Refactor common logic into a separate module (common.py/utils.py)")
+        print("  2. Move imports inside functions/methods (delayed import)")
+        print("  3. Use 'pyspring check lift' to automatically move imports to top if safe")
         sys.exit(1)

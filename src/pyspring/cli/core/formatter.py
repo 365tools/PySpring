@@ -10,7 +10,7 @@ class GroupedHelpFormatter(argparse.HelpFormatter):
         if isinstance(action, argparse._SubParsersAction):
             # Define groups logic
             groups = [
-                ("User Commands", ["init", "uv", "check", "clean", "security"]),
+                ("User Commands", ["uv", "init", "check", "clean", "security"]),
                 ("Internal Commands", ["dev"]),
             ]
 

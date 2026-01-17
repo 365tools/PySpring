@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path
 
 from pyspring.cli.core.ui import (
-    print_title, print_error, print_info, print_issue, print_summary
+    print_title, print_error, print_info, print_issue, print_summary, print_success
 )
 
 
@@ -71,3 +71,10 @@ def sync_templates(args):
             print(f"  - {file_path.name}")
 
     print_summary(issues_count, 0, synced_count, fixable=False)
+
+    if synced_count > 0:
+        print()
+        print_title("Next Steps")
+        print_success("Templates synchronized. You can now:")
+        print("  1. Customize templates in 'src/pyspring/templates/project'")
+        print("  2. Commit changes to version control")

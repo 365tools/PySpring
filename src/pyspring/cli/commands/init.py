@@ -7,10 +7,10 @@ from .init_ops.core import run
 
 
 def register_subcommand(subparsers):
-    """注册 init 子命令"""
+    """Register init subcommand"""
     parser = subparsers.add_parser(
         'init',
-        help='Initialize PySpring project configuration',
+        help='Scaffold new PySpring project structure',
         description="""
 Initialize PySpring Project Structure and Configuration Files.
 

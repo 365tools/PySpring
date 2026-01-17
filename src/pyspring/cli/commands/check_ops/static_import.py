@@ -172,7 +172,12 @@ def run_ast_check(target_path: str):
 
     print_summary(issues_found, files_with_issues_count, 0, fixable=False)
     if issues_found:
-        print_info("Note: Static analysis checks top-level packages. Dynamic imports might still fail at runtime.")
+        print()
+        print_title("Next Steps")
+        print_info("To resolve missing modules:")
+        print("  1. Install dependencies:  pyspring uv sync")
+        print("  2. If using src structure, ensure PYTHONPATH includes 'src'")
+        print("  3. Check for typos in import statements")
         sys.exit(1)
     else:
         print_info("(Verifies that top-level packages of all imports exist in environment)")

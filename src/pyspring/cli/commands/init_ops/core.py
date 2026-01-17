@@ -428,12 +428,11 @@ def init_project(
 
     # Next steps hints
     print_title("Next Steps")
-    print(f"  1. Install dependencies: pip install -e .")
-    print(f"  2. Or install dev dependencies: pip install -e .[dev]")
-    print(f"  3. Check and modify configurations: {config_dir}")
-    print(f"  4. Check and modify environment variables: {target_path / '.env'}")
-    print(f"  5. Initialize database: Execute SQL scripts in scripts/db/")
-    print(f"  6. Start application: python main.py")
+    print(f"  1. Setup Environment: pyspring uv setup --dev")
+    print(f"  2. Check and modify configurations: {config_dir}")
+    print(f"  3. Check and modify environment variables: {target_path / '.env'}")
+    print(f"  4. Initialize database: Execute SQL scripts in scripts/db/")
+    print(f"  5. Start application: uv run python main.py")
 
     print_title("Database Initialization")
     print(f"  PostgreSQL: psql -U user -d dbname -f scripts/db/init_postgresql.sql")

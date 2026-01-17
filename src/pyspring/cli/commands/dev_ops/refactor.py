@@ -321,3 +321,6 @@ def refactor_imports(args):
                 count += 1
 
     print_success("Refactoring complete.")
+    print("\n[Next Steps]")
+    print_info("Run tests to ensure no cyclic dependencies or broken imports were introduced:")
+    print("  pyspring test")

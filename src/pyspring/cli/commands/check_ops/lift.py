@@ -9,7 +9,7 @@ from typing import Dict, Set, Optional
 from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import (
     print_title, print_file_header, print_issue, print_summary,
-    print_info, print_warning
+    print_info, print_warning, print_success
 )
 
 
@@ -311,6 +311,12 @@ class ImportLifter:
                 print_warning(f"Error processing {path}: {e}")
 
         print_summary(modified_count + commented_count, files_modified, modified_count, fixable=dry_run)
+
+        if not dry_run and files_modified > 0:
+            print()
+            print_title("Next Steps")
+            print_success("Imports lifted. Please verify the project structure and run tests:")
+            print("  pyspring test")
 
 
 def run_lift_imports(args):

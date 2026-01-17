@@ -86,15 +86,17 @@ def suggest_solution():
     print("\n💡 Possible Solutions:")
     print("1. Ensure you have activated the correct virtual environment")
     print("   Run: .venv\\Scripts\\activate (Windows)")
-    print("   Run: source .venv/bin/activate (Linux/Mac)")
-    print("\n2. Ensure project root is in PYTHONPATH")
-    print("   Run: $env:PYTHONPATH='path/to/project' (PowerShell)")
-    print("   Run: export PYTHONPATH=$PYTHONPATH:/path/to/project (Bash)")
+    print("   Or use uv: uv run pyspring check env")
+
+    print("\n2. Ensure project dependencies are installed")
+    print("   Run: uv sync")
+    print("   Or:  pyspring uv install")
+
     print("\n3. If you are a developer, ensure you installed in edit mode")
-    print("   Run: pip install -e .")
+    print("   Run: uv pip install -e .")
+    
     print("\n4. Check your IDE interpreter settings")
-    print("   Create a new .py file, type: from pyspring.log.instance import logger")
-    print("   You should see code completion")
+    print("   Ensure it points to the .venv created by uv")
 
 
 def run(args):

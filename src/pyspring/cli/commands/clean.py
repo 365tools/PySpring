@@ -9,7 +9,7 @@ def register_subcommand(subparsers):
     """Register clean subcommands"""
     parser = subparsers.add_parser(
         'clean',
-        help='Clean project artifacts and codes',
+        help='Remove artifacts, caches, and unused code',
         description='Remove temporary files or clean unused codes'
     )
 
@@ -23,7 +23,7 @@ def register_subcommand(subparsers):
     # Cache cleaner
     cache_parser = clean_subparsers.add_parser(
         'cache',
-        help='Clean cache files (.pyspring_cache, .pytest_cache, etc)',
+        help='Clear system and framework caches',
         description='Remove project cache directories'
     )
     cache_parser.add_argument(
@@ -35,8 +35,8 @@ def register_subcommand(subparsers):
 
     # Import cleaner
     import_parser = clean_subparsers.add_parser(
-        'import',
-        help='Clean unused imports',
+        'imports-unused',
+        help='Remove detected unused import statements',
         description='Scanning and removing unused import statements'
     )
     import_parser.add_argument(

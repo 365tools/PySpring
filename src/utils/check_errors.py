@@ -3,9 +3,9 @@ Python文件错误检测脚本
 
 遍历项目文件夹，检测所有Python文件的语法错误、导入错误以及未定义的引用
 """
+import argparse
 import ast
 import builtins
-import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,10 +24,11 @@ class FileError:
 class Scope:
     """作用域管理"""
 
-    def __init__(self, parent: Optional['Scope'] = None, is_class_scope: bool = False):
+    def __init__(self, parent: Optional['Scope'] = None, is_class_scope: bool = False, is_function_scope: bool = False):
         self.parent = parent
         self.definitions: Set[str] = set()
         self.is_class_scope = is_class_scope
+        self.is_function_scope = is_function_scope
         self.star_imported = False  # 是否包含 from module import *
 
     def define(self, name: str):
@@ -42,6 +43,13 @@ class Scope:
             return self.parent.is_defined(name)
         return False
 
+    def is_in_function(self) -> bool:
+        if self.is_function_scope:
+            return True
+        if self.parent:
+            return self.parent.is_in_function()
+        return False
+
     def has_star_import(self) -> bool:
         if self.star_imported:
             return True
@@ -50,21 +58,44 @@ class Scope:
         return False
 
 
+class GlobalDefCollector(ast.NodeVisitor):
+    """收集顶层函数和类定义（用于支持前向引用）"""
+
+    def __init__(self):
+        self.defined = set()
+
+    def visit_FunctionDef(self, node):
+        self.defined.add(node.name)
+
+    def visit_AsyncFunctionDef(self, node):
+        self.defined.add(node.name)
+
+    def visit_ClassDef(self, node):
+        self.defined.add(node.name)
+
+
 class ReferenceVisitor(ast.NodeVisitor):
     """AST访问器，用于检查未定义的引用"""
 
-    def __init__(self):
+    def __init__(self, global_defs: Set[str] = None):
         self.current_scope = Scope()
+        self.global_defs = global_defs or set()
+        
         # 将内建函数加入根作用域
         for name in dir(builtins):
             self.current_scope.define(name)
+
+        # 添加特殊模块变量
+        for special in ['__file__', '__path__', '__name__', '__doc__', '__package__']:
+            self.current_scope.define(special)
+            
         self.issues: List[Tuple[int, str]] = []  # (line, message)
 
     def visit_FunctionDef(self, node):
         self.current_scope.define(node.name)
         # 进入新函数作用域
         prev_scope = self.current_scope
-        self.current_scope = Scope(parent=prev_scope)
+        self.current_scope = Scope(parent=prev_scope, is_function_scope=True)
 
         # 处理参数
         # 1. 位置参数
@@ -124,10 +155,13 @@ class ReferenceVisitor(ast.NodeVisitor):
         if isinstance(node.ctx, (ast.Store, ast.Param)):
             self.current_scope.define(node.id)
         elif isinstance(node.ctx, ast.Load):
-            if not self.current_scope.is_defined(node.id) and not self.current_scope.has_star_import():
-                # 忽略一些特殊的魔法变量
-                if node.id not in ['__file__', '__name__', '__doc__', '__path__']:
-                    self.issues.append((node.lineno, f"未解析的引用: '{node.id}'"))
+            is_def = self.current_scope.is_defined(node.id)
+            if not is_def and not self.current_scope.has_star_import():
+                # 检查前向引用（如果在函数作用域内）
+                if self.current_scope.is_in_function() and node.id in self.global_defs:
+                    return  # 被视为已定义（前向引用）
+
+                self.issues.append((node.lineno, f"未解析的引用: '{node.id}'"))
 
     def visit_Attribute(self, node):
         # 即使只访问属性，我们也只关心主对象是否定义
@@ -347,7 +381,14 @@ class PythonFileChecker:
                 source_code = f.read()
 
             tree = ast.parse(source_code, filename=str(file_path))
-            visitor = ReferenceVisitor()
+
+            # 1. 预扫描全局定义 (函数和类)
+            collector = GlobalDefCollector()
+            collector.visit(tree)
+            global_defs = collector.defined
+
+            # 2. 主扫描
+            visitor = ReferenceVisitor(global_defs=global_defs)
             visitor.visit(tree)
 
             for lineno, msg in visitor.issues:
@@ -366,7 +407,7 @@ class PythonFileChecker:
 
     def scan_directory(self) -> Tuple[int, int]:
         """
-        扫描目录中的所有Python文件
+        扫描目录中的所有文件(包括Python文件和其他文本文件)
         
         Returns:
             (检查的文件数, 有错误的文件数)
@@ -374,29 +415,41 @@ class PythonFileChecker:
         checked_files = 0
         error_files = 0
 
+        # 定义要检查的文件扩展名
+        py_extensions = {'.py'}
+        text_extensions = {'.py', '.md', '.txt', '.yaml', '.yml', '.toml', '.json', '.ini', '.cfg', '.xml', '.html', '.css', '.js', '.ts'}
+
         print(f"🔍 开始扫描目录: {self.root_dir}")
         print(f"📝 排除目录: {', '.join(self.exclude_dirs)}\n")
 
-        for file_path in self.root_dir.rglob("*.py"):
+        # 遍历所有文件
+        for file_path in self.root_dir.rglob("*"):
+            if not file_path.is_file():
+                continue
+
+            if file_path.suffix.lower() not in text_extensions:
+                continue
+
             # 跳过排除的目录
             if self.should_skip_dir(file_path.parent):
                 continue
 
             checked_files += 1
+            file_errors = []
 
-            # 检查语法错误
-            syntax_errors = self.check_syntax(file_path)
+            # 1. 检查Unicode乱码 (所有文本文件)
+            file_errors.extend(self.check_unicode_corruption(file_path))
 
-            # 检查Unicode乱码
-            unicode_errors = self.check_unicode_corruption(file_path)
+            # 2. Python 特定检查
+            if file_path.suffix.lower() in py_extensions:
+                # 检查语法错误
+                file_errors.extend(self.check_syntax(file_path))
 
-            # 检查未定义变量
-            undefined_errors = self.check_undefined_vars(file_path)
+                # 检查未定义变量
+                file_errors.extend(self.check_undefined_vars(file_path))
 
-            # 检查导入错误
-            import_errors = self.check_imports(file_path)
-
-            file_errors = syntax_errors + unicode_errors + undefined_errors + import_errors
+                # 检查导入错误
+                file_errors.extend(self.check_imports(file_path))
 
             if file_errors:
                 error_files += 1
@@ -434,15 +487,13 @@ class PythonFileChecker:
                     print(f"   └─ [{error.error_type}] {error.message} -> {abs_path}")
             print()
 
-    def save_report(self, output_file: str = "error_report.txt"):
+    def save_report(self, report_path: Path):
         """
         保存错误报告到文件
         
         Args:
-            output_file: 输出文件路径
+            report_path: 输出文件路径(Path对象)
         """
-        report_path = self.root_dir / output_file
-
         with open(report_path, 'w', encoding='utf-8') as f:
             f.write("=" * 80 + "\n")
             f.write("Python文件错误检测报告\n")
@@ -478,33 +529,28 @@ class PythonFileChecker:
 
 def main():
     """主函数"""
-    # 获取脚本所在目录（项目根目录）
-    script_dir = Path(__file__).parent.parent.parent
-    print(f"🔍 脚本目录: {script_dir}")
+    parser = argparse.ArgumentParser(description="Python文件错误检查工具")
+    parser.add_argument("target", nargs="?", default=".", help="检查目标目录 (默认: 当前目录)")
+    parser.add_argument("--report", "-r", nargs="?", const="error_report.txt", help="输出错误报告文件路径")
 
-    # 可以通过命令行参数指定检查目录
-    if len(sys.argv) > 1:
-        # 支持相对路径和绝对路径
-        input_path = sys.argv[1]
-        if os.path.isabs(input_path):
-            check_dir = Path(input_path)
-        else:
-            check_dir = Path.cwd() / input_path
-    else:
-        # 默认检查当前命令行所在的路径 (cwd)
-        check_dir = Path.cwd()
+    args = parser.parse_args()
 
-    print(f"📂 检查目标: {check_dir.resolve()}")
+    # 获取脚本所在目录（作为默认报告根目录参考）
+    script_dir = Path(__file__).resolve().parent.parent.parent
 
-    if not check_dir.exists():
-        print(f"❌ 错误: 目录不存在: {check_dir}")
-        print(f"用法: python {Path(__file__).name} [目录路径]")
-        print(f"示例: python {Path(__file__).name} src/pyspring")
+    # 确定检查目录
+    target_path = Path(args.target).resolve()
+
+    if not target_path.exists():
+        print(f"❌ 错误: 目录不存在: {target_path}")
         sys.exit(1)
+
+    print(f"🔍 脚本目录: {script_dir}")
+    print(f"📂 检查目标: {target_path}")
 
     # 创建检查器
     checker = PythonFileChecker(
-        root_dir=str(check_dir),
+        root_dir=str(target_path),
         exclude_dirs=[
             '__pycache__',
             '.git',
@@ -531,12 +577,21 @@ def main():
     print(f"❌ 有错误的文件数: {error_files}")
     print(f"✅ 无错误的文件数: {checked_files - error_files}")
 
-    # 打印错误报告
+    # 打印错误报告 (Stdout)
     checker.print_report()
 
-    # 保存报告到文件
-    if checker.errors:
-        checker.save_report()
+    # 保存报告到文件 (如果指定了参数)
+    if args.report and checker.errors:
+        if args.report == "error_report.txt":
+            # Case 1: 用户指定 --report 但没给值 (argparse const 生效)
+            # "不指定路径就是根路径" -> 保存到 script_dir/error_report.txt
+            report_file = script_dir / "error_report.txt"
+        else:
+            # Case 2: 用户指定了路径 --report ./logs/err.txt
+            # "指定路径就是指定的全路径或者相对路径" -> 也就是 args.report 本身
+            report_file = Path(args.report).resolve()
+
+        checker.save_report(report_file)
 
     # 返回错误码
     sys.exit(1 if checker.errors else 0)

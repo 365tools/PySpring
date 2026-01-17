@@ -85,10 +85,11 @@ BUILTINS = set(dir(builtins))
 class Scope:
     """Scope Management"""
 
-    def __init__(self, parent: Optional['Scope'] = None, is_class_scope: bool = False):
+    def __init__(self, parent: Optional['Scope'] = None, is_class_scope: bool = False, is_function_scope: bool = False):
         self.parent = parent
         self.defined: Set[str] = set()
         self.is_class_scope = is_class_scope
+        self.is_function_scope = is_function_scope
         self.star_imported = False
 
     def define(self, name: str):
@@ -98,8 +99,14 @@ class Scope:
         if name in self.defined:
             return True
         if self.parent:
-            # For simplicity, we allow looking up in parent scope even for classes
             return self.parent.is_defined(name)
+        return False
+
+    def is_in_function(self) -> bool:
+        if self.is_function_scope:
+            return True
+        if self.parent:
+            return self.parent.is_in_function()
         return False
 
     def has_star_import(self) -> bool:
@@ -110,9 +117,26 @@ class Scope:
         return False
 
 
-class UnresolvedVisitor(ast.NodeVisitor):
+class GlobalDefCollector(ast.NodeVisitor):
+    """Collects top-level function and class definitions (for forward reference support)"""
     def __init__(self):
+        self.defined = set()
+
+    def visit_FunctionDef(self, node):
+        self.defined.add(node.name)
+
+    def visit_AsyncFunctionDef(self, node):
+        self.defined.add(node.name)
+
+    def visit_ClassDef(self, node):
+        self.defined.add(node.name)
+
+
+class UnresolvedVisitor(ast.NodeVisitor):
+    def __init__(self, global_defs: Set[str] = None):
         self.current_scope = Scope()
+        self.global_defs = global_defs or set()
+        
         # Add builtins to global scope
         for b in BUILTINS:
             self.current_scope.define(b)
@@ -146,7 +170,7 @@ class UnresolvedVisitor(ast.NodeVisitor):
 
         # Enter New Scope
         prev_scope = self.current_scope
-        self.current_scope = Scope(parent=prev_scope)
+        self.current_scope = Scope(parent=prev_scope, is_function_scope=True)
 
         # Define Arguments (Inner Scope)
         all_args = []
@@ -202,7 +226,7 @@ class UnresolvedVisitor(ast.NodeVisitor):
             if default: self.visit(default)
 
         prev_scope = self.current_scope
-        self.current_scope = Scope(parent=prev_scope)
+        self.current_scope = Scope(parent=prev_scope, is_function_scope=True)
 
         for arg in node.args.args:
             self.current_scope.define(arg.arg)
@@ -242,7 +266,12 @@ class UnresolvedVisitor(ast.NodeVisitor):
         if isinstance(node.ctx, (ast.Store, ast.Param)):
             self.current_scope.define(node.id)
         elif isinstance(node.ctx, ast.Load):
-            if not self.current_scope.is_defined(node.id) and not self.current_scope.has_star_import():
+            is_def = self.current_scope.is_defined(node.id)
+            if not is_def and not self.current_scope.has_star_import():
+                # Check forward references if in function scope
+                if self.current_scope.is_in_function() and node.id in self.global_defs:
+                    return  # Considered defined (Forward Reference)
+
                 self.unresolved.append((node.id, node.lineno, node.col_offset))
 
     def visit_Attribute(self, node):
@@ -292,7 +321,13 @@ def scan_file(file_path: str) -> List[Tuple[str, int, int]]:
     except SyntaxError:
         return []
 
-    visitor = UnresolvedVisitor()
+    # 1. Pre-scan for global definitons (Functions & Classes)
+    collector = GlobalDefCollector()
+    collector.visit(tree)
+    global_defs = collector.defined
+
+    # 2. Main Scan
+    visitor = UnresolvedVisitor(global_defs=global_defs)
     visitor.visit(tree)
     # Deduplicate by line
     return list(set(visitor.unresolved))
@@ -480,3 +515,9 @@ def run_check_references(args):
                 fixed_count += applied
 
     print_summary(issues_found, len(files_with_issues), fixed_count, fixable=not args.fix)
+
+    if fixed_count > 0:
+        print()
+        print_title("Next Steps")
+        print_success("Auto-fix complete. Please run tests to verify changes:")
+        print("  pyspring test")

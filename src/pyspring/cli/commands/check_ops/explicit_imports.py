@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.ui import (
-    print_title, print_file_header, print_issue, print_summary
+    print_title, print_file_header, print_issue, print_summary, print_success
 )
 
 
@@ -123,7 +123,10 @@ class ImportExpander(ast.NodeVisitor):
                 if os.path.isdir(abs_path):
                     target_path = abs_path
                 else:
-                    pass
+                    # 尝试 src 目录 (针对 src-layout 项目)
+                    src_abs_path = os.path.join(self.root_path, 'src', *node.module.split('.'))
+                    if os.path.isdir(src_abs_path):
+                        target_path = src_abs_path
 
         if target_path and os.path.isdir(target_path) and os.path.exists(os.path.join(target_path, '__init__.py')):
             # 这是一个包。
@@ -271,6 +274,12 @@ def check_and_fix_imports(root_path: str, scan_path: str, fix: bool = False):
                 pass
 
     print_summary(total_issues, files_with_issues, files_fixed, fixable=not fix)
+
+    if files_fixed > 0:
+        print()
+        print_title("Next Steps")
+        print_success("Imports expanded. Verify imports are still valid:")
+        print("  pyspring test")
 
 
 def run_check_explicit_imports(args):

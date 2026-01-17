@@ -2,11 +2,12 @@
 数据库自动初始化功能架构总结
 """
 
-print("=" * 80)
-print("PySpring 数据库自动初始化功能")
-print("=" * 80)
+if __name__ == "__main__":
+    print("=" * 80)
+    print("PySpring 数据库自动初始化功能")
+    print("=" * 80)
 
-print("""
+    print("""
 ## 架构设计
 
 采用 **启动初始化器（Startup Initializer）模式**：
@@ -93,7 +94,9 @@ async def startup_event():
     # 4. 执行所有初始化器
     await manager.execute_all(stop_on_failure=True)
 ```
+""")
 
+    print("""
 ## 优势
 
 ✅ **职责分离**: DBManagerService 负责连接管理，DatabaseInitializer 负责初始化
@@ -115,10 +118,10 @@ async def startup_event():
 所有初始化器统一管理，统一执行，统一日志！
 """)
 
-print("\n" + "=" * 80)
-print("✅ 功能已完成！")
-print("=" * 80)
-print("""
+    print("\n" + "=" * 80)
+    print("✅ 功能已完成！")
+    print("=" * 80)
+    print("""
 创建的文件:
   - src/pyspring/interfaces/IStartupInitializer.py
   - src/pyspring/repositories/db/initializer.py

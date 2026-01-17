@@ -10,19 +10,23 @@ from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.component.logging.filter import suppress_specific_logs
 from pyspring.cli.core.ui import (
     print_title, print_file_header, print_issue, print_summary,
-    print_error, print_info
+    print_error, print_info, print_success
 )
 from .static_import import run_ast_check
 
 
-def find_modules_in_dir(scan_dir: str, root_dir: str) -> Generator[str, None, None]:
+def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list = None) -> Generator[str, None, None]:
     """
     Find modules in a directory relative to a root (sys.path entry).
     scan_dir: absolute path to directory to scan
     root_dir: absolute path to a root in sys.path (e.g. project_root or src)
+    exclude_dirs: list of specific directory names to exclude from scan
     """
     if not scan_dir.startswith(root_dir):
         return
+
+    if exclude_dirs is None:
+        exclude_dirs = []
 
     # Base package prefix
     rel = os.path.relpath(scan_dir, root_dir)
@@ -36,7 +40,7 @@ def find_modules_in_dir(scan_dir: str, root_dir: str) -> Generator[str, None, No
 
     for root, dirs, files in os.walk(scan_dir):
         # Filter directories in-place
-        dirs[:] = [d for d in dirs if d not in ignored_dirs and not d.endswith('.egg-info')]
+        dirs[:] = [d for d in dirs if d not in ignored_dirs and d not in exclude_dirs and not d.endswith('.egg-info')]
 
         if '__pycache__' in root:
             continue
@@ -73,6 +77,8 @@ def run_check_import(args):
 
     print_title(f"Dynamic Import Check: {target_arg}")
 
+    # ... existing code ...
+
     project_root = os.getcwd()
 
     if not os.path.exists(target_path):
@@ -87,13 +93,32 @@ def run_check_import(args):
     if os.path.exists(src_path) and src_path not in sys.path:
         sys.path.insert(0, src_path)
 
-    # Determine the 'root' for import resolution
-    import_root = project_root
-    # Check if target path starts with src_path
-    if os.path.exists(src_path) and target_path.startswith(src_path):
-        import_root = src_path
+    # Parse excluded directories
+    user_exclude_str = getattr(args, 'exclude', '')
+    user_excludes = [x.strip() for x in user_exclude_str.split(',') if x.strip()]
 
-    modules = list(find_modules_in_dir(target_path, import_root))
+    modules = []
+
+    # Special logic for projects with 'src' directory structure
+    # If we are scanning the project root (default), we must scan 'src' separately
+    # so that modules inside src are imported as 'package.foo' (root=src)
+    # instead of 'src.package.foo' (root=project_root).
+    is_root_scan = (target_path == project_root)
+
+    if os.path.exists(src_path) and is_root_scan:
+        # 1. Scan src folder with root=src_path
+        modules.extend(find_modules_in_dir(src_path, src_path, exclude_dirs=user_excludes))
+        # 2. Scan project root excluding src folder, with root=project_root
+        exclude_dirs_for_root = user_excludes + ['src']
+        modules.extend(find_modules_in_dir(project_root, project_root, exclude_dirs=exclude_dirs_for_root))
+    else:
+        # Determine the 'root' for import resolution
+        import_root = project_root
+        # Check if target path is inside src_path
+        if os.path.exists(src_path) and (target_path.startswith(src_path + os.sep) or target_path == src_path):
+            import_root = src_path
+
+        modules = list(find_modules_in_dir(target_path, import_root, exclude_dirs=user_excludes))
 
     if not modules:
         print_info("No Python modules found to check.")
@@ -132,4 +157,9 @@ def run_check_import(args):
     print_summary(len(failed_modules), len(failed_modules), 0, fixable=False)
 
     if failed_modules:
+        print()
+        print_title("Next Steps")
+        print_success("To diagnose import errors, try:")
+        print("  1. Check for circular dependencies: pyspring check circular")
+        print("  2. Check for missing references:    pyspring check references")
         sys.exit(1)

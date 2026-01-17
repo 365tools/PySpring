@@ -28,15 +28,15 @@ def register_subcommand(subparsers):
     # Env check subcommand
     env_parser = check_subparsers.add_parser(
         'env',
-        help='Check development environment',
+        help='Validate development environment and Python setup',
         description='Diagnose Python environment, installation, and path issues'
     )
     env_parser.set_defaults(func=run_env_check)
 
     # Import check subcommand
     import_parser = check_subparsers.add_parser(
-        'import',
-        help='Check imports recursively in the project',
+        'imports-scan',
+        help='Scan project for invalid or unused imports',
         description='Scan and verify imports for all Python files in the target directory'
     )
     import_parser.add_argument(
@@ -50,12 +50,18 @@ def register_subcommand(subparsers):
         action='store_true',
         help='Use static analysis (AST) instead of importing modules. Can detect imports inside functions.'
     )
+    import_parser.add_argument(
+        '--exclude',
+        default='',
+        metavar='',
+        help='Comma-separated list of directories to exclude from scan (e.g. tests,examples)'
+    )
     import_parser.set_defaults(func=run_check_import)
 
     # Encoding check subcommand
     encoding_parser = check_subparsers.add_parser(
         'encoding',
-        help='Check file encoding (utf-8 compliance)',
+        help='Validate file encoding (UTF-8 compliance)',
         description='Scan project files for encoding issues (non-utf-8 or BOM)'
     )
     encoding_parser.add_argument(
@@ -71,29 +77,12 @@ def register_subcommand(subparsers):
     )
     encoding_parser.set_defaults(func=run_check_encoding)
 
-    # Lift imports subcommand (Refactoring)
-    lift_parser = check_subparsers.add_parser(
-        'lift-imports',
-        help='Refactor: Lift local imports to top-level',
-        description='Scan for local imports in functions and move them to top-level if safe (no circular dependencies). Adds comments if unsafe.'
-    )
-    lift_parser.add_argument(
-        'target',
-        nargs='?',
-        default='.',
-        help='Target directory to scan (default: current directory)'
-    )
-    lift_parser.add_argument(
-        '--apply',
-        action='store_true',
-        help='Apply changes (lift imports) to files. If not set, runs in dry-run mode.'
-    )
-    lift_parser.set_defaults(func=run_lift_imports)
     circular_parser = check_subparsers.add_parser(
-        'circular',
-        help='Check for circular dependencies',
+        'imports-circular',
+        help='Detect circular import dependencies',
         description='Scan project for circular imports using static analysis (AST)'
     )
+
     circular_parser.add_argument(
         'path',
         nargs='?',
@@ -105,7 +94,7 @@ def register_subcommand(subparsers):
     # References check subcommand
     ref_parser = check_subparsers.add_parser(
         'references',
-        help='Check for unresolved references',
+        help='Identify and fix unresolved symbol references',
         description='Scan project for missing imports and undefined names'
     )
     ref_parser.add_argument(
@@ -121,10 +110,29 @@ def register_subcommand(subparsers):
     )
     ref_parser.set_defaults(func=run_check_references)
 
+    # Lift imports subcommand (Refactoring)
+    lift_parser = check_subparsers.add_parser(
+        'imports-lift',
+        help='Refactor: Move local imports to module top-level',
+        description='Scan for local imports in functions and move them to top-level if safe (no circular dependencies). Adds comments if unsafe.'
+    )
+    lift_parser.add_argument(
+        'target',
+        nargs='?',
+        default='.',
+        help='Target directory to scan (default: current directory)'
+    )
+    lift_parser.add_argument(
+        '--apply',
+        action='store_true',
+        help='Apply changes (lift imports) to files. If not set, runs in dry-run mode.'
+    )
+    lift_parser.set_defaults(func=run_lift_imports)
+
     # Explicit Imports Check (Expand imports to full path)
     explicit_parser = check_subparsers.add_parser(
-        'explicit-imports',
-        help='Expand imports to submodules',
+        'imports-explicit',
+        help='Refactor: Convert package imports to explicit submodules',
         description='Convert package-level imports (from pkg import Item) to submodule imports (from pkg.sub import Item) to bypass dynamic __init__ issues.'
     )
     explicit_parser.add_argument(

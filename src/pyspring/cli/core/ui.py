@@ -15,6 +15,33 @@ class Colors:
     BOLD = '\033[1m'
 
 
+def print_section(title: str):
+    """Print section divider"""
+    print("\n" + "=" * 70)
+    print(title)
+    print("=" * 70)
+
+
+def print_success(text: str):
+    """Print success message"""
+    print(f"{Colors.OKGREEN}✓ {text}{Colors.ENDC}")
+
+
+def print_info(text: str):
+    """Print info message"""
+    print(f"{Colors.OKCYAN}ℹ {text}{Colors.ENDC}")
+
+
+def print_warning(text: str):
+    """Print warning message"""
+    print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
+
+
+def print_error(text: str):
+    """Print error message"""
+    print(f"{Colors.FAIL}✗ {text}{Colors.ENDC}")
+
+
 def print_header(text: str):
     """Print header with formatting"""
     print(f"\n{Colors.HEADER}{Colors.BOLD}{'=' * 70}{Colors.ENDC}")
@@ -62,38 +89,13 @@ def print_issue(line: str, message: str, file_path: str = None, level: str = 'er
 def print_summary(total_issues: int, files_count: int = 0, fixed_count: int = 0, fixable: bool = False):
     """Print standard summary footer"""
     print_section("Summary")
+    files_info = f" in {files_count} files" if files_count > 0 else ""
+    
     if total_issues == 0:
-        print_success("No issues found.")
+        print_success(f"No issues found{files_info}.")
     else:
-        print(f"Found {total_issues} issues in {files_count} files.")
+        print(f"Found {total_issues} issues{files_info}.")
         if fixed_count > 0:
             print_success(f"Fixed {fixed_count} issues.")
         elif fixable:
             print_info("Run with --fix to apply automated fixes.")
-
-
-def print_section(title: str):
-    """Print section divider"""
-    print("\n" + "=" * 70)
-    print(title)
-    print("=" * 70)
-
-
-def print_success(text: str):
-    """Print success message"""
-    print(f"{Colors.OKGREEN}✓ {text}{Colors.ENDC}")
-
-
-def print_info(text: str):
-    """Print info message"""
-    print(f"{Colors.OKCYAN}ℹ {text}{Colors.ENDC}")
-
-
-def print_warning(text: str):
-    """Print warning message"""
-    print(f"{Colors.WARNING}⚠ {text}{Colors.ENDC}")
-
-
-def print_error(text: str):
-    """Print error message"""
-    print(f"{Colors.FAIL}✗ {text}{Colors.ENDC}")
