@@ -10,10 +10,10 @@ import ast
 import os
 from typing import Optional
 
-from pyspring.cli.component.files.ignore import get_ignore_list
 from pyspring.cli.core.utils.code import get_indentation, apply_indentation
 from .base import BaseChecker
 from .imports.static import find_symbol_in_package
+from ....core.utils.filesystem import get_ignore_list
 
 
 def import_range(start, end):

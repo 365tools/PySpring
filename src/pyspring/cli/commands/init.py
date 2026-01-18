@@ -4,14 +4,13 @@ PySpring CLI Init Command Registration
 import argparse
 
 from .ops.init.core import run
+from ..core.commands.base import BaseCommand, CommandArg
 
 
-def register_subcommand(subparsers):
-    """Register init subcommand"""
-    parser = subparsers.add_parser(
-        'init',
-        help='Scaffold new PySpring project structure',
-        description="""
+class InitCommand(BaseCommand):
+    name = "init"
+    help = "Scaffold new PySpring project structure"
+    description = """
 Initialize PySpring Project Structure and Configuration Files.
 
 Examples:
@@ -29,33 +28,32 @@ Examples:
   
   # Skip .env file generation
   pyspring init --skip-env
-        """,
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
+    """
+    formatter_class = argparse.RawDescriptionHelpFormatter
 
-    parser.add_argument(
-        'target_dir',
-        nargs='?',
-        default=None,
-        help='Target directory (default: current directory)'
-    )
+    arguments = [
+        CommandArg(
+            flags='target_dir',
+            nargs='?',
+            default=None,
+            help='Target directory (default: current directory)'
+        ),
+        CommandArg(
+            flags=['-f', '--force'],
+            action='store_true',
+            help='Force overwrite existing files'
+        ),
+        CommandArg(
+            flags=['-m', '--minimal'],
+            action='store_true',
+            help='Create minimal configuration only'
+        ),
+        CommandArg(
+            flags='--skip-env',
+            action='store_true',
+            help='Skip .env file generation'
+        )
+    ]
 
-    parser.add_argument(
-        '-f', '--force',
-        action='store_true',
-        help='Force overwrite existing files'
-    )
-
-    parser.add_argument(
-        '-m', '--minimal',
-        action='store_true',
-        help='Create minimal configuration only'
-    )
-
-    parser.add_argument(
-        '--skip-env',
-        action='store_true',
-        help='Skip .env file generation'
-    )
-
-    parser.set_defaults(func=run)
+    def run(self, args: argparse.Namespace):
+        run(args)

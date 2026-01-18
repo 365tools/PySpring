@@ -1,53 +1,41 @@
-"""
-PySpring Clean Command
-"""
 from .ops.clean.cache import clean_project_cache
 from .ops.clean.imports import run_clean_imports
+from ..core.commands.base import BaseCommand, CommandArg
+from ..core.parser.formatter import SortedHelpFormatter
 
 
-def register_subcommand(subparsers):
-    """Register clean subcommands"""
-    parser = subparsers.add_parser(
-        'clean',
-        help='Remove artifacts, caches, and unused code',
-        description='Remove temporary files or clean unused codes'
-    )
+class CleanCacheCommand(BaseCommand):
+    name = "cache"
+    help = "Clear system and framework caches"
+    description = "Remove project cache directories"
+    arguments = [
+        CommandArg(['-v', '--verbose'], action='store_true', help='Show detailed output')
+    ]
 
-    clean_subparsers = parser.add_subparsers(
-        title='Available Cleaners',
-        dest='clean_command',
-        required=True,
-        metavar='<clean_command>'
-    )
+    def run(self, args):
+        clean_project_cache(args.verbose)
 
-    # Cache cleaner
-    cache_parser = clean_subparsers.add_parser(
-        'cache',
-        help='Clear system and framework caches',
-        description='Remove project cache directories'
-    )
-    cache_parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Show detailed output'
-    )
-    cache_parser.set_defaults(func=lambda args: clean_project_cache(args.verbose))
 
-    # Import cleaner
-    import_parser = clean_subparsers.add_parser(
-        'imports-unused',
-        help='Remove detected unused import statements',
-        description='Scanning and removing unused import statements'
-    )
-    import_parser.add_argument(
-        'path',
-        nargs='?',
-        default='.',
-        help='Path to clean (default: current directory)'
-    )
-    import_parser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help='Show detailed output'
-    )
-    import_parser.set_defaults(func=run_clean_imports)
+class CleanImportsCommand(BaseCommand):
+    name = "imports-unused"
+    help = "Remove detected unused import statements"
+    description = "Scanning and removing unused import statements"
+    arguments = [
+        CommandArg('path', nargs='?', default='.', help='Path to clean (default: current directory)'),
+        CommandArg(['-v', '--verbose'], action='store_true', help='Show detailed output')
+    ]
+
+    def run(self, args):
+        run_clean_imports(args)
+
+
+class CleanCommand(BaseCommand):
+    name = "clean"
+    help = "Remove artifacts, caches, and unused code"
+    description = "Remove temporary files or clean unused codes"
+    formatter_class = SortedHelpFormatter
+
+    subcommands = [
+        CleanCacheCommand,
+        CleanImportsCommand
+    ]

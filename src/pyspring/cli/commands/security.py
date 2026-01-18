@@ -1,19 +1,20 @@
-"""
-PySpring Security Command
-"""
 from .ops.security.encryption import generate_encryption_key
+from ..core.commands.base import BaseCommand
 
 
-def register_subcommand(subparsers):
-    """Register security subcommand"""
-    parser = subparsers.add_parser(
-        'security',
-        help='Manage security configurations and encryption keys',
-        description='Security utilities for PySpring'
-    )
+class GenerateKeyCommand(BaseCommand):
+    name = "gen-key"
+    help = "Generate new high-entropy encryption keys"
 
-    security_subparsers = parser.add_subparsers(dest='security_command', required=True, help='Sub-commands')
+    def run(self, args):
+        generate_encryption_key(args)
 
-    # Generate Key
-    gen_key_parser = security_subparsers.add_parser('gen-key', help='Generate new high-entropy encryption keys')
-    gen_key_parser.set_defaults(func=generate_encryption_key)
+
+class SecurityCommand(BaseCommand):
+    name = "security"
+    help = "Manage security configurations and encryption keys"
+    description = "Security utilities for PySpring"
+
+    subcommands = [
+        GenerateKeyCommand
+    ]

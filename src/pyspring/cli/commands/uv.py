@@ -1,32 +1,62 @@
-"""
-PySpring uv Command
-"""
-from .ops.uv.core import run
+from .ops.uv.core import (
+    setup_uv_env,
+    rebuild_uv_env,
+    install_pyspring,
+    show_uv_status,
+    print_activation_hint
+)
+from ..core.commands.base import BaseCommand, CommandArg
 
 
-def register_subcommand(subparsers):
-    """Register uv subcommand"""
-    parser = subparsers.add_parser(
-        'uv',
-        help='Manage UV environment and dependencies',
-        description='Manage uv virtual environment lifecycle'
-    )
+class UvSetupCommand(BaseCommand):
+    name = "setup"
+    help = "Initialize environment and install dependencies"
+    arguments = [
+        CommandArg('--dev', action='store_true', help='Install development dependencies'),
+        CommandArg('--rebuild', action='store_true', help='Recreate existing environment')
+    ]
 
-    uv_subparsers = parser.add_subparsers(dest='uv_command', required=True, help='Sub-commands')
+    def run(self, args):
+        setup_uv_env(dev_mode=args.dev, rebuild=args.rebuild)
 
-    # Setup
-    setup_parser = uv_subparsers.add_parser('setup', help='Initialize environment and install dependencies')
-    setup_parser.add_argument('--dev', action='store_true', help='Install development dependencies')
-    setup_parser.add_argument('--rebuild', action='store_true', help='Recreate existing environment')
 
-    # Rebuild
-    uv_subparsers.add_parser('rebuild', help='Re-initialize environment from scratch')
+class UvRebuildCommand(BaseCommand):
+    name = "rebuild"
+    help = "Re-initialize environment from scratch"
 
-    # Install
-    install_parser = uv_subparsers.add_parser('install', help='Install project dependencies to environment')
-    install_parser.add_argument('--dev', action='store_true', help='Install development dependencies')
+    def run(self, args):
+        rebuild_uv_env()
 
-    # Status
-    uv_subparsers.add_parser('status', help='Display environment configuration status')
 
-    parser.set_defaults(func=run)
+class UvInstallCommand(BaseCommand):
+    name = "install"
+    help = "Install project dependencies to environment"
+    arguments = [
+        CommandArg('--dev', action='store_true', help='Install development dependencies')
+    ]
+
+    def run(self, args):
+        install_pyspring(dev_mode=args.dev)
+        print("\n✅ Install complete!")
+        print_activation_hint()
+
+
+class UvStatusCommand(BaseCommand):
+    name = "status"
+    help = "Display environment configuration status"
+
+    def run(self, args):
+        show_uv_status()
+
+
+class UvCommand(BaseCommand):
+    name = "uv"
+    help = "Manage UV environment and dependencies"
+    description = "Manage uv virtual environment lifecycle"
+
+    subcommands = [
+        UvSetupCommand,
+        UvRebuildCommand,
+        UvInstallCommand,
+        UvStatusCommand
+    ]

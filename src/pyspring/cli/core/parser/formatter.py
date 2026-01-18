@@ -7,6 +7,9 @@ class SortedHelpFormatter(argparse.HelpFormatter):
     Formatter that automatically sorts arguments and subcommands alphabetically.
     """
 
+    def __init__(self, prog, indent_increment=2, max_help_position=32, width=None):
+        super().__init__(prog, indent_increment, max_help_position, width)
+
     def add_arguments(self, actions):
         # Sort arguments: flags first, then others. Sort by the first flag or dest.
         def sort_key(action):
@@ -71,7 +74,7 @@ class GroupedHelpFormatter(SortedHelpFormatter):
             # Remaining - Sort them alphabetically!
             remaining = [c for c in cmds if c not in shown_cmds]
             remaining.sort()
-            
+
             visible_remaining = []
             for name in remaining:
                 help_str = help_lookup.get(name, '')
@@ -87,4 +90,3 @@ class GroupedHelpFormatter(SortedHelpFormatter):
             return "".join(parts)
 
         return super()._format_action(action)
-

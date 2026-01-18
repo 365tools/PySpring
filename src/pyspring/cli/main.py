@@ -3,9 +3,9 @@ PySpring CLI Main Entry Point
 """
 import sys
 
-from .core.arg_parser import FriendlyArgumentParser
-from .core.formatter import GroupedHelpFormatter
-from .core.loader import load_commands
+from .core.commands.loader import load_commands
+from .core.parser.custom import FriendlyArgumentParser
+from .core.parser.formatter import GroupedHelpFormatter
 
 
 def main():
@@ -40,7 +40,7 @@ def main():
 
     # Handle --all flag (Global Help) ONLY if no subcommand is selected
     if hasattr(args, 'all') and args.all and not args.command:
-        from .core.utils.help import print_recursive_help
+        from .core.ui.help import print_recursive_help
         print_recursive_help(parser)
         sys.exit(0)
 

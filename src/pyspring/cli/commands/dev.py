@@ -1,33 +1,45 @@
-"""
-PySpring Internal Development Command
-"""
 from .ops.dev.exports import sync_exports
 from .ops.dev.sync import sync_templates
 from .ops.dev.verify import verify_pyproject
+from ..core.commands.base import BaseCommand, CommandArg
 
 
-def register_subcommand(subparsers):
-    """Register dev subcommand"""
-    parser = subparsers.add_parser(
-        'dev',
-        help='Internal development utilities',  # Revert SUPPRESS
-        description='Tools for PySpring framework development'
-    )
+class SyncTemplatesCommand(BaseCommand):
+    name = "templates-sync"
+    help = "Synchronize project files with templates"
 
-    dev_subparsers = parser.add_subparsers(dest='dev_command', required=True, help='Sub-commands')
+    def run(self, args):
+        sync_templates(args)
 
-    # Sync Templates
-    sync_parser = dev_subparsers.add_parser('templates-sync', help='Synchronize project files with templates')
-    sync_parser.set_defaults(func=sync_templates)
 
-    # Verify Config
-    verify_parser = dev_subparsers.add_parser('config-verify', help='Validate pyproject.toml generation logic')
-    verify_parser.set_defaults(func=verify_pyproject)
+class VerifyConfigCommand(BaseCommand):
+    name = "config-verify"
+    help = "Validate pyproject.toml generation logic"
 
-    # Sync Exports (Auto-Init)
-    init_parser = dev_subparsers.add_parser('init-sync', help='Auto-generate __init__.py package exports')
-    init_parser.add_argument('path', help='Path to package directory')
-    init_parser.add_argument('--fixed', action='store_true', help='Generate fixed explicit exports')
-    init_parser.add_argument('--dynamic', action='store_true', help='Use dynamic auto-import (default)')
-    init_parser.set_defaults(func=sync_exports)
+    def run(self, args):
+        verify_pyproject(args)
 
+
+class InitSyncCommand(BaseCommand):
+    name = "init-sync"
+    help = "Auto-generate __init__.py package exports"
+    arguments = [
+        CommandArg('path', help='Path to package directory'),
+        CommandArg('--fixed', action='store_true', help='Generate fixed explicit exports'),
+        CommandArg('--dynamic', action='store_true', help='Use dynamic auto-import (default)'),
+    ]
+
+    def run(self, args):
+        sync_exports(args)
+
+
+class DevCommand(BaseCommand):
+    name = "dev"
+    help = "Internal development utilities"
+    description = "Tools for PySpring framework development"
+
+    subcommands = [
+        SyncTemplatesCommand,
+        VerifyConfigCommand,
+        InitSyncCommand
+    ]

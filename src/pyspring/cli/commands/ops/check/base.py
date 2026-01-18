@@ -2,11 +2,11 @@ import os
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
-from pyspring.cli.component.files.search import find_files
 from pyspring.cli.core.ui import (
     print_title, print_file_header, print_issue,
     print_summary, print_info
 )
+from ....core.utils.filesystem import find_files
 
 
 class BaseChecker(ABC):

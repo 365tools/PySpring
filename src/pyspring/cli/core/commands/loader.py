@@ -1,12 +1,15 @@
 import importlib
+import inspect
 import logging
 import pkgutil
+
+from .base import BaseCommand
 
 
 def load_commands(subparsers, package_path='pyspring.cli.commands'):
     """
-    Dynamically loads command modules from the specified package path
-    and calls their register_subcommand method.
+    Dynamically loads command modules from the specified package path.
+    Supports both legacy 'register_subcommand' function and new 'BaseCommand' class discovery.
 
     Args:
         subparsers: The argparse subparsers object to register commands to.
@@ -30,12 +33,17 @@ def load_commands(subparsers, package_path='pyspring.cli.commands'):
         try:
             module = importlib.import_module(full_module_name)
 
-            # Check if the module has the registration hook
+            # Strategy 1: Legacy function based registration
             if hasattr(module, 'register_subcommand'):
                 module.register_subcommand(subparsers)
-            # else:
-            #     # Optional: logging.debug(f"Module {name} has no register_subcommand")
-            #     pass
+                continue
+
+            # Strategy 2: Class based discovery (BaseCommand subclasses)
+            for _, obj in inspect.getmembers(module):
+                if inspect.isclass(obj) and issubclass(obj, BaseCommand) and obj is not BaseCommand:
+                    # Only register if the class is defined in this module
+                    if obj.__module__ == module.__name__:
+                        obj.register(subparsers)
 
         except Exception as e:
             logging.warning(f"Error loading command '{name}': {e}")

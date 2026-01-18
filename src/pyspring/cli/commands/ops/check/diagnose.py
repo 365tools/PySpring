@@ -94,7 +94,7 @@ def suggest_solution():
 
     print("\n3. If you are a developer, ensure you installed in edit mode")
     print("   Run: uv pip install -e .")
-    
+
     print("\n4. Check your IDE interpreter settings")
     print("   Ensure it points to the .venv created by uv")
 
@@ -102,7 +102,7 @@ def suggest_solution():
 def run(args):
     """Run environment diagnosis"""
     print_title("PySpring Environment Diagnosis")
-    
+
     check_python_info()
     print()  # spacer
     check_pyspring_installation()

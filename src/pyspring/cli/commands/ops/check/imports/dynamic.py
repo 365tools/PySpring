@@ -6,11 +6,17 @@ import os
 import sys
 from typing import Generator
 
-from pyspring.cli.component.files.ignore import get_ignore_list
-from pyspring.cli.component.logging.filter import suppress_specific_logs
-from pyspring.cli.core.ui import (
+from .....core.utils.filesystem import get_ignore_list
+from .....core.utils.logging import suppress_logs
+
+PYSPRING_LOG_PATTERNS = [
+    r"✅ 已加载日志配置",
+    r"⚙️ Loguru日志系统统配置完成",
+    r"\[SecurityConfigManager\] 已加载配置文件"
+]
+from pyspring.cli.core.ui.console import (
     print_title, print_file_header, print_issue, print_summary,
-    print_error, print_info, print_success
+    print_error, print_info
 )
 
 
@@ -122,7 +128,7 @@ def run_check_import(args):
     print_info(f"Found {total_modules} modules. Import testing...")
 
     # Use our context manager to suppress specific logs
-    with suppress_specific_logs():
+    with suppress_logs(PYSPRING_LOG_PATTERNS):
         for i, module_name in enumerate(modules, 1):
             try:
                 importlib.import_module(module_name)
@@ -181,11 +187,6 @@ def run_check_import(args):
     print_summary(len(failed_modules), len(failed_modules), 0, fixable=False)
 
     if failed_modules:
-        print()
-        print_title("Next Steps")
-        print_success("To diagnose import errors, try:")
-        print("  1. Check for circular dependencies: pyspring check circular")
-        print("  2. Check for missing references:    pyspring check references")
         return False
 
     return True

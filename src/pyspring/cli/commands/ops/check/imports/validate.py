@@ -8,7 +8,7 @@ import sys
 from typing import List
 
 from pyspring.cli.core.ui import (
-    print_error
+    print_error, print_section, Colors, print_info
 )
 from pyspring.cli.core.utils.code import get_indentation, apply_indentation
 from .dynamic import run_check_import as run_dynamic_check
@@ -244,9 +244,21 @@ class StaticImportChecker(BaseChecker):
         return issues_found
 
     def post_check(self, files: List[str], **kwargs):
-        print("\nTo diagnose import errors, try:")
-        print("  1. Check for circular dependencies: pyspring check circular")
-        print("  2. Check for missing references:    pyspring check references")
+        print_section("Troubleshooting & Next Steps")
+
+        print(f"{Colors.OKCYAN}To resolve remaining import issues, consider the following diagnostic commands:{Colors.ENDC}\n")
+
+        commands = [
+            ("pyspring check imports-circular", "Detect circular import dependencies"),
+            ("pyspring check references", "Identify and fix unresolved symbol references"),
+            ("pyspring check imports-explicit", "Refactor ambiguous imports to explicit submodules"),
+            ("pyspring check diagnose", "Verify environment integrity and package installation"),
+        ]
+
+        for cmd, desc in commands:
+            print(f"  {Colors.BOLD}{cmd:<35}{Colors.ENDC} : {desc}")
+
+        print(f"\n{Colors.OKCYAN}Tip: Use '--fix' with supported commands to apply automated corrections.{Colors.ENDC}")
 
 
 def run_validate_imports(args):

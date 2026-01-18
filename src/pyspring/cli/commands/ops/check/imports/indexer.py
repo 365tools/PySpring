@@ -7,7 +7,7 @@ import os
 from collections import defaultdict
 from typing import Dict, List, Set
 
-from pyspring.cli.component.files.ignore import get_ignore_list
+from .....core.utils.filesystem import get_ignore_list
 
 
 class SymbolVisitor(ast.NodeVisitor):

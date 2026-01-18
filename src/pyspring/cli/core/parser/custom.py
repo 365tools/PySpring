@@ -2,45 +2,7 @@ import argparse
 import re
 import sys
 
-from .ui import print_standard_command_help
-
-
-def print_friendly_subcommand_help(action, prog_name=None):
-    """
-    Print a friendly list of available subcommands to stderr.
-    Args:
-        action: The argparse._SubParsersAction object
-        prog_name: The program name (e.g. 'pyspring')
-    """
-    if prog_name is None:
-        prog_name = sys.argv[0] if sys.argv else 'pyspring'
-
-    # Get choices
-    choices = action.choices
-    if not choices:
-        return
-
-    # Create subcommands dict
-    subcommands = {}
-    if hasattr(action, '_choices_actions'):
-        for sub_action in action._choices_actions:
-            subcommands[sub_action.dest] = sub_action.help
-
-    # Tips customization
-    tips = []
-    if action.dest == 'check_command':
-        tips.append(f"Use --all to run all checks: '{prog_name} check --all'")
-        tips.append(f"Use '{prog_name} check <command> --help' for details on a specific command.")
-    else:
-        tips.append(f"Use '{prog_name} <command> --help' for details on a specific command.")
-
-    print_standard_command_help(
-        title=None,
-        description=f"⚠️  Missing command. Please specify one of the following:",
-        usage=[],  # No usage section for this simple error prompt
-        subcommands=subcommands,
-        tips=tips
-    )
+from ..ui import print_friendly_subcommand_help
 
 
 class FriendlyArgumentParser(argparse.ArgumentParser):

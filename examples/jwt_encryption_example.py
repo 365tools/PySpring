@@ -107,8 +107,8 @@ def example_4_encryption_manager():
         print(f"⚠️ 无法获取容器或管理器: {e}")
         # 用于演示的回退
         print("💡 使用默认配置创建临时管理器用于演示")
-        # from pyspring.core.conf import config
-        manager = JWTEncryptionManager(config)
+        # 直接实例化，内部会自动加载配置
+        manager = JWTEncryptionManager()
 
     print(f"\n加密是否启用: {manager.is_enabled()}")
 
