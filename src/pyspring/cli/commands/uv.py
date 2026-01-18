@@ -44,9 +44,16 @@ class UvInstallCommand(BaseCommand):
 class UvStatusCommand(BaseCommand):
     name = "status"
     help = "Display environment configuration status"
+    arguments = [
+        CommandArg(
+            "module",
+            nargs="?",
+            help="Show detailed information for a specific module"
+        )
+    ]
 
     def run(self, args):
-        show_uv_status()
+        show_uv_status(args.module)
 
 
 class UvCommand(BaseCommand):

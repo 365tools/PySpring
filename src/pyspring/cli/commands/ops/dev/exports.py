@@ -124,6 +124,9 @@ def process_dynamic_recursive(target_path: str) -> int:
                 print_error(f"Failed to update {init_path}: {e}")
 
     return updated_count
+
+
+def generate_init_content(pkg_path, modules, use_absolute=False):
     """
     Generate content for __init__.py
     modules: dict { filename_no_ext: [symbols] }

@@ -286,7 +286,115 @@ def rebuild_uv_env():
     setup_uv_env(rebuild=True)
 
 
-def show_uv_status():
+def inspect_module_in_venv(venv_path, module_name):
+    """Inspect a module inside the virtual environment"""
+    print(f"\n🔍 Inspecting module: {module_name}")
+
+    python_exe = venv_path / 'Scripts' / 'python.exe' if sys.platform == 'win32' else venv_path / 'bin' / 'python'
+    if not python_exe.exists():
+        print("❌ Could not find python executable in .venv")
+        return
+
+    # Valid python script to run inside venv
+    script = f"""
+import sys
+import os
+import importlib.util
+import importlib.metadata
+import json
+from pathlib import Path
+from datetime import datetime
+
+module_name = "{module_name}"
+result = {{
+    "name": module_name,
+    "found": False,
+    "version": None,
+    "location": None,
+    "editable": False,
+    "direct_url": None,
+    "updated": None
+}}
+
+try:
+    try:
+        dist = importlib.metadata.distribution(module_name)
+        result["found"] = True
+        result["version"] = dist.version
+        
+        durl = dist.read_text("direct_url.json")
+        if durl:
+            data = json.loads(durl)
+            result["direct_url"] = data
+            result["editable"] = data.get("dir_info", {{}}).get("editable", False)
+            if "url" in data:
+                 result["url"] = data["url"]
+    except importlib.metadata.PackageNotFoundError:
+        pass
+
+    try:
+        spec = importlib.util.find_spec(module_name)
+        if spec and spec.origin:
+             result["found"] = True
+             path_obj = Path(spec.origin)
+             result["location"] = str(path_obj.parent)
+             result["file"] = str(path_obj)
+             try:
+                 ts = path_obj.stat().st_mtime
+                 result["updated"] = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S')
+             except:
+                 pass
+    except Exception:
+        pass
+
+except Exception as e:
+    result["error"] = str(e)
+
+print(json.dumps(result))
+"""
+    try:
+        res = subprocess.run(
+            [str(python_exe), "-c", script],
+            capture_output=True,
+            text=True
+        )
+        if res.returncode != 0:
+            print("❌ Helper script failed")
+            print(res.stderr)
+            return
+
+        import json
+        try:
+            data = json.loads(res.stdout.strip())
+        except json.JSONDecodeError:
+            print(f"❌ Failed to parse output: {res.stdout}")
+            return
+
+        if not data.get('found'):
+            print(f"❌ Module '{module_name}' not found in environment.")
+            return
+
+        print(f"   Name:      {data['name']}")
+        print(f"   Version:   {data['version'] or 'N/A'}")
+        if data.get('updated'):
+            print(f"   Updated:   {data['updated']}")
+
+        print(f"   Location:  {data['location'] or 'N/A'}")
+        if data.get('file'):
+            print(f"   File:      {data['file']}")
+
+        if data.get('editable'):
+            print(f"   Mode:      ✅ EDITABLE")
+            if data.get('url'):
+                print(f"   Source:    {data['url']}")
+        else:
+            print(f"   Mode:      Standard")
+
+    except Exception as e:
+        print(f"❌ Error inspecting module: {e}")
+
+
+def show_uv_status(module_name=None):
     """显示 uv 状态"""
     print_section("uv Environment Status")
     venv_path = Path('.venv')
@@ -296,7 +404,7 @@ def show_uv_status():
         # Check if active
         is_active = False
         try:
-            if sys.executable.startswith(str(venv_path.absolute())):
+            if sys.executable.lower().startswith(str(venv_path.absolute()).lower()):
                 is_active = True
         except:
             pass
@@ -305,11 +413,14 @@ def show_uv_status():
             print("✅ Environment is currently ACTIVE")
         else:
             print("⚠️  Environment is NOT active in this terminal")
-            print_activation_hint()
 
-        # Show pip list summary
-        print("\nInstalled Packages (Summary):")
-        subprocess.run(['uv', 'pip', 'list'], check=False)
+        if module_name:
+            inspect_module_in_venv(venv_path, module_name)
+        else:
+            print_activation_hint()
+            # Show pip list summary
+            print("\nInstalled Packages (Summary):")
+            subprocess.run(['uv', 'pip', 'list'], check=False)
     else:
         print("❌ Virtual environment not found")
         print("\nTo create one, run:")

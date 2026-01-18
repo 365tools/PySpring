@@ -6,8 +6,8 @@ import subprocess
 import sys
 
 import pyspring
-from pyspring.cli.core.ui import (
-    print_title, print_error, print_warning, print_info
+from pyspring.cli.core.ui.console import (
+    print_title, print_error, print_warning, print_info, Colors
 )
 
 

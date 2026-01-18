@@ -3,8 +3,14 @@ Check for unresolved references and optionally fix them.
 """
 import ast
 import builtins
+import os
+import re
+import shutil
+import subprocess
+import sys
 from typing import Optional, List, Set, Tuple
 
+from pyspring.cli.core.ui.console import Colors
 from .base import BaseChecker
 
 # --- Knowledge Base for Auto-Fix ---
@@ -475,6 +481,131 @@ class ReferencesChecker(BaseChecker):
                         self.add_issue(file_path, line, f"Cannot auto-fix unresolved reference '{name}' -> Manual correction required", level='warning')
         
         return True
+
+    def post_check(self, files: List[str], **kwargs):
+        """Run deeper analysis using Mypy if available"""
+        self._run_mypy_check()
+
+    def _run_mypy_check(self):
+        # 1. Check availability
+        import threading
+        import time
+
+        mypy_cmd = [sys.executable, "-m", "mypy"]
+        try:
+            # Quick check shouldn't take long
+            subprocess.run(mypy_cmd + ["--version"], capture_output=True, check=True)
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            if shutil.which("mypy"):
+                mypy_cmd = ["mypy"]
+            else:
+                if self.total_issues == 0:
+                    print(f"\n   ℹ Tip: Install 'mypy' (pip install mypy) for deeper attribute analysis.")
+                return
+
+        print(f"\n   Running deep analysis with Mypy... (target: {self.target_path})")
+
+        # 2. Prepare Environment
+        env = os.environ.copy()
+        # Add src to PYTHONPATH to ensure imports resolve correctly during static analysis
+        # especially if not installed in editable mode
+        src_path = os.path.join(os.path.abspath(self.target_path), 'src')
+        if os.path.exists(src_path):
+            current_pythonpath = env.get("PYTHONPATH", "")
+            env["PYTHONPATH"] = f"{src_path}{os.pathsep}{current_pythonpath}"
+
+        # 3. Run Mypy with Spinner
+        cmd = mypy_cmd + [
+            self.target_path,
+            "--exclude", r"(build|dist|\.venv|venv|out|\.mypy_cache|__pycache__)",
+            "--exclude", r"examples/",
+            "--ignore-missing-imports",
+            "--no-error-summary",
+            "--no-color",
+            "--show-column-numbers",
+            "--check-untyped-defs",
+            "--soft-error-limit=-1"
+        ]
+
+        # Spinner Logic
+        stop_spinner = False
+
+        def spinner_task():
+            chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+            idx = 0
+            while not stop_spinner:
+                sys.stdout.write(f"\r   {chars[idx]} Analyzing...")
+                sys.stdout.flush()
+                time.sleep(0.1)
+                idx = (idx + 1) % len(chars)
+            sys.stdout.write("\r" + " " * 30 + "\r")  # Clear line
+
+        t = threading.Thread(target=spinner_task)
+        t.daemon = True  # ensure thread dies if main process dies
+        t.start()
+
+        result = None
+        try:
+            # Enforce utf-8 to avoid encoding issues
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', env=env)
+        except Exception as e:
+            stop_spinner = True
+            t.join()
+            print(f"   Warning: Mypy execution failed: {e}")
+            return
+        finally:
+            stop_spinner = True
+            if t.is_alive():
+                t.join()
+
+        # 4. Parse Output
+        # Regex to match mypy output: file:line:col: error: message [code]
+        # Also supports: file:line: error: message [code]
+        pattern = re.compile(r"^(.+?):(\d+):(?:\d+:)?\s*error:\s*(.+?)(?:\s*\[(.+)\])?$")
+
+        count = 0
+        if result and result.stdout:
+            for line in result.stdout.splitlines():
+                line = line.strip()
+                if not line: continue
+
+                # Check for fatal errors first
+                if "error:" in line and not pattern.match(line):
+                    # Print unparsed errors directly to warn user (e.g. config errors)
+                    print(f"      {Colors.FAIL}{line}{Colors.ENDC}")
+                    continue
+
+                match = pattern.match(line)
+                if match:
+                    rel_path, lineno, msg, code = match.groups()
+
+                    if code == 'name-defined':
+                        continue
+
+                    try:
+                        file_path = os.path.abspath(rel_path)
+                    except:
+                        continue
+
+                    # Only report issues within the target directory or src
+                    # Mypy might report issues in dependencies if configured loosely
+                    if not file_path.startswith(os.path.abspath(self.target_path)):
+                        continue
+
+                    self.add_issue(file_path, int(lineno), f"[Mypy] {msg}", level='error')
+
+                    if file_path not in self._issues:
+                        self.files_with_issues_count += 1
+
+                    self.total_issues += 1
+                    count += 1
+
+        if count > 0:
+            print(f"   Found {count} additional issues via Mypy.")
+        else:
+            print("   ✅ Mypy analysis completed. No critical issues found.")
+
+
 
 
 def run_check_references(args):

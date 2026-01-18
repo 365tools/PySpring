@@ -10,7 +10,7 @@ class UserTable(Base):
     """
     用户表模型（数据库）
     """
-    __tablename__ = "user"
+    __tablename__ = "pyspring_user"
 
     id = Column(INT, primary_key=True, autoincrement=True)
     uuid = Column(String(36), default=lambda: str(uuid.uuid4()), unique=True, index=True, nullable=True)
@@ -25,7 +25,7 @@ class RoleTable(Base):
     """
     角色表模型（数据库）
     """
-    __tablename__ = "role"
+    __tablename__ = "pyspring_role"
 
     id = Column(INT, primary_key=True, autoincrement=True)
     code = Column(String, unique=True, index=True, nullable=False)
@@ -38,7 +38,7 @@ class PermissionTable(Base):
     """
     权限表模型（数据库）
     """
-    __tablename__ = "permission"
+    __tablename__ = "pyspring_permission"
 
     id = Column(INT, primary_key=True, autoincrement=True)
     code = Column(String, unique=True, index=True, nullable=False)
@@ -51,19 +51,19 @@ class UserRoleTable(Base):
     """
     用户角色表模型（数据库）
     """
-    __tablename__ = "user_role"
+    __tablename__ = "pyspring_user_role"
 
     id = Column(INT, primary_key=True, autoincrement=True)
-    user_id = Column(INT, ForeignKey('user.id'), nullable=False)
-    role_id = Column(INT, ForeignKey('role.id'), nullable=False)
+    user_id = Column(INT, ForeignKey('pyspring_user.id'), nullable=False)
+    role_id = Column(INT, ForeignKey('pyspring_role.id'), nullable=False)
 
 
 class RolePermissionTable(Base):
     """
     角色权限表模型（数据库）
     """
-    __tablename__ = "role_permission"
+    __tablename__ = "pyspring_role_permission"
 
     id = Column(INT, primary_key=True, autoincrement=True)
-    role_code = Column(String, ForeignKey('role.code'), nullable=False)
-    permission_code = Column(String, ForeignKey('permission.code'), nullable=False)
+    role_code = Column(String, ForeignKey('pyspring_role.code'), nullable=False)
+    permission_code = Column(String, ForeignKey('pyspring_permission.code'), nullable=False)
