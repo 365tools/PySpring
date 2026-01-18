@@ -10,7 +10,7 @@ from typing import List
 from pyspring.cli.core.ui.console import (
     print_error
 )
-from pyspring.cli.core.ui.console import print_standard_import_tips
+from pyspring.cli.core.ui.console import print_standard_import_tips, get_terminal_width
 from pyspring.cli.core.utils.code import get_indentation, apply_indentation
 from .dynamic import run_check_import as run_dynamic_check
 from .indexer import ProjectIndexer
@@ -276,7 +276,8 @@ def run_validate_imports(args):
             success = False
         
         if should_run_dynamic:
-            print("\n" + "-" * 60 + "\n")
+            width = get_terminal_width()
+            print("\n" + "-" * width + "\n")
 
     if should_run_dynamic:
         # Dynamic check delegate

@@ -160,29 +160,78 @@ def print_activation_hint(venv_name='.venv'):
 
 def install_pyspring(dev_mode=False):
     """仅安装依赖"""
-    # Windows 文件锁检查
+    # Windows 文件锁检查 (跳过模式)
+    try_skip_self = False
+    
     if check_windows_lock_issue():
-        print("\n🛑 Windows File Lock Detected")
-        print("   You are trying to update the package while running from its virtual environment.")
-        print("   On Windows, this causes a 'PermissionError' because the executable is in use.")
-        print("\n   Solution:")
-        print("   1. Run 'deactivate' in your terminal.")
-        print("   2. Run command again: 'uv sync' or 'pyspring uv install'")
-        sys.exit(1)
+        print("\n\033[93m⚠ Windows File Lock Detected\033[0m")
+        print("   You are running from the virtual environment you are trying to update.")
+        print("   On Windows, updating the 'pyspring' package itself (editable mode) will fail.")
+
+        # 尝试检测是否为 editable install
+        # 如果是 editable install，我们其实不需要重新 pip install -e .，除非依赖变了
+        # 但即便是依赖变了，uv sync 也会尝试更新当前包的 metadata，这可能会触发锁。
+
+        # 策略改动：
+        # 如果检测到锁，询问用户是否开启 "Safe Install" (不更新当前包本身，只安装依赖)
+
+        print("\n   Automatic Switching to SAFE MODE:")
+        print("   -> Will skip reinstalling 'pyspring' package itself to avoid PermissionError.")
+        print("   -> Dependencies will still be installed/updated.")
+        try_skip_self = True
 
     print_section("Installing Dependencies")
 
     # 优先使用 uv sync (如果 pyproject.toml 存在且配置了 tool.uv)
     if Path("pyproject.toml").exists() and "tool.uv" in Path("pyproject.toml").read_text(encoding="utf-8", errors='ignore'):
-        cmd = ['uv', 'sync']
-        if dev_mode:
-            cmd.extend(['--extra', 'dev'])
-    else:
-        cmd = ['uv', 'pip', 'install', '-e', '.']
-        if dev_mode:
-            cmd[-1] = '.[dev]'
+        # 只有在非锁模式下或者必须同步时才运行完整 sync，否则我们尝试用 pip install 安装依赖
+        if not try_skip_self:
+            cmd = ['uv', 'sync']
+            if dev_mode:
+                cmd.extend(['--extra', 'dev'])
+            subprocess.run(cmd)
+        else:
+            # Safe Mode: 不运行 uv sync (因为它总是尝试操作当前项目环境)
+            # 改为手动解析依赖并安装？或者使用 uv pip install --system (不推荐)
 
-    subprocess.run(cmd)
+            # 更好的 Safe Mode 策略：
+            # uv sync 实际上很难排除 root package。
+            # 如果是 editable 模式，我们建议用户用 uv pip install 仅安装依赖
+            print("   Executing: uv pip install requirements...")
+
+            # 我们无法简单地从 pyproject.toml 提取所有依赖这里...
+            # 妥协方案：尝试仅安装依赖而不安装 root
+            # uv sync --no-install-project (如果 uv 支持，目前 uv sync 默认会安装 project)
+
+            # 检查 uv 版本是否支持 --no-install-project (uv >= 0.4.0)
+            # 假设用户用的是较新版本
+            cmd = ['uv', 'sync', '--no-install-project']
+            if dev_mode:
+                cmd.extend(['--extra', 'dev'])
+
+            # 尝试运行
+            ret = subprocess.run(cmd)
+            if ret.returncode != 0:
+                print("\n\033[91m❌ 'uv sync --no-install-project' failed.\033[0m")
+                print("   Your version of uv might be old or the configuration is invalid.")
+                sys.exit(1)
+            else:
+                print("\n   ✅ Dependencies updated (project package skipped due to lock).")
+
+    else:
+        # 传统 pip 模式
+        # cmd = ['uv', 'pip', 'install', '-e', '.']
+
+        if try_skip_self:
+            # 如果锁住了，就不能 install -e .
+            # 只能尝试根据 pyproject.toml 安装依赖，比较麻烦
+            print("   \033[93mSkipping pip install -e . due to file lock.\033[0m")
+            print("   Please run 'deactivate' and retry if you need to update the project metadata.")
+        else:
+            cmd = ['uv', 'pip', 'install', '-e', '.']
+            if dev_mode:
+                cmd[-1] = '.[dev]'
+            subprocess.run(cmd)
 
 
 def setup_uv_env(dev_mode=True, rebuild=False):

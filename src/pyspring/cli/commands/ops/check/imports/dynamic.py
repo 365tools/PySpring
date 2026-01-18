@@ -4,6 +4,7 @@ PySpring Import Checker Command
 import importlib
 import os
 import sys
+import warnings
 from typing import Generator
 
 from .....core.utils.filesystem import get_ignore_list, is_ignored
@@ -128,7 +129,10 @@ def run_check_import(args):
     print_info(f"Found {total_modules} modules. Import testing...")
 
     # Use our context manager to suppress specific logs
-    with suppress_logs(PYSPRING_LOG_PATTERNS):
+    # Also suppress warnings (like Pydantic V1 deprecation)
+    with suppress_logs(PYSPRING_LOG_PATTERNS), warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # Ignore all warnings during scan
+        
         for i, module_name in enumerate(modules, 1):
             try:
                 importlib.import_module(module_name)

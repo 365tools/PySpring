@@ -5,6 +5,7 @@ from .ops.check.circular import run_check_circular
 from .ops.check.diagnose import run as run_diagnose_check
 from .ops.check.encoding import run_check_encoding
 from .ops.check.explicit import run_check_explicit_imports
+from .ops.check.imports.reset import run_import_reset
 from .ops.check.imports.validate import run_validate_imports
 from .ops.check.lift import run_lift_imports
 from .ops.check.refactor import run_check_refactor
@@ -22,6 +23,7 @@ CHECK_DESCRIPTIONS = {
     'imports-circular': 'Detect circular import dependencies',
     'imports-explicit': 'Refactor: Convert package imports to explicit submodules',
     'imports-lift': 'Refactor: Move local imports to module top-level',
+    'imports-reset': 'Destructively reset and reconstruct "pyspring" imports',
     'imports-refactor': 'Convert between absolute and relative imports',
     'imports-validate': 'Validate imports and resolve missing modules',
     'references': 'Identify and fix unresolved symbol references',
@@ -131,6 +133,21 @@ class CheckValidateCommand(BaseCommand):
     def run(self, args):
         run_validate_imports(args)
 
+
+class CheckResetCommand(BaseCommand):
+    name = "imports-reset"
+    help = CHECK_DESCRIPTIONS['imports-reset']
+    description = 'Destructively remove all "pyspring" imports and re-index project to find correct locations. Use when package structure has changed significantly.'
+    arguments = [
+        CommandArg('path', nargs='?', default='.'),
+        CommandArg(['-f', '--force'], action='store_true', help='Force delete satisfying imports as well (nuclear option)'),
+        CommandArg('--fix', action='store_true', help='Execute removal and reconstruction')
+    ]
+
+    def run(self, args):
+        run_import_reset(args)
+
+
 class CheckArgs:
     """Mock arguments for running checks programmatically"""
     def __init__(self):
@@ -216,6 +233,7 @@ class CheckCommand(BaseCommand):
         CheckRefactorCommand,
         CheckLiftCommand,
         CheckValidateCommand,
+        CheckResetCommand,
     ]
 
     def run(self, args):

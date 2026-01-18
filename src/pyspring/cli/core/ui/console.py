@@ -1,6 +1,15 @@
 """
 PySpring CLI Console Utilities
 """
+import shutil
+
+
+def get_terminal_width(default=80):
+    """Get current terminal width"""
+    try:
+        return shutil.get_terminal_size(fallback=(default, 24)).columns
+    except Exception:
+        return default
 
 
 class Colors:
@@ -18,9 +27,10 @@ class Colors:
 
 def print_section(title: str):
     """Print section divider"""
-    print("\n" + "=" * 70)
+    width = get_terminal_width()
+    print("\n" + "=" * width)
     print(title)
-    print("=" * 70)
+    print("=" * width)
 
 
 def print_success(text: str):
@@ -45,9 +55,10 @@ def print_error(text: str):
 
 def print_header(text: str):
     """Print header with formatting"""
-    print(f"\n{Colors.HEADER}{Colors.BOLD}{'=' * 70}{Colors.ENDC}")
-    print(f"{Colors.HEADER}{Colors.BOLD}{text:^70}{Colors.ENDC}")
-    print(f"{Colors.HEADER}{Colors.BOLD}{'=' * 70}{Colors.ENDC}\n")
+    width = get_terminal_width()
+    print(f"\n{Colors.HEADER}{Colors.BOLD}{'=' * width}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{text:^{width}}{Colors.ENDC}")
+    print(f"{Colors.HEADER}{Colors.BOLD}{'=' * width}{Colors.ENDC}\n")
 
 
 def print_title(text: str):

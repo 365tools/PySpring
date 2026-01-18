@@ -63,6 +63,56 @@ class ProjectIndexer:
 
         return best_rel.replace(os.path.sep, '.')
 
+    def index_path(self, path: str, prefix: str = ""):
+        """Explicitly index a specific directory or package"""
+        path = os.path.abspath(path)
+        if not os.path.exists(path):
+            return
+
+        ignored = get_ignore_list(path)
+
+        for root, dirs, files in os.walk(path):
+            # Same filtering
+            dirs[:] = [d for d in dirs if d not in ignored and not d.startswith('.')]
+
+            for file in files:
+                if not file.endswith('.py'):
+                    continue
+
+                file_path = os.path.join(root, file)
+
+                # Calculate module path relative to 'path'
+                rel = os.path.relpath(file_path, path)
+                if rel.endswith('.py'): rel = rel[:-3]
+                if rel.endswith('__init__'):
+                    rel = rel[:-9]
+                    if rel.endswith(os.sep): rel = rel[:-1]
+
+                mod_path = rel.replace(os.path.sep, '.')
+
+                # Apply prefix
+                if prefix:
+                    if mod_path:
+                        final_mod = f"{prefix}.{mod_path}"
+                    else:
+                        final_mod = prefix
+                else:
+                    final_mod = mod_path
+
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        source = f.read()
+
+                    tree = ast.parse(source, filename=file_path)
+                    visitor = SymbolVisitor()
+                    visitor.visit(tree)
+
+                    for symbol in visitor.definitions:
+                        self.index[symbol].add(final_mod)
+
+                except Exception:
+                    pass
+
     def build_index(self):
         """Scan project and build index"""
         ignored = get_ignore_list(os.getcwd())
@@ -70,6 +120,8 @@ class ProjectIndexer:
         print(f"Indexing symbols in {self.root_dir}...")
 
         file_count = 0
+
+        # 1. Standard Project Scan
         for root, dirs, files in os.walk(self.root_dir):
             dirs[:] = [d for d in dirs if d not in ignored and not d.startswith('.')]
 
