@@ -48,6 +48,26 @@ def get_ignore_list(root_path: str = '.', extra_ignores: Set[str] = None) -> Set
     return ignore_set
 
 
+def is_ignored(name: str, ignore_patterns: Set[str]) -> bool:
+    """
+    Check if a file or directory name matches any ignore pattern.
+    Supports basic glob patterns: *, ?
+    """
+    if name in ignore_patterns:
+        return True
+
+    import fnmatch
+    for pattern in ignore_patterns:
+        if fnmatch.fnmatch(name, pattern):
+            return True
+
+    # Also ignore .startswith('.') for hidden files (except current dir)
+    if name.startswith('.') and name != '.':
+        return True
+
+    return False
+
+
 def find_files(root_dir: str, extensions: List[str] = None) -> List[str]:
     """
     Recursively find files in a directory, respecting ignore lists.
@@ -55,11 +75,21 @@ def find_files(root_dir: str, extensions: List[str] = None) -> List[str]:
     :param extensions: List of extensions to include (e.g. ['.py', '.md']). If None, include all.
     """
     found_files = []
-    ignored = get_ignore_list(os.getcwd())
+    # Always get ignores relative to the directory being scanned, OR current working dir
+    # We prefer the root being scanned to catch nested ignore files if needed, 
+    # but for simplicity we stick to global ignores + root.
+    ignored = get_ignore_list(root_dir)
 
     abs_root = os.path.abspath(root_dir)
 
+    # If user provided a single file
     if os.path.isfile(abs_root):
+        # We still should check if the file itself is ignored, but typically explicit paths override ignores.
+        # But let's check basic hidden/ignore rules just in case
+        filename = os.path.basename(abs_root)
+        if is_ignored(filename, ignored):
+            return []
+             
         if extensions:
             _, ext = os.path.splitext(abs_root)
             if ext.lower() in extensions:
@@ -69,9 +99,21 @@ def find_files(root_dir: str, extensions: List[str] = None) -> List[str]:
         return []
 
     for root, dirs, files in os.walk(abs_root):
-        dirs[:] = [d for d in dirs if d not in ignored and not d.startswith('.')]
+        # Apply ignore filter to dirs in-place to prune traversal
+        # We need to filter dirs list directly to stop os.walk from entering them
+
+        # 1. Expand ignore set to patterns check
+        dirs_to_keep = []
+        for d in dirs:
+            if not is_ignored(d, ignored):
+                dirs_to_keep.append(d)
+
+        dirs[:] = dirs_to_keep
 
         for file in files:
+            if is_ignored(file, ignored):
+                continue
+                
             if extensions:
                 _, ext = os.path.splitext(file)
                 if ext.lower() not in extensions:

@@ -2,8 +2,8 @@ import os
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any
 
-from pyspring.cli.core.ui import (
-    print_title, print_file_header, print_issue,
+from pyspring.cli.core.ui.console import (
+    print_title, print_issue,
     print_summary, print_info
 )
 from ....core.utils.filesystem import find_files
@@ -67,6 +67,9 @@ class BaseChecker(ABC):
         # 5. Report
         self.print_report(fixable=not fix)
 
+        # 6. Tips
+        self.print_tips()
+
         return self.total_issues == 0
 
     @property
@@ -91,6 +94,10 @@ class BaseChecker(ABC):
         """Hook to run after file scanning (e.g. global analysis like circular dep)"""
         pass
 
+    def print_tips(self):
+        """Hook to print diagnostic tips after the report"""
+        pass
+
     def _collect_files(self) -> List[str]:
         return find_files(self.target_path, self.extensions)
 
@@ -102,8 +109,8 @@ class BaseChecker(ABC):
         """
         if file_path not in self._issues:
             self._issues[file_path] = []
-            # Print header only once per file
-            print_file_header(file_path)
+            # Skip file header, we print path in issue line for better clickability
+            # print_file_header(file_path)
 
         self._issues[file_path].append({
             'line': line,

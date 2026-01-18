@@ -39,9 +39,18 @@ def check_pyspring_installation():
         )
         if result.returncode == 0:
             print("   ✅ PySpring is installed")
-            for line in result.stdout.split('\n'):
-                if any(key in line for key in ['Version:', 'Location:', 'Editable project location:']):
+            output_lines = result.stdout.split('\n')
+            is_editable = False
+            for line in output_lines:
+                if 'Editable project location:' in line:
+                    is_editable = True
                     print(f"      {line}")
+                elif any(key in line for key in ['Version:', 'Location:']):
+                    print(f"      {line}")
+
+            if not is_editable:
+                print(f"      {Colors.OKCYAN}ℹ Note: Runing in standard (copy) mode.{Colors.ENDC}")
+                print(f"      {Colors.OKCYAN}  For local development, verify you installed with '-e' or 'editable=true'.{Colors.ENDC}")
         else:
             print("   ❌ PySpring is NOT installed")
             print("\n      💡 Please run: pip install pyspring")

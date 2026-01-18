@@ -6,7 +6,7 @@ import os
 import sys
 from typing import Generator
 
-from .....core.utils.filesystem import get_ignore_list
+from .....core.utils.filesystem import get_ignore_list, is_ignored
 from .....core.utils.logging import suppress_logs
 
 PYSPRING_LOG_PATTERNS = [
@@ -16,7 +16,7 @@ PYSPRING_LOG_PATTERNS = [
 ]
 from pyspring.cli.core.ui.console import (
     print_title, print_file_header, print_issue, print_summary,
-    print_error, print_info
+    print_error, print_info, print_standard_import_tips
 )
 
 
@@ -44,10 +44,10 @@ def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list = None)
     ignored_dirs = get_ignore_list(os.getcwd())
 
     for root, dirs, files in os.walk(scan_dir):
-        # Filter directories in-place
-        dirs[:] = [d for d in dirs if d not in ignored_dirs and d not in exclude_dirs and not d.endswith('.egg-info')]
+        # Filter directories in-place using new logic
+        dirs[:] = [d for d in dirs if not is_ignored(d, ignored_dirs) and d not in exclude_dirs]
 
-        if '__pycache__' in root:
+        if is_ignored(os.path.basename(root), ignored_dirs):
             continue
 
         rel_path = os.path.relpath(root, scan_dir)
@@ -185,6 +185,8 @@ def run_check_import(args):
             print_issue(lineno, f"Import failed: {mod} -> {err}", path, level='error')
 
     print_summary(len(failed_modules), len(failed_modules), 0, fixable=False)
+
+    print_standard_import_tips(missing_imports=bool(failed_modules))
 
     if failed_modules:
         return False

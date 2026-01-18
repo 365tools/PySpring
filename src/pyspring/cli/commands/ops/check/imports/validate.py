@@ -7,9 +7,10 @@ import os
 import sys
 from typing import List
 
-from pyspring.cli.core.ui import (
-    print_error, print_section, Colors, print_info
+from pyspring.cli.core.ui.console import (
+    print_error
 )
+from pyspring.cli.core.ui.console import print_standard_import_tips
 from pyspring.cli.core.utils.code import get_indentation, apply_indentation
 from .dynamic import run_check_import as run_dynamic_check
 from .indexer import ProjectIndexer
@@ -96,6 +97,7 @@ class StaticImportChecker(BaseChecker):
         super().__init__(target_path, ['.py'])
         self.indexer = None
         self.sys_path = sys_path or sys.path.copy()
+        self.issue_count = {'missing': 0, 'bad_practice_src': 0}
 
         # Setup sys path
         cwd = os.getcwd()
@@ -138,6 +140,7 @@ class StaticImportChecker(BaseChecker):
             old_mod = issue['module']
             names = issue['names']
             issue_type = issue.get('issue_type', 'missing')
+            self.issue_count[issue_type] = self.issue_count.get(issue_type, 0) + 1
 
             # --- Handling Bad Practice (src.) ---
             if issue_type == 'bad_practice_src':
@@ -164,15 +167,13 @@ class StaticImportChecker(BaseChecker):
                             import_parts.append(new_mod)
                     new_line = f"import {', '.join(import_parts)}\n"
 
-                msg = f"Bad Layout: '{old_mod}' contains 'src.'"
-
-                # Report
-                self.add_issue(file_path, lineno, msg + (f" -> Fixed to '{new_mod}'" if fix else " -> Run --fix to remove"), level='warning' if not fix else 'success')
-
                 if fix and new_line:
                     lines[lineno - 1] = apply_indentation([new_line], indentation)[0]
                     self.resolved_count += 1
                     file_modifications = True
+                    self.add_issue(file_path, lineno, f"Fixed bad layout: '{old_mod}' -> '{new_mod}'", level='success')
+                else:
+                    self.add_issue(file_path, lineno, f"Bad Layout: '{old_mod}' contains 'src.' (run --fix to correct)", level='warning')
                 continue
 
             # --- Handling Missing Imports ---
@@ -210,25 +211,24 @@ class StaticImportChecker(BaseChecker):
                     else:
                         import_parts.append(name)
                 new_line = f"from {new_mod} import {', '.join(import_parts)}\n"
-                msg = f"Broken: '{old_mod}' -> Suggest: '{new_mod}'"
 
                 if fix:
                     lines[lineno - 1] = apply_indentation([new_line], indentation)[0]
-                    self.add_issue(file_path, lineno, f"{msg} -> Fixed", level='success')
+                    self.add_issue(file_path, lineno, f"Auto-fix: '{old_mod}' -> '{new_mod}'", level='success')
                     self.resolved_count += 1
                     file_modifications = True
                 else:
-                    self.add_issue(file_path, lineno, f"{msg} -> Run --fix to apply", level='info')
+                    self.add_issue(file_path, lineno, f"Missing: '{old_mod}' (Suggested: '{new_mod}')", level='warning')
 
             elif fix:
                 # If cannot resolve automatically, inform the user instead of deleting blindy
                 # Only report as error/manual fix required
                 if analysis_errors:
                     for err in analysis_errors:
-                        self.add_issue(file_path, lineno, f"{err} -> Manual fix required", level='error')
+                        self.add_issue(file_path, lineno, f"{err} (Manual fix required)", level='error')
                 else:
                     # Ambiguous or complex
-                    self.add_issue(file_path, lineno, f"Cannot auto-resolve '{old_mod}' -> Manual fix required", level='error')
+                    self.add_issue(file_path, lineno, f"Unresolved: '{old_mod}' (Manual fix required)", level='error')
 
             else:
                 # Report Errors
@@ -244,21 +244,13 @@ class StaticImportChecker(BaseChecker):
         return issues_found
 
     def post_check(self, files: List[str], **kwargs):
-        print_section("Troubleshooting & Next Steps")
+        # Implementation moved to print_tips for correct ordering
+        pass
 
-        print(f"{Colors.OKCYAN}To resolve remaining import issues, consider the following diagnostic commands:{Colors.ENDC}\n")
+    def print_tips(self):
+        missing = self.issue_count.get('missing', 0) > 0
+        print_standard_import_tips(missing_imports=missing)
 
-        commands = [
-            ("pyspring check imports-circular", "Detect circular import dependencies"),
-            ("pyspring check references", "Identify and fix unresolved symbol references"),
-            ("pyspring check imports-explicit", "Refactor ambiguous imports to explicit submodules"),
-            ("pyspring check diagnose", "Verify environment integrity and package installation"),
-        ]
-
-        for cmd, desc in commands:
-            print(f"  {Colors.BOLD}{cmd:<35}{Colors.ENDC} : {desc}")
-
-        print(f"\n{Colors.OKCYAN}Tip: Use '--fix' with supported commands to apply automated corrections.{Colors.ENDC}")
 
 
 def run_validate_imports(args):

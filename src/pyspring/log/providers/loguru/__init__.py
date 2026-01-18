@@ -1,6 +1,6 @@
 """
 自动导入模块
 """
-from utils.auto_import import auto_import_package
+from pyspring.utils.imports.auto import import_package
 
-__all__ = auto_import_package(__name__, globals())
+__all__ = import_package(__name__, globals())

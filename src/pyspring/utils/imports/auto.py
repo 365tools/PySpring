@@ -8,7 +8,7 @@ import pkgutil
 from typing import Dict, Any
 
 
-def auto_import_package(package_name: str, globals_dict: Dict[str, Any] = None, exclude: list = None) -> list:
+def import_package(package_name: str, globals_dict: Dict[str, Any] = None, exclude: list = None) -> list:
     """
     Automatically import all modules under a package
     

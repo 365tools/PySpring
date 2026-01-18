@@ -43,7 +43,7 @@ class GroupedHelpFormatter(SortedHelpFormatter):
             # Define groups logic (Manual order for these specific groups)
             groups = [
                 ("User Commands", ["uv", "init", "check", "clean", "security"]),
-                ("Internal Commands", ["dev"]),
+                ("Internal Commands", ["dev", "meta"]),
             ]
 
             parts = []
@@ -52,6 +52,13 @@ class GroupedHelpFormatter(SortedHelpFormatter):
             help_lookup = {}
             for sub_action in action._choices_actions:
                 help_lookup[sub_action.dest] = sub_action.help
+
+            # Calculate max width for alignment dynamically
+            # We look at ALL commands to keep alignment consistent across groups
+            all_names = list(cmds.keys())
+            max_len = max(len(n) for n in all_names) if all_names else 12
+            # Add padding
+            width = max_len + 4
 
             shown_cmds = set()
 
@@ -69,7 +76,7 @@ class GroupedHelpFormatter(SortedHelpFormatter):
                     for name in visible_cmds:
                         shown_cmds.add(name)
                         help_str = help_lookup.get(name, '')
-                        parts.append(f'  {name:<12} {help_str}\n')
+                        parts.append(f'  {name:<{width}} {help_str}\n')
 
             # Remaining - Sort them alphabetically!
             remaining = [c for c in cmds if c not in shown_cmds]
@@ -85,7 +92,7 @@ class GroupedHelpFormatter(SortedHelpFormatter):
                 parts.append(f'\nOther Commands:\n')
                 for name in visible_remaining:
                     help_str = help_lookup.get(name, '')
-                    parts.append(f'  {name:<12} {help_str}\n')
+                    parts.append(f'  {name:<{width}} {help_str}\n')
 
             return "".join(parts)
 

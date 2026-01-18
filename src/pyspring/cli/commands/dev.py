@@ -24,7 +24,7 @@ class InitSyncCommand(BaseCommand):
     name = "init-sync"
     help = "Auto-generate __init__.py package exports"
     arguments = [
-        CommandArg('path', help='Path to package directory'),
+        CommandArg('path', nargs='?', default='.', help='Path to package directory (default: current dir)'),
         CommandArg('--fixed', action='store_true', help='Generate fixed explicit exports'),
         CommandArg('--dynamic', action='store_true', help='Use dynamic auto-import (default)'),
     ]

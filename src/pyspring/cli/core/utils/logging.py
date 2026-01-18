@@ -17,6 +17,11 @@ class OutputFilter:
         self.patterns = [re.compile(p) for p in patterns]
 
     def write(self, data):
+        # Fast path for suppressing everything
+        for p in self.patterns:
+            if p.pattern == r'.*':
+                return
+
         if any(p.search(data) for p in self.patterns):
             return
         self.original_stream.write(data)
@@ -46,11 +51,8 @@ def suppress_logs(patterns: List[str] = None):
     sys.stderr = OutputFilter(original_stderr, patterns)
 
     # Try to intercept Loguru sink if available
-    if logger:
-        try:
-            logger.remove()
-        except Exception:
-            pass
+    # Note: Loguru sinks are hard to remove cleanly without impacting global state
+    # This filter mainly targets stdout/stderr redirection.
 
     try:
         yield

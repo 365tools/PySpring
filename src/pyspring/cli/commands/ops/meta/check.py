@@ -5,6 +5,7 @@ from typing import List, Type
 
 from pyspring.cli.core.commands.base import BaseCommand, CommandArg
 from pyspring.cli.core.ui.console import print_title, print_success, print_error, print_section, Colors
+from pyspring.cli.core.utils import suppress_logs
 
 
 class CliCheckCommand(BaseCommand):
@@ -36,32 +37,34 @@ def check_cli_structure(package_path: str = 'pyspring.cli.commands'):
     # 1. Discovery Phase
     print(f"{Colors.BOLD}Scanning package: {package_path}...{Colors.ENDC}\n")
 
-    for _, name, _ in pkgutil.iter_modules(package.__path__):
-        if name.startswith('_'):
-            continue
+    # Suppress logs during import to avoid noise from module-level initialization
+    with suppress_logs(patterns=[r'.*']):
+        for _, name, _ in pkgutil.iter_modules(package.__path__):
+            if name.startswith('_'):
+                continue
 
-        full_module_name = f"{package_path}.{name}"
-        try:
-            module = importlib.import_module(full_module_name)
+            full_module_name = f"{package_path}.{name}"
+            try:
+                module = importlib.import_module(full_module_name)
 
-            # Find BaseCommand subclasses defined in this module
-            module_commands = []
-            for _, obj in inspect.getmembers(module):
-                if inspect.isclass(obj) and issubclass(obj, BaseCommand) and obj is not BaseCommand:
-                    if obj.__module__ == module.__name__:
-                        module_commands.append(obj)
+                # Find BaseCommand subclasses defined in this module
+                module_commands = []
+                for _, obj in inspect.getmembers(module):
+                    if inspect.isclass(obj) and issubclass(obj, BaseCommand) and obj is not BaseCommand:
+                        if obj.__module__ == module.__name__:
+                            module_commands.append(obj)
 
-            if not module_commands:
-                # Warning: Module exists but no BaseCommand found (might be utility or legacy)
-                # We can skip warning if it's strictly enforced, but for now just ignore
-                pass
-            else:
-                found_commands.extend(module_commands)
+                if not module_commands:
+                    # Warning: Module exists but no BaseCommand found (might be utility or legacy)
+                    # We can skip warning if it's strictly enforced, but for now just ignore
+                    pass
+                else:
+                    found_commands.extend(module_commands)
 
-        except Exception as e:
-            import traceback
-            tb = traceback.format_exc()
-            errors.append(f"Module '{name}' failed to load: {e}\n{Colors.FAIL}{tb}{Colors.ENDC}")
+            except Exception as e:
+                import traceback
+                tb = traceback.format_exc()
+                errors.append(f"Module '{name}' failed to load: {e}\n{Colors.FAIL}{tb}{Colors.ENDC}")
 
     # 2. Validation & Tree Printing Phase
     print_section("Command Hierarchy")
