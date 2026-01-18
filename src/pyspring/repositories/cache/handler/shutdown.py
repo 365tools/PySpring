@@ -50,7 +50,7 @@ class CacheShutdownHandler(IShutdownHandler):
                 logger.debug(f"⏭️  取消事件任务时出现异常（可能未启用）: {e}")
 
             # ✅ 3. 关闭缓存连接
-            if self.cache_manager and self.cache_manager.ins:
+            if self.cache_manager and self.cache_manager.provider:
                 await self.cache_manager.close()
                 logger.info("🗄️  缓存连接已关闭")
                 return True

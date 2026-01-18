@@ -32,7 +32,7 @@ def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]
                         for elt in node.value.elts:
                             if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                                 all_exports.append(elt.value)
-                            elif isinstance(elt, ast.Str):  # Python < 3.8
+                            elif isinstance(elt, ast.Str):  # type: ignore
                                 all_exports.append(elt.s)
 
         # Check for definitions

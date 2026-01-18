@@ -6,6 +6,7 @@ from pyspring.ioc.manager import AppContainerManager
 根据配置动态创建认证提供者实例
 """
 from typing import Dict, Type, List
+from typing import Optional
 
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
@@ -43,7 +44,7 @@ class AuthProviderFactory:
     def create_provider(
             cls,
             provider_config: dict,
-            token_manager: TokenManagerService = None,
+            token_manager: Optional[TokenManagerService] = None,
             **kwargs
     ) -> BaseAuthenticationProvider:
         """
@@ -84,7 +85,7 @@ class AuthProviderFactory:
     @classmethod
     def create_providers_from_config(
             cls,
-            token_manager: TokenManagerService = None,
+            token_manager: Optional[TokenManagerService] = None,
             **kwargs
     ) -> List[BaseAuthenticationProvider]:
         """

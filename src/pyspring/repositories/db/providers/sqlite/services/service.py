@@ -3,7 +3,7 @@ import os
 from typing import Any, Optional, List, Dict
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
 
 from pyspring.log.instance import logger
 from pyspring.utils.config.finder import detect_project_root
@@ -39,7 +39,7 @@ class SqliteService(ISqliteService):
         pool_recycle = self.pool_config.get('recycle', 3600)
 
         # 直接在构造函数中创建连接池
-        self._engine = create_async_engine(
+        self._engine: Optional[AsyncEngine] = create_async_engine(
             self.url,
             echo=False,
             pool_size=pool_size,
@@ -47,7 +47,7 @@ class SqliteService(ISqliteService):
             pool_recycle=pool_recycle,
             pool_pre_ping=True,
         )
-        self._session_factory = async_sessionmaker(
+        self._session_factory: Optional[async_sessionmaker] = async_sessionmaker(
             self._engine,
             class_=AsyncSession,
             expire_on_commit=False

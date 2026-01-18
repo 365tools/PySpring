@@ -54,7 +54,7 @@ class MemoryService(IMemoryService):
             logger.error(f"🚨 保存数据失败: {e}")
             return False
 
-    async def set(self, key: str, value: Any, ex: int = None) -> bool:
+    async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
         """设置缓存（支持过期时间），兼容 Redis 原生 API"""
         return await self.save(key, value, ttl=ex)
 

@@ -8,9 +8,10 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Optional, List, Set, Tuple
+from typing import Optional, List, Set, Tuple, Counter
 
 from pyspring.cli.core.ui.console import Colors
+from pyspring.cli.core.utils.filesystem import DEFAULT_IGNORES
 from .base import BaseChecker
 
 # --- Knowledge Base for Auto-Fix ---
@@ -484,9 +485,12 @@ class ReferencesChecker(BaseChecker):
 
     def post_check(self, files: List[str], **kwargs):
         """Run deeper analysis using Mypy if available"""
-        self._run_mypy_check()
+        self._run_mypy_check(
+            strict=kwargs.get('strict', False),
+            whitelist=kwargs.get('whitelist')
+        )
 
-    def _run_mypy_check(self):
+    def _run_mypy_check(self, strict: bool = False, whitelist: Optional[str] = None):
         # 1. Check availability
         import threading
         import time
@@ -514,11 +518,22 @@ class ReferencesChecker(BaseChecker):
             current_pythonpath = env.get("PYTHONPATH", "")
             env["PYTHONPATH"] = f"{src_path}{os.pathsep}{current_pythonpath}"
 
-        # 3. Run Mypy with Spinner
+        # Construct exclude pattern from DEFAULT_IGNORES
+        exclude_patterns = []
+        # Ensure we always include these specific ignores even if DEFAULT_IGNORES changes
+        base_ignores = DEFAULT_IGNORES.union({'build', 'dist', 'out', 'examples'})
+
+        for ignore in base_ignores:
+            # Simple glob conversion for regex
+            # Escape dots, then convert start wildcard to regex .*
+            ignore_pattern = re.escape(ignore).replace(r'\*', '.*')
+            exclude_patterns.append(ignore_pattern)
+
+        exclude_regex = f"({'|'.join(exclude_patterns)})"
+
         cmd = mypy_cmd + [
             self.target_path,
-            "--exclude", r"(build|dist|\.venv|venv|out|\.mypy_cache|__pycache__)",
-            "--exclude", r"examples/",
+            "--exclude", exclude_regex,
             "--ignore-missing-imports",
             "--no-error-summary",
             "--no-color",
@@ -558,11 +573,17 @@ class ReferencesChecker(BaseChecker):
             if t.is_alive():
                 t.join()
 
-        # 4. Parse Output
-        # Regex to match mypy output: file:line:col: error: message [code]
-        # Also supports: file:line: error: message [code]
+        # Parse output
         pattern = re.compile(r"^(.+?):(\d+):(?:\d+:)?\s*error:\s*(.+?)(?:\s*\[(.+)\])?$")
 
+        allowed_categories = None
+        if whitelist:
+            allowed_categories = set(c.strip() for c in whitelist.split('|'))
+
+        # Categorization Rules
+        # Map category name -> list of codes or pattern matching function
+        category_counts = Counter()
+        
         count = 0
         if result and result.stdout:
             for line in result.stdout.splitlines():
@@ -578,11 +599,45 @@ class ReferencesChecker(BaseChecker):
                 match = pattern.match(line)
                 if match:
                     rel_path, lineno, msg, code = match.groups()
+                    code = code or 'misc'  # Default code if missing
 
-                    # Whitelist: Only show specific error types
-                    # Currently only "Unresolved attribute reference" (code: attr-defined)
-                    allowed_codes = {'attr-defined'}
-                    if code not in allowed_codes:
+                    category = None
+
+                    # 1. Attribute Errors
+                    if code == 'attr-defined':
+                        category = "Attribute Error"
+
+                    # 2. Static Method Detection (Custom User Request)
+                    elif "may be 'static'" in msg:
+                        category = "Static Method"
+
+                    # 3. Type Mismatches
+                    elif code in ('arg-type', 'assignment', 'return-value', 'list-item', 'dict-item', 'index', 'operator') or "Expected type" in msg:
+                        category = "Type Mismatch"
+
+                    # 4. Async/Sync Mismatches
+                    elif "AsyncFunctionDef" in msg or "FunctionDef" in msg:
+                        # Often covered by arg-type but explicit check for user clarity
+                        category = "Type Mismatch (Async)"
+
+                    # 5. Deprecations
+                    elif "Deprecated" in msg or code == 'deprecation':
+                        category = "Deprecation"
+
+                    # 6. Syntax / Regex / Escape
+                    elif "Redundant character escape" in msg or code in ('valid-type', 'syntax', 'regex'):
+                        category = "Syntax/Regex"
+
+                    # 7. Unused Arguments/Variables
+                    elif "not used" in msg or code in ('unused-argument', 'unused-ignore'):
+                        category = "Unused Code"
+
+                    # Skip if not in our interested categories
+                    if not category:
+                        continue
+
+                    # Whitelist check
+                    if allowed_categories and category not in allowed_categories:
                         continue
 
                     try:
@@ -595,7 +650,8 @@ class ReferencesChecker(BaseChecker):
                     if not file_path.startswith(os.path.abspath(self.target_path)):
                         continue
 
-                    self.add_issue(file_path, int(lineno), f"[Mypy] {msg}", level='error')
+                    self.add_issue(file_path, int(lineno), f"[{category}] {msg}", level='error')
+                    category_counts[category] += 1
 
                     if file_path not in self._issues:
                         self.files_with_issues_count += 1
@@ -605,6 +661,11 @@ class ReferencesChecker(BaseChecker):
 
         if count > 0:
             print(f"   Found {count} additional issues via Mypy.")
+            print("\n   Issue Summary by Category:")
+            print("   " + "-" * 40)
+            for cat, c in category_counts.most_common():
+                print(f"   • {cat:<25} : {c}")
+            print("   " + "-" * 40 + "\n")
         else:
             print("   ✅ Mypy analysis completed. No critical issues found.")
 
@@ -613,5 +674,8 @@ class ReferencesChecker(BaseChecker):
 
 def run_check_references(args):
     target = getattr(args, 'path', '.')
+    strict = getattr(args, 'strict', False)
+    whitelist = getattr(args, 'whitelist', None)
+
     checker = ReferencesChecker(target)
-    return checker.run(fix=args.fix)
+    return checker.run(fix=args.fix, strict=strict, whitelist=whitelist)

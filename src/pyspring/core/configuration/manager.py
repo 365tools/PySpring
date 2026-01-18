@@ -6,7 +6,7 @@
 """
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Optional, TypeVar, Generic
+from typing import Any, Optional, TypeVar, Generic, cast
 
 from pydantic_settings import BaseSettings
 
@@ -73,7 +73,7 @@ class BaseConfigManager(ISingletonService, ABC, Generic[TSettings]):
         """
         if self._settings is None:
             self._load_config()
-        return self._settings
+        return cast(TSettings, self._settings)
 
     def reload(self):
         """重新加载配置"""

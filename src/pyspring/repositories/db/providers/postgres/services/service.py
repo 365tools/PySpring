@@ -2,7 +2,7 @@ import asyncio
 from typing import Any, Optional, List, Dict
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
 
 from pyspring.log.instance import logger
 from ..interfaces.service import IPostgresService
@@ -33,7 +33,7 @@ class PostgresService(IPostgresService):
         pool_pre_ping = self.pool_config.get('pre_ping', True)
 
         # 直接在构造函数中创建连接池
-        self._engine = create_async_engine(
+        self._engine: Optional[AsyncEngine] = create_async_engine(
             self.url,
             echo=False,
             pool_size=pool_size,
@@ -42,7 +42,7 @@ class PostgresService(IPostgresService):
             pool_timeout=pool_timeout,
             pool_pre_ping=pool_pre_ping,
         )
-        self._session_factory = async_sessionmaker(
+        self._session_factory: Optional[async_sessionmaker] = async_sessionmaker(
             self._engine,
             class_=AsyncSession,
             expire_on_commit=False

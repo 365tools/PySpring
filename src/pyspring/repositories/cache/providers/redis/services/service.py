@@ -42,7 +42,7 @@ class RedisService(IRedisService):
         retry_on_timeout = self.pool_config.get('retry_on_timeout', True)
 
         # 直接在构造函数中创建连接池和客户端
-        self._connection_pool = ConnectionPool(
+        self._connection_pool: Optional[ConnectionPool] = ConnectionPool(
             host=self.host,
             port=self.port,
             db=self.db,
@@ -54,7 +54,7 @@ class RedisService(IRedisService):
             socket_connect_timeout=socket_connect_timeout,
             retry_on_timeout=retry_on_timeout
         )
-        self._redis_client = redis.Redis(connection_pool=self._connection_pool)
+        self._redis_client: Optional[redis.Redis] = redis.Redis(connection_pool=self._connection_pool)
 
         logger.debug(f"🔧 RedisService init with url: {self._mask_password(self.url)}")
         logger.debug(f"🔗 Redis 连接池已创建 (max_connections={max_connections})")
@@ -107,7 +107,7 @@ class RedisService(IRedisService):
         except Exception as e:
             raise e
 
-    async def set(self, key: str, value: Any, ex: int = None) -> bool:
+    async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
         """设置缓存（支持过期时间），兼容 Redis 原生 API"""
         return await self.save(key, value, ttl=ex)
 

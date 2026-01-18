@@ -270,7 +270,7 @@ class LoginService(ISingletonService):
             return TokenResponse(
                 access_token=new_access_token,
                 token_type="bearer",
-                expires_in=self.system_service.get().authentication.jwt.access_token_expire
+                expires_in=self.system.get().authentication.jwt.access_token_expire
             )
         except HTTPException:
             raise

@@ -2,6 +2,7 @@
 PySpring CLI Console Utilities
 """
 import shutil
+from typing import Optional
 
 
 def get_terminal_width(default=80):
@@ -72,7 +73,7 @@ def print_file_header(file_path: str):
     print(f"\n{Colors.BOLD}📄 {file_path}{Colors.ENDC}")
 
 
-def print_issue(line: str, message: str, file_path: str = None, level: str = 'error'):
+def print_issue(line: str, message: str, file_path: Optional[str] = None, level: str = 'error'):
     """
     Print standard issue format
     Level: 'error', 'warning', 'success', 'info'

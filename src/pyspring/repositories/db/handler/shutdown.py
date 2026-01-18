@@ -32,7 +32,7 @@ class DBShutdownHandler(IShutdownHandler):
             bool: 是否成功关闭
         """
         try:
-            if self.db_manager and self.db_manager.ins:
+            if self.db_manager and self.db_manager.provider:
                 await self.db_manager.close()
                 logger.info("💾 数据库连接已关闭")
                 return True

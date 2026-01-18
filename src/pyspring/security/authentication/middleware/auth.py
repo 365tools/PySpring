@@ -8,7 +8,7 @@ from pyspring.security.authentication.core.chain import AuthenticationChain
 基于认证提供者链（Chain of Responsibility Pattern）
 统一处理所有API请求的认证逻辑，类似Spring Boot的AOP
 """
-from typing import Callable
+from typing import Callable, Optional
 
 from fastapi import Request, Response, status
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -43,7 +43,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
     类似Spring Boot的拦截器/过滤器
     """
 
-    def __init__(self, app, enable_role_check: bool = None):
+    def __init__(self, app, enable_role_check: Optional[bool] = None):
         """
         初始化认证中间件
         

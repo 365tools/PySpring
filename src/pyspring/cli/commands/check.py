@@ -36,7 +36,9 @@ class CheckReferencesCommand(BaseCommand):
     description = 'Scan project for missing imports and undefined names'
     arguments = [
         CommandArg('path', nargs='?', default='.'),
-        CommandArg('--fix', action='store_true', help='Attempt to automatically fix missing imports for standard libraries')
+        CommandArg('--fix', action='store_true', help='Attempt to automatically fix missing imports for standard libraries'),
+        CommandArg('--strict', action='store_true', help='Fail if any issues are found (including Mypy issues)'),
+        CommandArg('--whitelist', help='Pipe-separated list of issue categories to include (e.g. "Static Method|Type Mismatch")')
     ]
 
     def run(self, args):

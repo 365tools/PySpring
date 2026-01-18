@@ -165,6 +165,7 @@ class SystemService(ISystemService):
         if key in self._config_cache:
             return self._config_cache[key]
 
+        config: Any = None
         try:
             if key == "server":
                 config = self._settings.app.server

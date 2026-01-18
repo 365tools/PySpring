@@ -130,6 +130,10 @@ class ServiceRegistrar:
             if param_name == 'self':
                 continue
 
+            # 忽略 *args (VAR_POSITIONAL) 和 **kwargs (VAR_KEYWORD)
+            if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+                continue
+
             ann = hints.get(param_name, param.annotation)
             raw = None
             if ann != inspect.Parameter.empty:
@@ -188,10 +192,10 @@ class ServiceRegistrar:
             if resolved_name and provider:
                 dependencies[param_name] = provider
                 dep_names.append(resolved_name)
-                logger.debug(f"  - Injected dependency '{param_name}': {resolved_name}")
+                logger.debug(f"  - [{service_name}] Injected dependency '{param_name}': {resolved_name}")
             else:
                 if param.default == inspect.Parameter.empty:
-                    logger.warning(f"  ⚠️ Missing dependency for '{service_name}': {param_name}")
+                    logger.warning(f"  ⚠️ [{service_name}] Missing dependency: '{param_name}'")
 
         self.service_dependencies[service_name] = dep_names
 

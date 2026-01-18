@@ -10,13 +10,13 @@ class CommandArg:
     flags: Union[str, List[str]]  # e.g. "path" or ["-f", "--force"]
     help: str = ""
     default: Any = None
-    action: str = None  # defaults to 'store' usually, but determined by add_argument
+    action: Optional[str] = None  # defaults to 'store' usually, but determined by add_argument
     type: Any = None
     required: bool = False
-    nargs: Union[str, int] = None
-    choices: List[Any] = None
-    metavar: str = None
-    dest: str = None
+    nargs: Union[str, int, None] = None
+    choices: Optional[List[Any]] = None
+    metavar: Optional[str] = None
+    dest: Optional[str] = None
 
     def add_to_parser(self, parser):
         args = [self.flags] if isinstance(self.flags, str) else self.flags
@@ -53,9 +53,9 @@ class CommandArg:
 
 class BaseCommand(ABC):
     """Base class for all PySpring CLI commands"""
-    name: str = None
-    help: str = None
-    description: str = None
+    name: Optional[str] = None
+    help: Optional[str] = None
+    description: Optional[str] = None
     arguments: List[CommandArg] = []
     subcommands: List[Type['BaseCommand']] = []
 

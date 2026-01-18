@@ -175,7 +175,7 @@ class TokenManagerService(ISingletonService):
 
             # 2. 写入Redis缓存（使用原始JWT作为key。
             try:
-                cache_ins = self.cache.ins
+                cache_ins = self.cache.provider
                 ttl = 7 * 24 * 3600  # 7 天（秒）
                 cache_key = f"token:refresh:{encoded_jwt}"  # 注意：缓存key使用未加密的JWT
                 await cache_ins.set(cache_key, json.dumps(token_info), ex=ttl)
@@ -260,7 +260,7 @@ class TokenManagerService(ISingletonService):
 
         # 1. 查询Redis
         try:
-            cache_ins = self.cache.ins
+            cache_ins = self.cache.provider
             cache_key = f"token:refresh:{refresh_token}"
             token_exists = await cache_ins.exists(cache_key)
         except Exception as e:
@@ -284,7 +284,7 @@ class TokenManagerService(ISingletonService):
                         token_exists = True
                         # 回写到Redis
                         try:
-                            cache_ins = self.cache.ins
+                            cache_ins = self.cache.provider
                             cache_key = f"token:refresh:{refresh_token}"
                             ttl = int((record.expires_at - datetime.now(UTC)).total_seconds())
                             if ttl > 0:
@@ -361,7 +361,7 @@ class TokenManagerService(ISingletonService):
 
             # 2. 写入Redis缓存
             try:
-                cache_ins = self.cache.ins
+                cache_ins = self.cache.provider
                 cache_key = f"token:blacklist:{token}"
                 await cache_ins.set(cache_key, "1", ex=ttl)
                 logger.debug("✅ Token已加入Redis黑名单")
@@ -391,7 +391,7 @@ class TokenManagerService(ISingletonService):
         """
         # 1. 查询Redis
         try:
-            cache_ins = self.cache.ins
+            cache_ins = self.cache.provider
             cache_key = f"token:blacklist:{token}"
             exists = await cache_ins.exists(cache_key)
             if exists:
@@ -414,7 +414,7 @@ class TokenManagerService(ISingletonService):
                 if record:
                     # 回写到Redis
                     try:
-                        cache_ins = self.cache.ins
+                        cache_ins = self.cache.provider
                         cache_key = f"token:blacklist:{token}"
                         ttl = int((record.expires_at - datetime.now(UTC)).total_seconds())
                         if ttl > 0:
@@ -461,7 +461,7 @@ class TokenManagerService(ISingletonService):
 
             # 2. 删除Redis缓存
             try:
-                cache_ins = self.cache.ins
+                cache_ins = self.cache.provider
                 cache_key = f"token:refresh:{refresh_token}"
                 await cache_ins.delete(cache_key)
                 logger.debug("✅ 已从Redis删除Refresh Token")

@@ -51,7 +51,7 @@ class AuthConfigService(ISingletonService):
         try:
             # 确保数据库服务已经初始化
             db_service = await self.db_manager.service()
-            if db_service is None or self.db_manager.ins is None:
+            if db_service is None or self.db_manager.provider is None:
                 logger.error("🚨 数据库服务未正确初始化")
                 raise RuntimeError("数据库服务未正确初始化")
 
