@@ -5,9 +5,7 @@ import ast
 import os
 from typing import List
 
-from pyspring.cli.core.ui import (
-    print_success, print_title, print_file_header, print_issue, print_summary
-)
+from pyspring.cli.core.ui.console import print_success, print_title, print_file_header, print_issue, print_summary
 
 
 class UnusedImportVisitor(ast.NodeVisitor):

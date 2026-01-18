@@ -5,9 +5,7 @@ Used to generate secure Fernet encryption keys
 """
 from cryptography.fernet import Fernet
 
-from pyspring.cli.core.ui import (
-    print_title, print_success, print_warning, print_info
-)
+from pyspring.cli.core.ui.console import print_title, print_success, print_warning, print_info
 
 
 def generate_encryption_key(args):

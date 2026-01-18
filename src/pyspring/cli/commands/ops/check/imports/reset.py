@@ -3,11 +3,8 @@ import os
 import sys
 from typing import List
 
-from pyspring.cli.core.ui import (
-    print_error, print_warning, print_info, print_success,
-    print_issue, print_fix, Colors
-)
 from pyspring.cli.core.ui.console import get_terminal_width
+from pyspring.cli.core.ui.console import print_warning, print_info, print_success, print_fix, Colors
 from .indexer import ProjectIndexer
 from .validate import is_module_available
 from ..base import BaseChecker

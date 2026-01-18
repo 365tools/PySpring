@@ -579,7 +579,10 @@ class ReferencesChecker(BaseChecker):
                 if match:
                     rel_path, lineno, msg, code = match.groups()
 
-                    if code == 'name-defined':
+                    # Whitelist: Only show specific error types
+                    # Currently only "Unresolved attribute reference" (code: attr-defined)
+                    allowed_codes = {'attr-defined'}
+                    if code not in allowed_codes:
                         continue
 
                     try:

@@ -2,7 +2,7 @@ import argparse
 import re
 import sys
 
-from ..ui import print_friendly_subcommand_help
+from ..ui.help import print_friendly_subcommand_help
 
 
 class FriendlyArgumentParser(argparse.ArgumentParser):

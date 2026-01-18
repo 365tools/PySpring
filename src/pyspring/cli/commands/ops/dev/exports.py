@@ -2,10 +2,7 @@ import ast
 import os
 from typing import List, Tuple, Optional
 
-from pyspring.cli.core.ui import (
-    print_error, print_info, print_title,
-    print_issue, print_summary
-)
+from pyspring.cli.core.ui.console import print_error, print_info, print_title, print_issue, print_summary
 
 
 def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]:

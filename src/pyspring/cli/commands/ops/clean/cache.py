@@ -5,7 +5,7 @@ import os
 import shutil
 from pathlib import Path
 
-from pyspring.cli.core.ui import print_info, print_success, print_error
+from pyspring.cli.core.ui.console import print_info, print_success, print_error
 
 
 def clean_project_cache(verbose: bool = False):

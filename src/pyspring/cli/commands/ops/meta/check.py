@@ -5,7 +5,7 @@ from typing import List, Type
 
 from pyspring.cli.core.commands.base import BaseCommand, CommandArg
 from pyspring.cli.core.ui.console import print_title, print_success, print_error, print_section, Colors
-from pyspring.cli.core.utils import suppress_logs
+from pyspring.cli.core.utils.logging import suppress_logs
 
 
 class CliCheckCommand(BaseCommand):

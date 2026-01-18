@@ -213,18 +213,19 @@ class ExplicitImportChecker(BaseChecker):
                     self.record_fix(file_path, rep['lineno'], f"{msg} -> Fixed")
                 else:
                     self.add_issue(file_path, rep['lineno'], msg, level='warning')
-        else:
-            # If no replacements found but issues might exist (e.g. only warnings or not found)
-            if not expander.warnings and not expander.replacements:
-                # Check for potentials that failed
-                pass  # Currently visitor doesn't track "failed candidates" explicitly except via warnings
-        
+
             if fix and file_modifications:
                 try:
                     with open(file_path, 'w', encoding='utf-8') as f:
                         f.write('\n'.join(lines))
                 except Exception as e:
                     self.add_issue(file_path, 0, f"Error saving file: {e}", level='error')
+
+        else:
+            # If no replacements found but issues might exist (e.g. only warnings or not found)
+            if not expander.warnings and not expander.replacements:
+                # Check for potentials that failed
+                pass  # Currently visitor doesn't track "failed candidates" explicitly except via warnings
 
         return has_issues
 

@@ -3,7 +3,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from pyspring.cli.core.ui import print_title, print_section, print_error
+from pyspring.cli.core.ui.console import print_title, print_section, print_error
 # Correct import path assuming internal usage
 from ..init.core import create_pyproject_toml
 

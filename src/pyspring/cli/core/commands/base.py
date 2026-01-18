@@ -68,7 +68,7 @@ class BaseCommand(ABC):
     def run(self, args: argparse.Namespace):
         """Main execution logic"""
         if hasattr(self, '_subparsers_action'):
-            from ..ui import print_friendly_subcommand_help
+            from ..ui.help import print_friendly_subcommand_help
             print_friendly_subcommand_help(self._subparsers_action, prog_name=f"pyspring {self.name}")
         else:
             print(f"Command {self.name} not implemented.")
@@ -76,7 +76,7 @@ class BaseCommand(ABC):
     def print_help(self):
         """Print help for this command"""
         if hasattr(self, '_subparsers_action'):
-            from ..ui import print_friendly_subcommand_help
+            from ..ui.help import print_friendly_subcommand_help
             # TODO: Decouple 'pyspring' name
             print_friendly_subcommand_help(self._subparsers_action, prog_name=f"pyspring {self.name}")
 

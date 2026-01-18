@@ -6,10 +6,7 @@ import os
 from collections import defaultdict, deque
 from typing import Dict, Set, Optional
 
-from pyspring.cli.core.ui import (
-    print_title, print_file_header, print_issue, print_summary,
-    print_info, print_warning, print_success
-)
+from pyspring.cli.core.ui.console import print_title, print_file_header, print_issue, print_summary, print_info, print_warning, print_success
 from ....core.utils.filesystem import get_ignore_list
 
 

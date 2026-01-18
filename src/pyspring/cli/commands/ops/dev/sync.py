@@ -6,9 +6,7 @@ Used to synchronize configuration files from the PySpring root directory to the 
 import shutil
 from pathlib import Path
 
-from pyspring.cli.core.ui import (
-    print_title, print_error, print_info, print_issue, print_summary, print_success
-)
+from pyspring.cli.core.ui.console import print_title, print_error, print_info, print_issue, print_summary, print_success
 
 
 def sync_templates(args):

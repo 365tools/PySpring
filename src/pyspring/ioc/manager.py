@@ -179,12 +179,12 @@ class AppContainerManager(ISingletonService):
         logger.debug("🔧 所有服务注册完成")
         return self.container
 
-    def register_service_by_convention(self, service_class: type):
-        """
-        按约定手动注册单一服务（通常用于懒加载）
-        Delegates to the ServiceRegistrar.
-        """
-        self.registrar.register_service(service_class)
+    # def register_service_by_convention(self, service_class: type):
+    #     """
+    #     按约定手动注册单一服务（通常用于懒加载）
+    #     Delegates to the ServiceRegistrar.
+    #     """
+    #     self.registrar.register_service(service_class)
 
     @staticmethod
     def service(service_class: type) -> Any:

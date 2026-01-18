@@ -5,7 +5,7 @@ import ast
 import os
 from typing import Optional, List
 
-from pyspring.cli.core.ui import print_info
+from pyspring.cli.core.ui.console import print_info
 from .base import BaseChecker
 
 

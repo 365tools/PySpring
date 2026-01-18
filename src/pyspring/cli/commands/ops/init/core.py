@@ -11,10 +11,8 @@ from typing import Optional
 from sqlalchemy import create_engine
 from sqlalchemy.schema import CreateTable
 
-from pyspring.cli.core.ui import (
-    Colors, print_header, print_success, print_info,
-    print_warning, print_error, print_title, print_standard_command_help,
-)
+from pyspring.cli.core.ui.console import Colors, print_header, print_success, print_info, print_warning, print_error, print_title
+from pyspring.cli.core.ui.help import print_standard_command_help
 from pyspring.security.authorization.rabc.orm.tables import (
     UserTable, RoleTable, PermissionTable, UserRoleTable,
     RolePermissionTable

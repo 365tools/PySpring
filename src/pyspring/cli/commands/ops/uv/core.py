@@ -6,7 +6,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from pyspring.cli.core.ui import print_section
+from pyspring.cli.core.ui.console import print_section
 
 
 def get_locking_processes(path_str):
