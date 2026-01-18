@@ -13,7 +13,7 @@ from sqlalchemy.schema import CreateTable
 
 from pyspring.cli.core.ui import (
     Colors, print_header, print_success, print_info,
-    print_warning, print_error, print_title
+    print_warning, print_error, print_title, print_standard_command_help,
 )
 from pyspring.security.authorization.rabc.orm.tables import (
     UserTable, RoleTable, PermissionTable, UserRoleTable,
@@ -31,9 +31,9 @@ from .templates import (
 
 def get_template_dir() -> Path:
     """Get template directory"""
-    # From cli/commands/init/core.py up to pyspring/templates
-    # core.py -> init -> commands -> cli -> pyspring
-    return Path(__file__).parent.parent.parent.parent / "templates"
+    # From cli/commands/ops/init/core.py up to pyspring/templates
+    # core.py -> init -> ops -> commands -> cli -> pyspring
+    return Path(__file__).parent.parent.parent.parent.parent / "templates"
 
 
 def get_config_files_from_templates(minimal: bool = False) -> list[tuple[str, str]]:
@@ -453,10 +453,50 @@ def init_project(
     print()
 
 
+def show_init_info():
+    """Show initialization information and usage"""
+    # Check templates
+    checks = []
+    try:
+        tpl_dir = get_template_dir()
+        if tpl_dir.exists():
+            checks.append((f"Templates available at: {tpl_dir}", True))
+        else:
+            checks.append((f"Templates missing at: {tpl_dir}", False))
+    except Exception as e:
+        checks.append((f"Error checking templates: {e}", False))
+
+    print_standard_command_help(
+        title="PySpring Project Initialization",
+        description="Initialize a new PySpring project structure with best practices.\nThis command helps you scaffold the necessary directories and configuration files.",
+        checks=checks,
+        usage=[
+            ("pyspring init <directory>", "Initialize in specific directory"),
+            ("pyspring init .", "Initialize in current directory"),
+        ],
+        options=[
+            ("--minimal", "Create only essential configuration files"),
+            ("--force", "Overwrite existing files"),
+            ("--skip-env", "Skip .env file generation"),
+        ],
+        tips=[
+            "Always specify a target directory to ensure safety.",
+            "Use --minimal for a lightweight setup if you don't need all features."
+        ]
+    )
+
+    print(f"\n{Colors.WARNING}⚠  No target directory specified.{Colors.ENDC}")
+    print("Please specify a directory to start initialization.")
+
+
 def run(args):
     """Run initialization command"""
     # Handle target_dir being None
     target_dir = getattr(args, 'target_dir', None)
+
+    if target_dir is None:
+        show_init_info()
+        return
 
     try:
         init_project(

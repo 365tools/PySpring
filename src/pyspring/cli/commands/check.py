@@ -1,7 +1,9 @@
 """
 PySpring Check Command
 """
-from pyspring.cli.core.ui import print_title, print_success, print_error, print_warning
+from pyspring.cli.core.ui import (
+    print_title, print_error, print_check_summary
+)
 from .ops.check.circular import run_check_circular
 from .ops.check.encoding import run_check_encoding
 from .ops.check.env import run as run_env_check
@@ -79,41 +81,16 @@ def run_all_checks(args, subparsers_action=None):
             print_error(f"Check '{name}' crashed: {e}")
             results.append((name, False))
 
-    print("\n" + "=" * 70)
-    print("CHECK SUMMARY")
-    print("=" * 70)
+    fix_commands = {
+        'encoding': '--fix',
+        'imports-explicit': '--fix',
+        'imports-lift': '--fix',
+        'imports-refactor': '--fix',
+        'imports-validate': '--fix',
+        'references': '--fix'
+    }
 
-    all_passed = True
-    for name, success in results:
-        status = "✅ PASS" if success else "❌ ISSUES"
-        if not success: all_passed = False
-        print(f"{name:<20} : {status}")
-
-    print("-" * 70)
-
-    if all_passed:
-        print_success("All checks passed! Project is healthy.")
-    else:
-        print_warning("Some checks found issues.")
-
-        fixable_commands = {
-            'encoding', 'imports-explicit', 'imports-lift',
-            'imports-refactor', 'imports-validate', 'references'
-        }
-
-        print("\n[Action Required]")
-        for name, success in results:
-            if not success:
-                print(f"\n  • {name} found issues:")
-                print(f"      Check: pyspring check {name}")
-                if name in fixable_commands:
-                    print(f"      Fix:   pyspring check {name} --fix")
-                else:
-                    print(f"      Fix:   Manual resolution required")
-
-    # Add final separator for clean UI
-    print()
-    print("-" * 70)
+    print_check_summary(results, fix_commands)
 
 
 

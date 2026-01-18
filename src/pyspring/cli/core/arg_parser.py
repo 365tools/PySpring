@@ -2,6 +2,8 @@ import argparse
 import re
 import sys
 
+from .ui import print_standard_command_help
+
 
 def print_friendly_subcommand_help(action, prog_name=None):
     """
@@ -13,34 +15,32 @@ def print_friendly_subcommand_help(action, prog_name=None):
     if prog_name is None:
         prog_name = sys.argv[0] if sys.argv else 'pyspring'
 
-    print(f"\n⚠️  Missing command. Please specify one of the following:\n", file=sys.stderr)
-
-    # Get choices and calculate padding
+    # Get choices
     choices = action.choices
     if not choices:
         return
 
-    max_len = max(len(c) for c in choices.keys())
-
-    # Create a lookup for help messages
-    help_lookup = {}
+    # Create subcommands dict
+    subcommands = {}
     if hasattr(action, '_choices_actions'):
         for sub_action in action._choices_actions:
-            help_lookup[sub_action.dest] = sub_action.help
+            subcommands[sub_action.dest] = sub_action.help
 
-    # Print sorted commands
-    for name in sorted(choices.keys()):
-        help_msg = help_lookup.get(name, '')
-        # If help is None, skip or show empty
-        if help_msg is None:
-            help_msg = ""
-        print(f"  ➜ {name:<{max_len}} : {help_msg}", file=sys.stderr)
-
+    # Tips customization
+    tips = []
     if action.dest == 'check_command':
-        print(f"\n💡 Tip: Use --all to run all checks: '{prog_name} check --all'", file=sys.stderr)
-        print(f"        Use '{prog_name} check <command> --help' for details on a specific command.", file=sys.stderr)
+        tips.append(f"Use --all to run all checks: '{prog_name} check --all'")
+        tips.append(f"Use '{prog_name} check <command> --help' for details on a specific command.")
     else:
-        print(f"\n💡 Tip: Use '{prog_name} <command> --help' for details on a specific command.", file=sys.stderr)
+        tips.append(f"Use '{prog_name} <command> --help' for details on a specific command.")
+
+    print_standard_command_help(
+        title=None,
+        description=f"⚠️  Missing command. Please specify one of the following:",
+        usage=[],  # No usage section for this simple error prompt
+        subcommands=subcommands,
+        tips=tips
+    )
 
 
 class FriendlyArgumentParser(argparse.ArgumentParser):
