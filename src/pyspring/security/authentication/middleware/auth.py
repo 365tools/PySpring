@@ -1,6 +1,6 @@
 """
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.security.authentication.services.user.manager import UserManagerService
+from pyspring.security.authentication.services.user.manager import DefaultUserManagerService
 from pyspring.security.authentication.core.chain import AuthenticationChain
 
 全局认证拦截中间件（重构版）
@@ -20,7 +20,7 @@ from pyspring.security.authorization.middleware.role import RoleCheckMiddleware
 from pyspring.security.core.config.loader import SecurityConfigManager
 from ..core.chain import AuthenticationChain
 from ..core.context import AuthContext
-from ..services.user.manager import UserManagerService
+from ..services.user.manager import DefaultUserManagerService
 
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
@@ -70,7 +70,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # 注意: 认证提供者此时尚未初始化，将在应用启动时由 AuthenticationInitializer 加载
 
     @staticmethod
-    def create_error_response(status_code: int, message: str, detail: str = None) -> JSONResponse:
+    def create_error_response(status_code: int, message: str, detail: Optional[str] = None) -> JSONResponse:
         """
         创建统一的错误响应
         
@@ -157,7 +157,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         try:
 
             container = AppContainerManager()
-            user_manager = container.get(UserManagerService)
+            user_manager = container.get(DefaultUserManagerService)
 
             # 从 token 获取用户信息
             token = auth_result.extra_data.get('token') if auth_result.extra_data else None

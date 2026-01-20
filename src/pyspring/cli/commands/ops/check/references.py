@@ -379,7 +379,12 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
         # Fallback to text scan if syntax error prevents parsing
         with open(file_path, 'r', encoding='utf-8') as f:
             lines = f.readlines()
-        existing_imports = {line.strip(): 1 for line in lines if line.strip().startswith('import ') or line.strip().startswith('from ')}
+        # Map import content to line number (1-based)
+        existing_imports = {
+            line.strip(): idx + 1
+            for idx, line in enumerate(lines)
+            if line.strip().startswith('import ') or line.strip().startswith('from ')
+        }
 
     imports_to_add = []
     lines_to_remove_candidates = []  # List of (lineno, import_string)
@@ -424,7 +429,8 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
             indices_to_drop.add(lineno - 1)
 
     if indices_to_drop:
-        lines = [line for i, line in enumerate(lines) if i not in indices_to_drop]
+        # Use simple variable names to avoid any potential scope type confusion
+        lines = [ln_content for idx, ln_content in enumerate(lines) if idx not in indices_to_drop]
 
     # logic to insert imports
     # 1. Find the docstring end
@@ -432,19 +438,22 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
     if len(lines) > 0 and (lines[0].startswith('"""') or lines[0].startswith("'''")):
         # Simple heuristic to skip docstring
         in_docstring = True
-        for i, line in enumerate(lines):
-            if i == 0: continue
-            if '"""' in line or "'''" in line:
-                insert_idx = i + 1
+        for d_idx, d_line in enumerate(lines):
+            if d_idx == 0: continue
+            if '"""' in d_line or "'''" in d_line:
+                insert_idx = d_idx + 1
                 break
 
     # Sort imports to be nice
     imports_to_add.sort()
 
-    new_lines = lines[:insert_idx] + imports_to_add + lines[insert_idx:]
+    # Explicit cast to List[str] to satisfy type checker
+    prefix_lines = lines[:insert_idx]
+    suffix_lines = lines[insert_idx:]
+    output_lines: List[str] = prefix_lines + imports_to_add + suffix_lines  # type: ignore
 
     with open(file_path, 'w', encoding='utf-8') as f:
-        f.writelines(new_lines)
+        f.writelines(output_lines)
 
     return len(imports_to_add)
 

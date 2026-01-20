@@ -23,7 +23,7 @@ from .chain import AuthenticationChain
 from .factory import AuthProviderFactory
 from ..interfaces.validator import ISecurityContextValidator
 from ..services.core.context import SecurityContextManagerService
-from ..services.session.token import TokenManagerService
+from ..services.session.token import DefaultTokenManagerService
 
 
 class AuthenticationInitializer(IStartupInitializer, ISingletonService):
@@ -64,7 +64,7 @@ class AuthenticationInitializer(IStartupInitializer, ISingletonService):
             # 获取依赖服务
 
             container = AppContainerManager()
-            token_manager = container.get(TokenManagerService)
+            token_manager = container.get(DefaultTokenManagerService)
 
             # 初始化认证提供者链
             # 注意: AuthProviderFactoryHelper 需要在 factory.py 中实现或在此处实现逻辑

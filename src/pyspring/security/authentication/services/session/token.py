@@ -6,20 +6,20 @@ from jose import JWTError, jwt
 from sqlalchemy import delete
 from sqlalchemy import select, and_
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.core.services.system import SystemService
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.core.interfaces import ITokenService
 from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
 from pyspring.security.authorization.rabc.orm.token_tables import TokenBlacklistTable, RefreshTokenTable
 from pyspring.security.authorization.rabc.schema.constant import RevokeTokenReason
 
 
-class TokenManagerService(ISingletonService):
+class DefaultTokenManagerService(ITokenService):
     """
-    Token 管理服务
+    默认 Token 管理服务
     
     负责 JWT Token 的生成、验证、刷新和撤销管理
     
@@ -73,7 +73,7 @@ class TokenManagerService(ISingletonService):
         if self.jwt_encryption.is_enabled():
             logger.info("🔐 JWT 加密已启用 - Token 将被加密返回")
 
-        logger.info("🔧 TokenManagerService 初始化完成 - 两级架构(懒加载): Redis + 数据库")
+        logger.info("🔧 DefaultTokenManagerService 初始化完成 - 两级架构(懒加载): Redis + 数据库")
 
     def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
         """

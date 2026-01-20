@@ -117,7 +117,8 @@ class StaticImportChecker(BaseChecker):
                 lines = f.readlines()
             tree = ast.parse("".join(lines), filename=file_path)
         except SyntaxError as e:
-            self.add_issue(file_path, e.lineno, f"Syntax Error: {e.msg}")
+            lineno = e.lineno if e.lineno is not None else 0
+            self.add_issue(file_path, lineno, f"Syntax Error: {e.msg}")
             return True
         except Exception:
             return False

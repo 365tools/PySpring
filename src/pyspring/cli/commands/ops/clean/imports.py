@@ -88,24 +88,25 @@ def remove_unused_imports_in_file(file_path: str, verbose: bool = False) -> int:
     with open(file_path, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
-    new_lines = []
+    output_lines: List[str] = []
     removed_count = 0
 
     # Convert 1-based lineno to 0-based index
     unused_indices = {l - 1 for l in unused_lines}
 
-    for i, line in enumerate(lines):
-        if i in unused_indices:
+    for idx, content in enumerate(lines):
+        if idx in unused_indices:
             removed_count += 1
             if not verbose:
                 # If not verbose, we didn't print issues above, so maybe we should?
                 # But standard 'clean' might be quieter than 'check'.
                 pass
         else:
-            new_lines.append(line)
+            # Type safe append
+            output_lines.append(str(content))
 
     with open(file_path, 'w', encoding='utf-8') as f:
-        f.writelines(new_lines)
+        f.writelines(output_lines)
 
     return removed_count
 

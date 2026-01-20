@@ -45,7 +45,7 @@ def _json(result: HttpResponse, status_code: int | None = None, headers: Optiona
         content.pop("code", None)
 
     return JSONResponse(
-        status_code=final_status,
+        status_code=final_status or 200,
         content=content,
         headers=headers,
     )

@@ -1,4 +1,4 @@
-from typing import Optional, Type
+from typing import Optional, Type, Any
 
 
 def component(cls: Optional[Type] = None, *, name: Optional[str] = None, singleton: bool = True):
@@ -28,9 +28,60 @@ def repository(cls: Optional[Type] = None, *, name: Optional[str] = None):
 
 
 def bean(cls: Optional[Type] = None, *, name: Optional[str] = None):
-    """Alias for Factory-like components (Non-singleton/Prototype by default is not standard Spring but often used for factories. 
-    However, Spring Beans are singletons by default. Here we use it for whatever user specifies)"""
-    return component(cls, name=name, singleton=True)
+    """
+    Mark a class or method as a Bean.
+    
+    Usage:
+    @Bean
+    class MyService: ...
+    
+    @Bean
+    def my_bean(self): ...
+    """
+
+    def wrapper(target):
+        if hasattr(target, "__call__") and not isinstance(target, type):
+            # It's a method/function
+            setattr(target, "__pyspring_bean__", True)
+            setattr(target, "__pyspring_bean_name__", name)
+        else:
+            # It's a class
+            setattr(target, "__pyspring_component__", True)
+            setattr(target, "__pyspring_name__", name)
+            setattr(target, "__pyspring_singleton__", True)
+        return target
+
+    if cls is None:
+        return wrapper
+    return wrapper(cls)
+
+
+def configuration(cls: Optional[Type] = None):
+    """
+    Mark a class as a Configuration source.
+    """
+
+    def wrapper(target_cls):
+        setattr(target_cls, "__pyspring_component__", True)
+        setattr(target_cls, "__pyspring_configuration__", True)
+        setattr(target_cls, "__pyspring_singleton__", True)
+        return target_cls
+
+    if cls is None:
+        return wrapper
+    return wrapper(cls)
+
+
+def conditional_on_missing_bean(annotation: Any):
+    """
+    Register the bean only if the specified class/interface is not already registered.
+    """
+
+    def wrapper(f):
+        setattr(f, "__pyspring_conditional_on_missing_bean__", annotation)
+        return f
+
+    return wrapper
 
 
 def component_scan(packages: list[str]):
@@ -56,9 +107,11 @@ Component = component
 Service = service
 Repository = repository
 Bean = bean
+Configuration = configuration
+ConditionalOnMissingBean = conditional_on_missing_bean
 ComponentScan = component_scan
 
 __all__ = [
-    'component', 'service', 'repository', 'bean', 'component_scan',
-    'Component', 'Service', 'Repository', 'Bean', 'ComponentScan',
+    'component', 'service', 'repository', 'bean', 'configuration', 'conditional_on_missing_bean', 'component_scan',
+    'Component', 'Service', 'Repository', 'Bean', 'Configuration', 'ConditionalOnMissingBean', 'ComponentScan',
 ]

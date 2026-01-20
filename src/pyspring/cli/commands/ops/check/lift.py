@@ -141,7 +141,7 @@ class ImportLifter:
         target = f"{base}.{relative_name}"
         return self.find_internal_module(target)
 
-    def find_internal_module(self, name: str) -> Optional[str]:
+    def find_internal_module(self, name: Optional[str]) -> Optional[str]:
         if not name: return None
         if name in self.files: return name
         return None

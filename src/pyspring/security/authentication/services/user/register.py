@@ -1,41 +1,45 @@
+from typing import Any
+
 from fastapi import HTTPException, status
 from fastapi_users.password import PasswordHelper
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authorization.rabc.orm.tables import UserTable, RoleTable, UserRoleTable, PermissionTable, RolePermissionTable
+from pyspring.security.authentication.core.component import SecurityEntityConfiguration
+from pyspring.security.authentication.core.interfaces import IRegisterService
 from pyspring.security.authorization.rabc.schema.requests import UserInfo, User, Role, Permission
 
 
-class RegisterService(ISingletonService):
+class DefaultRegisterService(IRegisterService):
     """
-    用户注册服务
+    默认用户注册服务
     
     负责用户注册、角色分配等功能
     """
 
-    def __init__(self, db: DBManagerService):
+    def __init__(self, db: DBManagerService, component: SecurityEntityConfiguration):
         """
-        初始化注册服。
+        初始化注册服务
         
         Args:
-            db: 数据库管理服。
+            db: 数据库管理服务
+            component: 安全组件配置
         """
         self.db = db
+        self.component = component
         self.password_helper = PasswordHelper()
 
     async def register(self, request: UserInfo) -> UserInfo:
         """
-        注册新用。
+        注册新用户
         
         Args:
             request: 用户注册信息(包含用户、角色等)
 
         Returns:
-            创建的完整用户信。
+            创建的完整用户信息
 
         Raises:
             HTTPException: 用户已存在或其他错误
@@ -48,7 +52,7 @@ class RegisterService(ISingletonService):
                 # 2. 创建用户
                 db_user = await self._create_user(session, request.user)
 
-                # 3. 分配角色（如果有。
+                # 3. 分配角色（如果有）
                 if request.roles:
                     await self._assign_roles(session, db_user.id, request.roles)
 
@@ -58,7 +62,7 @@ class RegisterService(ISingletonService):
 
                 logger.info(f"✅ 用户注册成功: {db_user.email} (ID: {db_user.id})")
 
-                # 6. 构造返回结。
+                # 6. 构造返回结果
                 return await self._build_user_info(session, db_user)
 
         except HTTPException:
@@ -70,20 +74,19 @@ class RegisterService(ISingletonService):
                 detail=f"注册失败: {str(e)}"
             )
 
-    @staticmethod
-    async def _check_user_exists(session: AsyncSession, user: User) -> None:
+    async def _check_user_exists(self, session: AsyncSession, user: User) -> None:
         """
         检查用户是否已存在
         
         Args:
-            session: 数据库会。
+            session: 数据库会话
             user: 用户信息
             
         Raises:
-            HTTPException: 用户已存。
+            HTTPException: 用户已存在
         """
-        # 检查邮箱是否已被注。
-        stmt = select(UserTable).where(UserTable.email == user.email)
+        # 检查邮箱是否已被注册
+        stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.email == user.email)
         result = await session.execute(stmt)
         if result.scalar_one_or_none():
             raise HTTPException(
@@ -91,8 +94,8 @@ class RegisterService(ISingletonService):
                 detail=f"邮箱 {user.email} 已被注册"
             )
 
-        # 检。user_id 是否已被使用
-        stmt = select(UserTable).where(UserTable.user_id == user.user_id)
+        # 检查 user_id 是否已被使用
+        stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == user.user_id)
         result = await session.execute(stmt)
         if result.scalar_one_or_none():
             raise HTTPException(
@@ -100,18 +103,17 @@ class RegisterService(ISingletonService):
                 detail=f"用户ID {user.user_id} 已被使用"
             )
 
-    async def _create_user(self, session: AsyncSession, user: User) -> UserTable:
+    async def _create_user(self, session: AsyncSession, user: User) -> Any:
         """
         创建用户
         
         Args:
-            session: 数据库会。
+            session: 数据库会话
             user: 用户信息
             
         Returns:
             创建的用户数据库对象
         """
-        # 提取并加密密。
         if not user.password:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -120,8 +122,8 @@ class RegisterService(ISingletonService):
 
         hashed_password = self.password_helper.hash(user.password)
 
-        # 创建用户数据库对。
-        db_user = UserTable(
+        # 创建用户数据库对象
+        db_user = self.component.user_orm_model(
             user_id=user.user_id,
             first_name=user.first_name,
             last_name=user.last_name,
@@ -134,19 +136,18 @@ class RegisterService(ISingletonService):
 
         return db_user
 
-    @staticmethod
-    async def _assign_roles(session: AsyncSession, user_db_id: int, roles: list[Role]) -> None:
+    async def _assign_roles(self, session: AsyncSession, user_db_id: int, roles: list[Role]) -> None:
         """
-        为用户分配角。
+        为用户分配角色
         
         Args:
-            session: 数据库会。
+            session: 数据库会话
             user_db_id: 用户数据库ID
             roles: 角色列表
         """
         for role in roles:
-            # 检查角色是否存。
-            stmt = select(RoleTable).where(RoleTable.code == role.code)
+            # 检查角色是否存在
+            stmt = select(self.component.role_orm_model).where(self.component.role_orm_model.code == role.code)
             result = await session.execute(stmt)
             db_role = result.scalar_one_or_none()
 
@@ -155,9 +156,9 @@ class RegisterService(ISingletonService):
                 continue
 
             # 检查是否已分配
-            stmt = select(UserRoleTable).where(
-                UserRoleTable.user_id == user_db_id,
-                UserRoleTable.role_id == db_role.id
+            stmt = select(self.component.user_role_orm_model).where(
+                self.component.user_role_orm_model.user_id == user_db_id,
+                self.component.user_role_orm_model.role_id == db_role.id
             )
             result = await session.execute(stmt)
             if result.scalar_one_or_none():
@@ -165,39 +166,38 @@ class RegisterService(ISingletonService):
                 continue
 
             # 创建用户角色关联
-            user_role = UserRoleTable(
+            user_role = self.component.user_role_orm_model(
                 user_id=user_db_id,
                 role_id=db_role.id
             )
             session.add(user_role)
             logger.info(f"✅ 为用户分配角色: {role.code}")
 
-    @staticmethod
-    async def _build_user_info(session: AsyncSession, db_user: UserTable) -> UserInfo:
+    async def _build_user_info(self, session: AsyncSession, db_user: Any) -> UserInfo:
         """
         构造完整的用户信息
         
         Args:
-            session: 数据库会。
-            db_user: 用户数据库对。
+            session: 数据库会话
+            db_user: 用户数据库对象
             
         Returns:
-            完整的用户信。
+            完整的用户信息
         """
         # 构造用户基本信息（不返回密码）
         user = User(
-            id=db_user.id,
-            user_id=db_user.user_id,
-            first_name=db_user.first_name,
-            last_name=db_user.last_name,
-            email=db_user.email,
+            id=getattr(db_user, 'id', None),
+            user_id=getattr(db_user, 'user_id', None),
+            first_name=getattr(db_user, 'first_name', None),
+            last_name=getattr(db_user, 'last_name', None),
+            email=getattr(db_user, 'email', None),
             # password=None,
         )
 
         # 查询用户角色
-        stmt = select(RoleTable).join(
-            UserRoleTable, UserRoleTable.role_id == RoleTable.id
-        ).where(UserRoleTable.user_id == db_user.id)
+        stmt = select(self.component.role_orm_model).join(
+            self.component.user_role_orm_model, self.component.user_role_orm_model.role_id == self.component.role_orm_model.id
+        ).where(self.component.user_role_orm_model.user_id == getattr(db_user, 'id', None))
         result = await session.execute(stmt)
         roles = [Role.model_validate(role) for role in result.scalars().all()]
 
@@ -207,10 +207,10 @@ class RegisterService(ISingletonService):
             # 获取所有角色的 role_code
             role_codes = [role.code for role in roles]
 
-            # 查询这些角色关联的所有权。
-            stmt = select(PermissionTable).join(
-                RolePermissionTable, RolePermissionTable.permission_code == PermissionTable.code
-            ).where(RolePermissionTable.role_code.in_(role_codes)).distinct()
+            # 查询这些角色关联的所有权限
+            stmt = select(self.component.permission_orm_model).join(
+                self.component.role_permission_orm_model, self.component.role_permission_orm_model.permission_code == self.component.permission_orm_model.code
+            ).where(self.component.role_permission_orm_model.role_code.in_(role_codes)).distinct()
 
             result = await session.execute(stmt)
             permissions = [Permission.model_validate(perm) for perm in result.scalars().all()]

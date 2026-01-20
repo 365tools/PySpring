@@ -95,16 +95,17 @@ class CircularChecker(BaseChecker):
                 for alias in node.names:
                     self.dependencies[current_module].add(alias.name)
             elif isinstance(node, ast.ImportFrom):
+                target: Optional[str] = None
                 if node.module:
                     if node.level == 0:
                         target = node.module
                     else:
                         target = self._resolve_relative_import(current_module, node.module, node.level)
-                    if target:
+                    if target and isinstance(target, str):
                         self.dependencies[current_module].add(target)
                 else:
                     target = self._resolve_relative_import(current_module, None, node.level)
-                    if target:
+                    if target and isinstance(target, str):
                         for alias in node.names:
                             self.dependencies[current_module].add(f"{target}.{alias.name}")
 

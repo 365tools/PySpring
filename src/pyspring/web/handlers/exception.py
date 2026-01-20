@@ -50,7 +50,7 @@ class GlobalExceptionHandler:
         try:
             tb_text = "".join(traceback.TracebackException.from_exception(e).format())
         except Exception as e2:
-            logger.error(e2)
+            logger.error(str(e2))
             tb_lines = traceback.format_exception(exc_type, exc_value, exc_traceback)
             tb_text = "".join(tb_lines) if tb_lines else ""
 
@@ -91,7 +91,7 @@ class GlobalExceptionHandler:
             if project_frames:
                 error_info["traceback_summary"] = " -> ".join(project_frames[-3:])
         except Exception as e3:
-            logger.error(e3)
+            logger.error(str(e3))
             pass
 
         # 添加上下文信息

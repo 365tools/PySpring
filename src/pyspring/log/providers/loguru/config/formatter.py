@@ -362,10 +362,15 @@ class LoguruConfig:
                 except ValueError:
                     level = record.levelno
 
-                frame, depth = sys._getframe(6), 6
+                # Use optional frame handling
+                frame = sys._getframe(6)
+                depth = 6
                 while frame and frame.f_code.co_filename == logging.__file__:
-                    frame = frame.f_back
-                    depth += 1
+                    if frame.f_back:
+                        frame = frame.f_back
+                        depth += 1
+                    else:
+                        break
 
                 logger.opt(depth=depth, exception=record.exc_info).log(
                     level, record.getMessage()
@@ -424,9 +429,13 @@ class LoguruConfig:
         file_path_obj = Path(file_path)
         if file_path_obj.is_absolute():
             return file_path
+
+        # Ensure project root is detected
+        root = cls._detect_project_root()
+        
         # 对于相对路径，直接基于项目根目录拼接，避免重复'logs/logs'
         # 示例：file_path='logs/dev.log' => '<project_root>/logs/dev.log'
-        resolved = cls.project_root / file_path
+        resolved = root / file_path
         resolved.parent.mkdir(exist_ok=True, parents=True)
         return str(resolved)
 

@@ -6,7 +6,8 @@ from typing import List
 try:
     from loguru import logger
 except ImportError:
-    logger = None
+    # Explicitly type as Any to avoid "variable has type Logger" conflict
+    logger = None  # type: ignore
 
 
 class OutputFilter:

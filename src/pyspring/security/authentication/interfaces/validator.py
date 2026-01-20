@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 
 @dataclass
 class SecurityValidatorResult:
     """单个验证器的执行结果"""
     success: bool = True
-    reason: str = None
+    reason: Optional[str] = None
     claims: Dict[str, Any] = field(default_factory=dict)
     warnings: List[str] = field(default_factory=list)
 

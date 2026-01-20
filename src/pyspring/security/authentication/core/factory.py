@@ -14,7 +14,7 @@ from pyspring.security.core.config.loader import SecurityConfigManager
 from .chain import AuthenticationChain
 from ..providers.base import BaseAuthenticationProvider
 from ..providers.jwt import JWTAuthenticationProvider
-from ..services.session.token import TokenManagerService
+from ..services.session.token import DefaultTokenManagerService
 
 
 class AuthProviderFactory:
@@ -44,7 +44,7 @@ class AuthProviderFactory:
     def create_provider(
             cls,
             provider_config: dict,
-            token_manager: Optional[TokenManagerService] = None,
+            token_manager: Optional[DefaultTokenManagerService] = None,
             **kwargs
     ) -> BaseAuthenticationProvider:
         """
@@ -73,19 +73,19 @@ class AuthProviderFactory:
         if provider_type == "JWTAuthProvider":
             if token_manager is None:
                 raise ValueError("JWTAuthProvider 需要 TokenManagerService 依赖")
-            return provider_class(provider_name, provider_config, token_manager)
+            return provider_class(str(provider_name), provider_config, token_manager)
 
         # 其他提供者类型的创建逻辑
         # elif provider_type == "APIKeyAuthProvider":
         #     return provider_class(provider_name, provider_config, api_key_service)
 
         # 默认创建方式
-        return provider_class(provider_name, provider_config)
+        return provider_class(str(provider_name), provider_config)
 
     @classmethod
     def create_providers_from_config(
             cls,
-            token_manager: Optional[TokenManagerService] = None,
+            token_manager: Optional[DefaultTokenManagerService] = None,
             **kwargs
     ) -> List[BaseAuthenticationProvider]:
         """
@@ -145,7 +145,7 @@ class AuthProviderFactoryHelper:
 
     @staticmethod
     def initialize_authentication_system(
-            token_manager: TokenManagerService,
+            token_manager: DefaultTokenManagerService,
             **kwargs
     ) -> None:
         """

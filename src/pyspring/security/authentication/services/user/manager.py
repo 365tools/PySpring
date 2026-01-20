@@ -6,32 +6,33 @@ from fastapi_users.password import PasswordHelper
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.core.component import SecurityEntityConfiguration
 from pyspring.security.authentication.core.context import AuthContext
-from pyspring.security.authorization.rabc.orm.tables import UserTable, RoleTable, UserRoleTable
-from pyspring.security.authorization.rabc.schema.requests import UserInfo, User, Role
-from ..session.token import TokenManagerService
+from pyspring.security.authentication.core.interfaces import IUserManagerService, ITokenService
+from pyspring.security.authorization.rabc.schema.requests import UserInfo, User, Role, Permission
 
 
-class UserManagerService(ISingletonService):
+class DefaultUserManagerService(IUserManagerService):
     """
-    用户管理服务
+    默认用户管理服务
     
     负责用户信息的查询、更新、删除等操作
     """
 
-    def __init__(self, db: DBManagerService, token_manager: TokenManagerService):
+    def __init__(self, db: DBManagerService, token_manager: ITokenService, component: SecurityEntityConfiguration):
         """
         初始化用户管理服务
         
         Args:
             db: 数据库管理服务
             token_manager: Token 管理服务(可选, 用于获取当前用户)
+            component: 安全组件配置
         """
         self.db = db
         self.token_manager = token_manager
+        self.component = component
         self.password_helper = PasswordHelper()
 
     async def get_user_by_id(self, user_id: int) -> Optional[UserInfo]:
@@ -47,7 +48,7 @@ class UserManagerService(ISingletonService):
         try:
             async with await self.db.get_session() as session:
                 # 查询用户基本信息
-                stmt = select(UserTable).where(UserTable.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -72,7 +73,7 @@ class UserManagerService(ISingletonService):
         """
         try:
             async with await self.db.get_session() as session:
-                stmt = select(UserTable).where(UserTable.email == email)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.email == email)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -84,7 +85,7 @@ class UserManagerService(ISingletonService):
             logger.error(f"🚨 获取用户失败: {e}")
             return None
 
-    async def get_current_user(self, token: str = None) -> Optional[UserInfo]:
+    async def get_current_user(self, token: Optional[str] = None) -> Optional[UserInfo]:
         """
         获取当前用户信息（支持两种方式）
         
@@ -145,7 +146,7 @@ class UserManagerService(ISingletonService):
                 )
 
             # 获取用户ID
-            user_id = int(payload.get("sub"))
+            user_id = int(str(payload.get("sub") or 0))
 
             # 从数据库查询用户
             user_info = await self.get_user_by_id(user_id)
@@ -182,7 +183,7 @@ class UserManagerService(ISingletonService):
         """
         try:
             async with await self.db.get_session() as session:
-                stmt = select(UserTable).offset(skip).limit(limit)
+                stmt = select(self.component.user_orm_model).offset(skip).limit(limit)
                 result = await session.execute(stmt)
                 users = result.scalars().all()
 
@@ -214,7 +215,7 @@ class UserManagerService(ISingletonService):
         try:
             async with await self.db.get_session() as session:
                 # 1. 检查用户是否存在
-                stmt = select(UserTable).where(UserTable.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -268,7 +269,7 @@ class UserManagerService(ISingletonService):
         try:
             async with await self.db.get_session() as session:
                 # 查询用户
-                stmt = select(UserTable).where(UserTable.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -324,7 +325,7 @@ class UserManagerService(ISingletonService):
         try:
             async with await self.db.get_session() as session:
                 # 检查用户是否存在
-                stmt = select(UserTable).where(UserTable.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -367,7 +368,7 @@ class UserManagerService(ISingletonService):
         try:
             async with await self.db.get_session() as session:
                 # 查询用户
-                stmt = select(UserTable).where(UserTable.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -378,7 +379,7 @@ class UserManagerService(ISingletonService):
                     )
 
                 # 删除用户角色关联
-                stmt = delete(UserRoleTable).where(UserRoleTable.user_id == user_id)
+                stmt = delete(self.component.user_role_orm_model).where(self.component.user_role_orm_model.user_id == user_id)
                 await session.execute(stmt)
 
                 # 删除用户
@@ -399,47 +400,62 @@ class UserManagerService(ISingletonService):
 
     # ==================== 私有辅助方法 ====================
 
-    @staticmethod
-    async def _build_user_info(session: AsyncSession, db_user: UserTable) -> UserInfo:
+    async def _build_user_info(self, session: AsyncSession, db_user: Any) -> UserInfo:
         """
         构造完整的用户信息
         
         Args:
-            session: 数据库会。
-            db_user: 用户数据库对。
+            session: 数据库会话
+            db_user: 用户数据库对象 (Any to support custom models)
             
         Returns:
-            完整的用户信。
+            完整的用户信息
         """
+
         # 构造用户基本信息（不返回密码）
         user = User(
             id=db_user.id,
-            user_id=db_user.user_id,
-            first_name=db_user.first_name,
-            last_name=db_user.last_name,
-            email=db_user.email,
+            user_id=getattr(db_user, 'user_id', None),
+            first_name=getattr(db_user, 'first_name', None),
+            last_name=getattr(db_user, 'last_name', None),
+            email=getattr(db_user, 'email', None),
+            is_active=getattr(db_user, 'is_active', True),
         )
 
         # 查询用户角色
-        stmt = select(RoleTable).join(
-            UserRoleTable, UserRoleTable.role_id == RoleTable.id
-        ).where(UserRoleTable.user_id == db_user.id)
+        stmt = select(self.component.role_orm_model).join(
+            self.component.user_role_orm_model, self.component.user_role_orm_model.role_id == self.component.role_orm_model.id
+        ).where(self.component.user_role_orm_model.user_id == db_user.id)
         result = await session.execute(stmt)
         roles = [Role.model_validate(role) for role in result.scalars().all()]
 
+        # 查询用户权限(通过角色)
+        permissions = []
+        if roles:
+            # 获取所有角色的 role_code
+            role_codes = [role.code for role in roles]
+
+            # 查询这些角色关联的所有权限
+            stmt = select(self.component.permission_orm_model).join(
+                self.component.role_permission_orm_model, self.component.role_permission_orm_model.permission_code == self.component.permission_orm_model.code
+            ).where(self.component.role_permission_orm_model.role_code.in_(role_codes)).distinct()
+
+            result = await session.execute(stmt)
+            permissions = [Permission.model_validate(perm) for perm in result.scalars().all()]
+
         return UserInfo(
             user=user,
-            roles=roles if roles else None,
-            permissions=None
+            roles=roles or None,
+            permissions=permissions or None
         )
 
-    async def _update_user_basic_info(self, session: AsyncSession, db_user: UserTable, user: User) -> None:
+    async def _update_user_basic_info(self, session: AsyncSession, db_user: Any, user: User) -> None:
         """
         更新用户基本信息
         
         Args:
-            session: 数据库会。
-            db_user: 用户数据库对。
+            session: 数据库会话
+            db_user: 用户数据库对象
             user: 新的用户信息
             
         Raises:
@@ -448,9 +464,9 @@ class UserManagerService(ISingletonService):
         # 只更新明确设置的字段
         update_fields = user.model_dump(exclude_unset=True, exclude={'id'})
 
-        # 如果要更新邮箱，检查邮箱是否已存在
+        # 如果更新了邮箱，检查唯一性
         if 'email' in update_fields and update_fields['email'] != db_user.email:
-            stmt = select(UserTable).where(UserTable.email == update_fields['email'])
+            stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.email == update_fields['email'])
             result = await session.execute(stmt)
             existing_user = result.scalar_one_or_none()
 
@@ -474,23 +490,23 @@ class UserManagerService(ISingletonService):
         db_user.modified_time = datetime.now(UTC)
 
     @staticmethod
-    async def _update_user_roles(session: AsyncSession, user_id: int, roles: List[Role]) -> None:
+    async def _update_user_roles(self, session: Any, user_id: int, roles: List[Role]) -> None:
         """
         更新用户角色（替换所有角色）
         
         Args:
-            session: 数据库会。
+            session: 数据库会话
             user_id: 用户数据库ID
             roles: 新的角色列表
         """
         # 删除现有角色关联
-        stmt = delete(UserRoleTable).where(UserRoleTable.user_id == user_id)
+        stmt = delete(self.component.user_role_orm_model).where(self.component.user_role_orm_model.user_id == user_id)
         await session.execute(stmt)
 
-        # 添加新角。
+        # 添加新角色
         for role in roles:
             # 查找角色
-            stmt = select(RoleTable).where(RoleTable.code == role.code)
+            stmt = select(self.component.role_orm_model).where(self.component.role_orm_model.code == role.code)
             result = await session.execute(stmt)
             db_role = result.scalar_one_or_none()
 
@@ -499,5 +515,5 @@ class UserManagerService(ISingletonService):
                 continue
 
             # 创建关联
-            user_role = UserRoleTable(user_id=user_id, role_id=db_role.id)
+            user_role = self.component.user_role_orm_model(user_id=user_id, role_id=db_role.id)
             session.add(user_role)

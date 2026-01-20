@@ -96,6 +96,11 @@ class DynamicContainer:
         """获取服务的 Provider"""
         return getattr(self.container, name)
 
+    def bind_provider(self, name, provider):
+        """直接绑定 Provider 对象"""
+        setattr(self.container, name, provider)
+        self._bindings[name] = provider
+
     def get(self, name):
         """获取服务实例"""
         provider = getattr(self.container, name)

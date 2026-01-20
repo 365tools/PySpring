@@ -28,6 +28,8 @@ def test_singleton_interface_definition():
         pytest.fail(f"Could not find ISingleton.py at {singleton_path}")
 
     spec = importlib.util.spec_from_file_location("ISingletonService", singleton_path)
+    if not spec or not spec.loader:
+        pytest.fail("Could not create module spec")
     singleton_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(singleton_module)
     ISingletonService = singleton_module.ISingletonService

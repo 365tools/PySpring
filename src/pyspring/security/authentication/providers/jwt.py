@@ -8,13 +8,13 @@ from fastapi import Request
 
 from pyspring.log.instance import logger
 from .base import BaseAuthenticationProvider, AuthenticationResult
-from ..services.session.token import TokenManagerService
+from ..services.session.token import DefaultTokenManagerService
 
 
 class JWTAuthenticationProvider(BaseAuthenticationProvider):
     """JWT Token 认证提供者"""
 
-    def __init__(self, name: str, config: dict, token_manager: TokenManagerService):
+    def __init__(self, name: str, config: dict, token_manager: DefaultTokenManagerService):
         """
         初始化 JWT 认证提供者
         

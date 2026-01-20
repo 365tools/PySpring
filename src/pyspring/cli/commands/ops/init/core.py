@@ -159,7 +159,8 @@ def create_database_scripts(target_dir: Path):
 
         for table in [UserTable, RoleTable, PermissionTable, UserRoleTable,
                       RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
-            create_table = CreateTable(table.__table__, if_not_exists=True)
+            # Explicitly cast to sqlalchemy.sql.schema.Table to satisfy type checker
+            create_table = CreateTable(table.__table__, if_not_exists=True)  # type: ignore
             pg_scripts.append(str(create_table.compile(dialect=pg_engine.dialect)) + ';')
 
         # SQLite script generation
@@ -168,7 +169,7 @@ def create_database_scripts(target_dir: Path):
 
         for table in [UserTable, RoleTable, PermissionTable, UserRoleTable,
                       RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
-            create_table = CreateTable(table.__table__, if_not_exists=True)
+            create_table = CreateTable(table.__table__, if_not_exists=True)  # type: ignore
             sqlite_scripts.append(str(create_table.compile(dialect=sqlite_engine.dialect)) + ';')
 
         print_success("SQL scripts generated from ORM models")

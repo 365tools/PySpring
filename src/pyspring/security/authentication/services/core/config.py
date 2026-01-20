@@ -8,15 +8,17 @@ from sqlalchemy import inspect, text
 
 注意: 数据库引擎和会话管理统一由 DBManagerService 负责
 """
-import inspect
-
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.core.services.system import SystemService
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.repositories.db.models.common.define import Base
+from pyspring.security.core.config.loader import SecurityConfigManager
+
+
+# 静态导入默认表
 
 
 # ==================== 认证配置服务 ====================
@@ -28,23 +30,18 @@ class AuthConfigService(ISingletonService):
     管理认证相关的配置和依赖
     """
 
-    def __init__(self, db_manager: DBManagerService, system_service: SystemService):
+    def __init__(self, db_manager: DBManagerService, system_service: SystemService, security_config: SecurityConfigManager):
         """
         初始化认证配置服务
         
         Args:
             db_manager: 数据库管理服务
             system_service: 系统服务
+            security_config: 安全配置管理器
         """
         self.db_manager = db_manager
         self.system_service = system_service
-
-        # 安全检查: 警告默认密钥
-        if self.system_service.get().authentication.jwt.secret_key == "CHANGE_THIS_TO_A_RANDOM_SECRET_KEY_IN_PRODUCTION":
-            logger.warning(
-                "⚠️  使用默认SECRET_KEY! 生产环境必须在.env中设置AUTH_SECRET_KEY. "
-                "可使用 python -c 'import secrets; print(secrets.token_urlsafe(32))' 生成"
-            )
+        self.security_config = security_config
 
     async def init_tables(self) -> bool:
         """创建数据库表(如果表已存在且可用则跳过, 不存在则创建, 存在但不可用则抛异常)"""

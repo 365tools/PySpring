@@ -1,6 +1,6 @@
 """
 from pyspring.core.services.system import SystemService
-from pyspring.security.authentication.services.session.token import TokenManagerService
+from pyspring.security.authentication.services.session.token import DefaultTokenManagerService
 
 缓存关闭处理器
 
@@ -9,7 +9,7 @@ from pyspring.security.authentication.services.session.token import TokenManager
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.core.services.system import SystemService
 from pyspring.log.instance import logger
-from pyspring.security.authentication.services.session.token import TokenManagerService
+from pyspring.security.authentication.services.session.token import DefaultTokenManagerService
 from ..manager import CacheManagerService
 
 
@@ -39,7 +39,7 @@ class CacheShutdownHandler(IShutdownHandler):
         try:
             # ✅ 1. 取消 TokenManagerService 的后台任务（如果存在）
             try:
-                await TokenManagerService.cancel_background_tasks()
+                await DefaultTokenManagerService.cancel_background_tasks()
             except Exception as e:
                 logger.debug(f"⏭️  取消 Token 后台任务时出现异常（可能未启用）: {e}")
 

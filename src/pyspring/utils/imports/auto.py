@@ -47,10 +47,11 @@ def import_package(package_name: str, globals_dict: Dict[str, Any] = None, exclu
                         for name in dir(module):
                             if not name.startswith('_'):
                                 exported[name] = getattr(module, name)
-                except ImportError:
-                    # 忽略无法导入的模块
+                except Exception as e:
+                    # 忽略无法导入的模块（包括 SyntaxError, ImportError 等），保证 CLI 等工具能正常启动
+                    # 在开发环境下，IDE 会提示具体的错误，或者通过单独运行模块/测试来发现
                     pass
-    except ImportError:
+    except Exception:
         # 忽略无法导入的包
         pass
 

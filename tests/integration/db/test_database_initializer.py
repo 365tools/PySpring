@@ -88,11 +88,21 @@ async def test_database_initializer():
     # 创建初始化器管理器
     manager = StartupInitializerManager()
 
+    # Mock DBManagerService
+    from unittest.mock import MagicMock
+    from pyspring.repositories.db.manager import DBManagerService
+    mock_db_manager = MagicMock(spec=DBManagerService)
+
+    # Make await db_manager.service() return db_service
+    async def get_service():
+        return db_service
+
+    mock_db_manager.service.side_effect = get_service
+
     # 注册数据库初始化器
-    db_initializer = MigrationInitializer(db_manager=db_service, enabled=True)
+    db_initializer = MigrationInitializer(db_manager=mock_db_manager, enabled=True)
 
     # Mock config_manager
-    from unittest.mock import MagicMock
     db_initializer.config_manager = MagicMock()
     db_initializer.config_manager.get_database_initialization_config.return_value = {
         'enabled': True,
@@ -134,7 +144,7 @@ async def test_database_initializer():
 
     # 重新执行，应该跳过
     manager2 = StartupInitializerManager()
-    db_initializer2 = MigrationInitializer(db_manager=db_service, enabled=True)
+    db_initializer2 = MigrationInitializer(db_manager=mock_db_manager, enabled=True)
     db_initializer2.config_manager = MagicMock()
     db_initializer2.config_manager.get_database_initialization_config.return_value = {
         'enabled': True,

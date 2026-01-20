@@ -1,6 +1,6 @@
 import ast
 import os
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, cast
 
 from pyspring.cli.core.ui.console import print_error, print_info, print_title, print_issue, print_summary
 
@@ -19,7 +19,7 @@ def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]
             return [], None
 
     defined = []
-    all_exports = None
+    all_exports: Optional[List[str]] = None
 
     for node in tree.body:
         # Check for __all__ assignment
@@ -28,12 +28,18 @@ def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]
                 if isinstance(target, ast.Name) and target.id == '__all__':
                     # Try to evaluate the list
                     if isinstance(node.value, (ast.List, ast.Tuple)):
-                        all_exports = []
+                        # Use a local list with strict typing
+                        temp_exports: List[str] = []
+                        
                         for elt in node.value.elts:
-                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                                all_exports.append(elt.value)
+                            if isinstance(elt, ast.Constant):
+                                val = elt.value
+                                if isinstance(val, str):
+                                    temp_exports.append(cast(str, val))  # type: ignore
                             elif isinstance(elt, ast.Str):  # type: ignore
-                                all_exports.append(elt.s)
+                                temp_exports.append(elt.s)  # type: ignore
+
+                        all_exports = temp_exports
 
         # Check for definitions
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
