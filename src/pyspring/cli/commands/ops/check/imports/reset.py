@@ -179,8 +179,9 @@ class ReconstructChecker(BaseChecker):
         # Or place after the last existing import to keep imports grouped
         last_import_idx = -1
         for i, line in enumerate(lines):
-            line_str = line.strip()
-            if line_str.startswith('import ') or line_str.startswith('from '):
+            # Fix: Only consider top-level imports to avoid inserting into indented blocks
+            # We strictly check for imports starting at column 0
+            if line.startswith('import ') or line.startswith('from '):
                 last_import_idx = i
 
         if last_import_idx != -1:
