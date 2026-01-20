@@ -18,7 +18,6 @@ from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 from pyspring.security.authentication.core.chain import AuthenticationChain
 from pyspring.security.authentication.core.context import AuthContext
-from pyspring.security.authentication.services.flow.manager import DefaultUserManagerService
 from pyspring.security.authorization.contracts.permission import IPermissionService
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider
 from pyspring.security.authorization.web.middleware.role import RoleCheckMiddleware
@@ -171,27 +170,18 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         # 3.5 【新增】设置认证上下文（类似 Spring Security 的 SecurityContextHolder）
         # 从 token 获取完整用户信息并设置到上下文
         try:
-
-            container = AppContainerManager()
-            user_manager = container.get(DefaultUserManagerService)
-
-            # 从 token 获取用户信息
-            token = auth_result.extra_data.get('token') if auth_result.extra_data else None
-            if token:
-                user_info = await and self.role_middleware:
-                try:
-                    # 检查角色权限（如果返回 JSONResponse 说明权限不足，需拦截）
-                    check_result = await self.上下文已设置: {user_info.user.email}
-                    ")
-            except Exception as e:
+            # 如果有额外数据(通常包含Token payload)，可以在这里做进一步处理
+            # 目前 AuthContext 主要依赖 request.state，此处留空待扩展
+            if auth_result.extra_data:
+                pass
+        except Exception as e:
             logger.debug(f"⚠️ 设置认证上下文失败: {e}")
 
         # 4. 角色权限验证（如果启用）
-        if self.enable_role_check:
-            role_middleware = RoleCheckMiddleware()
+        if self.enable_role_check and self.role_middleware:
             try:
                 # 检查角色权限（如果返回 JSONResponse 说明权限不足，需拦截）
-                check_result = await role_middleware.auth(path, request)
+                check_result = await self.role_middleware.auth(path, request)
                 if isinstance(check_result, JSONResponse):
                     return check_result
             except Exception as e:
