@@ -6,10 +6,10 @@
 from abc import ABC, abstractmethod
 
 from pyspring.log.instance import logger
-from ..IService import IService
+from ..ISingleton import ISingletonService
 
 
-class IStartupInitializer(IService, ABC):
+class IStartupInitializer(ISingletonService, ABC):
     """
     启动初始化器基类
     

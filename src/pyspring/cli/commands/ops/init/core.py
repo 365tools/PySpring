@@ -13,11 +13,11 @@ from sqlalchemy.schema import CreateTable
 
 from pyspring.cli.core.ui.console import Colors, print_header, print_success, print_info, print_warning, print_error, print_title
 from pyspring.cli.core.ui.help import print_standard_command_help
-from pyspring.security.authorization.rabc.orm.tables import (
+from pyspring.security.authorization.implementations.orm.tables import (
     UserTable, RoleTable, PermissionTable, UserRoleTable,
     RolePermissionTable
 )
-from pyspring.security.authorization.rabc.orm.token_tables import (
+from pyspring.security.authorization.implementations.orm.token_tables import (
     RefreshTokenTable, TokenBlacklistTable
 )
 from .keygen import generate_jwt_secret, generate_encryption_key

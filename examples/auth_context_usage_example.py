@@ -4,9 +4,9 @@
 演示如何使用类似 Spring Boot 的方式获取当前用户信息
 """
 from fastapi import APIRouter, Depends
+
 from pyspring.ioc.manager import AppContainerManager
 from pyspring.security.authentication.core.context import AuthContext
-from pyspring.security.authentication.services.user.manager import UserManagerService
 
 router = APIRouter()
 

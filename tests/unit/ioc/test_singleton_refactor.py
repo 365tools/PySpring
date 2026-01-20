@@ -28,7 +28,6 @@ def test_imports():
         from pyspring.security.authentication.core.chain import AuthenticationChain
         print("  ✓ AuthenticationChain 导入成功")
 
-        from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
         print("  ✓ JWTEncryptionManager 导入成功")
 
         from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
@@ -64,7 +63,6 @@ def test_inheritance():
         from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
         from pyspring.security.core.config.loader import SecurityConfigManager
         from pyspring.security.authentication.core.chain import AuthenticationChain
-        from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
         from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
         from pyspring.repositories.base.config.loader import RepositoriesConfigManager
         from pyspring.core.configuration.registry import ConfigRegistry
@@ -105,7 +103,6 @@ def test_no_custom_singleton():
     try:
         from pyspring.security.core.config.loader import SecurityConfigManager
         from pyspring.security.authentication.core.chain import AuthenticationChain
-        from pyspring.security.authentication.crypto.encryption import JWTEncryptionManager
 
         classes_to_test = [
             ("SecurityConfigManager", SecurityConfigManager),
@@ -154,7 +151,8 @@ def test_no_old_imports():
     """测试是否还有旧的 src.ref.core 导入"""
     print("\n🔍 测试 4: 验证导入路径统一...")
 
-    import os
+
+from pyspring.security.authentication.core.crypto.encryption import JWTEncryptionManager
 
     old_imports_found = []
 

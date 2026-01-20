@@ -3,34 +3,37 @@ from pyspring.ioc.annotations.decorators import Configuration, Bean, Conditional
 from pyspring.repositories.cache.manager import CacheManagerService
 # 导入其他依赖
 from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.contracts.interface.flow import ILoginService
+from pyspring.security.authentication.contracts.interface.flow import IRegisterService
+from pyspring.security.authentication.contracts.interface.login import ILoginProvider
+from pyspring.security.authentication.contracts.interface.response import IResponseBuilder
+from pyspring.security.authentication.contracts.interface.token import ITokenPayloadBuilder
+from pyspring.security.authentication.contracts.interface.token import ITokenService
+from pyspring.security.authentication.implementations.response.builder.default import DefaultResponseBuilder
+from pyspring.security.authentication.implementations.token.builder.default import DefaultTokenPayloadBuilder
 # 导入接口和默认实现
 from .component import SecurityEntityConfiguration
-from .interfaces import (
-    IUserProvider, IAuthenticationProvider, IResponseBuilder, ITokenPayloadBuilder,
-    ITokenService, ILoginService, IRegisterService, IUserManagerService
-)
-from ..services.core.context import SecurityContextManagerService
-from ..services.providers.auth import DefaultPasswordAuthenticationProvider
-from ..services.providers.manager import AuthenticationProviderManager
-from ..services.providers.response import DefaultResponseBuilder
-from ..services.providers.token import DefaultTokenPayloadBuilder
-from ..services.providers.user import DefaultUserProvider
-from ..services.session.login import DefaultLoginService
-from ..services.session.token import DefaultTokenManagerService
-from ..services.user.manager import DefaultUserManagerService
-from ..services.user.register import DefaultRegisterService
+from .manager import DefaultLoginProviderManager
+from ..contracts.interface.user import IUserProvider, IUserManagerService
+from ..implementations.login.password import DefaultPasswordLoginProvider
+from ..implementations.user.database import DefaultUserProvider
+from ..services.context_validator import SecurityContextManagerService
+from ..services.flow.login import DefaultLoginService
+from ..services.flow.manager import DefaultUserManagerService
+from ..services.flow.register import DefaultRegisterService
+from ..services.flow.token import DefaultTokenManagerService
 
 
 @Configuration
-class DefaultSecurityConfiguration:
+class AuthenticationConfiguration:
     """
-    PySpring 安全模块的默认自动配置。
+    PySpring 安全模块(认证部分)的默认自动配置。
     负责注册所有默认的策略实现（Provider, Builder 等）。
     """
 
     @Bean
     @ConditionalOnMissingBean(SecurityEntityConfiguration)
-    def default_security_component(self) -> SecurityEntityConfiguration:
+    def default_security_entity_configuration(self) -> SecurityEntityConfiguration:
         """Provide a default SecurityEntityConfiguration Bean if the user hasn't defined one."""
         return SecurityEntityConfiguration()
 
@@ -41,19 +44,19 @@ class DefaultSecurityConfiguration:
         return DefaultUserProvider(db, component)
 
     @Bean
-    @ConditionalOnMissingBean(DefaultPasswordAuthenticationProvider)
-    def password_authentication_provider(self, user_provider: IUserProvider, db: DBManagerService) -> DefaultPasswordAuthenticationProvider:
-        """Create default PasswordAuthenticationProvider."""
-        return DefaultPasswordAuthenticationProvider(user_provider, db)
+    @ConditionalOnMissingBean(DefaultPasswordLoginProvider)
+    def default_password_login_provider(self, user_provider: IUserProvider, db: DBManagerService) -> DefaultPasswordLoginProvider:
+        """Create default DefaultPasswordLoginProvider."""
+        return DefaultPasswordLoginProvider(user_provider, db)
 
     @Bean
-    @ConditionalOnMissingBean(IAuthenticationProvider)
-    def authentication_manager(self, password_provider: DefaultPasswordAuthenticationProvider) -> IAuthenticationProvider:
+    @ConditionalOnMissingBean(ILoginProvider)
+    def default_login_provider(self, password_provider: DefaultPasswordLoginProvider) -> ILoginProvider:
         """
-        Create the main AuthenticationManager (which is also an IAuthenticationProvider).
+        Create the main DefaultLoginProviderManager (which is also an ILoginProvider).
         It manages a list of providers. By default, only password_provider is added.
         """
-        return AuthenticationProviderManager([password_provider])
+        return DefaultLoginProviderManager([password_provider])
 
     @Bean
     @ConditionalOnMissingBean(IResponseBuilder)
@@ -78,7 +81,7 @@ class DefaultSecurityConfiguration:
     def default_login_service(
             self,
             user_provider: IUserProvider,
-            auth_provider: IAuthenticationProvider,
+            auth_provider: ILoginProvider,
             token_manager: ITokenService,
             response_builder: IResponseBuilder,
             payload_builder: ITokenPayloadBuilder,

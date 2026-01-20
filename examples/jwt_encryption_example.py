@@ -6,7 +6,6 @@ JWT 加密功能使用示例
 from cryptography.fernet import Fernet
 
 from pyspring.ioc.manager import AppContainerManager
-from pyspring.security.authentication.crypto.encryption import JWTEncryption, JWTEncryptionManager
 
 
 def example_1_basic_encryption():
@@ -213,6 +212,10 @@ def main():
     except Exception as e:
         print(f"\n❌ 示例运行失败: {e}")
         import traceback
+
+
+from pyspring.security.authentication.core.crypto.encryption import JWTEncryption
+from pyspring.security.authentication.core.crypto.encryption import JWTEncryptionManager
         traceback.print_exc()
 
 

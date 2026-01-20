@@ -10,7 +10,8 @@ from contextvars import ContextVar
 # 添加 src 到路径以便直接运行
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
-from pyspring.log import logger, register_context_var
+from pyspring.log import logger
+from pyspring.log.core.registry import register_context_var
 
 # 1. 定义你的业务上下文变量
 trace_id_ctx = ContextVar("trace_id", default=None)

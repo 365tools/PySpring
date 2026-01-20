@@ -6,7 +6,7 @@
 from contextvars import ContextVar
 from typing import Optional
 
-from pyspring.security.authorization.rabc.schema.requests import UserInfo
+from pyspring.security.authorization.contracts.schema.requests import UserInfo
 
 # 请求上下文变量（线程安全）
 _current_user: ContextVar[Optional[UserInfo]] = ContextVar('current_user', default=None)

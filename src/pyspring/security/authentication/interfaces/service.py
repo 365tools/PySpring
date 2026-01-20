@@ -1,15 +1,17 @@
 from abc import ABC, abstractmethod
-from pyspring.security.authorization.rabc.schema.requests import User
-from typing import Optional
+from typing import Optional, Dict, Any
+
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.security.authorization.contracts.schema.requests import User
 
 
-class IAuthService(ABC):
+class IAuthService(ISingletonService, ABC):
     """
     认证服务接口 (已弃用，使用FastAPI Users替代)
     """
 
     @abstractmethod
-    async def initialize(self, *args, **kwargs) -> bool:
+    async def initialize(self) -> bool:
         """初始化服务"""
         pass
 
@@ -21,7 +23,7 @@ class IAuthService(ABC):
         pass
 
     @abstractmethod
-    async def get_status(self) -> dict:
+    async def get_status(self) -> Dict[str, Any]:
         """获取服务状态"""
         pass
 

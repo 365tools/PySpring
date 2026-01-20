@@ -6,16 +6,16 @@ from pyspring.repositories.db.models.common.define import (
     BaseUserTable, BaseRoleTable, BasePermissionTable,
     BaseUserRoleTable, BaseRolePermissionTable
 )
-from pyspring.security.authorization.rabc.orm.tables import (
-    UserTable, RoleTable, PermissionTable,
-    UserRoleTable, RolePermissionTable
-)
 # Pydantic Schemas
-from pyspring.security.authorization.rabc.schema.requests import (
+from pyspring.security.authorization.contracts.schema.requests import (
     LoginRequest, UserInfo, User, Role, Permission
 )
-from pyspring.security.authorization.rabc.schema.response import (
+from pyspring.security.authorization.contracts.schema.response import (
     LoginResponse, TokenResponse, LogoutResponse
+)
+from pyspring.security.authorization.implementations.orm.tables import (
+    UserTable, RoleTable, PermissionTable,
+    UserRoleTable, RolePermissionTable
 )
 
 

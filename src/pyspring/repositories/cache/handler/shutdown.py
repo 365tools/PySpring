@@ -9,7 +9,7 @@ from pyspring.security.authentication.services.session.token import DefaultToken
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.core.services.system import SystemService
 from pyspring.log.instance import logger
-from pyspring.security.authentication.services.session.token import DefaultTokenManagerService
+from pyspring.security.authentication.services.flow.token import DefaultTokenManagerService
 from ..manager import CacheManagerService
 
 

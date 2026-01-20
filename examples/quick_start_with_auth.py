@@ -8,7 +8,6 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from pyspring.log.providers.loguru.middleware.request import RequestLoggingMiddleware
-from pyspring.security.authentication.middleware.auth import AuthenticationMiddleware
 
 
 # ==================== 应用生命周期管理 ====================
@@ -153,6 +152,7 @@ async def protected():
 
 if __name__ == "__main__":
     import uvicorn
+from pyspring.security.authentication.web.middleware.auth import AuthenticationMiddleware
 
     print("\n" + "=" * 70)
     print("🎯 启动 PySpring 应用")

@@ -14,7 +14,7 @@ class IService(Protocol):
     使用 Protocol 而不是 ABC 以便支持 duck typing
     """
 
-    async def initialize(self, *args, **kwargs) -> bool:
+    async def initialize(self) -> bool:
         """
         初始化服务
         

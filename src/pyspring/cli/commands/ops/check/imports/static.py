@@ -102,9 +102,9 @@ def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
         return []
 
     for root, _, files in os.walk(package_dir):
-        # Currently only scans top-level child files of the package dir
-        if root != package_dir:
-            continue
+        # Removed restriction to allow recursive search through subpackages
+        # if root != package_dir:
+        #    continue
 
         for file in files:
             if file == '__init__.py' or not file.endswith('.py'):
@@ -124,7 +124,17 @@ def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
                 visitor.visit(tree)
 
                 if visitor.found:
-                    found_modules.append(file[:-3])
+                    # Construct correct dotted module path
+                    rel_dir = os.path.relpath(root, package_dir)
+                    module_name = file[:-3]
+
+                    if rel_dir == '.':
+                        full_module = module_name
+                    else:
+                        # Convert path separators to dots for subpackages
+                        full_module = f"{rel_dir.replace(os.sep, '.')}.{module_name}"
+
+                    found_modules.append(full_module)
             except Exception:
                 continue
 

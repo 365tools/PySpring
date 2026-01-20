@@ -12,9 +12,9 @@ from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 from pyspring.security.core.config.loader import SecurityConfigManager
 from .chain import AuthenticationChain
-from ..providers.base import BaseAuthenticationProvider
-from ..providers.jwt import JWTAuthenticationProvider
-from ..services.session.token import DefaultTokenManagerService
+from ..implementations.request.base import BaseAuthenticationProvider
+from ..implementations.request.jwt import JWTAuthenticationProvider
+from ..services.flow.token import DefaultTokenManagerService
 
 
 class AuthProviderFactory:
