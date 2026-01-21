@@ -12,6 +12,7 @@ tests/security/
 ├── test_integration.py              # 集成测试
 ├── test_custom_configuration.py     # 自定义配置测试
 ├── test_yaml_configuration.py       # YAML配置测试
+├── test_middleware.py               # 中间件测试
 ├── run_all_tests.py                 # 运行所有测试
 ├── run_tests.bat                    # Windows批处理运行器（推荐）
 └── README.md                        # 本文件
@@ -197,6 +198,30 @@ pytest tests/security/test_authentication_flow.py -v
 - 配置文件缺失时使用默认配置
 - 配置结构符合框架设计要求
 
+### 7. **test_middleware.py** - 中间件测试
+
+测试认证中间件和授权中间件的功能：
+
+- ✅ 中间件初始化
+- ✅ 白名单配置验证
+- ✅ 认证链初始化
+- ✅ 角色中间件结构验证
+- ✅ 中间件错误响应格式
+- ✅ 中间件懒加载机制
+- ✅ JWT认证提供者配置
+- ✅ 认证上下文结构
+
+**关键验证点**：
+
+- AuthenticationMiddleware可以正确初始化
+- 白名单配置包含精确匹配、前缀匹配、正则匹配三种类型
+- 认证链（AuthenticationChain）核心方法存在
+- 角色检查中间件（RoleCheckMiddleware）结构正确
+- 错误响应格式统一（code, message, detail）
+- 中间件使用懒加载机制，避免启动时初始化
+- JWT认证提供者支持多种Token来源（Header、Cookie、Query）
+- 认证上下文（AuthContext）包含用户、权限、角色信息
+
 ---
 
 ## 🚀 运行测试
@@ -232,6 +257,9 @@ python tests/security/test_custom_configuration.py
 
 # YAML配置测试
 python tests/security/test_yaml_configuration.py
+
+# 中间件测试
+python tests/security/test_middleware.py
 ```
 
 ### 使用pytest运行（如果已安装）

@@ -60,6 +60,7 @@ def main():
         ("test_integration.py", "集成测试"),
         ("test_custom_configuration.py", "自定义配置测试"),
         ("test_yaml_configuration.py", "YAML配置测试"),
+        ("test_middleware.py", "中间件测试"),
     ]
 
     results = {}
