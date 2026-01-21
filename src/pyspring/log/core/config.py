@@ -55,6 +55,7 @@ class LoggingInterceptConfig(ConfigSection):
 
 class LoggingConfig(ConfigSection):
     """通用日志配置"""
+    provider: str = Field(default="loguru", description="日志提供者: loguru, stdlib, structlog等")
     level: str = Field(default="INFO", description="日志级别")
     console: ConsoleLoggingConfig = Field(default_factory=ConsoleLoggingConfig, description="控制台配置")
     file: FileLoggingConfig = Field(default_factory=FileLoggingConfig, description="文件配置")

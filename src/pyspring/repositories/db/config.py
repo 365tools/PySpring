@@ -4,16 +4,21 @@
 通用的数据库配置类，支持多种数据库类型。
 可在不同项目中复用。
 """
-from typing import Optional
+from typing import Optional, ClassVar
 
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
 from pyspring.core.abstracts.config import ConfigSection
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
 
 
 class DatabasePoolConfig(ConfigSection):
     """数据库连接池配置"""
+    yaml_config_file: ClassVar[str] = "config/repositories.yaml"
+    yaml_config_key: ClassVar[str] = "database.pool"
+    
     model_config = SettingsConfigDict(extra='ignore')
 
     size: int = Field(default=5, description="连接池大小")
@@ -25,7 +30,10 @@ class DatabasePoolConfig(ConfigSection):
 
 class PostgreSQLConfig(ConfigSection):
     """PostgreSQL配置"""
-    model_config = SettingsConfigDict(populate_by_name=True)
+    yaml_config_file: ClassVar[str] = "config/repositories.yaml"
+    yaml_config_key: ClassVar[str] = "database.postgresql"
+
+    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
 
     host: str = Field(default="localhost", description="主机地址")
     port: int = Field(default=5432, ge=1, le=65535, description="端口号")
@@ -37,7 +45,10 @@ class PostgreSQLConfig(ConfigSection):
 
 class MySQLConfig(ConfigSection):
     """MySQL配置"""
-    model_config = SettingsConfigDict(populate_by_name=True)
+    yaml_config_file: ClassVar[str] = "config/repositories.yaml"
+    yaml_config_key: ClassVar[str] = "database.mysql"
+
+    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
 
     host: str = Field(default="localhost", description="主机地址")
     port: int = Field(default=3306, ge=1, le=65535, description="端口号")
@@ -50,14 +61,24 @@ class MySQLConfig(ConfigSection):
 
 class SQLiteConfig(ConfigSection):
     """SQLite配置"""
+    yaml_config_file: ClassVar[str] = "config/repositories.yaml"
+    yaml_config_key: ClassVar[str] = "database.sqlite"
+    
     model_config = SettingsConfigDict(extra='ignore')
 
     database: str = Field(default="data/app.db", description="数据库文件路径")
     pool: DatabasePoolConfig = Field(default_factory=DatabasePoolConfig, description="连接池配置")
 
 
+@Component()
+@Singleton
 class DatabaseConfig(ConfigSection):
     """通用数据库配置"""
+    yaml_config_file: ClassVar[str] = "config/repositories.yaml"
+    yaml_config_key: ClassVar[str] = "database"
+
+    model_config = SettingsConfigDict(extra='ignore')
+
     type: str = Field(default="sqlite", description="数据库类型：postgresql、mysql、sqlite")
     postgresql: PostgreSQLConfig = Field(default_factory=PostgreSQLConfig, description="PostgreSQL配置")
     mysql: MySQLConfig = Field(default_factory=MySQLConfig, description="MySQL配置")

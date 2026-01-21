@@ -1,27 +1,30 @@
+"""
+缓存服务接口
+
+定义缓存服务的统一接口
+"""
 from abc import ABC, abstractmethod
 from typing import Any
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.interfaces.core import IManaged
 
 
-class ICacheService(ISingletonService, ABC):
-    """
-    缓存服务接口
-    """
+class ICacheService(IManaged, ABC):
+    """缓存服务接口"""
 
     @abstractmethod
     async def get(self, *args, **kwargs) -> Any:
-        """获取缓存数据"""
+        """获取缓存"""
         pass
 
     @abstractmethod
     async def save(self, *args, **kwargs) -> Any:
-        """保存缓存数据"""
+        """保存缓存"""
         pass
 
     @abstractmethod
     async def set(self, *args, **kwargs) -> Any:
-        """设置缓存（支持过期时间）"""
+        """设置缓存"""
         pass
 
     @abstractmethod
@@ -31,22 +34,18 @@ class ICacheService(ISingletonService, ABC):
 
     @abstractmethod
     async def update(self, *args, **kwargs) -> Any:
-        """更新缓存数据"""
+        """更新缓存"""
         pass
 
     @abstractmethod
     async def delete(self, *args, **kwargs) -> bool:
-        """删除缓存数据"""
+        """删除缓存"""
         pass
 
     @abstractmethod
     async def clear(self) -> None:
-        """
-        清空缓存
-        """
+        """清空缓存"""
 
     @abstractmethod
     async def ping(self) -> bool:
-        """
-        测试缓存服务是否正常
-        """
+        """检查服务可用性"""

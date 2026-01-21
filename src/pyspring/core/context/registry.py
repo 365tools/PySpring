@@ -3,9 +3,10 @@
 
 提供统一的 ContextVar 注册与管理机制，供日志、认证、APM 等模块共享使用。
 """
-from typing import Dict, Any, List, Tuple
+import threading
 from contextvars import ContextVar
-import threading 
+from typing import Dict, Any, List, Tuple
+
 
 class ContextRegistry:
     """
@@ -58,3 +59,6 @@ class ContextRegistry:
             except LookupError:
                 snapshot[key] = default
         return snapshot
+
+
+__all__ = ["ContextRegistry"]

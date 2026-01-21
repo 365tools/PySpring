@@ -29,7 +29,7 @@ class ConfigLoader:
         初始化配置加载器
         
         Args:
-            project_root: 项目根目录，如果不提供则自动检。
+            project_root: 项目根目录，如果不提供则自动检测
         """
         self.project_root = project_root or self._detect_project_root()
 
@@ -37,10 +37,10 @@ class ConfigLoader:
         """
         自动检测项目根目录
         
-        通过查找标志性文件来判断项目根目。
+        通过查找标志性文件来判断项目根目录
         
         Returns:
-            Path: 项目根目录路。
+            Path: 项目根目录路径
         """
         current = Path(__file__).parent
 
@@ -64,7 +64,7 @@ class ConfigLoader:
             Dict[str, Any]: 配置字典
         """
         if not yaml_path.exists():
-            logger.debug(f"YAML配置文件不存。 {yaml_path}")
+            logger.debug(f"YAML配置文件不存在: {yaml_path}")
             return {}
 
         try:
@@ -78,19 +78,19 @@ class ConfigLoader:
 
     def load_env_files(self, env_files: List[str], override: bool = True) -> None:
         """
-        按顺序加载多。env文件
+        按顺序加载多个.env文件
         
         Args:
-            env_files: .env文件名列表（相对于project_root。
+            env_files: .env文件名列表（相对于project_root）
             override: 是否覆盖已存在的环境变量
         """
         for env_file in env_files:
             env_path = self.project_root / env_file
             if env_path.exists():
                 load_dotenv(env_path, override=override)
-                logger.debug(f"✅ 已加载环境文。 {env_file}")
+                logger.debug(f"✅ 已加载环境文件: {env_file}")
             else:
-                logger.debug(f"环境文件不存。 {env_file}")
+                logger.debug(f"环境文件不存在: {env_file}")
 
     def flatten_dict(
             self,
@@ -104,12 +104,12 @@ class ConfigLoader:
         例如：{"database": {"type": "sqlite"}} -> {"DATABASE__TYPE": "sqlite"}
         
         Args:
-            d: 需要扁平化的字。
+            d: 需要扁平化的字典
             parent_key: 父键
-            sep: 分隔
+            sep: 分隔符
             
         Returns:
-            Dict[str, Any]: 扁平化后的字。
+            Dict[str, Any]: 扁平化后的字典
         """
         items = []
         for k, v in d.items():
@@ -140,7 +140,7 @@ class ConfigLoader:
                 count += 1
 
         if count > 0:
-            logger.debug(f"✅ 已合。{count} 个配置到环境变量")
+            logger.debug(f"✅ 已合并 {count} 个配置到环境变量")
 
     def load_all(
             self,
@@ -156,9 +156,7 @@ class ConfigLoader:
         1. YAML配置文件
         2. .env 文件
         3. .env.{environment} 文件
-        4. 环境变量（最高优先级。
-        
-        Args:
+            4. 环境变量（最高优先级）
             yaml_file: YAML配置文件路径
             env_files: 自定义env文件列表
             environment_var: 环境变量名称

@@ -1,160 +1,67 @@
 """
-from pyspring.repositories.db.providers.sqlite.services.service import SqliteService
-from pyspring.repositories.db.providers.postgres.services.service import PostgresService
-
 数据库连接初始化器
 
-在应用启动时初始化数据库连接（PostgreSQL/SQLite）
+在应用启动时自动初始化数据库连接（服务已由 IOC 创建）
 """
-import os
-
-from pyspring.ioc.manager import AppContainerManager
-
-from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.lifecycle.initializer import IStartupInitializer
 from pyspring.log.instance import logger
-from pyspring.repositories.base.config.loader import RepositoriesConfigManager
+from ..config import DatabaseConfig
 from ..manager import DBManagerService
-from ..providers.postgres.services.service import PostgresService
-from ..providers.sqlite.services.service import SqliteService
 
 
+@Component()
 class DBConnectionInitializer(IStartupInitializer):
     """
-    数据库连接初始化器
-    
-    根据配置初始化 PostgreSQL 或 SQLite 数据库连接
-    支持自动降级策略
+    数据库连接初始化器（仅负责连接建立）
     """
 
-    def __init__(self, db_manager: DBManagerService, enabled: bool = True):
+    def __init__(self, db_config: DatabaseConfig, db_manager: DBManagerService):
         """
         Args:
-            db_manager: 数据库管理服务实例
-            enabled: 是否启用该初始化器
+            db_config: 数据库配置实例（自动注入）
+            db_manager: 数据库管理服务实例（自动注入）
         """
-        super().__init__(enabled)
+        super().__init__(enabled=True)
+        self.db_config = db_config
         self.db_manager = db_manager
-        # Lazy load
-        # self.config_manager = RepositoriesConfigManager()
 
-    @property
-    def config_manager(self) -> RepositoriesConfigManager:
-        return AppContainerManager().get(RepositoriesConfigManager)
+    async def startup(self) -> bool:
+        """
+        启动时初始化数据库连接
+        
+        Returns:
+            bool: 是否成功初始化
+        """
+        try:
+            db_type = self.db_config.type.lower()
+            logger.info(f"Initializing database connection: {db_type}")
+
+            # 从管理器获取服务（由工厂自动选择）
+            provider = self.db_manager.provider
+
+            # 测试数据库连接
+            if db_type == "sqlite":
+                logger.info(f"SQLite database ready: {self.db_config.sqlite.database}")
+            elif db_type == "postgresql":
+                pg_cfg = self.db_config.postgresql
+                logger.info(f"PostgreSQL database ready: {pg_cfg.host}:{pg_cfg.port}/{pg_cfg.database}")
+            elif db_type == "mysql":
+                logger.warning("MySQL support is not yet implemented")
+                return False
+            else:
+                logger.error(f"Unsupported database type: {db_type}")
+                return False
+
+            logger.info(f"Database connection initialized: {db_type}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to initialize database connection: {e}")
+            return False
 
     def get_name(self) -> str:
         return "DBConnectionInitializer"
 
-    async def initialize(self) -> bool:
-        """
-        初始化数据库连接
-        
-        流程:
-        1. 读取配置（type, fallback_to_sqlite）
-        2. 根据配置连接对应的数据库
-        3. 失败时根据降级策略处理
-        
-        Returns:
-            bool: 初始化是否成功
-        """
-        try:
-            # 1. 读取数据库配置
-            db_config = self.config_manager.get_database_config()
-            db_type = db_config.get('type', 'auto').lower()
-            fallback_to_sqlite = db_config.get('fallback_to_sqlite', True)
 
-            logger.debug(f"数据库配置: type={db_type}, fallback={fallback_to_sqlite}")
-
-            # 2. 根据配置初始化
-            if db_type == 'sqlite':
-                # 强制使用 SQLite
-                return await self._init_sqlite()
-
-            elif db_type == 'postgresql':
-                # 强制使用 PostgreSQL
-                success = await self._init_postgresql()
-                if not success and fallback_to_sqlite:
-                    logger.warning("PostgreSQL 初始化失败，降级到 SQLite")
-                    return await self._init_sqlite()
-                return success
-
-            else:  # 'auto' 或其他值
-                # 优先 PostgreSQL，失败时降级到 SQLite
-                success = await self._init_postgresql()
-                if not success:
-                    if fallback_to_sqlite:
-                        logger.info("PostgreSQL 不可用，使用 SQLite 数据库")
-                        return await self._init_sqlite()
-                    else:
-                        logger.error("PostgreSQL 不可用，且不允许降级到 SQLite")
-                        return False
-                return True
-
-        except Exception as e:
-            logger.error(f"数据库初始化异常: {e}", exc_info=True)
-            return False
-
-    async def _init_postgresql(self) -> bool:
-        """
-        初始化 PostgreSQL 连接
-        
-        Returns:
-            bool: 是否成功
-        """
-        try:
-            # 解析配置
-            config_manager = RepositoriesConfigManager()
-            db_config = config_manager.get_database_config()
-            postgres_config = db_config.get('postgresql', {})
-
-            host = os.getenv('POSTGRES_HOST', postgres_config.get('host', "localhost"))
-            port = int(os.getenv('POSTGRES_PORT', postgres_config.get('port', 5432)))
-            database = os.getenv('POSTGRES_DB', postgres_config.get('database', "postgres"))
-            user = os.getenv('POSTGRES_USER', postgres_config.get('user', "postgres"))
-            password = os.getenv('POSTGRES_PASSWORD', postgres_config.get('password', None))
-            pool_config = postgres_config.get('pool', {})
-
-            # 注入参数
-            postgres = PostgresService(host=host, port=port, database=database, user=user, password=password, pool_config=pool_config)
-            
-            # 测试 PostgreSQL 连接
-            if await postgres.ping():
-                self.db_manager.set_provider(postgres)
-                logger.info(f"✅ PostgreSQL 已连接: {postgres.url}")
-                return True
-            else:
-                logger.debug("PostgreSQL ping 失败")
-                await postgres.close()
-                return False
-        except Exception as e:
-            logger.warning(f"PostgreSQL 连接失败: {e}")
-            return False
-
-    async def _init_sqlite(self) -> bool:
-        """
-        初始化 SQLite 连接
-        
-        Returns:
-            bool: 是否成功（SQLite 总是成功）
-        """
-        try:
-            config_manager = RepositoriesConfigManager()
-            db_config = config_manager.get_database_config()
-            sqlite_config = db_config.get('sqlite', {})
-
-            database = sqlite_config.get('database', "data/app.db")
-            pool_config = sqlite_config.get('pool', {})
-
-            sqlite = SqliteService(database=database, pool_config=pool_config)  # resolve_path 默认为 True
-            
-            # 测试 SQLite 连接
-            if await sqlite.ping():
-                self.db_manager.set_provider(sqlite)
-                logger.info(f"✅ SQLite 已连接: {sqlite.database}")
-                return True
-            else:
-                logger.error("SQLite ping 失败")
-                await sqlite.close()
-                return False
-        except Exception as e:
-            logger.error(f"SQLite 连接失败: {e}")
-            return False
+__all__ = ["DBConnectionInitializer"]

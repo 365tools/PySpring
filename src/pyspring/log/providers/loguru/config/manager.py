@@ -7,31 +7,28 @@ from typing import Dict, Any, Optional
 
 import yaml
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
+from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.core.config import LoggingConfig
 from pyspring.utils.config.finder import find_config_file
 
 
-class LoggingConfigManager(ISingletonService):
+@Component()
+@Singleton
+class LoggingConfigManager(IManaged):
     """
-    日志配置管理器（由 IoC 容器管理单例）
+    日志配置管理器（由IOC容器管理单例）
     
     负责从 YAML 文件加载日志配置
     """
 
     _config: Optional[Dict[str, Any]] = None
     _loaded_config_path: Optional[str] = None
-    _instance: Optional['LoggingConfigManager'] = None
     _initialized: bool = False
 
-    def __new__(cls):
-        """确保单例模式"""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
     def __init__(self):
-        """初始化配置管理器（只执行一次）"""
+        """初始化配置管理器"""
         if not self.__class__._initialized:
             self._config = self._load_config()
             self.__class__._initialized = True

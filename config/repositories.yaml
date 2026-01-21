@@ -9,7 +9,7 @@ cache:
   # - auto: 自动选择（优先 Redis，失败则降级到 Memory）
   # 开发环境: 建议使用 auto 或 memory，避免依赖 Redis
   # 生产环境: 建议使用 redis
-  type: "auto"
+  type: "memory"
   
   # Redis 失败时是否降级到 Memory
   # 当 type="auto" 且 Redis 连接失败时，自动切换到内存缓存
@@ -48,9 +48,9 @@ database:
   # - sqlite: 使用 SQLite 数据库
   # - mysql: 使用 MySQL 数据库
   # - auto: 自动选择（优先 PostgreSQL，失败则降级到 SQLite）
-  # 开发环境: 建议使用 auto 或 sqlite（简单快速）
+  # 开发环境: 建议使用 sqlite（简单快速）
   # 生产环境: 建议使用 postgresql 或 mysql
-  type: "auto"
+  type: "sqlite"
   
   # PostgreSQL 失败时是否降级到 SQLite
   # 当 type="auto" 且 PostgreSQL 连接失败时，自动切换到 SQLite

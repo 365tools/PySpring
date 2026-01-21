@@ -3,7 +3,7 @@
 
 在应用关闭时关闭数据库连接
 """
-from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
+from pyspring.ioc.lifecycle.shutdown import IShutdownHandler
 from pyspring.log.instance import logger
 from ..manager import DBManagerService
 
@@ -34,13 +34,13 @@ class DBShutdownHandler(IShutdownHandler):
         try:
             if self.db_manager and self.db_manager.provider:
                 await self.db_manager.close()
-                logger.info("💾 数据库连接已关闭")
+                logger.info("Database connection closed")
                 return True
             else:
-                logger.debug("⏭️  数据库未初始化，无需关闭")
+                logger.debug("Database not initialized, skip closing")
                 return True
         except Exception as e:
-            logger.error(f"❌ 关闭数据库连接失败: {e}")
+            logger.error(f"Failed to close database connection: {e}")
             return False
 
     def get_name(self) -> str:

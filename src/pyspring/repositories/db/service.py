@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, List, Dict
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.interfaces.core import IManaged
 
 
-class IDBService(ISingletonService, ABC):
+class IDBService(IManaged, ABC):
     """
     数据库服务接口
     """
@@ -29,17 +29,7 @@ class IDBService(ISingletonService, ABC):
         """插入数据"""
         pass
 
-    # @abstractmethod
-    # async def update(self, table: str, data: Dict[str, Any], condition: Dict[str, Any]) -> bool:
-    #     """更新数据"""
-    #     pass
-    #
-    # @abstractmethod
-    # async def delete(self, table: str, condition: Dict[str, Any]) -> bool:
-    #     """删除数据"""
-    #     pass
-
-    @staticmethod
+    @abstractmethod
     async def engine(self) -> Any:
         """
         获取数据库引擎
@@ -57,6 +47,7 @@ class IDBService(ISingletonService, ABC):
         """
         关闭数据库服务
         """
+        pass
 
     @abstractmethod
     async def ping(self) -> bool:

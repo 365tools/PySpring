@@ -1,4 +1,4 @@
-class RevokeTokenReason:
+﻿class RevokeTokenReason:
     """撤销令牌原因模型"""
     # 用户重新登录
     USER_LOGIN = "用户重新登录"

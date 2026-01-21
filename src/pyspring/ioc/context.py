@@ -25,16 +25,32 @@ class ApplicationContext:
         return cls._instance
 
     @classmethod
-    def initialize(cls, base_packages: List[str]):
+    def initialize(cls, base_packages: List[str] = None, config_file: str = None, enable_aop: bool = True):
         """
         初始化应用上下文
         
         Args:
-            base_packages: 要扫描的包路径列表
+            base_packages: 要扫描的包路径列表（可选，如果提供config_file则可为None）
+            config_file: 配置文件路径（可选）
+            enable_aop: 是否启用AOP（默认启用）
         """
         instance = cls()
-        instance._container = Container()
-        instance._container.scan(base_packages)
+        instance._container = Container(enable_aop=enable_aop)
+
+        # 如果提供了配置文件，从配置文件加载
+        if config_file:
+            from pyspring.ioc.config.loader import IoCConfigLoader
+            loader = IoCConfigLoader(config_file)
+            loader.apply_to_container(instance._container)
+
+        # 如果提供了base_packages，扫描包
+        if base_packages:
+            instance._container.scan(base_packages)
+
+        # 如果既没有配置文件也没有包列表，报错
+        if not config_file and not base_packages:
+            raise ValueError("必须提供 base_packages 或 config_file 中的至少一个")
+        
         return instance
 
     @classmethod

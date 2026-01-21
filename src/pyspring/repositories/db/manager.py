@@ -1,47 +1,53 @@
 from typing import Optional
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
+from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.instance import logger
+from .factory import DBServiceFactory
 from .service import IDBService
 
 
-class DBManagerService(ISingletonService):
+@Component()
+@Singleton
+class DBManagerService(IManaged):
     """
-    数据库管理服务
+    数据库管理服务（由 IOC 容器管理单例）
     
-    注意:
-    - 数据库连接需要通过 ConnectionInitializer 在应用启动时初始化
-    - 不再支持延迟初始化，必须先调用 ConnectionInitializer.initialize()
+    通过 DBServiceFactory 自动选择数据库实现
     """
 
-    def __init__(self):
+    def __init__(self, db_service_factory: DBServiceFactory):
+        """
+        通过 IOC 注入工厂
+        
+        Args:
+            db_service_factory: DBServiceFactory 实例（自动注入）
+        """
         super().__init__()
-        # 默认为 None，由 ConnectionInitializer 设置实际使用的服务
-        self.provider: Optional[IDBService] = None
+        self.factory: DBServiceFactory = db_service_factory
+        self._provider: Optional[IDBService] = None
 
-    def set_provider(self, provider: IDBService):
-        """设置实际使用的数据库服务提供者"""
-        self.provider = provider
-        logger.debug(f"✅ DBManager: Provider set to {provider.__class__.__name__}")
+    @property
+    def provider(self) -> IDBService:
+        """
+        延迟获取数据库服务（首次调用时从工厂获取）
+        
+        Returns:
+            IDBService: SQLite 或 PostgreSQL 实现
+        """
+        if self._provider is None:
+            self._provider = self.factory.get_service()
+            logger.debug(f"DBManager: Provider initialized to {self._provider.__class__.__name__}")
+        return self._provider
 
     async def service(self) -> IDBService:
         """
         获取已初始化的数据库服务实例
         
-        注意: 必须先通过 ConnectionInitializer 初始化
-        
         Returns:
             数据库服务实例
-            
-        Raises:
-            RuntimeError: 如果数据库未初始化
         """
-        if self.provider is None:
-            raise RuntimeError(
-                "数据库服务未初始化！请在应用启动时调用 ConnectionInitializer.initialize()"
-            )
-
-        # logger.debug(f"✅ db({self.provider}) instance ready.")
         return self.provider
 
     async def session(self):
@@ -83,8 +89,8 @@ class DBManagerService(ISingletonService):
         if self.provider:
             try:
                 await self.provider.close()
-                logger.debug(f"🔌 DBManager: {self.provider.__class__.__name__} 连接已关闭")
+                logger.debug(f"DBManager: {self.provider.__class__.__name__} connection closed")
             except Exception as e:
-                logger.error(f"🚨 关闭数据库连接失败: {e}")
+                logger.error(f"Failed to close database connection: {e}")
             finally:
                 self.provider = None

@@ -1,9 +1,11 @@
-from dataclasses import dataclass, field
+﻿from dataclasses import dataclass, field
 from typing import List, Dict, Any
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
+from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.instance import logger
-from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
+from pyspring.security.authentication.contracts.validator import ISecurityContextValidator
 
 
 @dataclass
@@ -17,9 +19,11 @@ class ContextEvaluationResult:
         return len(self.errors) == 0
 
 
-class SecurityContextManagerService(ISingletonService):
+@Component()
+@Singleton
+class SecurityContextManagerService(IManaged):
     """
-    安全上下文管理器
+    安全上下文管理器（由IOC容器管理单例）
     管理所有的上下文验证器，并汇总验证结果
     """
 
@@ -31,7 +35,7 @@ class SecurityContextManagerService(ISingletonService):
     def register(self, validator: ISecurityContextValidator):
         """注册验证器"""
         self.validators.append(validator)
-        logger.debug(f"✅ 注册安全验证器: {validator.name}")
+        logger.debug(f"[Success] 注册安全验证器: {validator.name}")
 
     async def evaluate(self, context: Dict[str, Any]) -> ContextEvaluationResult:
         """
@@ -70,7 +74,7 @@ class SecurityContextManagerService(ISingletonService):
                     warnings.extend(res.warnings)
 
             except Exception as e:
-                logger.error(f"❌ 验证器 {v.name} 执行异常: {e}")
+                logger.error(f"[Error] 验证器 {v.name} 执行异常: {e}")
                 errors.append(f"{v.name} execution error")
 
         return ContextEvaluationResult(

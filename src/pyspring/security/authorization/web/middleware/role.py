@@ -1,10 +1,10 @@
-from typing import Optional, List, Dict
+﻿from typing import Optional, List, Dict
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from pyspring.log.instance import logger
-from pyspring.security.authentication.core.context import AuthContext
+from pyspring.security.authentication.infrastructure.context import AuthContext
 from pyspring.security.authorization.contracts.permission import IPermissionService
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider
 from pyspring.web.core.response import Response, HttpResponse
@@ -25,7 +25,7 @@ class RoleCheckMiddleware:
 
         # Load rules from provider
         self.ROLE_BASED_PATHS: Dict[str, List[str]] = self.path_provider.get_path_rules()
-        logger.debug(f"🔍 [RoleCheck] 已加载路径规则: {len(self.ROLE_BASED_PATHS)}条")
+        logger.debug(f"[Debug] [RoleCheck] 已加载路径规则: {len(self.ROLE_BASED_PATHS)}条")
 
     async def auth(self, path: str, request: Request) -> JSONResponse | bool:
         """
@@ -45,19 +45,19 @@ class RoleCheckMiddleware:
                         has_permission = True
                         break
             else:
-                # Fallback to request state (Legacy/Simple mode)
+                # 使用 request state
                 user_roles = getattr(request.state, "user_roles", [])
                 has_permission = any(role in required_roles for role in user_roles)
 
             if not has_permission:
-                logger.warning(f"⚠️ 权限不足: {getattr(request.state, 'user_email', 'Unknown')} 尝试访问 {path}")
+                logger.warning(f"[Warning] 权限不足: {getattr(request.state, 'user_email', 'Unknown')} 尝试访问 {path}")
                 return Response.error(
                     HttpResponse(
                         code=status.HTTP_403_FORBIDDEN,
                         message="权限不足",
                         data=f"此操作需要以下角色之一: {', '.join(required_roles)}"
                     ))
-            logger.debug(f"✅ 角色验证通过: {path}")
+            logger.debug(f"[Success] 角色验证通过: {path}")
             return True
         return False
 

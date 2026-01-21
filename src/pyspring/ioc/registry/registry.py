@@ -66,7 +66,14 @@ class ServiceRegistry:
             # 如果新的是primary，替换旧的
             if definition.is_primary and not existing.is_primary:
                 pass  # 继续注册，覆盖旧的
+            # 如果新的是Bean，旧的是普通组件，则Bean优先（覆盖）
+            elif definition.is_bean and not existing.is_bean:
+                from pyspring.log.instance import logger
+                logger.info(f"📝 Bean覆盖组件注册: '{name}' (组件 → Bean)")
+                pass  # 继续注册，Bean覆盖组件
             else:
+                from pyspring.log.instance import logger
+                logger.warning(f"⚠️ 服务 '{name}' 重复注册: 已存在={existing.service_type}, 新={service_type}, 旧is_bean={existing.is_bean}, 新is_bean={definition.is_bean}")
                 raise ValueError(f"服务 '{name}' 已注册: {existing.service_type}")
 
         # 注册服务

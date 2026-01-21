@@ -7,10 +7,10 @@
 from pathlib import Path
 from typing import Optional
 
-from pyspring.ioc.manager import AppContainerManager
 from sqlalchemy import text
 
-from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
+from pyspring.ioc.context import ApplicationContext
+from pyspring.ioc.lifecycle.initializer import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 from pyspring.repositories.db.service import IDBService
@@ -46,7 +46,7 @@ class MigrationInitializer(IStartupInitializer):
 
     @property
     def config_manager(self) -> RepositoriesConfigManager:
-        return AppContainerManager().get(RepositoriesConfigManager)
+        return ApplicationContext.get_instance().get_bean(RepositoriesConfigManager)
 
     def get_name(self) -> str:
         return "MigrationInitializer"
@@ -103,11 +103,11 @@ class MigrationInitializer(IStartupInitializer):
             script_path = self._search_sql_script(script_name, project_root, max_depth=4)
 
         if script_path:
-            logger.info(f"🔍 自动检测到 SQL 脚本: {script_path}")
+            logger.info(f"Auto-detected SQL script: {script_path}")
             return script_path
 
-        logger.warning(f"⚠️  未找到数据库初始化脚本: {script_name}")
-        logger.info(f"💡 请在以下位置创建脚本: scripts/db/{script_name}")
+        logger.warning(f"SQL initialization script not found: {script_name}")
+        logger.info(f"Please create script at: scripts/db/{script_name}")
         return None
 
     def _search_sql_script(
@@ -334,7 +334,7 @@ class MigrationInitializer(IStartupInitializer):
 
                     # 执行语句
                     try:
-                        logger.debug(f"📝 执行第 {idx} 条语句: {stmt_stripped[:80]}...")
+                        logger.debug(f"Executing statement {idx}: {stmt_stripped[:80]}...")
                         result = await conn.execute(text(stmt_stripped))
                         executed_count += 1
 
@@ -435,7 +435,7 @@ class MigrationInitializer(IStartupInitializer):
             return True
 
         mode = init_config.get('mode', 'incremental')
-        logger.info(f"🗄️  开始数据库表结构初始化 (模式: {mode})")
+        logger.info(f"Starting database table initialization (mode: {mode})")
 
         # 获取数据库服务
         try:
@@ -443,9 +443,9 @@ class MigrationInitializer(IStartupInitializer):
 
             # 输出数据库连接信息用于调试
             if hasattr(db_service, 'url'):
-                logger.debug(f"📍 当前数据库连接: {db_service.url}")
+                logger.debug(f"Current database connection: {db_service.url}")
             if hasattr(db_service, 'database'):
-                logger.info(f"📁 数据库文件位置: {db_service.database}")
+                logger.info(f"Database file location: {db_service.database}")
         except Exception as e:
             logger.error(f"❌ 获取数据库服务失败: {e}")
             return False

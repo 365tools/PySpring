@@ -29,7 +29,7 @@ class Container:
     3. 实例化阶段（Resolver + Container）：解析依赖并创建实例
     """
 
-    def __init__(self):
+    def __init__(self, enable_aop: bool = True):
         # 核心组件
         self.registry = ServiceRegistry()
         self.resolver = DependencyResolver(self.registry)
@@ -40,6 +40,17 @@ class Container:
 
         # 生命周期管理
         self._lifecycle_services: List[Any] = []
+
+        # AOP集成
+        self._enable_aop = enable_aop
+        self._aop_integration = None
+        if enable_aop:
+            from pyspring.ioc.aop.integration import AopIntegration
+            self._aop_integration = AopIntegration(self)
+
+        # Initializer/Shutdown管理器
+        self._initializer_manager = None
+        self._shutdown_manager = None
 
         # 状态标记
         self._initialized = False
@@ -98,12 +109,15 @@ class Container:
         config_cls = config_metadata.cls
         config_name = config_metadata.name
 
+        logger.info(f"📦 注册配置类 {config_cls.__name__} 的Bean (共{len(config_metadata.bean_methods)}个)")
+
         # 先确保配置类自己被注册
         if not self.registry.has(config_name):
             self._register_component(config_metadata)
 
         # 注册每个Bean方法
         for method_name in config_metadata.bean_methods:
+            logger.info(f"  🌱 注册Bean方法: {method_name}")
             self._register_bean_method(config_cls, config_name, method_name)
 
     def _register_bean_method(self, config_cls: type, config_name: str, method_name: str):
@@ -123,6 +137,8 @@ class Container:
                 bean_name = self._generate_name(return_type)
             else:
                 bean_name = method_name
+
+        logger.debug(f"📝 准备注册Bean: {bean_name} (方法: {method_name}, 返回类型: {return_type})")
 
         # 检查条件注册
         conditional_type = getattr(method, "__pyspring_conditional_on_missing_bean__", None)
@@ -235,6 +251,10 @@ class Container:
                 # 实例化
                 instance = service_def.service_type(**dependencies)
 
+            # AOP代理
+            if self._aop_integration:
+                instance = self._aop_integration.create_proxy(instance, service_def.service_type)
+
             # 生命周期回调
             if isinstance(instance, ILifecycle):
                 self._lifecycle_services.append(instance)
@@ -270,7 +290,22 @@ class Container:
     async def initialize_lifecycle_services(self):
         """初始化所有实现了ILifecycle的服务"""
         logger.info("🔧 初始化生命周期服务...")
+
+        # 1. 初始化Initializer管理器
+        from pyspring.ioc.lifecycle.initializer import StartupInitializerManager
+        self._initializer_manager = StartupInitializerManager(self)
+        self._initializer_manager.discover()
+
+        # 2. 执行所有Initializer
+        await self._initializer_manager.execute_all()
+
+        # 3. 初始化其他生命周期服务
         for service in self._lifecycle_services:
+            # 跳过Initializer（已经执行过）
+            from pyspring.ioc.lifecycle.initializer import IStartupInitializer
+            if isinstance(service, IStartupInitializer):
+                continue
+                
             try:
                 await service.on_init()
                 logger.debug(f"  ✅ {service.__class__.__name__}")
@@ -280,12 +315,27 @@ class Container:
     async def destroy_lifecycle_services(self):
         """销毁所有实现了ILifecycle的服务"""
         logger.info("🔄 销毁生命周期服务...")
+
+        # 1. 初始化Shutdown管理器
+        from pyspring.ioc.lifecycle.shutdown import ShutdownHandlerManager
+        self._shutdown_manager = ShutdownHandlerManager(self)
+        self._shutdown_manager.discover()
+
+        # 2. 先销毁其他生命周期服务
         for service in reversed(self._lifecycle_services):  # 反向销毁
+            # 跳过ShutdownHandler（最后执行）
+            from pyspring.ioc.lifecycle.shutdown import IShutdownHandler
+            if isinstance(service, IShutdownHandler):
+                continue
+                
             try:
                 await service.on_destroy()
                 logger.debug(f"  ✅ {service.__class__.__name__}")
             except Exception as e:
                 logger.error(f"  ❌ {service.__class__.__name__}: {e}")
+
+        # 3. 最后执行所有ShutdownHandler
+        await self._shutdown_manager.execute_all()
 
     @staticmethod
     def _generate_name(cls: type) -> str:

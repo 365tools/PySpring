@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import os
 from typing import Any, Optional, List, Dict
@@ -5,25 +7,37 @@ from typing import Any, Optional, List, Dict
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
 
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
 from pyspring.utils.config.finder import detect_project_root
 from ..interfaces.service import ISqliteService
+from ....config import DatabaseConfig
 
 
+@Component()
+@Singleton
 class SqliteService(ISqliteService):
-    """SQLite数据库服务实现"""
+    """SQLite数据库服务实现（由 IOC 容器管理）"""
 
-    def __init__(self, database: str = "data/app.db", resolve_path: bool = True, pool_config: Optional[dict] = None):
-        self.database = database
-        self.pool_config = pool_config or {}
+    def __init__(self, database_config: DatabaseConfig):
+        """
+        通过 IOC 注入配置
+        
+        Args:
+            database_config: DatabaseConfig 实例（自动注入）
+        """
+        self.config: DatabaseConfig = database_config
 
+        sqlite_config = self.config.sqlite
+        self.database = sqlite_config.database
+        
         # 如果是相对路径, 基于项目根目录解析
-        if resolve_path and not os.path.isabs(self.database):
+        if not os.path.isabs(self.database):
             try:
                 project_root = detect_project_root()
                 self.database = str(project_root / self.database)
             except Exception:
-                # Fallback if detection fails (e.g. in tests without project structure)
                 pass
 
         # 确保数据库目录存在
@@ -33,16 +47,17 @@ class SqliteService(ISqliteService):
 
         self.url = self._build_url()
 
-        # 从配置中获取连接池参数
-        self._pool_size = self.pool_config.get('size', 5)
-        self._max_overflow = self.pool_config.get('max_overflow', 10)
-        self._pool_recycle = self.pool_config.get('recycle', 3600)
+        # 连接池配置
+        pool_config = sqlite_config.pool
+        self._pool_size = pool_config.size
+        self._max_overflow = pool_config.max_overflow
+        self._pool_recycle = pool_config.recycle
 
         # 延迟初始化
         self._engine: Optional[AsyncEngine] = None
         self._session_factory: Optional[async_sessionmaker] = None
 
-        logger.debug(f"🔧 SqliteService configured for: {self.database}")
+        logger.debug(f"SqliteService initialized for: {self.database}")
 
     def _ensure_initialized(self):
         """延迟初始化引擎和会话工厂"""
@@ -50,7 +65,7 @@ class SqliteService(ISqliteService):
             return
 
         try:
-            logger.debug(f"🔧 Creating SQLite Engine with url: {self.url}")
+            logger.debug(f"Creating SQLite Engine with url: {self.url}")
             self._engine = create_async_engine(
                 self.url,
                 echo=False,
@@ -64,7 +79,7 @@ class SqliteService(ISqliteService):
                 class_=AsyncSession,
                 expire_on_commit=False
             )
-            logger.debug(f"🔗 SQLite 连接池已创建 (pool_size={self._pool_size}, max_overflow={self._max_overflow})")
+            logger.debug(f"SQLite connection pool created (pool_size={self._pool_size}, max_overflow={self._max_overflow})")
         except Exception as e:
             logger.error(f"❌ Failed to initialize SQLite engine: {e}")
             raise e
@@ -88,36 +103,39 @@ class SqliteService(ISqliteService):
     async def execute(self, query: str, params: Optional[Dict[str, Any]] = None) -> Any:
         """执行SQL语句"""
         try:
-            async with await self.session() as session:
+            session = await self.session()
+            async with session:
                 result = await session.execute(text(query), params or {})
                 await session.commit()
                 return result
         except Exception as e:
-            logger.error(f"🚨 Execute query failed: {e}")
+            logger.error(f"Execute query failed: {e}")
             raise e
 
     async def fetch_one(self, query: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """查询单条记录"""
         try:
-            async with await self.session() as session:
+            session = await self.session()
+            async with session:
                 result = await session.execute(text(query), params or {})
                 row = result.fetchone()
                 if row is None:
                     return None
-                return dict(row._mapping)
+                return row._asdict() if hasattr(row, '_asdict') else dict(row._mapping)
         except Exception as e:
-            logger.error(f"🚨 Fetch one failed: {e}")
+            logger.error(f"Fetch one failed: {e}")
             raise e
 
     async def fetch_all(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """查询多条记录"""
         try:
-            async with await self.session() as session:
+            session = await self.session()
+            async with session:
                 result = await session.execute(text(query), params or {})
                 rows = result.fetchall()
-                return [dict(row._mapping) for row in rows]
+                return [row._asdict() if hasattr(row, '_asdict') else dict(row._mapping) for row in rows]
         except Exception as e:
-            logger.error(f"🚨 Fetch all failed: {e}")
+            logger.error(f"Fetch all failed: {e}")
             raise e
 
     async def insert(self, table: str, data: Dict[str, Any]) -> Any:
@@ -127,13 +145,13 @@ class SqliteService(ISqliteService):
             placeholders = ", ".join([f":{key}" for key in data.keys()])
             query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
 
-            async with await self.session() as session:
+            session = await self.session()
+            async with session:
                 result = await session.execute(text(query), data)
                 await session.commit()
-                # SQLite 使用 last_insert_rowid
                 return result.lastrowid
         except Exception as e:
-            logger.error(f"🚨 Insert failed: {e}")
+            logger.error(f"Insert failed: {e}")
             raise e
 
     async def update(self, table: str, data: Dict[str, Any], condition: Dict[str, Any]) -> bool:
@@ -147,12 +165,13 @@ class SqliteService(ISqliteService):
             params = {**data}
             params.update({f"where_{key}": value for key, value in condition.items()})
 
-            async with await self.session() as session:
+            session = await self.session()
+            async with session:
                 result = await session.execute(text(query), params)
                 await session.commit()
                 return result.rowcount > 0
         except Exception as e:
-            logger.error(f"🚨 Update failed: {e}")
+            logger.error(f"Update failed: {e}")
             raise e
 
     async def delete(self, table: str, condition: Dict[str, Any]) -> bool:
@@ -161,12 +180,13 @@ class SqliteService(ISqliteService):
             where_clause = " AND ".join([f"{key} = :{key}" for key in condition.keys()])
             query = f"DELETE FROM {table} WHERE {where_clause}"
 
-            async with await self.session() as session:
+            session = await self.session()
+            async with session:
                 result = await session.execute(text(query), condition)
                 await session.commit()
                 return result.rowcount > 0
         except Exception as e:
-            logger.error(f"🚨 Delete failed: {e}")
+            logger.error(f"Delete failed: {e}")
             raise e
 
     async def close(self) -> None:
@@ -174,22 +194,22 @@ class SqliteService(ISqliteService):
         try:
             if self._engine is not None:
                 # ✅ 使用 asyncio.wait_for 添加超时保护
-                logger.debug("🔄 正在关闭 SQLite 连接池...")
+                logger.debug("Closing SQLite connection pool...")
                 try:
                     await asyncio.wait_for(
                         self._engine.dispose(close=True),
-                        timeout=5.0  # 5秒超时
+                        timeout=5.0
                     )
                 except asyncio.TimeoutError:
-                    logger.warning("⚠️  SQLite 连接池关闭超时，强制清理...")
+                    logger.warning("SQLite connection pool close timeout, forcing cleanup...")
                     # 强制清理
                     self._engine.sync_engine.dispose(close=False)
 
                 self._engine = None
                 self._session_factory = None
-                logger.debug("🔌 SQLite 连接池已释放")
+                logger.debug("SQLite connection pool released")
         except Exception as e:
-            logger.error(f"🚨 关闭 SQLite 连接池失败: {e}")
+            logger.error(f"Failed to close SQLite connection pool: {e}")
             # 确保引擎被清空，避免后续访问
             self._engine = None
             self._session_factory = None
@@ -199,9 +219,10 @@ class SqliteService(ISqliteService):
         测试数据库连接是否正常
         """
         try:
-            async with await self.session() as session:
+            session = await self.session()
+            async with session:
                 await session.execute(text("SELECT 1"))
                 return True
         except Exception as e:
-            logger.warning(f"🚨 Ping failed: {e}")
+            logger.warning(f"Ping failed: {e}")
             return False

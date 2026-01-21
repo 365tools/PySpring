@@ -1,4 +1,4 @@
-from typing import Dict, List
+﻿from typing import Dict, List
 
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider
 from pyspring.security.core.config.loader import SecurityConfigManager
@@ -29,10 +29,7 @@ class DefaultPathPermissionProvider(IPathPermissionProvider):
         auth_config = self.config_manager.config.get("authorization", {})
         rules_config = auth_config.get("rules", [])
 
-        # 兼容字典格式 (旧格式) 或列表格式 (新推荐格式)
-        if isinstance(rules_config, dict):
-            self._rules = rules_config
-        elif isinstance(rules_config, list):
+        if isinstance(rules_config, list):
             for item in rules_config:
                 path = item.get("path")
                 roles = item.get("roles", [])

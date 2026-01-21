@@ -1,16 +1,17 @@
 """
-缓存配置 - Infrastructure层
+缓存配置
 
-通用的缓存配置类，支持多种缓存类型
-可在不同项目中复用
+支持 Redis 和内存缓存的配置管理
 """
 
-from typing import Optional
+from typing import Optional, ClassVar
 
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
 from pyspring.core.abstracts.config import ConfigSection
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
 
 
 class RedisPoolConfig(ConfigSection):
@@ -32,36 +33,34 @@ class RedisConfig(ConfigSection):
     pool: RedisPoolConfig = Field(default_factory=RedisPoolConfig, description="连接池配置")
 
 
-class MemcachedConfig(ConfigSection):
-    """Memcached配置"""
-    servers: list[str] = Field(default=["localhost:11211"], description="服务器列表")
-    max_connections: int = Field(default=10, description="最大连接数")
-
-
 class MemoryConfig(ConfigSection):
     """内存缓存配置"""
     max_size: int = Field(default=1000, description="最大缓存项数")
     ttl: int = Field(default=3600, description="默认过期时间(秒)")
 
 
+@Component()
+@Singleton
 class CacheConfig(ConfigSection):
-    """通用缓存配置"""
-    type: str = Field(default="memory", description="缓存类型：redis、memcached、memory")
+    """
+    缓存配置（由 IOC 容器管理单例）
+    
+    支持从 YAML 自动加载配置
+    配置优先级：环境变量 > YAML 文件 > Field 默认值
+    """
+    yaml_config_file: ClassVar[str] = "config/repositories.yaml"
+    yaml_config_key: ClassVar[str] = "cache"
+
+    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
+
+    type: str = Field(default="memory", description="缓存类型：redis、memory")
     redis: RedisConfig = Field(default_factory=RedisConfig, description="Redis配置")
-    memcached: MemcachedConfig = Field(default_factory=MemcachedConfig, description="Memcached配置")
     memory: MemoryConfig = Field(default_factory=MemoryConfig, description="内存缓存配置")
-
-
-# 向后兼容：为旧代码提供别名
-class RedisConfig_Alias(RedisConfig):
-    """Redis配置别名(向后兼容)"""
-    pass
 
 
 __all__ = [
     "RedisPoolConfig",
     "RedisConfig",
-    "MemcachedConfig",
     "MemoryConfig",
     "CacheConfig",
 ]

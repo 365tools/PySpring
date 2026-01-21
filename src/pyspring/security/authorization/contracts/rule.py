@@ -1,10 +1,10 @@
-from abc import ABC, abstractmethod
+﻿from abc import ABC, abstractmethod
 from typing import Dict, List
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.interfaces.core import IManaged
 
 
-class IPathPermissionProvider(ISingletonService, ABC):
+class IPathPermissionProvider(IManaged, ABC):
     """
     路径权限规则提供者接口
     负责加载 URL 路径与其所需权限/角色的映射规则

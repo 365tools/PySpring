@@ -3,7 +3,6 @@ IOC组件注解
 
 定义组件的注册方式
 """
-from functools import wraps
 from typing import TypeVar, Type, Optional, Callable
 
 T = TypeVar('T')
@@ -107,16 +106,29 @@ def Configuration(cls: Type[T]) -> Type[T]:
 
 
 def Bean(
+        func_or_name: Optional[Callable[..., T] | str] = None,
+        *,
         name: Optional[str] = None,
         init_method: Optional[str] = None,
         destroy_method: Optional[str] = None
-) -> Callable[[Callable[..., T]], Callable[..., T]]:
+) -> Callable[[Callable[..., T]], Callable[..., T]] | Callable[..., T]:
     """
-    Bean方法装饰器
+    Bean方法装饰器（支持有参和无参两种用法）
     
     标记配置类中的方法为Bean工厂方法。
     
+    用法1: 无参数（像@staticmethod一样）:
+        @Bean
+        def data_source(self) -> DataSource:
+            return PostgresDataSource()
+    
+    用法2: 带参数:
+        @Bean(name="custom_cache")
+        def cache_service(self) -> ICacheService:
+            return RedisCache()
+    
     Args:
+        func_or_name: 如果直接装饰函数，这是函数对象；如果带参数调用，这是name参数
         name: Bean名称（可选，默认使用方法名）
         init_method: 初始化方法名（可选）
         destroy_method: 销毁方法名（可选）
@@ -124,35 +136,43 @@ def Bean(
     示例：
         @Configuration
         class AppConfig:
-            @Bean
+            @Bean  # 无括号
             def data_source(self) -> DataSource:
                 return PostgresDataSource()
             
-            @Bean(name="custom_cache")
+            @Bean()  # 空括号
+            def another_source(self) -> DataSource:
+                return MySQLDataSource()
+            
+            @Bean(name="custom_cache")  # 带参数
             def cache_service(self) -> ICacheService:
                 return RedisCache()
     """
 
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+    # 检查是否是直接装饰（@Bean 不带括号）
+    # 条件：第一个参数是可调用对象且没有通过name参数传值
+    if callable(func_or_name) and name is None:
+        # 直接装饰模式：@Bean
+        func = func_or_name
         setattr(func, "__pyspring_bean__", True)
-        if name:
-            setattr(func, "__pyspring_bean_name__", name)
+        return func
+
+    # 带参数模式：@Bean() 或 @Bean(name=...)
+    # 如果 func_or_name 是字符串，说明是位置参数传入的name
+    actual_name = func_or_name if isinstance(func_or_name, str) else name
+    
+    def decorator(func: Callable[..., T]) -> Callable[..., T]:
+        # 直接在原函数上设置属性，不使用wrapper
+        # 因为@wraps会重置自定义属性
+        setattr(func, "__pyspring_bean__", True)
+        if actual_name:
+            setattr(func, "__pyspring_bean_name__", actual_name)
         if init_method:
             setattr(func, "__pyspring_init_method__", init_method)
         if destroy_method:
             setattr(func, "__pyspring_destroy_method__", destroy_method)
-
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            return func(*args, **kwargs)
-
-        # 保留原始属性
-        for attr_name in dir(func):
-            if attr_name.startswith("__pyspring_"):
-                setattr(wrapper, attr_name, getattr(func, attr_name))
-
-        return wrapper
-
+        return func
+    
     return decorator
 
 

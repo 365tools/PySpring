@@ -1,10 +1,10 @@
-from abc import ABC, abstractmethod
+﻿from abc import ABC, abstractmethod
 from typing import Any
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.interfaces import IManaged
 
 
-class IPermissionService(ISingletonService, ABC):
+class IPermissionService(IManaged, ABC):
     """
     权限服务接口
     负责最终的权限判定

@@ -1,4 +1,4 @@
-"""
+﻿"""
 认证配置管理器
 用于加载和管理 security.yaml 配置文件
 """
@@ -9,12 +9,15 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.annotations.scope import Singleton
+from pyspring.ioc.interfaces.core import IManaged
+from pyspring.log.instance import logger
 from pyspring.utils.config.finder import find_config_file
 
 
-class SecurityConfigManager(ISingletonService):
-    """认证与授权配置管理器（由 IoC 容器管理单例）"""
+@Singleton
+class SecurityConfigManager(IManaged):
+    """认证与授权配置管理器（由IOC容器管理单例）"""
 
     _config: Optional[Dict[str, Any]] = None
 
@@ -57,9 +60,7 @@ class SecurityConfigManager(ISingletonService):
             self._apply_env_overrides()
 
         except Exception as e:
-            # logger.debug(f"[SecurityConfigManager] 加载配置文件失败: {e}")
-            # logger.debug("[SecurityConfigManager] 使用默认配置")
-            print(f"⚠️ [SecurityConfigManager] 加载配置异常 (已恢复默认): {e}") 
+            logger.warning(f"[SecurityConfigManager] 加载配置异常 (已恢复默认): {e}")
             self._config = self._get_default_config()
 
     def _apply_env_overrides(self):
@@ -111,7 +112,7 @@ class SecurityConfigManager(ISingletonService):
             "authentication": {
                 "enabled": True,
                 "jwt": {
-                    "secret_key": os.getenv("JWT_SECRET_KEY", "your-secret-key-change-in-production"),
+                    "secret_key": os.getenv("JWT_SECRET_KEY"),  # 必须通过环境变量提供
                     "algorithm": "HS256",
                     "access_token_expire": 3600,
                     "refresh_token_expire": 2592000

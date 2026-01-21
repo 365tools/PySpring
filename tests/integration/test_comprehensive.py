@@ -12,10 +12,10 @@ PySpring 综合测试套件
 8. 数据库和缓存服务
 """
 import pytest
-from pyspring.ioc.manager import AppContainerManager
-
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
+from pyspring.ioc.manager import AppContainerManager
+
 from pyspring.log.instance import logger
 
 
@@ -107,7 +107,7 @@ class TestDependencyInjection:
 
         # 获取需要依赖注入的服务
         try:
-            from pyspring.repositories.cache.handler import CacheShutdownHandler
+            from pyspring.repositories.cache.handler.shutdown import CacheShutdownHandler
             handler = manager.get_service(CacheShutdownHandler)
             assert handler is not None
             assert hasattr(handler, 'cache_manager')

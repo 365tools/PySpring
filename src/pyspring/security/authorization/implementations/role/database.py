@@ -1,9 +1,9 @@
-from typing import List, Any
+﻿from typing import List, Any
 
 from sqlalchemy import select
 
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.core.component import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
 from pyspring.security.authorization.contracts.role import IRoleProvider
 
 

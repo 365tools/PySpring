@@ -6,34 +6,26 @@ from typing import Dict, Any
 
 import yaml
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
+from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.instance import logger
 from pyspring.utils.config.finder import find_config_file
 
 
-class RepositoriesConfigManager(ISingletonService):  # 仍然继承 ISingletonService，但单例由 IoC 容器管理
+@Component()
+@Singleton
+class RepositoriesConfigManager(IManaged):
     """
-    数据仓储配置管理器（由 IoC 容器管理单例）
+    数据仓储配置管理器（由IOC容器管理单例）
     
     负责从 YAML 文件加载缓存和数据库配置
     """
 
-    # 移除旧的单例实现细节
-    # _config: Optional[Dict[str, Any]] = None
-    # _instance: Optional['RepositoriesConfigManager'] = None
-    # _initialized: bool = False
-
-    # 移除 __new__ 方法
-    # def __new__(cls):
-    #     if cls._instance is None:
-    #         cls._instance = super().__new__(cls)
-    #     return cls._instance
-
     def __init__(self):
         """初始化配置管理器"""
-        # 移除单例初始化检查，现在由 IoC 容器保证只初始化一次
         self._config = self._load_config()
-        # logger.debug("🔧 RepositoriesConfigManager 初始化完成")
+        # logger.debug("RepositoriesConfigManager initialized")
 
 
     def _load_config(self) -> Dict[str, Any]:
@@ -51,15 +43,11 @@ class RepositoriesConfigManager(ISingletonService):  # 仍然继承 ISingletonSe
             try:
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f) or {}
-                    # 简单打印，避免循环依赖
-                    # logger.debug(f"✅ 已加载仓储配置: {config_path}")
                     return config
             except Exception as e:
-                # logger.debug(f"❌ 加载仓储配置失败: {config_path}, 错误: {e}")
-                print(f"⚠️ [RepositoriesConfigManager] 加载配置失败: {e}")
+                # Silent failure, use default config
+                pass
 
-        # 返回默认配置
-        # logger.debug("⚠️ 未找到仓储配置文件，使用默认配置")
         return self._get_default_config()
 
     @staticmethod
@@ -174,6 +162,6 @@ class RepositoriesConfigManager(ISingletonService):  # 仍然继承 ISingletonSe
 
     def reload(self):
         """重新加载配置"""
-        logger.debug("🔄 重新加载仓储配置...")
+        logger.debug("Reloading repositories configuration...")
         self._config = None
         self._config = self._load_config()

@@ -154,7 +154,7 @@ users = user_service.get_users()
 
 ---
 
-## �️ 命令行工具 (CLI)
+## 🛠️ 命令行工具 (CLI)
 
 PySpring 提供了一套强大的命令行工具，协助你管理项目全生命周期。
 

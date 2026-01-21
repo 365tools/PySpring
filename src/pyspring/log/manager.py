@@ -1,26 +1,64 @@
-from typing import Type, Optional
+"""
+日志管理器
+"""
+from typing import Type, Optional, Dict
 
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
+from pyspring.ioc.interfaces.core import IManaged
 from .core.interface import ILoggerService
 from .providers.loguru.services.service import LoguruService
-from ..core.abstracts.interfaces.ISingleton import ISingletonService
 
 
-class LogManager(ISingletonService):
+@Component()
+@Singleton
+class LogManager(IManaged):
     """
-    日志管理器 - 负责管理日志服务的具体实现。
-    允许在运行时或配置阶段切换底层的日志实现（如 Loguru, Python logging, Structlog 等）。
+    日志管理器 - 负责管理日志服务的具体实现
+    
+    使用新IOC框架管理生命周期
+    通过配置文件自动选择日志实现，无需手动切换
     """
     _implementation: Optional[ILoggerService] = None
-    # 默认使用 Loguru 实现
-    _provider_cls: Type[ILoggerService] = LoguruService
+    _provider_registry: Dict[str, Type[ILoggerService]] = {
+        "loguru": LoguruService,
+        # 未来扩展: "stdlib": PythonLoggingService,
+        # 未来扩展: "structlog": StructlogService,
+    }
+    _configured_provider: str = "loguru"  # 默认提供者
 
     @classmethod
-    def set_provider(cls, provider_cls: Type[ILoggerService]):
+    def _register_provider(cls, name: str, provider_cls: Type[ILoggerService]):
         """
-        设置日志服务提供者类
-        :param provider_cls: 实现了 ILoggerService 的类
+        【内部方法】注册日志提供者
+        
+        仅供框架内部使用，不对外暴露
+        
+        Args:
+            name: 提供者名称（如 'loguru', 'stdlib', 'structlog'）
+            provider_cls: 实现了 ILoggerService 的类
         """
-        cls._provider_cls = provider_cls
+        cls._provider_registry[name] = provider_cls
+
+    @classmethod
+    def configure_provider(cls, provider_name: str):
+        """
+        【内部方法】配置日志提供者
+        
+        由配置管理器调用，不建议业务代码直接调用
+        
+        Args:
+            provider_name: 提供者名称（如 'loguru', 'stdlib', 'structlog'）
+        
+        Raises:
+            ValueError: 提供者未注册时抛出
+        """
+        if provider_name not in cls._provider_registry:
+            raise ValueError(
+                f"日志提供者 '{provider_name}' 未注册。"
+                f"可用提供者: {list(cls._provider_registry.keys())}"
+            )
+        cls._configured_provider = provider_name
         # 重置实例，以便下次调用 get_logger 时重新创建
         cls._implementation = None
 
@@ -28,15 +66,16 @@ class LogManager(ISingletonService):
     def get_logger(cls) -> ILoggerService:
         """
         获取当前配置的日志服务实例
+        
+        Returns:
+            ILoggerService: 日志服务实例
         """
         if cls._implementation is None:
-            # 实例化提供者
-            # 注意: 如果提供者也是 ISingletonService，理论上应该由 IoC 容器管理
-            # 但作为日志这一基础服务，通常需要在 IoC 启动前就可用
-            cls._implementation = cls._provider_cls()
+            provider_cls = cls._provider_registry[cls._configured_provider]
+            cls._implementation = provider_cls()
         return cls._implementation
 
     @classmethod
     def reset(cls):
-        """重置管理器状态 (主要用于测试)"""
+        """重置管理器状态（主要用于测试）"""
         cls._implementation = None

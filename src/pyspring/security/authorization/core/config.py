@@ -1,7 +1,7 @@
-from pyspring.ioc.annotations.decorators import Configuration, Bean, ConditionalOnMissingBean
+﻿from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
 
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.core.component import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
 from pyspring.security.authorization.contracts.permission import IPermissionService
 from pyspring.security.authorization.contracts.role import IRoleProvider
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider
@@ -28,12 +28,6 @@ class AuthorizationConfiguration:
     def default_path_permission_provider(self, config_manager: SecurityConfigManager) -> IPathPermissionProvider:
         """注册默认的路径权限提供者 (基于配置)"""
         return DefaultPathPermissionProvider(config_manager)
-
-    @Bean
-    @ConditionalOnMissingBean(IPermissionService)
-    def default_permission_service(self, default_role_provider: IRoleProvider) -> IPermissionService:
-        """注册默认的权限判定服务"""
-        return DefaultPermissionService(default_role_provider)
 
     @Bean
     @ConditionalOnMissingBean(IPermissionService)

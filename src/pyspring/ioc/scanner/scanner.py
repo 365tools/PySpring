@@ -123,7 +123,7 @@ class ComponentScanner:
                     logger.debug(f"📦 发现组件: {name} ({module_name})")
 
         except Exception as e:
-            logger.debug(f"⚠️ 扫描模块 {module_name} 时发生错误: {e}")
+            logger.warning(f"⚠️ 扫描模块 {module_name} 时发生错误: {e}")
 
     def _should_process_class(self, cls: type) -> bool:
         """判断是否应该处理该类"""
@@ -131,9 +131,13 @@ class ComponentScanner:
         if getattr(cls, '_is_protocol', False):
             return False
 
-        # 2. 检查是否是抽象类
-        if inspect.isabstract(cls) and not self.config.scan_abstract:
-            return False
+        # 2. 检查是否是抽象类（有未实现的抽象方法）
+        if not self.config.scan_abstract:
+            # 不能简单用 inspect.isabstract()，因为它会将任何继承ABC的类标记为抽象
+            # 应该检查是否有未实现的抽象方法
+            abstract_methods = getattr(cls, '__abstractmethods__', None)
+            if abstract_methods and len(abstract_methods) > 0:
+                return False
 
         # 3. 应用配置的过滤规则
         if not self.config.should_scan_class(cls):

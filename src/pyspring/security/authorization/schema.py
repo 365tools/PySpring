@@ -1,4 +1,4 @@
-from typing import List, Union, Callable
+﻿from typing import List, Union, Callable
 
 from fastapi import Request, HTTPException, status
 
@@ -45,21 +45,16 @@ def require_permissions(permissions: Union[str, List[str]], logic: str = "OR") -
         permissions = [permissions]
 
     async def permission_dependency(request: Request):
-        # 1. 获取当前用户持有的权限列表
-        # 假设 Token Payload 中有一个 'permissions' 字段
-        # 或者在 AuthenticationMiddleware 中已经解析并放入了 request.state.user_permissions
-
-        # 优先读取 state，如果没有则尝试从 payload 读取，还没有则为空
+        # 获取当前用户持有的权限列表
         user_permissions = getattr(request.state, "user_permissions", [])
 
         if not user_permissions:
-            # 兼容逻辑: 尝试从 payload 读取 (如果 Middleware 没做处理)
             payload = getattr(request.state, "token_payload", {})
             user_permissions = payload.get("permissions", [])
 
         # 2. 执行检查
         if not user_permissions:
-            logger.warning(f"❌ 拒绝访问: 用户 {getattr(request.state, 'user_email', 'Unknown')} 没有权限列表")
+            logger.warning(f"[Error] 拒绝访问: 用户 {getattr(request.state, 'user_email', 'Unknown')} 没有权限列表")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions (No permissions assigned)"
@@ -82,7 +77,7 @@ def require_permissions(permissions: Union[str, List[str]], logic: str = "OR") -
                     break
 
         if not has_perm:
-            logger.warning(f"⚠️ 权限不足: 需要 {logic} {permissions}, 实际拥有 {user_permissions}")
+            logger.warning(f"[Warning] 权限不足: 需要 {logic} {permissions}, 实际拥有 {user_permissions}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Insufficient permissions: required {permissions}"

@@ -3,10 +3,18 @@
 
 聚合所有配置类，提供统一的配置访问接口。
 所有具体配置类从各模块引用，避免重复定义。
+
+使用方式（通过IoC注入）：
+    @Component()
+    class MyService:
+        def __init__(self, settings: AppSettings):
+            self.port = settings.app.server.port
 """
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
 # 从各子系统导入配置类
 from pyspring.log.core.config import LoggingConfig
 from pyspring.repositories.cache.config import RedisConfig, CacheConfig
@@ -38,15 +46,22 @@ class AppConfig(ConfigSection):
 
 # ==================== 主配置类 ====================
 
+@Component()
+@Singleton
 class AppSettings(BaseSettings):
     """
-    应用配置主类
+    应用配置主类（由IoC容器管理单例）
     
     聚合所有配置，自动从以下来源加载（优先级从高到低）：
     1. 环境变量
     2. .env 文件
-    3. config/*.yaml 文件
-    4. 默认值
+    3. 默认值
+    
+    使用方式：
+        @Component()
+        class MyService:
+            def __init__(self, settings: AppSettings):
+                self.port = settings.app.server.port
     """
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -72,11 +87,6 @@ class AppSettings(BaseSettings):
     authentication: AuthenticationConfig = Field(default_factory=AuthenticationConfig, description="认证配置")
 
 
-# ==================== 单例配置实例 ====================
-
-# 全局配置实例（单例）
-settings = AppSettings()
-
 __all__ = [
     "AppSettings",
     "AppConfig",
@@ -88,6 +98,4 @@ __all__ = [
     "RedisConfig",
     "CacheConfig",
     "LoggingConfig",
-    # 单例实例
-    "settings",
 ]

@@ -38,8 +38,6 @@ def trace_logging(trace_id: str):
         _trace_id_ctx.reset(token)
 
 
-# 便捷辅助函数（兼容脚本检查用）
-
 def set_trace_id(trace_id: Optional[str]) -> None:
     """设置当前追踪ID(可设置为None重置)"""
     _trace_id_ctx.set(trace_id)

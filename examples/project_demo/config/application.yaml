@@ -1,8 +1,0 @@
-app:
-  name: "PySpring Demo Shop"
-  version: "1.0.0"
-  env: "dev"
-
-server:
-  host: "0.0.0.0"
-  port: 8080

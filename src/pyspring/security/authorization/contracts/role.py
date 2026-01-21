@@ -1,10 +1,10 @@
-from abc import ABC, abstractmethod
+﻿from abc import ABC, abstractmethod
 from typing import List, Any
 
-from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
+from pyspring.ioc.interfaces.core import IManaged
 
 
-class IRoleProvider(ISingletonService, ABC):
+class IRoleProvider(IManaged, ABC):
     """
     角色提供者接口
     负责获取用户的角色信息
