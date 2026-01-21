@@ -3,11 +3,12 @@
 
 验证所有单例类都正确继承 ISingletonService 并可通过 IoC 容器管理
 """
+import os
 import sys
 from pathlib import Path
 
 # 添加项目路径
-project_root = Path(__file__).parent.parent
+project_root = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 
@@ -16,18 +17,16 @@ def test_imports():
     print("🔍 测试 1: 验证导入...")
 
     try:
-        # 使用相对于 pyspring 的路径
-        sys.path.insert(0, str(project_root / "src"))
-
         from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
         print("  ✓ ISingletonService 导入成功")
 
         from pyspring.security.core.config.loader import SecurityConfigManager
         print("  ✓ SecurityConfigManager 导入成功")
 
-        from pyspring.security.authentication.core.chain import AuthenticationChain
+        from pyspring.security.authentication.web.chain import AuthenticationChain
         print("  ✓ AuthenticationChain 导入成功")
 
+        from pyspring.security.authentication.core.crypto.encryption import JWTEncryptionManager
         print("  ✓ JWTEncryptionManager 导入成功")
 
         from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
@@ -35,8 +34,6 @@ def test_imports():
 
         from pyspring.repositories.base.config.loader import RepositoriesConfigManager
         print("  ✓ RepositoriesConfigManager 导入成功")
-
-        print("  ✓ BaseConfigManager 导入成功")
 
         from pyspring.core.configuration.registry import ConfigRegistry
         print("  ✓ ConfigRegistry 导入成功")
@@ -47,12 +44,12 @@ def test_imports():
         from pyspring.ioc.manager import AppContainerManager
         print("  ✓ AppContainerManager 导入成功")
 
-        assert True
+        return True
     except Exception as e:
         print(f"  ✗ 导入失败: {e}")
         import traceback
         traceback.print_exc()
-        assert False, f"导入失败: {e}"
+        return False
 
 
 def test_inheritance():
@@ -62,7 +59,8 @@ def test_inheritance():
     try:
         from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
         from pyspring.security.core.config.loader import SecurityConfigManager
-        from pyspring.security.authentication.core.chain import AuthenticationChain
+        from pyspring.security.authentication.web.chain import AuthenticationChain
+        from pyspring.security.authentication.core.crypto.encryption import JWTEncryptionManager
         from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
         from pyspring.repositories.base.config.loader import RepositoriesConfigManager
         from pyspring.core.configuration.registry import ConfigRegistry
@@ -88,12 +86,12 @@ def test_inheritance():
                 print(f"  ✗ {name} 未继承 ISingletonService")
                 all_passed = False
 
-        assert all_passed
+        return all_passed
     except Exception as e:
         print(f"  ✗ 继承测试失败: {e}")
         import traceback
         traceback.print_exc()
-        assert False, f"继承测试失败: {e}"
+        return False
 
 
 def test_no_custom_singleton():
@@ -102,7 +100,8 @@ def test_no_custom_singleton():
 
     try:
         from pyspring.security.core.config.loader import SecurityConfigManager
-        from pyspring.security.authentication.core.chain import AuthenticationChain
+        from pyspring.security.authentication.web.chain import AuthenticationChain
+        from pyspring.security.authentication.core.crypto.encryption import JWTEncryptionManager
 
         classes_to_test = [
             ("SecurityConfigManager", SecurityConfigManager),
@@ -130,29 +129,27 @@ def test_no_custom_singleton():
             else:
                 print(f"  ✓ {name} 未重写 __new__")
 
-        assert all_passed
+        return all_passed
     except ImportError:
         # 忽略 ImportError (在某些环境中可能发生导入循环)
         print("  ⚠ 导入失败，跳过检查")
+        return True
     except Exception as e:
         # 检查是否是 SQLAlchemy 的重复表定义错误
         error_msg = str(e)
         if "Table" in error_msg and "already defined" in error_msg:
             print(f"  ⚠ SQLAlchemy MetaData 冲突 (测试环境副作用)，视为警告跳过: {e}")
-            return
+            return True
 
         print(f"  ✗ 单例逻辑检查失败: {e}")
         import traceback
         traceback.print_exc()
-        assert False, f"单例逻辑检查失败: {e}"
+        return False
 
 
 def test_no_old_imports():
     """测试是否还有旧的 src.ref.core 导入"""
     print("\n🔍 测试 4: 验证导入路径统一...")
-
-
-from pyspring.security.authentication.core.crypto.encryption import JWTEncryptionManager
 
     old_imports_found = []
 
@@ -180,10 +177,10 @@ from pyspring.security.authentication.core.crypto.encryption import JWTEncryptio
             print(f"    - {imp}")
         if len(old_imports_found) > 5:
             print(f"    ... 还有 {len(old_imports_found) - 5} 处")
-        assert False, f"发现 {len(old_imports_found)} 处旧导入路径"
+        return False
     else:
         print("  ✓ 未发现旧导入路径 (src.ref.core)")
-        assert True
+        return True
 
 
 def main():

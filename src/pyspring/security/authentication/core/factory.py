@@ -9,7 +9,9 @@ from typing import Dict, Type, List
 from typing import Optional
 
 from pyspring.ioc.manager import AppContainerManager
+
 from pyspring.log.instance import logger
+from pyspring.security.authentication.contracts.interface.token import ITokenService
 from pyspring.security.core.config.loader import SecurityConfigManager
 from .chain import AuthenticationChain
 from ..implementations.request.base import BaseAuthenticationProvider
@@ -72,7 +74,8 @@ class AuthProviderFactory:
         # 根据提供者类型传递不同的依赖
         if provider_type == "JWTAuthProvider":
             if token_manager is None:
-                raise ValueError("JWTAuthProvider 需要 TokenManagerService 依赖")
+                # 懒加载 TokenManagerService，避免在 Bean 注册阶段触发依赖
+                token_manager = AppContainerManager().get(ITokenService)
             return provider_class(str(provider_name), provider_config, token_manager)
 
         # 其他提供者类型的创建逻辑
@@ -98,7 +101,7 @@ class AuthProviderFactory:
         Returns:
             List[BaseAuthenticationProvider]: 认证提供者列表
         """
-        config_manager = SecurityConfigManager()
+        config_manager = AppContainerManager().get(SecurityConfigManager)
         providers_config = config_manager.get_providers_config()
 
         providers = []

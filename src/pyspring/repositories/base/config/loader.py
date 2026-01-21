@@ -1,43 +1,40 @@
 """
-from pyspring.repositories.db.config import DatabaseConfig
-from pyspring.repositories.cache.config import CacheConfig
-
 数据仓储配置管理器
 从 YAML 文件加载缓存和数据库配置
 """
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 import yaml
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
-from pyspring.repositories.cache.config import CacheConfig
-from pyspring.repositories.db.config import DatabaseConfig
 from pyspring.utils.config.finder import find_config_file
 
 
-class RepositoriesConfigManager(ISingletonService):
+class RepositoriesConfigManager(ISingletonService):  # 仍然继承 ISingletonService，但单例由 IoC 容器管理
     """
     数据仓储配置管理器（由 IoC 容器管理单例）
     
     负责从 YAML 文件加载缓存和数据库配置
     """
 
-    _config: Optional[Dict[str, Any]] = None
-    _instance: Optional['RepositoriesConfigManager'] = None
-    _initialized: bool = False
+    # 移除旧的单例实现细节
+    # _config: Optional[Dict[str, Any]] = None
+    # _instance: Optional['RepositoriesConfigManager'] = None
+    # _initialized: bool = False
 
-    def __new__(cls):
-        """确保单例模式"""
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
+    # 移除 __new__ 方法
+    # def __new__(cls):
+    #     if cls._instance is None:
+    #         cls._instance = super().__new__(cls)
+    #     return cls._instance
 
     def __init__(self):
-        """初始化配置管理器（只执行一次）"""
-        if not self.__class__._initialized:
-            self._config = self._load_config()
-            self.__class__._initialized = True
+        """初始化配置管理器"""
+        # 移除单例初始化检查，现在由 IoC 容器保证只初始化一次
+        self._config = self._load_config()
+        # logger.debug("🔧 RepositoriesConfigManager 初始化完成")
+
 
     def _load_config(self) -> Dict[str, Any]:
         """
@@ -55,13 +52,14 @@ class RepositoriesConfigManager(ISingletonService):
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f) or {}
                     # 简单打印，避免循环依赖
-                    logger.debug(f"✅ 已加载仓储配置: {config_path}")
+                    # logger.debug(f"✅ 已加载仓储配置: {config_path}")
                     return config
             except Exception as e:
-                logger.debug(f"❌ 加载仓储配置失败: {config_path}, 错误: {e}")
+                # logger.debug(f"❌ 加载仓储配置失败: {config_path}, 错误: {e}")
+                print(f"⚠️ [RepositoriesConfigManager] 加载配置失败: {e}")
 
         # 返回默认配置
-        logger.debug("⚠️ 未找到仓储配置文件，使用默认配置")
+        # logger.debug("⚠️ 未找到仓储配置文件，使用默认配置")
         return self._get_default_config()
 
     @staticmethod
@@ -70,14 +68,30 @@ class RepositoriesConfigManager(ISingletonService):
         获取默认配置
         
         Returns:
-            默认配置字典（基于 Pydantic 模型生成）
+            默认配置字典（手动构建，避免 Pydantic 递归）
         """
-        # 注意：此处必须使用局部导入，否则会导致循环依赖
-        # CacheConfig -> initializer -> connection -> RepositoriesConfigManager(this) -> CacheConfig
-        
+        # 手动构建默认配置，完全绕过 Pydantic 的初始化和环境变量读取
         return {
-            'cache': CacheConfig().model_dump(by_alias=True),
-            'database': DatabaseConfig().model_dump(by_alias=True)
+            'cache': {
+                'type': 'memory',
+                'redis': {
+                    'host': 'localhost',
+                    'port': 6379,
+                    'db': 0,
+                    'pool': {'max_connections': 50}
+                }
+            },
+            'database': {
+                'postgresql': {
+                    'host': 'localhost',
+                    'port': 5432,
+                    'database': 'app_db',
+                    'pool': {'size': 5}
+                },
+                'sqlite': {
+                    'path': 'data/app.db'
+                }
+            }
         }
 
     @property

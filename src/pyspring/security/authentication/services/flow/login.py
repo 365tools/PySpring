@@ -24,7 +24,6 @@ class DefaultLoginService(ILoginService):
             self,
             user_provider: IUserProvider,
             auth_provider: ILoginProvider,
-            token_manager: ITokenService,
             response_builder: IResponseBuilder,
             payload_builder: ITokenPayloadBuilder,
             context_manager: SecurityContextManagerService
@@ -35,19 +34,28 @@ class DefaultLoginService(ILoginService):
         Args:
             user_provider: 用户提供者 (策略)
             auth_provider: 认证提供者 (策略)
-            token_manager: Token管理服务 (策略)
+            (Lazily loaded) token_manager: Token管理服务
             response_builder: 响应构建器 (策略)
             payload_builder: Token Payload 构建器 (策略)
             context_manager: 安全上下文管理器
         """
         self.user_provider = user_provider
         self.auth_provider = auth_provider
-        self.token_manager = token_manager
+        # self.token_manager = token_manager # Removed cycle
         self.response_builder = response_builder
         self.payload_builder = payload_builder
         self.context_manager = context_manager
+        self._token_manager = None
 
         logger.info("🔧 DefaultLoginService 初始化完成 (Strategy Pattern)")
+
+    @property
+    def token_manager(self) -> ITokenService:
+        if self._token_manager is None:
+            from pyspring.ioc.manager import AppContainerManager
+            from pyspring.security.authentication.contracts.interface.token import ITokenService
+            self._token_manager = AppContainerManager().get(ITokenService)
+        return self._token_manager
 
     async def login(self, request: object) -> object:
         """

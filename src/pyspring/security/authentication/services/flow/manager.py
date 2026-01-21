@@ -22,19 +22,29 @@ class DefaultUserManagerService(IUserManagerService):
     负责用户信息的查询、更新、删除等操作
     """
 
-    def __init__(self, db: DBManagerService, token_manager: ITokenService, component: SecurityEntityConfiguration):
+    def __init__(self, db: DBManagerService, component: SecurityEntityConfiguration):
         """
         初始化用户管理服务
         
         Args:
             db: 数据库管理服务
-            token_manager: Token 管理服务(可选, 用于获取当前用户)
             component: 安全组件配置
         """
         self.db = db
-        self.token_manager = token_manager
+        # 移除 token_manager 依赖，避免循环依赖 (Lazy load instead)
+        # self.token_manager = token_manager
         self.component = component
         self.password_helper = PasswordHelper()
+        self._token_manager: Optional[ITokenService] = None
+
+    @property
+    def token_manager(self) -> ITokenService:
+        """延迟加载 TokenManager"""
+        if self._token_manager is None:
+            from pyspring.ioc.manager import AppContainerManager
+            from pyspring.security.authentication.contracts.interface.token import ITokenService
+            self._token_manager = AppContainerManager().get(ITokenService)
+        return self._token_manager
 
     async def get_user_by_id(self, user_id: int) -> Optional[UserInfo]:
         """
@@ -47,7 +57,7 @@ class DefaultUserManagerService(IUserManagerService):
             完整用户信息, 不存在则返回None
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 # 查询用户基本信息
                 stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
@@ -73,7 +83,7 @@ class DefaultUserManagerService(IUserManagerService):
             完整用户信息，不存在则返回 None
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.email == email)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
@@ -183,7 +193,7 @@ class DefaultUserManagerService(IUserManagerService):
             用户信息列表
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 stmt = select(self.component.user_orm_model).offset(skip).limit(limit)
                 result = await session.execute(stmt)
                 users = result.scalars().all()
@@ -214,7 +224,7 @@ class DefaultUserManagerService(IUserManagerService):
             HTTPException: 用户不存在或更新失败
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 # 1. 检查用户是否存在
                 stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
@@ -268,7 +278,7 @@ class DefaultUserManagerService(IUserManagerService):
             HTTPException: 用户不存在或字段不存在或更新失败
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 # 查询用户
                 stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
@@ -324,7 +334,7 @@ class DefaultUserManagerService(IUserManagerService):
             HTTPException: 用户不存在或更新失败
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 # 检查用户是否存在
                 stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)
@@ -367,7 +377,7 @@ class DefaultUserManagerService(IUserManagerService):
             HTTPException: 用户不存在或删除失败
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 # 查询用户
                 stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
                 result = await session.execute(stmt)

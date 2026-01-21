@@ -12,10 +12,10 @@ PySpring 综合测试套件
 8. 数据库和缓存服务
 """
 import pytest
+from pyspring.ioc.manager import AppContainerManager
 
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
-from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 
 
@@ -96,7 +96,7 @@ class TestDependencyInjection:
 
         # 尝试获取一个已注册的服务
         from pyspring.repositories.cache.manager import CacheManagerService
-        cache_manager = AppContainerManager.service(CacheManagerService)
+        cache_manager = manager.get_service(CacheManagerService)
         assert cache_manager is not None
         logger.info("✅ CacheManagerService 获取成功")
 
@@ -107,7 +107,8 @@ class TestDependencyInjection:
 
         # 获取需要依赖注入的服务
         try:
-            handler = manager.container.get('cache_shutdown_handler')
+            from pyspring.repositories.cache.handler import CacheShutdownHandler
+            handler = manager.get_service(CacheShutdownHandler)
             assert handler is not None
             assert hasattr(handler, 'cache_manager')
             logger.info("✅ 依赖注入成功")
@@ -211,9 +212,11 @@ class TestStartupInitializers:
         # 使用更宽松的检查或确切的新名称
         has_cache_init = any("Cache" in name for name in initializer_names)
         has_db_init = any("DB" in name or "Database" in name for name in initializer_names)
+        has_auth_init = any("Authentication" in name for name in initializer_names)
 
         assert has_cache_init, "未找到缓存初始化器"
         assert has_db_init, "未找到数据库初始化器"
+        assert has_auth_init, "未找到认证初始化器"
 
         logger.info(f"✅ 发现所有必需的初始化器: {initializer_names}")
 
@@ -376,9 +379,15 @@ class TestSecurityServices:
         manager.register_all_services()
 
         # 检查是否有认证相关服务
-        auth_services = [s for s in manager._registered_services if 'auth' in s]
-        assert len(auth_services) > 0
-        logger.info(f"✅ 发现 {len(auth_services)} 个认证服务")
+        from pyspring.security.authentication.services.session.login import LoginService
+        from pyspring.security.authentication.core.initializer import AuthenticationInitializer
+        from pyspring.security.authentication.core.config import DefaultSecurityConfiguration
+
+        assert manager.is_service_registered(LoginService)
+        assert manager.is_service_registered(AuthenticationInitializer)
+        assert manager.is_service_registered(DefaultSecurityConfiguration)
+
+        logger.info(f"✅ 发现 LoginService, AuthenticationInitializer, DefaultSecurityConfiguration 等认证服务")
 
 
 def run_all_tests():

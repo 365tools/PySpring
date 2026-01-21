@@ -40,14 +40,14 @@ class IDBService(ISingletonService, ABC):
     #     pass
 
     @staticmethod
-    async def get_engine(self):
+    async def engine(self) -> Any:
         """
         获取数据库引擎
         """
         pass
 
     @abstractmethod
-    async def get_session(self) -> Any:
+    async def session(self) -> Any:
         """
         获取数据库会话
         """

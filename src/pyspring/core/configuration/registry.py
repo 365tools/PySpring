@@ -21,6 +21,17 @@ class ConfigRegistry(ISingletonService):
 
     _registry: Dict[str, Type[BaseSettings]] = {}
     _instances: Dict[str, BaseSettings] = {}
+    _custom_config_path: Optional[str] = None
+
+    @classmethod
+    def set_config_path(cls, path: str) -> None:
+        """设置自定义配置路径"""
+        cls._custom_config_path = path
+
+    @classmethod
+    def get_config_path(cls) -> Optional[str]:
+        """获取自定义配置路径"""
+        return cls._custom_config_path
 
     def register(
             self,

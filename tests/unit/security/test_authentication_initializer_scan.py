@@ -1,10 +1,42 @@
 """
 Test AuthenticationInitializer scanning in IoC container.
 """
+from unittest.mock import MagicMock
+
+from pyspring.ioc.manager import AppContainerManager
+from pyspring.security.authentication.core.interfaces import IAuthenticationProvider, ISecurityContextValidator
+from pyspring.security.authentication.web.chain import AuthenticationChain
+
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
-from pyspring.ioc.manager import AppContainerManager
 from pyspring.security.authentication.core.initializer import AuthenticationInitializer
+from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
+
+
+# Mock implementation for IAuthenticationProvider
+class MockAuthenticationProvider(IAuthenticationProvider, ISingletonService):
+    def __init__(self, name="mock_provider"):
+        self.name = name
+
+    async def authenticate(self, request: object) -> object:
+        return MagicMock()
+
+
+# Mock implementation for ISecurityContextValidator
+class MockSecurityContextValidator(ISecurityContextValidator, ISingletonService):
+    def __init__(self, name="mock_validator"):
+        self.name = name
+
+    async def validate(self, context_data: dict) -> bool:
+        return True
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        self._name = value
 
 
 def test_scan_initializer_inheritance():
@@ -13,43 +45,40 @@ def test_scan_initializer_inheritance():
     assert issubclass(AuthenticationInitializer, ISingletonService)
 
 
-def test_ioc_scan_for_initializer():
-    """Test if IoC container can find and register the initializer."""
+async def test_ioc_scan_and_initialize_authentication_initializer():
+    """Test if IoC container can find, register, and initialize AuthenticationInitializer."""
     ioc_manager = AppContainerManager()
 
-    # We might need to ensure the container is reset or fresh
-    # Assuming register_all_services scans the codebase
+    # Register mock services for dependencies
+    ioc_manager.register_service(AuthenticationChain, instance=MagicMock(spec=AuthenticationChain))
+    ioc_manager.register_service(SecurityContextManagerService, instance=MagicMock(spec=SecurityContextManagerService))
+    ioc_manager.register_service(MockAuthenticationProvider)  # Register a mock provider
+    ioc_manager.register_service(MockSecurityContextValidator)  # Register a mock validator
+
+    # Register all services, including AuthenticationInitializer
     ioc_manager.register_all_services()
 
-    # Re-generate name to check
-    initializer_name = ioc_manager.generate_name(AuthenticationInitializer)
+    # Get the AuthenticationInitializer instance from the container
+    initializer_instance = ioc_manager.get_service(AuthenticationInitializer)
 
-    # Check registration
-    assert initializer_name in ioc_manager._registered_services, \
-        f"{initializer_name} not found in registered services: {list(ioc_manager._registered_services.keys())}"
+    assert isinstance(initializer_instance, AuthenticationInitializer)
 
-    # Try to get instance (Dependency Injection check)
-    # The original test manually used container.get, but container is a DynamicContainer.
-    # We need to see how the container exposes components.
+    # Ensure dependencies were correctly injected (mock objects)
+    assert isinstance(initializer_instance.auth_chain, MagicMock)
+    assert isinstance(initializer_instance.context_manager, MagicMock)
+    assert len(initializer_instance.authentication_providers) == 1
+    assert isinstance(initializer_instance.authentication_providers[0], MockAuthenticationProvider)
 
-    # If using dependency-injector, typically we access providers on the container object
-    # But in dynamic mode, we might access them as attributes?
-    # Or ioc_manager.get_bean(AuthenticationInitializer)? (If such method existed)
+    # Run the initializer
+    await initializer_instance.initialize()
 
-    # The previous test used: instance = ioc_manager.container.get(initializer_name)
-    # But wait, does 'DynamicContainer' from dependency-injector have a .get()? 
-    # Usually it's container.provider_name() to get instance.
-    # But let's assume the previous code worked or tried to work.
+    # Verify that auth_chain.register_providers was called with the mock provider
+    initializer_instance.auth_chain.register_providers.assert_called_once()
+    registered_providers = initializer_instance.auth_chain.register_providers.call_args[0][0]
+    assert len(registered_providers) == 1
+    assert isinstance(registered_providers[0], MockAuthenticationProvider)
 
-    # Let's verify how AppContainerManager holds the container.
-    # self.container = DynamicContainer()
-
-    # If services are registered as attributes on self.container
-    if hasattr(ioc_manager.container, initializer_name):
-        provider = getattr(ioc_manager.container, initializer_name)
-        instance = provider()
-        assert isinstance(instance, AuthenticationInitializer)
-    else:
-        # If not attribute, maybe simple dict lookup failed?
-        # Let's stick to checking _registered_services first.
-        pass
+    # Verify that context_manager.register was called with the mock validator
+    initializer_instance.context_manager.register.assert_called_once()
+    registered_validator = initializer_instance.context_manager.register.call_args[0][0]
+    assert isinstance(registered_validator, MockSecurityContextValidator)

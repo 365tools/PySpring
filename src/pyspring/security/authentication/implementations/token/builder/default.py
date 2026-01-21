@@ -18,7 +18,7 @@ class DefaultTokenPayloadBuilder(ITokenPayloadBuilder):
 
     async def build_payload(self, user: Any, context_evaluation: Any = None) -> Dict[str, Any]:
         # 1. 查询角色和权限 (这部分逻辑从 LoginService 移过来了)
-        async with await self.db.get_session() as session:
+        async with await self.db.session() as session:
             stmt = select(self.component.role_orm_model).join(
                 self.component.user_role_orm_model,
                 self.component.user_role_orm_model.role_id == self.component.role_orm_model.id

@@ -126,7 +126,7 @@ async def test_database_initializer():
         os.chdir(original_cwd)
 
     # 验证表是否创建
-    engine = await db_service.get_engine()
+    engine = await db_service.engine()
     async with engine.connect() as conn:
         from sqlalchemy import text
         result = await conn.execute(text("SELECT name FROM sqlite_master WHERE type='table'"))

@@ -52,7 +52,7 @@ class AuthConfigService(ISingletonService):
                 logger.error("🚨 数据库服务未正确初始化")
                 raise RuntimeError("数据库服务未正确初始化")
 
-            engine = await self.db_manager.get_engine()
+            engine = await self.db_manager.engine()
 
             # 检查表是否已存在
             async with engine.begin() as conn:

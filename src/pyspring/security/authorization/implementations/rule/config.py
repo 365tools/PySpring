@@ -26,7 +26,7 @@ class DefaultPathPermissionProvider(IPathPermissionProvider):
         #     - path: /api/admin/
         #       roles: ["admin"]
 
-        auth_config = self.config_manager.get_config().get("authorization", {})
+        auth_config = self.config_manager.config.get("authorization", {})
         rules_config = auth_config.get("rules", [])
 
         # 兼容字典格式 (旧格式) 或列表格式 (新推荐格式)

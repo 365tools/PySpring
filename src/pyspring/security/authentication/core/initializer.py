@@ -1,28 +1,16 @@
 """
-import traceback
-from pyspring.security.authentication.interfaces.validator import ISecurityContextValidator
-from pyspring.security.authentication.services.core.context import SecurityContextManagerService
-from pyspring.security.authentication.core.chain import AuthenticationChain
-from pyspring.security.core.config.loader import SecurityConfigManager
-from pyspring.security.authentication.core.factory import AuthProviderFactory
-from pyspring.security.authentication.services.session.token import TokenManagerService
-from pyspring.ioc.manager import AppContainerManager
-
 认证系统启动初始化器
-
-负责在应用启动时初始化认证提供者链
 """
 import traceback
 
+from pyspring.ioc.manager import AppContainerManager
+
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
-from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
+from pyspring.security.authentication.implementations.request.base import BaseAuthenticationProvider as IAuthenticationProvider
 from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
-from pyspring.security.authentication.services.flow.token import DefaultTokenManagerService
-from pyspring.security.core.config.loader import SecurityConfigManager
 from .chain import AuthenticationChain
-from .factory import AuthProviderFactory
 from ..interfaces.validator import ISecurityContextValidator
 
 
@@ -31,25 +19,32 @@ class AuthenticationInitializer(IStartupInitializer, ISingletonService):
     认证系统启动初始化器
     
     在应用启动时自动执行，负责：
-    1. 从配置文件读取认证提供者配置
-    2. 创建认证提供者实例
-    3. 注册到认证链
+    1. 收集 IoC 容器中所有可用的认证提供者，并注册到认证链。
+    2. 收集 IoC 容器中所有可用的安全上下文验证器，并注册到安全上下文管理器。
     """
 
-    def __init__(self, enabled: bool = True):
+    def __init__(
+            self,
+            auth_chain: AuthenticationChain,
+            context_manager: SecurityContextManagerService,
+            enabled: bool = True
+    ):
         """
-        初始化
+        初始化（移除List注入，改为在initialize()中动态获取，避免循环依赖）
         
         Args:
+            auth_chain: 认证链管理器
+            context_manager: 安全上下文管理器
             enabled: 是否启用该初始化器
         """
-        # 显式调用 IStartupInitializer 的 __init__
         IStartupInitializer.__init__(self, enabled)
+        self.auth_chain = auth_chain
+        self.context_manager = context_manager
         self.initialized = False
 
     async def initialize(self) -> bool:
         """
-        初始化认证系统
+        初始化认证系统（动态获取依赖，避免循环依赖）
         
         Returns:
             是否初始化成功
@@ -61,53 +56,32 @@ class AuthenticationInitializer(IStartupInitializer, ISingletonService):
         try:
             logger.info("🔐 正在初始化认证系统...")
 
-            # 获取依赖服务
-
+            # 动态获取容器
             container = AppContainerManager()
-            token_manager = container.get(DefaultTokenManagerService)
 
-            # 初始化认证提供者链
-            # 注意: AuthProviderFactoryHelper 需要在 factory.py 中实现或在此处实现逻辑
+            # 1. 动态获取并注册认证提供者到认证链
+            try:
+                authentication_providers = container.get_all_instances_of(IAuthenticationProvider)
+                if authentication_providers:
+                    self.auth_chain.register_providers(authentication_providers)
+                    logger.debug(f"🔍 注册了 {len(authentication_providers)} 个认证提供者: "
+                                 f"{[p.__class__.__name__ for p in authentication_providers]}")
+                else:
+                    logger.warning("⚠️ 未发现任何认证提供者，认证系统可能无法正常工作。")
+            except Exception as e:
+                logger.warning(f"⚠️ 获取认证提供者失败: {e}")
 
-            config_manager = SecurityConfigManager()
-            providers_config = config_manager.get_authentication_providers()
-
-            # 使用 AuthProviderFactory 创建提供者
-            providers = []
-            # providers_config 是 List[Dict]，直接遍历
-            for config in providers_config:
-                if not config.get("enabled", True):
-                    continue
-
-                # 确保 config 中包含 name
-                name = config.get("name", "unknown")
-
-                provider = AuthProviderFactory.create_provider(
-                    provider_config=config,
-                    token_manager=token_manager
-                )
-                if provider:
-                    providers.append(provider)
-
-            # 注册到认证链
-            auth_chain = container.get(AuthenticationChain)
-            auth_chain.register_providers(providers)
-
-            # [Auto-Discovery] 自动发现并注册安全上下文验证器
-            # 这使得开发者只需编写 Validator 并继承 ISingletonService，无需手动注册
-
-            # 使用 container.get() 确保服务已初始化
-            context_manager = container.get(SecurityContextManagerService)
-
-            # 扫描所有 ISecurityContextValidator 的实现
-            validators = container.get_all_instances_of(ISecurityContextValidator)
-
-            if validators:
-                for v in validators:
-                    context_manager.register(v)
-                logger.debug(f"🔍 自动注册了 {len(validators)} 个安全上下文验证器: {[v.name for v in validators]}")
-            else:
-                logger.debug("🔍 未发现自定义安全上下文验证器")
+            # 2. 动态获取并注册安全上下文验证器
+            try:
+                validators = container.get_all_instances_of(ISecurityContextValidator)
+                if validators:
+                    for v in validators:
+                        self.context_manager.register(v)
+                    logger.debug(f"🔍 自动注册了 {len(validators)} 个安全上下文验证器: {[v.__class__.__name__ for v in validators]}")
+                else:
+                    logger.debug("🔍 未发现自定义安全上下文验证器")
+            except Exception as e:
+                logger.warning(f"⚠️ 获取安全上下文验证器失败: {e}")
 
             self.initialized = True
             logger.info("✅ 认证系统初始化完成")

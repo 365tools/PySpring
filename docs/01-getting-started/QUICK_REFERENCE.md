@@ -154,10 +154,10 @@ async def get_profile(
 @app.get("/api/data")
 async def get_data():
     from pyspring.repositories.db.service import DatabaseService
-    
+
     db_service = container.get(DatabaseService)
-    
-    async with db_service.get_session() as session:
+
+    async with db_service.session() as session:
         # 执行查询
         # result = await session.execute(select(Model))
         pass

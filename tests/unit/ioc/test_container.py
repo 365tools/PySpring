@@ -4,9 +4,8 @@ PySpring Unit Tests - IoC Container
 import pytest
 from pyspring.ioc.manager import AppContainerManager
 
+from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 
-# autowired is not implemented as a decorator yet or located elsewhere.
-# Injection relies on type hints and container magic in PySpring.
 
 # Reset singleton for testing
 @pytest.fixture
@@ -26,27 +25,38 @@ def test_singleton_instance(container):
 def test_register_and_get_bean(container):
     """Test registering and retrieving a simple bean"""
 
-    class TestService:
+    class TestService(ISingletonService):  # Make it a singleton service for registration
         pass
 
-    # Use standard provider definition for DynamicContainer
-    from dependency_injector import providers
-    container.container.TestService = providers.Singleton(TestService)
+    container.register_service(TestService)
 
-    instance = container.container.TestService()
+    instance = container.get_service(TestService)
     assert isinstance(instance, TestService)
 
-    instance2 = container.container.TestService()
-    assert instance is instance2
+    instance2 = container.get_service(TestService)
+    assert instance is instance2  # Should be the same instance for SingletonService
 
 
-def test_dependency_injection(container):
-    """Test dependency injection via type hinting"""
+def test_dependency_injection_simple(container):
+    """Test simple dependency injection via constructor"""
 
-    # In integration tests, we rely on file scanning.
-    # In unit tests, we might need to mock scanner results if we want to test 'initialize'.
-    # scan_project -> pkgutil.walk_packages.
+    class Dependency(ISingletonService):
+        def __init__(self):
+            self.value = "dependency_value"
 
-    # If we cannot easily mock pkgutil in this scope, we might skip full wiring test here 
-    # and rely on integration tests for wiring.
-    pass
+    class ServiceWithDependency(ISingletonService):
+        def __init__(self, dependency: Dependency):
+            self.dependency = dependency
+
+    container.register_service(Dependency)
+    container.register_service(ServiceWithDependency)
+
+    service_instance = container.get_service(ServiceWithDependency)
+    assert isinstance(service_instance, ServiceWithDependency)
+    assert isinstance(service_instance.dependency, Dependency)
+    assert service_instance.dependency.value == "dependency_value"
+
+    # Ensure it's a singleton
+    service_instance2 = container.get_service(ServiceWithDependency)
+    assert service_instance is service_instance2
+    assert service_instance.dependency is service_instance2.dependency

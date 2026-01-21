@@ -3,11 +3,11 @@ from datetime import datetime, timedelta, UTC
 from typing import Optional, Dict, Any
 
 from jose import JWTError, jwt
+from pyspring.ioc.manager import AppContainerManager
 from sqlalchemy import delete
 from sqlalchemy import select, and_
 
 from pyspring.core.services.system import SystemService
-from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.repositories.db.manager import DBManagerService
@@ -40,40 +40,41 @@ class DefaultTokenManagerService(ITokenService):
     - Access Token(JWT): 无状态, 重启不影响(除非在黑名单中)
     """
 
-    def __init__(self, system_service: SystemService, cache: CacheManagerService, db: DBManagerService):
+    def __init__(self, system_service: SystemService):
         """
         初始化Token管理服务
         
-        两级存储架构（懒加载模式）:
-        1. Redis层(L1缓存): 快速访问, 持久化存储, TTL自动过期
-        2. 数据库层(持久化): 最终存储, 防止Redis数据丢失
-        
-        读取顺序: Redis -> 数据库(未命中则回写Redis)
-        写入顺序: 同时写入Redis + 数据库
-        
-        为什么不预加载？
-        - JWT 是无状态的，验证只需要密钥，不需要数据库
-        - 黑名单/refresh token 采用懒加载，首次查询后自动缓存
-        - 避免启动时的数据库依赖和初始化顺序问题
-        - 大多数 token 可能永远不会被查询（已过期或未使用）
-        
         Args:
             system_service: 系统配置服务(获取JWT密钥、过期时间等配置)
-            cache: 缓存管理服务(Redis, 单例且由IoC保证注册)
-            db: 数据库管理服务(持久化存储)
         """
         self.system_service = system_service
-        self.cache = cache
-        self.db = db
-
-        # 初始化 JWT 加密管理器（通过 IoC 容器）
-        container = AppContainerManager()
-        self.jwt_encryption = container.get(JWTEncryptionManager)
-
-        if self.jwt_encryption.is_enabled():
-            logger.info("🔐 JWT 加密已启用 - Token 将被加密返回")
+        self._cache = None
+        self._db = None
+        self._jwt_encryption = None
 
         logger.info("🔧 DefaultTokenManagerService 初始化完成 - 两级架构(懒加载): Redis + 数据库")
+
+    @property
+    def cache(self) -> CacheManagerService:
+        if self._cache is None:
+            self._cache = AppContainerManager().get(CacheManagerService)
+        return self._cache
+
+    @property
+    def db(self) -> DBManagerService:
+        if self._db is None:
+            self._db = AppContainerManager().get(DBManagerService)
+        return self._db
+
+    @property
+    def jwt_encryption(self):
+        """懒加载获取 JWT 加密管理器"""
+        if self._jwt_encryption is None:
+            container = AppContainerManager()
+            self._jwt_encryption = container.get(JWTEncryptionManager)
+            if self._jwt_encryption.is_enabled():
+                logger.info("🔐 JWT 加密已启用 - Token 将被加密返回")
+        return self._jwt_encryption
 
     def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
         """
@@ -159,7 +160,7 @@ class DefaultTokenManagerService(ITokenService):
 
         try:
             # 1. 持久化到数据库（存储原始JWT，不存加密后的）
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 db_record = RefreshTokenTable(
                     token=encoded_jwt,  # 注意：数据库存储未加密的JWT
                     user_id=data.get("sub"),
@@ -269,7 +270,7 @@ class DefaultTokenManagerService(ITokenService):
         # 2. 查询数据库（兜底。
         if not token_exists:
             try:
-                async with await self.db.get_session() as session:
+                async with await self.db.session() as session:
                     stmt = select(RefreshTokenTable).where(
                         and_(
                             RefreshTokenTable.token == refresh_token,
@@ -348,7 +349,7 @@ class DefaultTokenManagerService(ITokenService):
                 return True
 
             # 1. 持久化到数据。
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 db_record = TokenBlacklistTable(
                     token=token,
                     user_id=payload.get("sub", 0),
@@ -401,7 +402,7 @@ class DefaultTokenManagerService(ITokenService):
 
         # 2. 查询数据库（兜底。
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 stmt = select(TokenBlacklistTable).where(
                     and_(
                         TokenBlacklistTable.token == token,
@@ -445,7 +446,7 @@ class DefaultTokenManagerService(ITokenService):
         """
         try:
             # 1. 更新数据库（标记为无效，不删除记录）
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 stmt = select(RefreshTokenTable).where(
                     RefreshTokenTable.token == refresh_token
                 )
@@ -487,7 +488,7 @@ class DefaultTokenManagerService(ITokenService):
             - 数据库：建议每天执行一次清理，删除过期记录节省空间
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 now = datetime.now(UTC)
 
                 # 清理过期的黑名单

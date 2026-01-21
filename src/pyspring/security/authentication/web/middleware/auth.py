@@ -11,10 +11,10 @@ from pyspring.security.authentication.core.chain import AuthenticationChain
 from typing import Callable, Optional
 
 from fastapi import Request, Response, status
+from pyspring.ioc.manager import AppContainerManager
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 from pyspring.security.authentication.core.chain import AuthenticationChain
 from pyspring.security.authentication.core.context import AuthContext
@@ -53,36 +53,125 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             enable_role_check: 是否启用角色验证（None则从配置读取）
         """
         super().__init__(app)
+        self.enable_role_check_initial_setting = enable_role_check
 
-        # 获取配置管理器（通过 IoC 容器）
-        container = AppContainerManager()
-        self.config_manager = container.get(SecurityConfigManager)
+        # Lazy loading placeholders
+        self._config_manager = None
+        self._auth_chain = None
+        self._role_middleware = None
+        self._initialization_attempted = False
 
-        if enable_role_check is None:
-            self.enable_role_check = self.config_manager.is_authorization_enabled()
-        else:
-            self.enable_role_check = enable_role_check
+    def _ensure_initialized(self):
+        """懒加载初始化依赖"""
+        if self._initialization_attempted:
+            return
 
-        # 获取认证链（通过 IoC 容器）
-        self.auth_chain = container.get(AuthenticationChain)
-
-        # 获取权限服务 (Pre-initialize RoleCheckMiddleware)
         try:
-            permission_service = container.get(IPermissionService)
-            path_provider = container.get(IPathPermissionProvider)
-            self.role_middleware = RoleCheckMiddleware(
-                permission_service=permission_service,
-                path_provider=path_provider,
-                enable_role_check=self.enable_role_check
-            )
-        except Exception as e:
-            logger.warning(f"⚠️ 初始化 RoleCheckMiddleware 失败: {e} | 将禁用角色检查")
-            self.enable_role_check = False
-            self.role_middleware = None  # type: ignore
+            container = AppContainerManager()
 
-        logger.info(f"🔒 全局认证中间件已启动 (基于认证链)")
-        logger.info(f"   - 角色验证: {'启用' if self.enable_role_check else '禁用'}")
-        # 注意: 认证提供者此时尚未初始化，将在应用启动时由 AuthenticationInitializer 加载
+            # 1. Config
+            if self._config_manager is None:
+                self._config_manager = container.get(SecurityConfigManager)
+
+            # 2. Determine role check setting
+            if self.enable_role_check_initial_setting is None:
+                self.enable_role_check = self._config_manager.is_authorization_enabled()
+            else:
+                self.enable_role_check = self.enable_role_check_initial_setting
+
+            # 3. Auth Chain
+            if self._auth_chain is None:
+                self._auth_chain = container.get(AuthenticationChain)
+
+            # 4. Role Middleware
+            if self._role_middleware is None:
+                try:
+                    permission_service = container.get(IPermissionService)
+                    path_provider = container.get(IPathPermissionProvider)
+                    self._role_middleware = RoleCheckMiddleware(
+                        permission_service=permission_service,
+                        path_provider=path_provider,
+                        enable_role_check=self.enable_role_check
+                    )
+                except Exception as e:
+                    logger.warning(f"⚠️ 初始化 RoleCheckMiddleware 失败: {e} | 将禁用角色检查")
+                    self.enable_role_check = False
+
+            self._initialization_attempted = True
+        except Exception as e:
+            # Don't crash on init failure during dispatch, log and retry next time or fail request gracefully
+            logger.error(f"❌ AuthenticationMiddleware lazy init failed: {e}")
+            raise e
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """
+        拦截请求进行认证
+        """
+        self._ensure_initialized()
+
+        try:
+            # 1. 白名单检查 (委托给 AuthChain)
+            if await self._auth_chain.should_skip(request):
+                # logger.debug(f"⏩ 跳过认证: {request.url.path}")
+                return await call_next(request)
+
+            # 2. 执行认证
+            # 认证链会尝试所有 Provider，成功则返回 user，失败则抛出异常或返回 None
+            user, auth_error = await self._auth_chain.authenticate(request)
+
+            if user:
+                # 认证成功 -> 注入 request.state
+                request.state.user = user
+
+                # 构造 AuthContext (如果需要)
+                request.state.auth_context = AuthContext(
+                    user=user,
+                    permissions=[],  # TODO: 加载权限
+                    roles=[]  # TODO: 加载角色
+                )
+            elif auth_error:
+                # 认证失败 (有 Provider 匹配但认证不通过) -> 返回 401
+                logger.warning(f"🚫 认证失败: {auth_error}")
+                return self.create_error_response(
+                    status.HTTP_401_UNAUTHORIZED,
+                    "Authentication Failed",
+                    str(auth_error)
+                )
+            else:
+                # 无 Provider 匹配 -> 视为匿名用户或拒绝访问
+                # 这里策略可配置：是否允许匿名？
+                # 默认: 如果不是白名单，且没认证成功，则拒绝
+                logger.warning(f"🚫 无效的认证请求: {request.url.path}")
+                return self.create_error_response(
+                    status.HTTP_401_UNAUTHORIZED,
+                    "Authentication Required",
+                    "No valid authentication credentials provided"
+                )
+
+            # 3. 角色/权限检查 (委托给 RoleCheckMiddleware)
+            if self.enable_role_check and self._role_middleware:
+                # RoleCheckMiddleware 本身就是个 middleware-like 或者有处理方法
+                # 这里假设它有个 check 方法，或者我们手动复用它的逻辑
+                # 但由于 RoleCheckMiddleware 是 BaseHTTPMiddleware，直接调用比较麻烦
+                # 我们这里调用它的业务逻辑 check_permission
+                try:
+                    await self._role_middleware.check_permission(request)
+                except Exception as e:
+                    # Role middleware throws HTTPException on failure
+                    if hasattr(e, 'status_code'):
+                        return self.create_error_response(e.status_code, e.detail)
+                    raise e
+
+            response = await call_next(request)
+            return response
+
+        except Exception as exc:
+            logger.error(f"💥 认证中间件内部错误: {exc}", exc_info=True)
+            return self.create_error_response(
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+                "Authentication Service Error",
+                str(exc)
+            )
 
     @staticmethod
     def create_error_response(status_code: int, message: str, detail: Optional[str] = None) -> JSONResponse:

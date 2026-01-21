@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional
 import yaml
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
-from pyspring.log.instance import logger
 from pyspring.utils.config.finder import find_config_file
 
 
@@ -44,22 +43,23 @@ class SecurityConfigManager(ISingletonService):
             config_file = find_config_file('security.yaml')
 
             if not config_file:
-                logger.debug("[SecurityConfigManager] 配置文件不存在")
-                logger.debug("[SecurityConfigManager] 使用默认配置")
+                # logger.debug("[SecurityConfigManager] 配置文件不存在")
+                # logger.debug("[SecurityConfigManager] 使用默认配置")
                 self._config = self._get_default_config()
                 return
 
             with open(config_file, 'r', encoding='utf-8') as f:
                 self._config = yaml.safe_load(f)
 
-            logger.debug(f"[SecurityConfigManager] 已加载配置文件: {config_file}")
+            # logger.debug(f"[SecurityConfigManager] 已加载配置文件: {config_file}")
 
             # 应用环境变量覆盖
             self._apply_env_overrides()
 
         except Exception as e:
-            logger.debug(f"[SecurityConfigManager] 加载配置文件失败: {e}")
-            logger.debug("[SecurityConfigManager] 使用默认配置")
+            # logger.debug(f"[SecurityConfigManager] 加载配置文件失败: {e}")
+            # logger.debug("[SecurityConfigManager] 使用默认配置")
+            print(f"⚠️ [SecurityConfigManager] 加载配置异常 (已恢复默认): {e}") 
             self._config = self._get_default_config()
 
     def _apply_env_overrides(self):
@@ -75,7 +75,7 @@ class SecurityConfigManager(ISingletonService):
             if "jwt" not in self._config["authentication"]:
                 self._config["authentication"]["jwt"] = {}
             self._config["authentication"]["jwt"]["secret_key"] = jwt_secret
-            logger.debug("[SecurityConfigManager] JWT_SECRET_KEY 已从环境变量加载")
+            # logger.debug("[SecurityConfigManager] JWT_SECRET_KEY 已从环境变量加载")
 
         # JWT 算法
         jwt_algorithm = os.getenv("JWT_ALGORITHM")
@@ -103,7 +103,7 @@ class SecurityConfigManager(ISingletonService):
             if "encryption" not in self._config["authentication"]["jwt"]:
                 self._config["authentication"]["jwt"]["encryption"] = {}
             self._config["authentication"]["jwt"]["encryption"]["encryption_key"] = jwt_encryption_key
-            logger.debug("[SecurityConfigManager] JWT_ENCRYPTION_KEY 已从环境变量加载")
+            # logger.debug("[SecurityConfigManager] JWT_ENCRYPTION_KEY 已从环境变量加载")
 
     def _get_default_config(self) -> Dict[str, Any]:
         """获取默认配置"""
@@ -250,6 +250,5 @@ class SecurityConfigManager(ISingletonService):
         self._config = None
         self._load_config()
 
-
-# 导出单例实例
-security_config = SecurityConfigManager()
+# 导出单例实例 (Removed potentially dangerous global instantiation)
+# security_config = SecurityConfigManager()

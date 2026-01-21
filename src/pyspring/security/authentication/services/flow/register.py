@@ -45,7 +45,7 @@ class DefaultRegisterService(IRegisterService):
             HTTPException: 用户已存在或其他错误
         """
         try:
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 # 1. 检查用户是否已存在
                 await self._check_user_exists(session, request.user)
 

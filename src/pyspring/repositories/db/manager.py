@@ -44,7 +44,7 @@ class DBManagerService(ISingletonService):
         # logger.debug(f"✅ db({self.provider}) instance ready.")
         return self.provider
 
-    async def get_session(self):
+    async def session(self):
         """
         便捷方法: 直接获取数据库会话
 
@@ -56,14 +56,14 @@ class DBManagerService(ISingletonService):
             异步上下文管理器, 用于数据库会话
         """
         db_service = await self.service()
-        return await db_service.get_session()
+        return await db_service.session()
 
-    async def get_engine(self):
+    async def engine(self):
         """
         获取数据库引擎
         """
         db_service = await self.service()
-        return await db_service.get_engine()
+        return await db_service.engine()
 
     @staticmethod
     def table_name(*args, **kwargs) -> str:

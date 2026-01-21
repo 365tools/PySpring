@@ -26,30 +26,41 @@ class PostgresService(IPostgresService):
         self.url = self._build_url()
 
         # 从配置中获取连接池参数
-        pool_size = self.pool_config.get('size', 5)
-        max_overflow = self.pool_config.get('max_overflow', 10)
-        pool_recycle = self.pool_config.get('recycle', 3600)
-        pool_timeout = self.pool_config.get('timeout', 30)
-        pool_pre_ping = self.pool_config.get('pre_ping', True)
+        self._pool_size = self.pool_config.get('size', 5)
+        self._max_overflow = self.pool_config.get('max_overflow', 10)
+        self._pool_recycle = self.pool_config.get('recycle', 3600)
+        self._pool_timeout = self.pool_config.get('timeout', 30)
+        self._pool_pre_ping = self.pool_config.get('pre_ping', True)
 
-        # 直接在构造函数中创建连接池
-        self._engine: Optional[AsyncEngine] = create_async_engine(
-            self.url,
-            echo=False,
-            pool_size=pool_size,
-            max_overflow=max_overflow,
-            pool_recycle=pool_recycle,
-            pool_timeout=pool_timeout,
-            pool_pre_ping=pool_pre_ping,
-        )
-        self._session_factory: Optional[async_sessionmaker] = async_sessionmaker(
-            self._engine,
-            class_=AsyncSession,
-            expire_on_commit=False
-        )
+        # 延迟初始化
+        self._engine: Optional[AsyncEngine] = None
+        self._session_factory: Optional[async_sessionmaker] = None
 
-        logger.debug(f"🔧 PostgresService init with url: {self._mask_password(self.url)}")
-        logger.debug(f"🔗 PostgreSQL 连接池已创建 (pool_size={pool_size}, max_overflow={max_overflow})")
+    def _ensure_initialized(self):
+        """延迟初始化引擎和会话工厂"""
+        if self._engine is not None:
+            return
+
+        try:
+            logger.debug(f"🔧 Creating Postgres Engine with url: {self._mask_password(self.url)}")
+            self._engine = create_async_engine(
+                self.url,
+                echo=False,
+                pool_size=self._pool_size,
+                max_overflow=self._max_overflow,
+                pool_recycle=self._pool_recycle,
+                pool_timeout=self._pool_timeout,
+                pool_pre_ping=self._pool_pre_ping,
+            )
+            self._session_factory = async_sessionmaker(
+                self._engine,
+                class_=AsyncSession,
+                expire_on_commit=False
+            )
+            logger.debug(f"🔗 PostgreSQL 连接池已创建 (pool_size={self._pool_size}, max_overflow={self._max_overflow})")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Postgres engine (check asyncpg installation): {e}")
+            raise e
 
     def _build_url(self) -> str:
         """构建 PostgreSQL 连接 URL"""
@@ -64,20 +75,24 @@ class PostgresService(IPostgresService):
             return url.replace(self.password, "****")
         return url
 
-    async def get_engine(self):
-        """获取数据库引擎(已在 __init__ 中创建)"""
+    async def engine(self):
+        """获取数据库引擎"""
+        self._ensure_initialized()
         return self._engine
 
-    async def get_session(self) -> AsyncSession:
+    async def session(self) -> AsyncSession:
         """
         获取数据库会话
         """
-        return self._session_factory()
+        self._ensure_initialized()
+        if self._session_factory:
+            return self._session_factory()
+        raise RuntimeError("Postgres session factory not initialized")
 
     async def execute(self, query: str, params: Optional[Dict[str, Any]] = None) -> Any:
         """执行SQL语句"""
         try:
-            async with await self.get_session() as session:
+            async with await self.session() as session:
                 result = await session.execute(text(query), params or {})
                 await session.commit()
                 return result
@@ -88,7 +103,7 @@ class PostgresService(IPostgresService):
     async def fetch_one(self, query: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """查询单条记录"""
         try:
-            async with await self.get_session() as session:
+            async with await self.session() as session:
                 result = await session.execute(text(query), params or {})
                 row = result.fetchone()
                 if row is None:
@@ -101,7 +116,7 @@ class PostgresService(IPostgresService):
     async def fetch_all(self, query: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         """查询多条记录"""
         try:
-            async with await self.get_session() as session:
+            async with await self.session() as session:
                 result = await session.execute(text(query), params or {})
                 rows = result.fetchall()
                 return [dict(row._mapping) for row in rows]
@@ -116,7 +131,7 @@ class PostgresService(IPostgresService):
             placeholders = ", ".join([f":{key}" for key in data.keys()])
             query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders}) RETURNING *"
 
-            async with await self.get_session() as session:
+            async with await self.session() as session:
                 result = await session.execute(text(query), data)
                 await session.commit()
                 row = result.fetchone()
@@ -136,7 +151,7 @@ class PostgresService(IPostgresService):
             params = {**data}
             params.update({f"where_{key}": value for key, value in condition.items()})
 
-            async with await self.get_session() as session:
+            async with await self.session() as session:
                 result = await session.execute(text(query), params)
                 await session.commit()
                 return result.rowcount > 0
@@ -150,7 +165,7 @@ class PostgresService(IPostgresService):
             where_clause = " AND ".join([f"{key} = :{key}" for key in condition.keys()])
             query = f"DELETE FROM {table} WHERE {where_clause}"
 
-            async with await self.get_session() as session:
+            async with await self.session() as session:
                 result = await session.execute(text(query), condition)
                 await session.commit()
                 return result.rowcount > 0
@@ -188,7 +203,7 @@ class PostgresService(IPostgresService):
         测试数据库连接是否正常
         """
         try:
-            async with await self.get_session() as session:
+            async with await self.session() as session:
                 await session.execute(text("SELECT 1"))
                 return True
         except Exception as e:

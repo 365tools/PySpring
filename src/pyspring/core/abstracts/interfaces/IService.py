@@ -4,9 +4,11 @@
 """
 from typing import Any, Dict, Protocol, Optional, runtime_checkable
 
+from .IComponent import IComponent
+
 
 @runtime_checkable
-class IService(Protocol):
+class IService(IComponent, Protocol):
     """
     服务接口协议基类
     

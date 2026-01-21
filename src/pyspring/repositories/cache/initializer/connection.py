@@ -8,6 +8,8 @@ from pyspring.repositories.cache.providers.redis.services.service import RedisSe
 """
 import os
 
+from pyspring.ioc.manager import AppContainerManager
+
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
@@ -32,7 +34,11 @@ class CacheConnectionInitializer(IStartupInitializer):
         """
         super().__init__(enabled)
         self.cache_manager = cache_manager
-        self.config_manager = RepositoriesConfigManager()
+        # self.config_manager = RepositoriesConfigManager()
+
+    @property
+    def config_manager(self) -> RepositoriesConfigManager:
+        return AppContainerManager().get(RepositoriesConfigManager)
 
     def get_name(self) -> str:
         return "CacheConnectionInitializer"

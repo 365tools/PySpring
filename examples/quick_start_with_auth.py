@@ -5,9 +5,13 @@
 """
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
+from pyspring.ioc.manager import AppContainerManager
 
 from pyspring.log.providers.loguru.middleware.request import RequestLoggingMiddleware
+from pyspring.security.authentication.contracts.interface.flow import ILoginService
+from pyspring.security.authentication.core.component import SecurityEntityConfiguration
+from pyspring.security.authentication.web.middleware.auth import AuthenticationMiddleware
 
 
 # ==================== 应用生命周期管理 ====================
@@ -25,7 +29,6 @@ async def lifespan(app: FastAPI):
 
     try:
         # 1. 初始化 IoC 容器
-        from pyspring.ioc.manager import AppContainerManager
         print("📦 正在注册服务...")
         ioc_manager = AppContainerManager()
         ioc_manager.register_all_services()
@@ -121,19 +124,30 @@ async def get_profile():
     if not user:
         return {"error": "未登录"}
 
+    # 假设 user 对象有 user.user.user_id, user.user.email, user.user.first_name, user.user.last_name, user.roles
+    # 这些属性的访问方式取决于 SecurityEntityConfiguration.user_info_schema 和 user_schema 的定义
+    # 这里为了兼容性，使用 getattr
     return {
-        "user_id": user.user.user_id,
-        "email": user.user.email,
-        "name": f"{user.user.first_name} {user.user.last_name}",
-        "roles": [role.name for role in user.roles] if user.roles else []
+        "user_id": getattr(getattr(user, 'user', None), 'user_id', None),
+        "email": getattr(getattr(user, 'user', None), 'email', None),
+        "name": f"{getattr(getattr(user, 'user', None), 'first_name', '')} {getattr(getattr(user, 'user', None), 'last_name', '')}",
+        "roles": [role.name for role in getattr(user, 'roles', [])] if getattr(user, 'roles', []) else []
     }
 
 
 @app.post("/api/auth/login")
-async def login():
-    """登录接口（白名单路径）"""
-    # TODO: 实现登录逻辑
-    return {"message": "登录接口"}
+async def login(
+        request_data: SecurityEntityConfiguration.login_request_schema,  # 使用 SecurityEntityConfiguration 中定义的 Schema
+        login_service: ILoginService = Depends(lambda: AppContainerManager().get(ILoginService))  # 从 IoC 获取 ILoginService
+):
+    """登录接口"""
+    try:
+        response = await login_service.login(request_data)
+        return response
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"登录失败: {str(e)}")
 
 
 @app.get("/api/protected")
@@ -144,7 +158,7 @@ async def protected():
     user = AuthContext.get_current_user()
     return {
         "message": "这是受保护的路由",
-        "user": user.user.email if user else None
+        "user": getattr(getattr(user, 'user', None), 'email', None) if user else None
     }
 
 
@@ -152,7 +166,6 @@ async def protected():
 
 if __name__ == "__main__":
     import uvicorn
-from pyspring.security.authentication.web.middleware.auth import AuthenticationMiddleware
 
     print("\n" + "=" * 70)
     print("🎯 启动 PySpring 应用")

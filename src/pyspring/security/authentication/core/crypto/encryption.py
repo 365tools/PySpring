@@ -12,6 +12,7 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from pyspring.ioc.manager import AppContainerManager
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
@@ -236,7 +237,7 @@ class JWTEncryptionManager(ISingletonService):
     def _load_config(self):
         """从配置文件加载加密设置"""
 
-        config_manager = SecurityConfigManager()
+        config_manager = AppContainerManager().get(SecurityConfigManager)
         encryption_config = config_manager.get("authentication.jwt.encryption", {})
 
         # 是否启用加密

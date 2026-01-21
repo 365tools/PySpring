@@ -5,6 +5,7 @@
 from typing import List
 
 from fastapi import Request
+from pyspring.ioc.manager import AppContainerManager
 
 from pyspring.core.abstracts.interfaces.ISingleton import ISingletonService
 from pyspring.log.instance import logger
@@ -18,10 +19,19 @@ class AuthenticationChain(ISingletonService):
     def __init__(self):
         """初始化认证链"""
         self.providers: List[BaseAuthenticationProvider] = []
-        self.config_manager = SecurityConfigManager()
-        self.whitelist_config = self.config_manager.get_whitelist_config()
-
+        # Lazy load config manager via property
+        
         logger.info("🔧 AuthenticationChain 初始化完成")
+
+    @property
+    def config_manager(self) -> SecurityConfigManager:
+        """Lazily retrieve SecurityConfigManager from IoC container"""
+        return AppContainerManager().get(SecurityConfigManager)
+
+    @property
+    def whitelist_config(self) -> List[str]:
+        """Lazily retrieve whitelist config"""
+        return self.config_manager.get_whitelist_config()
 
     def register_provider(self, provider: BaseAuthenticationProvider):
         """

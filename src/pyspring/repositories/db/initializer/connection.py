@@ -8,6 +8,8 @@ from pyspring.repositories.db.providers.postgres.services.service import Postgre
 """
 import os
 
+from pyspring.ioc.manager import AppContainerManager
+
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
@@ -32,7 +34,12 @@ class DBConnectionInitializer(IStartupInitializer):
         """
         super().__init__(enabled)
         self.db_manager = db_manager
-        self.config_manager = RepositoriesConfigManager()
+        # Lazy load
+        # self.config_manager = RepositoriesConfigManager()
+
+    @property
+    def config_manager(self) -> RepositoriesConfigManager:
+        return AppContainerManager().get(RepositoriesConfigManager)
 
     def get_name(self) -> str:
         return "DBConnectionInitializer"

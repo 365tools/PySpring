@@ -5,6 +5,8 @@
 """
 from fastapi import FastAPI
 
+from pyspring.security.authentication.web.middleware.auth import AuthenticationMiddleware
+
 
 # ==================== 方式1: 创建应用时直接添加（推荐） ====================
 
@@ -30,7 +32,7 @@ def create_app_with_auth():
     async def get_profile():
         from pyspring.security.authentication.core.context import AuthContext
         user = AuthContext.get_current_user()
-        return {"email": user.user.email if user else None}
+        return {"email": getattr(getattr(user, 'user', None), 'email', None) if user else None}
 
     return app
 
@@ -147,7 +149,7 @@ def create_app_from_settings():
 # main.py
 """
 from fastapi import FastAPI
-from pyspring.security.authentication.middleware.auth import AuthenticationMiddleware
+from pyspring.security.authentication.web.middleware.auth import AuthenticationMiddleware
 
 app = FastAPI()
 
@@ -245,7 +247,6 @@ AUTH_REFRESH_TOKEN_EXPIRE=2592000
 
 if __name__ == "__main__":
     import uvicorn
-from pyspring.security.authentication.web.middleware.auth import AuthenticationMiddleware
 
     # 选择一种方式创建应用
     app = create_app_with_auth()

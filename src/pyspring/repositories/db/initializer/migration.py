@@ -7,6 +7,7 @@
 from pathlib import Path
 from typing import Optional
 
+from pyspring.ioc.manager import AppContainerManager
 from sqlalchemy import text
 
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
@@ -40,8 +41,12 @@ class MigrationInitializer(IStartupInitializer):
         """
         super().__init__(enabled)
         self.db_manager = db_manager
-        self.config_manager = RepositoriesConfigManager()
+        # self.config_manager = RepositoriesConfigManager()
         self._db_service: Optional[IDBService] = None
+
+    @property
+    def config_manager(self) -> RepositoriesConfigManager:
+        return AppContainerManager().get(RepositoriesConfigManager)
 
     def get_name(self) -> str:
         return "MigrationInitializer"
@@ -297,7 +302,7 @@ class MigrationInitializer(IStartupInitializer):
             logger.info(f"解析到 {len(statements)} 条 SQL 语句")
 
             # 获取数据库引擎
-            engine = await db_service.get_engine()
+            engine = await db_service.engine()
 
             executed_count = 0
             skipped_count = 0

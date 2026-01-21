@@ -4,10 +4,10 @@
 import asyncio
 
 import pytest
+from pyspring.ioc.manager import AppContainerManager
 
 from pyspring.core.abstracts.interfaces.handler.shutdown import IShutdownHandler
 from pyspring.core.abstracts.interfaces.initializer.startup import IStartupInitializer
-from pyspring.ioc.manager import AppContainerManager
 from pyspring.log.instance import logger
 
 
@@ -27,8 +27,14 @@ async def test_full_lifecycle():
     logger.info("\n🔍 步骤 2: 发现所有 StartupInitializer...")
     startup_initializers = ioc_manager.get_all_instances_of(IStartupInitializer)
     logger.info(f"发现 {len(startup_initializers)} 个 StartupInitializer:")
+    initializer_names = []
     for initializer in startup_initializers:
-        logger.info(f"  • {initializer.get_name()}")
+        name = initializer.get_name()
+        initializer_names.append(name)
+        logger.info(f"  • {name}")
+
+    # 验证关键初始化器是否存在
+    assert "AuthenticationInitializer" in initializer_names, "AuthenticationInitializer 未被发现"
 
     # 3. 发现所有 ShutdownHandler
     logger.info("\n🔍 步骤 3: 发现所有 ShutdownHandler...")

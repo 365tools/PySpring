@@ -62,7 +62,7 @@ class DefaultPasswordLoginProvider(ILoginProvider):
             # 注意：这里为了保持 Provider 的纯粹性，可能需要一个更优雅的方式来更新
             # 但为了简单起见，我们暂时直接操作 DB，或者忽略它
             # 在企业级实现中，可能有一个 UserUpdater 接口
-            async with await self.db.get_session() as session:
+            async with await self.db.session() as session:
                 # 重新 attach 到 session
                 session.add(user)
                 user.password = updated_password_hash
