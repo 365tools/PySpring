@@ -1,13 +1,12 @@
-﻿from typing import Any
+from typing import Any
 
 from fastapi import HTTPException, status
-from fastapi_users.password import PasswordHelper
 
-from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.contracts.login import ILoginProvider
+from pyspring.security.authentication.contracts.password import IPasswordEncoder
+from pyspring.security.authentication.contracts.request import LoginRequest
 from pyspring.security.authentication.contracts.user import IUserProvider
-from pyspring.security.authorization.contracts.schema.requests import LoginRequest
 
 
 class DefaultPasswordLoginProvider(ILoginProvider):
@@ -15,10 +14,10 @@ class DefaultPasswordLoginProvider(ILoginProvider):
     Default Authentication Provider: Base on Password
     """
 
-    def __init__(self, user_provider: IUserProvider, db: DBManagerService):
+    def __init__(self, user_provider: IUserProvider, db: DBManagerService, password_encoder: IPasswordEncoder):
         self.user_provider = user_provider
-        self.db = db  # 需要 DB 来更新密码哈希（如果需要升级）
-        self.password_helper = PasswordHelper()
+        self.db = db
+        self.password_encoder = password_encoder
 
     def supports(self, request: Any) -> bool:
         return isinstance(request, LoginRequest)
@@ -40,20 +39,17 @@ class DefaultPasswordLoginProvider(ILoginProvider):
 
         # 2. 验证密码（防时序攻击：无论用户是否存在，都执行相同的哈希操作）
         verified = False
-        updated_password_hash = None
 
         if user:
             # 用户存在：验证真实密码
-            verified, updated_password_hash = self.password_helper.verify_and_update(
-                request.password, user.password
-            )
+            verified = self.password_encoder.verify(request.password, user.password)
         else:
             # 用户不存在：执行dummy hash以保持恒定时间
             # 使用有效的bcrypt哈希（"dummy_password"的哈希值）
             # 这确保验证时间与真实验证相近，防止时序攻击
             dummy_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYNd.OwVgKi"
             try:
-                self.password_helper.verify_and_update(request.password, dummy_hash)
+                self.password_encoder.verify(request.password, dummy_hash)
             except Exception:
                 pass  # 忽略dummy验证的异常
             # verified 保持 False
@@ -66,23 +62,5 @@ class DefaultPasswordLoginProvider(ILoginProvider):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # 4. 如果密码哈希需要更新（算法升级等）
-        if updated_password_hash:
-            # 使用悲观锁防止并发更新导致数据丢失
-            async with await self.db.session() as session:
-                from sqlalchemy import select
-
-                # 使用 select_for_update 加锁
-                stmt = select(self.user_provider.component.user_orm_model).where(
-                    self.user_provider.component.user_orm_model.id == user.id
-                ).with_for_update()
-
-                result = await session.execute(stmt)
-                locked_user = result.scalar_one_or_none()
-
-                if locked_user:
-                    locked_user.password = updated_password_hash
-                    await session.commit()
-                    logger.info(f"[Security] Password hash updated for user {user.id}")
-
         return user
+

@@ -2,6 +2,7 @@
 密码编码器相关接口
 """
 from abc import ABC, abstractmethod
+
 from pyspring.ioc.interfaces.core import IManaged
 
 
@@ -30,7 +31,7 @@ class IPasswordEncoder(IManaged, ABC):
             def verify(self, raw_password: str, encoded_password: str) -> bool:
                 return argon2.verify(encoded_password, raw_password)
     """
-    
+
     @abstractmethod
     def encode(self, raw_password: str) -> str:
         """
@@ -43,7 +44,7 @@ class IPasswordEncoder(IManaged, ABC):
             str: 编码后的密码（哈希值）
         """
         pass
-    
+
     @abstractmethod
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         """

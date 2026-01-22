@@ -56,7 +56,7 @@ class CachedPermissionService(IPermissionService):
         """
         # 1. 构造缓存键
         cache_key = f"perm:{user_id}:{permission}"
-        
+
         # 2. 查询缓存
         try:
             cached = await self.cache.get(cache_key)
@@ -66,17 +66,17 @@ class CachedPermissionService(IPermissionService):
                 return result
         except Exception as e:
             logger.warning(f"[CachedPermission] 缓存查询失败，降级到数据库: {e}")
-        
+
         # 3. 缓存未命中，查询数据库（委托）
         has_perm = await self.delegate.has_permission(user_id, permission)
-        
+
         # 4. 更新缓存
         try:
             await self.cache.set(cache_key, "1" if has_perm else "0", ttl=self.ttl)
             logger.debug(f"[CachedPermission] 缓存已更新: user={user_id}, perm={permission}")
         except Exception as e:
             logger.warning(f"[CachedPermission] 缓存写入失败: {e}")
-        
+
         return has_perm
 
     async def has_role(self, user_id: Any, role: str) -> bool:
@@ -92,7 +92,7 @@ class CachedPermissionService(IPermissionService):
         """
         # 1. 构造缓存键
         cache_key = f"role:{user_id}:{role}"
-        
+
         # 2. 查询缓存
         try:
             cached = await self.cache.get(cache_key)
@@ -102,17 +102,17 @@ class CachedPermissionService(IPermissionService):
                 return result
         except Exception as e:
             logger.warning(f"[CachedPermission] 角色缓存查询失败: {e}")
-        
+
         # 3. 缓存未命中，查询数据库（委托）
         has_role_result = await self.delegate.has_role(user_id, role)
-        
+
         # 4. 更新缓存
         try:
             await self.cache.set(cache_key, "1" if has_role_result else "0", ttl=self.ttl)
             logger.debug(f"[CachedPermission] 角色缓存已更新: user={user_id}, role={role}")
         except Exception as e:
             logger.warning(f"[CachedPermission] 角色缓存写入失败: {e}")
-        
+
         return has_role_result
 
     async def invalidate_user_cache(self, user_id: Any):
@@ -130,7 +130,7 @@ class CachedPermissionService(IPermissionService):
             # 使用Redis SCAN命令实现模式删除（避免阻塞）
             deleted_count = 0
             patterns = [f"perm:{user_id}:*", f"role:{user_id}:*"]
-            
+
             for pattern in patterns:
                 cursor = 0
                 while True:
@@ -142,5 +142,7 @@ class CachedPermissionService(IPermissionService):
                     # cursor=0表示扫描完成
                     if cursor == 0:
                         break
-            
+
             logger.info(f"[CachedPermission] 用户缓存失效: user={user_id}, 删除{deleted_count}个key")
+        except Exception as e:
+            logger.error(f"[CachedPermission] 缓存失效失败: {e}")

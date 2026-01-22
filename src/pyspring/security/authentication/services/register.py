@@ -1,15 +1,15 @@
 from typing import Any
 
 from fastapi import HTTPException, status
-from fastapi_users.password import PasswordHelper
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.flow import IRegisterService
-from pyspring.security.authorization.contracts.schema.requests import UserInfo, User, Role, Permission
+from pyspring.security.authentication.contracts.password import IPasswordEncoder
+from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
 
 
 class DefaultRegisterService(IRegisterService):
@@ -19,17 +19,18 @@ class DefaultRegisterService(IRegisterService):
     负责用户注册、角色分配等功能
     """
 
-    def __init__(self, db: DBManagerService, component: SecurityEntityConfiguration):
+    def __init__(self, db: DBManagerService, component: SecurityEntityConfiguration, password_encoder: IPasswordEncoder):
         """
         初始化注册服务
         
         Args:
             db: 数据库管理服务
             component: 安全组件配置
+            password_encoder: 密码编码器
         """
         self.db = db
         self.component = component
-        self.password_helper = PasswordHelper()
+        self.password_encoder = password_encoder
 
     async def register(self, request: UserInfo) -> UserInfo:
         """
@@ -120,7 +121,7 @@ class DefaultRegisterService(IRegisterService):
                 detail="密码不能为空"
             )
 
-        hashed_password = self.password_helper.hash(user.password)
+        hashed_password = self.password_encoder.encode(user.password)
 
         # 创建用户数据库对象
         db_user = self.component.user_orm_model(
@@ -186,18 +187,17 @@ class DefaultRegisterService(IRegisterService):
         """
         # 构造用户基本信息（不返回密码）
         user = User(
-            id=getattr(db_user, 'id', None),
-            user_id=getattr(db_user, 'user_id', None),
-            first_name=getattr(db_user, 'first_name', None),
-            last_name=getattr(db_user, 'last_name', None),
-            email=getattr(db_user, 'email', None),
-            # password=None,
+            id=db_user.id,
+            user_id=db_user.user_id,
+            first_name=db_user.first_name,
+            last_name=db_user.last_name,
+            email=db_user.email,
         )
 
         # 查询用户角色
         stmt = select(self.component.role_orm_model).join(
             self.component.user_role_orm_model, self.component.user_role_orm_model.role_id == self.component.role_orm_model.id
-        ).where(self.component.user_role_orm_model.user_id == getattr(db_user, 'id', None))
+        ).where(self.component.user_role_orm_model.user_id == db_user.id)
         result = await session.execute(stmt)
         roles = [Role.model_validate(role) for role in result.scalars().all()]
 

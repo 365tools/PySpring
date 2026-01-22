@@ -1,4 +1,4 @@
-﻿"""
+"""
 Token Generator Module
 
 JWT token generator implementation

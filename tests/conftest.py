@@ -9,7 +9,7 @@ import pytest
 
 from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
 from pyspring.log.providers.loguru.services.service import LoguruService
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc.context import ApplicationContext
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -72,4 +72,5 @@ def cleanup_ioc_container():
 
     # 强制重置单例，确保每个测试使用新的容器实例
     # 这避免了跨测试的 EventLoop 绑定问题
-    AppContainerManager._instance = None
+    ApplicationContext._instance = None
+    ApplicationContext._container = None

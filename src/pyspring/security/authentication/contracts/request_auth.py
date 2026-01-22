@@ -1,4 +1,4 @@
-﻿"""
+"""
 请求认证提供者接口
 
 用于验证 API 请求中的认证凭据（Token、API Key、Session 等）

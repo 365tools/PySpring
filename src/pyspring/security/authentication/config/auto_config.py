@@ -8,19 +8,20 @@ from typing import List
 from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
 from pyspring.repositories.db.manager import DBManagerService
 # 导入配置和工厂
-from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 # 导入接口
 from pyspring.security.authentication.contracts.flow import ILoginService, IRegisterService
 from pyspring.security.authentication.contracts.login import ILoginProvider
+from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from pyspring.security.authentication.contracts.request_auth import IRequestAuthenticationProvider
 from pyspring.security.authentication.contracts.response import IResponseBuilder
 from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder, ITokenService
 from pyspring.security.authentication.contracts.user import IUserProvider, IUserManagerService
 from pyspring.security.authentication.factories.auth_provider.factory import AuthProviderFactory
-from pyspring.security.authentication.factories.login_provider.manager import DefaultLoginProviderManager
 # 导入默认实现
 from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
-from pyspring.security.authentication.providers.response.builder.default import DefaultResponseBuilder
+from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
+from pyspring.security.authentication.providers.response.default import DefaultResponseBuilder
 from pyspring.security.authentication.providers.user.database import DefaultUserProvider
 from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
 from pyspring.security.authentication.services.login import DefaultLoginService
@@ -49,6 +50,12 @@ class AuthenticationConfiguration:
         return SecurityEntityConfiguration()
 
     @Bean()
+    @ConditionalOnMissingBean(IPasswordEncoder)
+    def default_password_encoder(self) -> IPasswordEncoder:
+        """创建默认密码编码器（BCrypt）"""
+        return BCryptPasswordEncoder()
+
+    @Bean()
     @ConditionalOnMissingBean(IUserProvider)
     def default_user_provider(self, db: DBManagerService, component: SecurityEntityConfiguration) -> IUserProvider:
         """Create default instance if user defined IUserProvider Bean is missing."""
@@ -56,18 +63,23 @@ class AuthenticationConfiguration:
 
     @Bean()
     @ConditionalOnMissingBean(DefaultPasswordLoginProvider)
-    def default_password_login_provider(self, default_user_provider: IUserProvider, db: DBManagerService) -> DefaultPasswordLoginProvider:
+    def default_password_login_provider(
+            self,
+            default_user_provider: IUserProvider,
+            db: DBManagerService,
+            default_password_encoder: IPasswordEncoder
+    ) -> DefaultPasswordLoginProvider:
         """Create default DefaultPasswordLoginProvider."""
-        return DefaultPasswordLoginProvider(default_user_provider, db)
+        return DefaultPasswordLoginProvider(default_user_provider, db, default_password_encoder)
 
     @Bean()
     @ConditionalOnMissingBean(ILoginProvider)
-    def default_login_provider(self, default_password_login_provider: DefaultPasswordLoginProvider) -> ILoginProvider:
+    def default_login_providers(self, default_password_login_provider: DefaultPasswordLoginProvider) -> List[ILoginProvider]:
         """
-        Create the main DefaultLoginProviderManager (which is also an ILoginProvider).
-        It manages a list of providers. By default, only password_provider is added.
+        创建默认的认证提供者列表
+        用户可以注册多个ILoginProvider Bean，系统会自动收集
         """
-        return DefaultLoginProviderManager([default_password_login_provider])
+        return [default_password_login_provider]
 
     @Bean()
     @ConditionalOnMissingBean(IResponseBuilder)
@@ -97,16 +109,20 @@ class AuthenticationConfiguration:
     def default_login_service(
             self,
             default_user_provider: IUserProvider,
-            default_login_provider: ILoginProvider,
+            default_login_providers: List[ILoginProvider],
             default_response_builder: IResponseBuilder,
             default_token_payload_builder: ITokenPayloadBuilder,
             security_context_manager_service: SecurityContextManagerService,
             default_token_service: ITokenService
     ) -> ILoginService:
-        """只有当用户没有定义自己的 ILoginService Bean 时，才创建这个默认实例。"""
+        """
+        创建默认登录服务
+        
+        接受认证提供者列表，支持多种认证方式（密码、OAuth2、LDAP等）
+        """
         return DefaultLoginService(
             default_user_provider,
-            default_login_provider,
+            default_login_providers,
             default_response_builder,
             default_token_payload_builder,
             security_context_manager_service,
@@ -115,9 +131,14 @@ class AuthenticationConfiguration:
 
     @Bean()
     @ConditionalOnMissingBean(IRegisterService)
-    def default_register_service(self, db: DBManagerService, default_security_entity_configuration: SecurityEntityConfiguration) -> IRegisterService:
+    def default_register_service(
+            self,
+            db: DBManagerService,
+            default_security_entity_configuration: SecurityEntityConfiguration,
+            default_password_encoder: IPasswordEncoder
+    ) -> IRegisterService:
         """只有当用户没有定义自己的 IRegisterService Bean 时，才创建这个默认实例。"""
-        return DefaultRegisterService(db, default_security_entity_configuration)
+        return DefaultRegisterService(db, default_security_entity_configuration, default_password_encoder)
 
     @Bean()
     @ConditionalOnMissingBean(IUserManagerService)
@@ -125,10 +146,11 @@ class AuthenticationConfiguration:
             self,
             db: DBManagerService,
             default_security_entity_configuration: SecurityEntityConfiguration,
-            default_token_service: ITokenService
+            default_token_service: ITokenService,
+            default_password_encoder: IPasswordEncoder
     ) -> IUserManagerService:
         """只有当用户没有定义自己的 IUserManagerService Bean 时，才创建这个默认实例。"""
-        return DefaultUserManagerService(db, default_security_entity_configuration, default_token_service)
+        return DefaultUserManagerService(db, default_security_entity_configuration, default_token_service, default_password_encoder)
 
     @Bean()
     def authentication_providers(self) -> List[IRequestAuthenticationProvider]:

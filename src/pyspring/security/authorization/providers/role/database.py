@@ -4,14 +4,15 @@
 负责从数据库查询：
 - 用户的角色列表
 - 角色的权限列表
+- 角色继承层次
 """
-from typing import List, Any
+from typing import List, Any, Dict
 
 from sqlalchemy import select
 
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authorization.contracts.role import IRoleProvider
 
 
@@ -19,7 +20,7 @@ class DefaultRoleProvider(IRoleProvider):
     """
     默认的角色提供者（基于数据库）
     
-    通过ORM查询用户角色和角色权限
+    通过ORM查询用户角色和角色权限，支持角色继承
     用户可以通过实现IRoleProvider接口并注册@Bean来替换此实现
     """
 
@@ -33,6 +34,11 @@ class DefaultRoleProvider(IRoleProvider):
         """
         self.db_manager = db_manager
         self.component = component
+        # 默认角色继承层次（可通过数据库配置覆盖）
+        self._default_hierarchy = {
+            'admin': ['manager', 'user'],
+            'manager': ['user']
+        }
         logger.debug("[DefaultRoleProvider] 角色提供者已初始化")
 
     async def get_user_roles(self, user_id: Any) -> List[str]:
@@ -70,7 +76,7 @@ class DefaultRoleProvider(IRoleProvider):
                 result = await session.execute(stmt)
                 roles = result.scalars().all()
                 role_list = list(roles)
-                
+
                 logger.debug(f"[RoleProvider] 用户 {user_id} 的角色: {role_list}")
                 return role_list
         except Exception as e:
@@ -111,9 +117,26 @@ class DefaultRoleProvider(IRoleProvider):
                 result = await session.execute(stmt)
                 permissions = result.scalars().all()
                 perm_list = list(permissions)
-                
+
                 logger.debug(f"[RoleProvider] 角色 {role_name} 的权限: {perm_list}")
                 return perm_list
         except Exception as e:
             logger.error(f"[RoleProvider] 查询角色权限失败: {e}")
             return []
+
+    async def get_role_hierarchy(self) -> Dict[str, List[str]]:
+        """
+        获取角色继承层次结构
+        
+        默认实现：
+        - admin继承manager和user
+        - manager继承user
+        
+        扩展方式：
+        1. 子类覆盖此方法，从数据库读取配置
+        2. 从配置文件读取（如YAML）
+        
+        Returns:
+            Dict[str, List[str]]: 角色继承映射
+        """
+        return self._default_hierarchy.copy()

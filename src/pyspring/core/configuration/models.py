@@ -19,7 +19,7 @@ from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.core.config import LoggingConfig
 from pyspring.repositories.cache.config import RedisConfig, CacheConfig
 from pyspring.repositories.db.config import DatabaseConfig
-from pyspring.security.authorization.contracts.schema.config import JWTConfig, AuthenticationConfig
+from pyspring.security.authentication.contracts.config import JWTConfig, AuthenticationConfig
 from ..abstracts.config import ConfigSection
 
 

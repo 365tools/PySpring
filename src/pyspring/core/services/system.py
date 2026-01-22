@@ -52,7 +52,7 @@ class SystemService(IManaged):
         """
         return self._settings
 
-    def get_yaml_config(self, filename: str, key: str = None, default: Any = None) -> Any:
+    def get_yaml_config(self, filename: str, key: Optional[str] = None, default: Any = None) -> Any:
         """
         从YAML配置文件中读取配置
         

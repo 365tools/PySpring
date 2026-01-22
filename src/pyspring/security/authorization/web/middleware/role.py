@@ -1,4 +1,4 @@
-﻿from typing import Optional, List, Dict
+from typing import Optional, List, Dict
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse

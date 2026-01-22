@@ -19,8 +19,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from pyspring.ioc.context import ApplicationContext
 from pyspring.security.core.config.loader import SecurityConfigManager
-from pyspring.security.authorization.services.flow.check import DefaultPermissionService
-from pyspring.security.authorization.implementations.role.database import DefaultRoleProvider
+from pyspring.security.authorization.providers.permission.default import DefaultPermissionService
+from pyspring.security.authorization.providers.role.database import DefaultRoleProvider
 from pyspring.security.authorization.contracts.permission import IPermissionService
 from pyspring.security.authorization.contracts.role import IRoleProvider
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider

@@ -9,6 +9,7 @@ IPasswordEncoder和BCryptPasswordEncoder单元测试
 5. 空密码和特殊字符处理
 """
 import pytest
+
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
@@ -105,9 +106,9 @@ class TestBCryptPasswordEncoder:
         """测试编码包含特殊字符的密码"""
         special_passwords = [
             "密码123!@#",  # 中文字符
-            "P@$$w0rd!",    # 特殊符号
-            "🔐🔑secure",   # emoji
-            "a" * 100,       # 长密码
+            "P@$$w0rd!",  # 特殊符号
+            "🔐🔑secure",  # emoji
+            "a" * 100,  # 长密码
         ]
 
         for password in special_passwords:
@@ -124,7 +125,7 @@ class TestBCryptPasswordEncoder:
         invalid_hashes = [
             "not-a-bcrypt-hash",
             "$2a$10$invalid",  # 长度不对
-            "",                 # 空字符串
+            "",  # 空字符串
             "$2b$12$" + "x" * 50,  # 错误的base64编码
         ]
 
@@ -146,7 +147,7 @@ class TestBCryptPasswordEncoder:
         elapsed = time.time() - start
 
         # BCrypt应该有明显的计算成本（通常 > 50ms）
-        print(f"BCrypt编码耗时: {elapsed*1000:.1f}ms")
+        print(f"BCrypt编码耗时: {elapsed * 1000:.1f}ms")
         assert elapsed > 0.01  # 至少10ms
 
         # 检查work factor是否在合理范围（$2b$12$表示12轮）
@@ -180,8 +181,8 @@ class TestBCryptPasswordEncoder:
         # 时间差应该很小（bcrypt的特性）
         time_diff_ms = abs(avg_correct - avg_wrong) * 1000
 
-        print(f"正确密码平均: {avg_correct*1000:.2f}ms")
-        print(f"错误密码平均: {avg_wrong*1000:.2f}ms")
+        print(f"正确密码平均: {avg_correct * 1000:.2f}ms")
+        print(f"错误密码平均: {avg_wrong * 1000:.2f}ms")
         print(f"时间差: {time_diff_ms:.2f}ms")
 
         # BCrypt在算法层面就有抗时序攻击特性
@@ -191,10 +192,10 @@ class TestBCryptPasswordEncoder:
     def test_encode_decode_unicode(self, encoder):
         """测试Unicode密码的编码和验证"""
         unicode_passwords = [
-            "مرحبا123",      # 阿拉伯语
+            "مرحبا123",  # 阿拉伯语
             "こんにちは123",  # 日语
-            "Привет123",    # 俄语
-            "😀😁😂123",     # Emoji
+            "Привет123",  # 俄语
+            "😀😁😂123",  # Emoji
         ]
 
         for password in unicode_passwords:
@@ -233,8 +234,8 @@ class TestPasswordEncoderIntegration:
 
         # 典型的企业密码策略要求
         passwords = [
-            ("Aa1!abcd", True),      # 包含大小写、数字、特殊字符，长度8+
-            ("short1!", True),       # 短密码但符合复杂度
+            ("Aa1!abcd", True),  # 包含大小写、数字、特殊字符，长度8+
+            ("short1!", True),  # 短密码但符合复杂度
             ("verylongpasswordwithoutspecialchars123", True),  # 长密码
             ("Password123!@#", True),  # 常见格式
         ]

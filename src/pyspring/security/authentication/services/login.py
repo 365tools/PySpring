@@ -1,15 +1,15 @@
-﻿from typing import Optional
+﻿from typing import Optional, List
 
 from fastapi import HTTPException, status
 
 from pyspring.log.instance import logger
+from pyspring.security.authentication.contracts.constant import RevokeTokenReason
 from pyspring.security.authentication.contracts.flow import ILoginService
 from pyspring.security.authentication.contracts.login import ILoginProvider
 from pyspring.security.authentication.contracts.response import IResponseBuilder
 from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder, ITokenService
 from pyspring.security.authentication.contracts.user import IUserProvider
 from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
-from pyspring.security.authorization.contracts.schema.constant import RevokeTokenReason
 
 
 class DefaultLoginService(ILoginService):
@@ -17,13 +17,14 @@ class DefaultLoginService(ILoginService):
     默认登录认证服务（编排者）
     
     负责协调各个组件完成用户登录、登出等流程。
+    支持多个认证提供者，按顺序尝试直到找到支持的提供者。
     具体的业务逻辑（查库、验密、构造响应）委托给具体的 Provider 实现。
     """
 
     def __init__(
             self,
             user_provider: IUserProvider,
-            auth_provider: ILoginProvider,
+            auth_providers: List[ILoginProvider],
             response_builder: IResponseBuilder,
             payload_builder: ITokenPayloadBuilder,
             context_manager: SecurityContextManagerService,
@@ -34,29 +35,41 @@ class DefaultLoginService(ILoginService):
         
         Args:
             user_provider: 用户提供者
-            auth_provider: 认证提供者
+            auth_providers: 认证提供者列表（支持多种认证方式）
             response_builder: 响应构建器
             payload_builder: Token Payload 构建器
             context_manager: 安全上下文管理器
             token_manager: Token管理服务（通过IOC注入）
         """
         self.user_provider = user_provider
-        self.auth_provider = auth_provider
+        self.auth_providers = auth_providers
         self.response_builder = response_builder
         self.payload_builder = payload_builder
         self.context_manager = context_manager
         self.token_manager = token_manager
 
-        logger.info("[Auth] DefaultLoginService 初始化完成 (Strategy Pattern)")
+        logger.info(f"[Auth] DefaultLoginService 初始化完成，注册了 {len(auth_providers)} 个认证提供者")
 
     async def login(self, request: object) -> object:
         """
         用户登录流程编排
+        
+        支持多个认证提供者，按顺序尝试直到找到支持的提供者
         """
         try:
-            # 1. 认证 (委托给 AuthProvider)
-            # AuthProvider 内部负责校验凭据，返回合法的用户对象
-            user = await self.auth_provider.authenticate(request)
+            # 1. 查找支持的认证提供者并执行认证
+            user = None
+            for provider in self.auth_providers:
+                if provider.supports(request):
+                    user = await provider.authenticate(request)
+                    break
+
+            # 如果没有找到支持的提供者
+            if user is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"No LoginProvider found for request type: {type(request)}"
+                )
 
             # ==================== 安全上下文验证 (Context Validation) ====================
             # 使用 SecurityContextManager 调用所有验证器 (Context Policies)
@@ -91,16 +104,15 @@ class DefaultLoginService(ILoginService):
             # Refresh Token Payload 通常比较简单，只包含 sub
             refresh_payload = {
                 "sub": str(user.id),
-                # 也可以包含一些额外的 claims，根据需求而定
             }
-            if evaluation and hasattr(evaluation, 'claims'):
+            if evaluation and evaluation.claims:
                 refresh_payload.update(evaluation.claims)
 
             # 4. 生成 Token
             access_token = self.token_manager.create_access_token(data=access_payload)
             refresh_token = await self.token_manager.create_refresh_token(data=refresh_payload)
 
-            logger.info(f"[Success]用户登录成功: {getattr(user, 'email', 'unknown')}")
+            logger.info(f"[Success]用户登录成功: {user.email}")
 
             # 5. 构造响应（委托给 ResponseBuilder)
             return self.response_builder.build_login_response(

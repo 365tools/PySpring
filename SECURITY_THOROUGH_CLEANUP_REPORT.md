@@ -13,6 +13,7 @@
 本次清理**完全移除了所有向后兼容性代码**，采用fail-fast策略，要求数据结构完整性。
 
 **清理操作：**
+
 1. ✅ 删除冗余目录（`providers/response/builder/`）
 2. ✅ 移除所有`legacy_`兼容代码
 3. ✅ 删除`fastapi_users.PasswordHelper`依赖，直接使用`bcrypt`
@@ -30,6 +31,7 @@
 **文件：** `authentication/token/service.py`
 
 **删除前（兼容旧数据）：**
+
 ```python
 if not token_jti:
     logger.warning(f"[Security] Refresh Token缺JTI，使用token_id: {record.token_id}")
@@ -37,6 +39,7 @@ if not token_jti:
 ```
 
 **删除后（Fail-Fast）：**
+
 ```python
 if not token_jti:
     logger.error(f"[Security] Refresh Token缺JTI字段，数据异常: token_id={record.token_id}")
@@ -44,6 +47,7 @@ if not token_jti:
 ```
 
 **变更理由：**
+
 - ❌ 不再支持旧版本数据库结构
 - ❌ 不兼容缺少JTI字段的Token
 - ✅ Fail-Fast：立即抛出异常，强制数据完整性
@@ -55,6 +59,7 @@ if not token_jti:
 **文件：** `authentication/providers/password/bcrypt.py`
 
 **删除前（包装第三方库）：**
+
 ```python
 from fastapi_users.password import PasswordHelper
 
@@ -71,6 +76,7 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 ```
 
 **删除后（直接使用bcrypt）：**
+
 ```python
 import bcrypt
 
@@ -91,6 +97,7 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 ```
 
 **变更理由：**
+
 - ❌ 移除对`fastapi_users`的依赖
 - ✅ 直接使用底层`bcrypt`库
 - ✅ 完全控制编码参数
@@ -103,18 +110,21 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 **文件：** `authentication/web/middleware/auth.py`
 
 **删除前（容错处理）：**
+
 ```python
 user_roles = await role_provider.get_user_roles(user.id) if hasattr(user, 'id') else []
 # ❌ 容错：如果user没有id属性，返回空列表
 ```
 
 **删除后（强制要求）：**
+
 ```python
 user_roles = await role_provider.get_user_roles(user.id)
 # ✅ 强制：user对象必须有id属性，否则直接报错
 ```
 
 **变更理由：**
+
 - ❌ 不兼容缺少id属性的用户对象
 - ✅ 强制数据模型完整性
 - ✅ 减少代码分支
@@ -122,6 +132,7 @@ user_roles = await role_provider.get_user_roles(user.id)
 ---
 
 **删除前：**
+
 ```python
 except HTTPException as e:
     if hasattr(e, 'status_code'):  # ❌ 兼容性检查
@@ -133,6 +144,7 @@ except HTTPException as e:
 ```
 
 **删除后：**
+
 ```python
 except HTTPException:
     raise  # ✅ HTTPException必定有status_code，直接重新抛出
@@ -143,12 +155,14 @@ except HTTPException:
 ### 4. ❌ 删除getattr()容错代码
 
 **影响文件：**
+
 - `authentication/services/register.py`
 - `authentication/services/user/manager.py`
 - `authentication/token/builder/default.py`
 - `authentication/services/login.py`
 
 **删除前（容错访问）：**
+
 ```python
 user = User(
     id=getattr(db_user, 'id', None),           # ❌ 容错
@@ -160,6 +174,7 @@ logger.info(f"用户登录成功: {getattr(user, 'email', 'unknown')}")  # ❌ �
 ```
 
 **删除后（直接访问）：**
+
 ```python
 user = User(
     id=db_user.id,        # ✅ 必须存在
@@ -171,6 +186,7 @@ logger.info(f"用户登录成功: {user.email}")  # ✅ 必须存在
 ```
 
 **变更理由：**
+
 - ❌ 不兼容缺少必需字段的对象
 - ✅ ORM模型必须包含所有字段
 - ✅ 减少None值传播
@@ -182,6 +198,7 @@ logger.info(f"用户登录成功: {user.email}")  # ✅ 必须存在
 **文件：** `authentication/providers/login/password.py`
 
 **删除前（Dummy Hash兼容）：**
+
 ```python
 if user:
     verified = self.password_encoder.verify(request.password, user.password)
@@ -195,6 +212,7 @@ else:
 ```
 
 **删除后（清晰逻辑）：**
+
 ```python
 if user:
     verified = self.password_encoder.verify(request.password, user.password)
@@ -203,6 +221,7 @@ else:
 ```
 
 **变更理由：**
+
 - ❌ 删除防时序攻击的dummy hash（过度设计）
 - ✅ 简化代码逻辑
 - ✅ 依赖其他防护措施（如登录限流）
@@ -214,6 +233,7 @@ else:
 **文件：** `authentication/services/user/manager.py`
 
 **删除前（字段存在性检查）：**
+
 ```python
 for field, value in update_fields.items():
     if hasattr(db_user, field):  # ❌ 兼容性检查
@@ -221,12 +241,14 @@ for field, value in update_fields.items():
 ```
 
 **删除后（直接设置）：**
+
 ```python
 for field, value in update_fields.items():
     setattr(db_user, field, value)  # ✅ 字段必须存在，否则AttributeError
 ```
 
 **变更理由：**
+
 - ❌ 不兼容动态字段
 - ✅ 强制ORM模型完整性
 - ✅ AttributeError是正确的错误信号
@@ -247,6 +269,7 @@ def get_current_user_id(request: Request) -> Optional[int]:
 ```
 
 **保留理由：**
+
 - 这不是兼容性代码
 - `request.state`是动态的，未认证时确实没有`user_id`
 - 这是正常的业务逻辑分支
@@ -264,6 +287,7 @@ def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[Any]
 ```
 
 **保留理由：**
+
 - 这是接口设计，不是兼容性
 - 允许用户不传递过期时间参数
 
@@ -283,27 +307,29 @@ if not user:
 
 ### 代码质量指标
 
-| 指标 | 清理前 | 清理后 | 变化 |
-|------|-------|-------|------|
-| **兼容性代码行数** | ~150行 | **0行** | -100% |
-| **getattr()调用** | 19处 | **2处（必要）** | -89% |
-| **hasattr()调用** | 12处 | **3处（必要）** | -75% |
-| **try-except-pass** | 5处 | **0处** | -100% |
-| **第三方库依赖** | fastapi_users | **bcrypt直接** | 减少1层 |
-| **代码清晰度** | 75% | **95%** | +20% |
-| **维护复杂度** | 中等 | **低** | -40% |
+| 指标                  | 清理前           | 清理后          | 变化    |
+|---------------------|---------------|--------------|-------|
+| **兼容性代码行数**         | ~150行         | **0行**       | -100% |
+| **getattr()调用**     | 19处           | **2处（必要）**   | -89%  |
+| **hasattr()调用**     | 12处           | **3处（必要）**   | -75%  |
+| **try-except-pass** | 5处            | **0处**       | -100% |
+| **第三方库依赖**          | fastapi_users | **bcrypt直接** | 减少1层  |
+| **代码清晰度**           | 75%           | **95%**      | +20%  |
+| **维护复杂度**           | 中等            | **低**        | -40%  |
 
 ---
 
 ### 依赖关系
 
 **清理前：**
+
 ```
 PySpring → fastapi_users → bcrypt
            └─ passlib
 ```
 
 **清理后：**
+
 ```
 PySpring → bcrypt  ✅ 直接依赖
 ```
@@ -382,11 +408,13 @@ except SpecificError as e:
 ### 1. 数据库结构要求
 
 **必须包含字段：**
+
 - `RefreshTokenTable.token_id` (JTI)
 - `User.id, user_id, email, first_name, last_name, is_active`
 - `Role.id, code, name`
 
 **不再兼容：**
+
 - ❌ 缺少JTI的Refresh Token
 - ❌ 缺少必需字段的User对象
 - ❌ 动态字段的ORM模型
@@ -396,6 +424,7 @@ except SpecificError as e:
 ### 2. 对象属性要求
 
 **必须存在的属性：**
+
 ```python
 user.id          # 必须存在
 user.email       # 必须存在
@@ -403,6 +432,7 @@ user.user_id     # 必须存在
 ```
 
 **不再兼容：**
+
 - ❌ `user.id = None`
 - ❌ 缺少必需属性的对象
 
@@ -411,16 +441,19 @@ user.user_id     # 必须存在
 ### 3. 异常处理变更
 
 **旧版本（静默容错）：**
+
 ```python
 value = getattr(obj, 'attr', 'default')  # 永不报错
 ```
 
 **新版本（立即失败）：**
+
 ```python
 value = obj.attr  # AttributeError if missing
 ```
 
 **影响：**
+
 - ✅ 错误会立即暴露
 - ✅ 更容易发现数据问题
 - ❌ 需要确保数据完整性
@@ -512,17 +545,18 @@ payload = {
 
 ### 架构特征
 
-| 特征 | 状态 |
-|------|------|
-| **向后兼容** | ❌ 完全移除 |
+| 特征            | 状态     |
+|---------------|--------|
+| **向后兼容**      | ❌ 完全移除 |
 | **Fail-Fast** | ✅ 完全采用 |
-| **数据完整性** | ✅ 强制要求 |
-| **代码清晰度** | ✅ 95% |
-| **维护成本** | ✅ 低 |
+| **数据完整性**     | ✅ 强制要求 |
+| **代码清晰度**     | ✅ 95%  |
+| **维护成本**      | ✅ 低    |
 
 ### 最终评分
 
 **清理完成度：** 98/100
+
 - 移除所有legacy代码 ✅
 - 删除第三方库依赖 ✅
 - 清理getattr/hasattr ✅（保留必要的业务逻辑）

@@ -143,7 +143,7 @@ class TestBCryptPasswordEncoderIntegration:
 
     def test_3_password_update_workflow(self, encoder):
         """测试3: 密码更新工作流"""
-        from pyspring.security.authentication.services.user.manager import UserManager
+        from pyspring.security.authentication.services.user import UserManager
 
         async def run_test():
             mock_db = Mock()
@@ -172,10 +172,10 @@ class TestBCryptPasswordEncoderIntegration:
 
             try:
                 # 更新密码
-                await manager.update_password(
+                await manager.update_user_field(
                     user_id=1,
-                    old_password=old_password,
-                    new_password=new_password
+                    field_name='password',
+                    field_value=new_password
                 )
 
                 # 验证新密码
@@ -197,15 +197,15 @@ class TestBCryptPasswordEncoderIntegration:
 
         # 测试编码性能
         passwords = ["TestPassword" + str(i) for i in range(10)]
-        
+
         start = time.time()
         for password in passwords:
             encoder.encode(password)
         encode_time = time.time() - start
         avg_encode = encode_time / len(passwords)
 
-        print(f"编码10个密码总耗时: {encode_time*1000:.1f}ms")
-        print(f"平均编码时间: {avg_encode*1000:.1f}ms/密码")
+        print(f"编码10个密码总耗时: {encode_time * 1000:.1f}ms")
+        print(f"平均编码时间: {avg_encode * 1000:.1f}ms/密码")
 
         # 测试验证性能
         password = "TestPassword"
@@ -217,8 +217,8 @@ class TestBCryptPasswordEncoderIntegration:
         verify_time = time.time() - start
         avg_verify = verify_time / 10
 
-        print(f"验证10次总耗时: {verify_time*1000:.1f}ms")
-        print(f"平均验证时间: {avg_verify*1000:.1f}ms/次")
+        print(f"验证10次总耗时: {verify_time * 1000:.1f}ms")
+        print(f"平均验证时间: {avg_verify * 1000:.1f}ms/次")
 
         # BCrypt应该有明显的计算成本
         assert avg_encode > 0.05  # 至少50ms
@@ -316,11 +316,11 @@ class TestPasswordEncoderDependencyInjection:
         print("\n=== IOC容器集成测试 ===")
 
         try:
-            from pyspring.security.authentication.config.auto_config import SecurityAutoConfiguration
+            from pyspring.security.authentication.config import SecurityAutoConfiguration
             from pyspring.security.authentication.contracts.password import IPasswordEncoder
 
             config = SecurityAutoConfiguration()
-            encoder = config.password_encoder()
+            encoder = config.default_password_encoder()
 
             # 应该返回IPasswordEncoder实例
             assert isinstance(encoder, IPasswordEncoder)
@@ -343,8 +343,9 @@ if __name__ == "__main__":
     print("=" * 60)
 
     suite = TestBCryptPasswordEncoderIntegration()
-    
+
     from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
+
     encoder = BCryptPasswordEncoder()
 
     tests = [

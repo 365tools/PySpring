@@ -1,4 +1,4 @@
-﻿"""
+"""
 全局认证拦截中间件
 
 基于认证提供者链（Chain of Responsibility Pattern）
@@ -6,7 +6,7 @@
 """
 from typing import Callable, Optional
 
-from fastapi import Request, Response, status
+from fastapi import Request, Response, status, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
@@ -51,9 +51,9 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.enable_role_check_initial_setting = enable_role_check
 
-        self._config_manager = None
-        self._auth_chain = None
-        self._role_middleware = None
+        self._config_manager: Optional[SecurityConfigManager] = None
+        self._auth_chain: Optional[AuthenticationChain] = None
+        self._role_middleware: Optional[RoleCheckMiddleware] = None
         self._initialization_attempted = False
 
     def _ensure_initialized(self):
@@ -65,20 +65,20 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             container = ApplicationContext.get_instance()
 
             if self._config_manager is None:
-                self._config_manager = container.get(SecurityConfigManager)
+                self._config_manager = container.get_by_type(SecurityConfigManager)
 
             if self.enable_role_check_initial_setting is None:
-                self.enable_role_check = self._config_manager.is_authorization_enabled()
+                self.enable_role_check = self._config_manager.is_authorization_enabled() if self._config_manager else False if self._config_manager else False
             else:
                 self.enable_role_check = self.enable_role_check_initial_setting
 
             if self._auth_chain is None:
-                self._auth_chain = container.get(AuthenticationChain)
+                self._auth_chain = container.get_by_type(AuthenticationChain)
 
             if self._role_middleware is None:
                 try:
-                    permission_service = container.get(IPermissionService)
-                    path_provider = container.get(IPathPermissionProvider)
+                    permission_service = container.get_by_type(IPermissionService)
+                    path_provider = container.get_by_type(IPathPermissionProvider)
                     self._role_middleware = RoleCheckMiddleware(
                         permission_service=permission_service,
                         path_provider=path_provider,
@@ -100,37 +100,32 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         self._ensure_initialized()
 
         try:
-            if await self._auth_chain.should_skip(request):
+            if self._auth_chain and self._auth_chain.is_public_path(request.url.path):
                 return await call_next(request)
 
-            user, auth_error = await self._auth_chain.authenticate(request)
+            user, auth_error = await self._auth_chain.authenticate(request) if self._auth_chain else (None, "Auth chain not initialized")
 
             if user:
                 request.state.user = user
+                AuthContext.set_current_user(user)
 
                 try:
                     from pyspring.security.authorization.contracts.role import IRoleProvider
 
-                    role_provider = ApplicationContext.get_instance().get(IRoleProvider)
-                    user_roles = await role_provider.get_user_roles(user.id) if hasattr(user, 'id') else []
+                    role_provider = ApplicationContext.get_instance().get_by_type(IRoleProvider)
+                    user_roles = await role_provider.get_user_roles(user.id)
 
                     user_permissions = set()
                     for role in user_roles:
                         role_perms = await role_provider.get_role_permissions(role)
                         user_permissions.update(role_perms)
 
-                    request.state.auth_context = AuthContext(
-                        user=user,
-                        permissions=list(user_permissions),
-                        roles=user_roles
-                    )
+                    request.state.user_permissions = list(user_permissions)
+                    request.state.user_roles = user_roles
                 except Exception as e:
                     logger.warning(f"[Warning] 加载用户权限和角色失败: {e}")
-                    request.state.auth_context = AuthContext(
-                        user=user,
-                        permissions=[],
-                        roles=[]
-                    )
+                    request.state.user_permissions = []
+                    request.state.user_roles = []
             elif auth_error:
                 logger.warning(f"[Warning] 认证失败: {auth_error}")
                 return self.create_error_response(
@@ -148,11 +143,17 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
 
             if self.enable_role_check and self._role_middleware:
                 try:
-                    await self._role_middleware.check_permission(request)
+                    result = await self._role_middleware.auth(request.url.path, request)
+                    if isinstance(result, JSONResponse):
+                        return result
+                except HTTPException:
+                    raise
                 except Exception as e:
-                    if hasattr(e, 'status_code'):
-                        return self.create_error_response(e.status_code, e.detail)
-                    raise e
+                    logger.error(f"[Error] Role check failed: {e}")
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Permission check failed"
+                    )
 
             response = await call_next(request)
             return response

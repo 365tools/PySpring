@@ -1,4 +1,4 @@
-﻿"""
+"""
 认证上下文管理器
 
 类似 Spring Boot 的 SecurityContextHolder，用于在请求生命周期内存储和获取当前认证用户信息
@@ -6,7 +6,7 @@
 from contextvars import ContextVar
 from typing import Optional
 
-from pyspring.security.authorization.contracts.schema.requests import UserInfo
+from pyspring.security.authentication.contracts.response import UserInfo
 
 # 请求上下文变量（线程安全）
 _current_user: ContextVar[Optional[UserInfo]] = ContextVar('current_user', default=None)

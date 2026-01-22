@@ -4,7 +4,7 @@
 维护所有已注册服务的信息
 """
 from dataclasses import dataclass, field
-from typing import Dict, Set, Optional, List
+from typing import Dict, Set, Optional, List, Callable, Any
 
 from pyspring.ioc.annotations.scope import Scope
 
@@ -15,7 +15,7 @@ class ServiceDefinition:
     name: str  # 服务名称
     service_type: type  # 服务类型
     scope: Scope  # 作用域
-    factory: callable  # 工厂函数
+    factory: Callable[..., Any]  # 工厂函数
     dependencies: List[str] = field(default_factory=list)  # 依赖的服务名称
     is_lazy: bool = False  # 是否懒加载
     is_primary: bool = False  # 是否主要候选者

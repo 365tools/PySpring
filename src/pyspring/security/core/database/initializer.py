@@ -1,4 +1,4 @@
-﻿"""
+"""
 from sqlalchemy import inspect, text
 
 认证服务初始化服务

@@ -93,4 +93,4 @@ class DBManagerService(IManaged):
             except Exception as e:
                 logger.error(f"Failed to close database connection: {e}")
             finally:
-                self.provider = None
+                self._provider = None

@@ -3,8 +3,9 @@
 
 测试IRoleProvider的角色继承、有效角色计算
 """
-import pytest
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from pyspring.security.authorization.providers.role.database import DefaultRoleProvider
 
@@ -37,10 +38,13 @@ class TestRoleInheritance:
     @pytest.fixture
     def role_provider(self, mock_db_manager, mock_entity_config):
         """创建DefaultRoleProvider实例"""
-        return DefaultRoleProvider(
+        provider = DefaultRoleProvider(
             db_manager=mock_db_manager,
             component=mock_entity_config
         )
+        # Mock get_user_roles 方法，确保返回列表而不是None
+        provider.get_user_roles = AsyncMock(return_value=[])
+        return provider
 
     @pytest.mark.asyncio
     async def test_get_role_hierarchy(self, role_provider):
@@ -60,11 +64,8 @@ class TestRoleInheritance:
         """测试admin用户的有效角色（包含继承）"""
         # Arrange
         user_id = "user123"
-        # Mock数据库返回admin角色
-        result_mock = MagicMock()
-        result_mock.scalars().all.return_value = ['admin']
-        session_mock = await mock_db_manager.session()
-        session_mock.__aenter__.return_value.execute.return_value = result_mock
+        # Mock get_user_roles 直接返回 admin 角色
+        role_provider.get_user_roles = AsyncMock(return_value=['admin'])
 
         # Act
         effective_roles = await role_provider.get_effective_roles(user_id)
@@ -80,10 +81,7 @@ class TestRoleInheritance:
         """测试manager用户的有效角色"""
         # Arrange
         user_id = "user456"
-        result_mock = MagicMock()
-        result_mock.scalars().all.return_value = ['manager']
-        session_mock = await mock_db_manager.session()
-        session_mock.__aenter__.return_value.execute.return_value = result_mock
+        role_provider.get_user_roles = AsyncMock(return_value=['manager'])
 
         # Act
         effective_roles = await role_provider.get_effective_roles(user_id)
@@ -99,10 +97,7 @@ class TestRoleInheritance:
         """测试普通用户的有效角色（无继承）"""
         # Arrange
         user_id = "user789"
-        result_mock = MagicMock()
-        result_mock.scalars().all.return_value = ['user']
-        session_mock = await mock_db_manager.session()
-        session_mock.__aenter__.return_value.execute.return_value = result_mock
+        role_provider.get_user_roles = AsyncMock(return_value=['user'])
 
         # Act
         effective_roles = await role_provider.get_effective_roles(user_id)
@@ -117,10 +112,7 @@ class TestRoleInheritance:
         # Arrange
         user_id = "user_multi"
         # 用户同时拥有admin和manager角色
-        result_mock = MagicMock()
-        result_mock.scalars().all.return_value = ['admin', 'manager']
-        session_mock = await mock_db_manager.session()
-        session_mock.__aenter__.return_value.execute.return_value = result_mock
+        role_provider.get_user_roles = AsyncMock(return_value=['admin', 'manager'])
 
         # Act
         effective_roles = await role_provider.get_effective_roles(user_id)
@@ -141,11 +133,11 @@ class TestPermissionServiceWithInheritance:
         """测试has_role检查继承的角色"""
         # Arrange
         from pyspring.security.authorization.providers.permission.default import DefaultPermissionService
-        
+
         mock_role_provider = AsyncMock()
         # 用户只有admin角色，但通过继承拥有manager和user
         mock_role_provider.get_effective_roles.return_value = ['admin', 'manager', 'user']
-        
+
         permission_service = DefaultPermissionService(role_provider=mock_role_provider)
 
         # Act & Assert
@@ -159,7 +151,7 @@ class TestPermissionServiceWithInheritance:
         """测试has_permission使用继承的角色权限"""
         # Arrange
         from pyspring.security.authorization.providers.permission.default import DefaultPermissionService
-        
+
         mock_role_provider = AsyncMock()
         # admin继承manager和user的角色
         mock_role_provider.get_effective_roles.return_value = ['admin', 'manager', 'user']
@@ -169,7 +161,7 @@ class TestPermissionServiceWithInheritance:
             'manager': ['user:write', 'article:write'],
             'user': ['user:read', 'article:read']
         }.get(role, [])
-        
+
         permission_service = DefaultPermissionService(role_provider=mock_role_provider)
 
         # Act & Assert

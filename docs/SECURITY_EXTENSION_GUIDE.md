@@ -14,6 +14,7 @@ def default_user_provider(...) -> IUserProvider:
 ```
 
 **执行逻辑：**
+
 1. IOC容器启动时，扫描所有`@Bean`方法
 2. 检查是否已存在`IUserProvider`类型的Bean
 3. 如果**不存在** → 注册默认实现
@@ -50,25 +51,25 @@ IResponseBuilder (默认: DefaultResponseBuilder)
 
 @Configuration
 class AuthenticationConfiguration:
-    
+
     # 1️⃣ 用户提供者（查询用户）
     @Bean()
     @ConditionalOnMissingBean(IUserProvider)
     def default_user_provider(self, db, component) -> IUserProvider:
         return DefaultUserProvider(db, component)  # 数据库查询
-    
+
     # 2️⃣ 登录提供者（密码验证）
     @Bean()
     @ConditionalOnMissingBean(ILoginProvider)
     def default_login_providers(self, password_provider) -> List[ILoginProvider]:
         return [password_provider]  # 支持密码登录
-    
+
     # 3️⃣ Token服务（生成Token）
     @Bean()
     @ConditionalOnMissingBean(ITokenService)
     def default_token_service(self) -> ITokenService:
         return TokenService()  # JWT Token
-    
+
     # 4️⃣ 登录服务（编排流程）
     @Bean()
     @ConditionalOnMissingBean(ILoginService)
@@ -88,25 +89,26 @@ class AuthenticationConfiguration:
 from pyspring.ioc.annotations.component import Component
 from pyspring.security.authentication.contracts.login import ILoginProvider
 
+
 @Component()  # ← 自动注册为Bean
 class LDAPLoginProvider(ILoginProvider):
     """LDAP登录提供者"""
-    
+
     def __init__(self, ldap_client):
         self.ldap_client = ldap_client
-    
+
     def supports(self, request) -> bool:
         """检查是否支持此请求"""
         return request.login_type == "ldap"
-    
+
     async def authenticate(self, request):
         """LDAP认证逻辑"""
         # 1. 连接LDAP服务器验证
         ldap_user = await self.ldap_client.authenticate(
-            request.username, 
+            request.username,
             request.password
         )
-        
+
         # 2. 映射到本地用户
         return await self.user_repo.find_by_email(ldap_user.email)
 
@@ -122,19 +124,20 @@ class LDAPLoginProvider(ILoginProvider):
 from pyspring.ioc.annotations.component import Bean
 from pyspring.security.authentication.contracts.flow import ILoginService
 
+
 @Bean()  # ← 注意：不需要@ConditionalOnMissingBean
 def custom_login_service(...) -> ILoginService:
     """自定义登录服务"""
-    
+
     class CustomLoginService(ILoginService):
         async def login(self, request):
             # 1. 验证验证码
             if not await self.verify_captcha(request.captcha):
                 raise Exception("验证码错误")
-            
+
             # 2. 调用原有逻辑
             return await self.default_login_service.login(request)
-    
+
     return CustomLoginService(...)
 
 # ✅ 效果：框架的 default_login_service 不会注册（因为已存在ILoginService Bean）
@@ -147,13 +150,14 @@ def custom_login_service(...) -> ILoginService:
 
 from pyspring.security.authentication.contracts.user import IUserProvider
 
+
 @Component()
 class RedisUserProvider(IUserProvider):
     """从Redis读取用户"""
-    
+
     def __init__(self, redis_client):
         self.redis = redis_client
-    
+
     async def find_user_by_username(self, username):
         user_data = await self.redis.hgetall(f"user:{username}")
         return User(**user_data) if user_data else None
@@ -168,10 +172,11 @@ class RedisUserProvider(IUserProvider):
 
 from pyspring.security.authentication.contracts.token import ITokenGenerator
 
+
 @Component()
 class SessionTokenGenerator(ITokenGenerator):
     """Session Token生成器"""
-    
+
     def encode(self, payload, expires_delta):
         session_id = str(uuid.uuid4())
         # 存储到Redis
@@ -181,11 +186,11 @@ class SessionTokenGenerator(ITokenGenerator):
             json.dumps(payload)
         )
         return session_id
-    
+
     def decode(self, token):
         data = await self.redis.get(f"session:{token}")
         return json.loads(data) if data else None
-    
+
     def get_token_type(self):
         return "Session"
 
@@ -200,16 +205,17 @@ class SessionTokenGenerator(ITokenGenerator):
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 import argon2
 
+
 @Component()
 class Argon2PasswordEncoder(IPasswordEncoder):
     """Argon2密码编码器（更强的安全性）"""
-    
+
     def __init__(self):
         self.hasher = argon2.PasswordHasher()
-    
+
     def encode(self, raw_password: str) -> str:
         return self.hasher.hash(raw_password)
-    
+
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         try:
             self.hasher.verify(encoded_password, raw_password)
@@ -249,19 +255,19 @@ get_role_permissions('admin')  # 查询角色权限
 
 @Configuration
 class AuthorizationConfiguration:
-    
+
     # 1️⃣ 角色提供者（查询角色和权限）
     @Bean
     @ConditionalOnMissingBean(IRoleProvider)
     def default_role_provider(self, db_manager, component) -> IRoleProvider:
         return DefaultRoleProvider(db_manager, component)
-    
+
     # 2️⃣ 权限服务（权限判定）
     @Bean
     @ConditionalOnMissingBean(IPermissionService)
     def default_permission_service(self, role_provider) -> IPermissionService:
         return DefaultPermissionService(role_provider)
-    
+
     # 3️⃣ 路径规则提供者（URL权限映射）
     @Bean
     @ConditionalOnMissingBean(IPathPermissionProvider)
@@ -280,23 +286,24 @@ class AuthorizationConfiguration:
 
 from pyspring.security.authorization.contracts.role import IRoleProvider
 
+
 @Component()
 class RedisRoleProvider(IRoleProvider):
     """从Redis读取角色和权限"""
-    
+
     def __init__(self, redis_client):
         self.redis = redis_client
-    
+
     async def get_user_roles(self, user_id):
         """从Redis Set读取用户角色"""
         roles = await self.redis.smembers(f"user:{user_id}:roles")
         return list(roles)
-    
+
     async def get_role_permissions(self, role_name):
         """从Redis Set读取角色权限"""
         perms = await self.redis.smembers(f"role:{role_name}:permissions")
         return list(perms)
-    
+
     async def get_role_hierarchy(self):
         """从Redis Hash读取角色继承关系"""
         hierarchy = await self.redis.hgetall("role:hierarchy")
@@ -314,16 +321,17 @@ class RedisRoleProvider(IRoleProvider):
 import casbin
 from pyspring.security.authorization.contracts.permission import IPermissionService
 
+
 @Component()
 class CasbinPermissionService(IPermissionService):
     """使用Casbin进行权限判定"""
-    
+
     def __init__(self):
         self.enforcer = casbin.Enforcer(
             "config/rbac_model.conf",
             "config/rbac_policy.csv"
         )
-    
+
     async def has_permission(self, user_id, permission):
         """Casbin enforce"""
         # Casbin格式：subject, object, action
@@ -332,18 +340,19 @@ class CasbinPermissionService(IPermissionService):
         if len(parts) == 2:
             return self.enforcer.enforce(str(user_id), parts[0], parts[1])
         return False
-    
+
     async def has_role(self, user_id, role):
         """检查用户是否有角色"""
         return self.enforcer.enforce(str(user_id), f"role:{role}", "has")
+
 
 # ✅ 效果：完全替换权限判定逻辑，使用Casbin的策略引擎
 
 # ⚠️ 可选：添加缓存包装
 @Bean()
 def cached_casbin_permission_service(
-    casbin_service: CasbinPermissionService,
-    cache: CacheManagerService
+        casbin_service: CasbinPermissionService,
+        cache: CacheManagerService
 ) -> IPermissionService:
     """用缓存装饰Casbin服务"""
     from pyspring.security.authorization.providers.permission.cached import CachedPermissionService
@@ -361,17 +370,18 @@ def cached_casbin_permission_service(
 
 from pyspring.security.authorization.providers.permission.cached import CachedPermissionService
 
+
 @Bean()
 def custom_cached_permission_service(
-    default_permission_service: IPermissionService,
-    cache: CacheManagerService
+        default_permission_service: IPermissionService,
+        cache: CacheManagerService
 ) -> IPermissionService:
     """自定义缓存策略"""
-    
+
     class CustomCachedPermissionService(CachedPermissionService):
         def __init__(self, delegate, cache):
             super().__init__(delegate, cache, ttl=1800)  # 30分钟缓存
-        
+
         async def invalidate_user_cache(self, user_id):
             """自定义缓存失效（使用Redis SCAN）"""
             cursor = 0
@@ -385,7 +395,7 @@ def custom_cached_permission_service(
                     await self.cache.delete(*keys)
                 if cursor == 0:
                     break
-    
+
     return CustomCachedPermissionService(default_permission_service, cache)
 ```
 
@@ -591,12 +601,12 @@ class MultiTenantSecurityConfig:
 
 ## 六、框架优势对比
 
-| 框架 | 默认实现 | 自定义方式 | 侵入性 |
-|------|----------|-----------|--------|
+| 框架                    | 默认实现   | 自定义方式            | 侵入性 |
+|-----------------------|--------|------------------|-----|
 | **PySpring Security** | ✅ 完整可用 | @Component/@Bean | 无侵入 |
-| Spring Security | ✅ 完整 | @Bean配置 | 无侵入 |
-| Django Auth | ✅ 完整 | 继承+配置 | 中等 |
-| FastAPI-Users | ⚠️ 需配置 | 类继承 | 较高 |
+| Spring Security       | ✅ 完整   | @Bean配置          | 无侵入 |
+| Django Auth           | ✅ 完整   | 继承+配置            | 中等  |
+| FastAPI-Users         | ⚠️ 需配置 | 类继承              | 较高  |
 
 ---
 

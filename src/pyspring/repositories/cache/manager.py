@@ -46,6 +46,29 @@ class CacheManagerService(IManaged):
             logger.debug(f"CacheManager: Provider initialized to {self._provider.__class__.__name__}")
         return self._provider
 
+    # Proxy methods to provider
+    async def get(self, *args, **kwargs):
+        """获取缓存"""
+        return await self.provider.get(*args, **kwargs)
+
+    async def set(self, *args, **kwargs):
+        """设置缓存"""
+        return await self.provider.set(*args, **kwargs)
+
+    async def exists(self, *args, **kwargs):
+        """检查键是否存在"""
+        return await self.provider.exists(*args, **kwargs)
+
+    async def delete(self, *args, **kwargs):
+        """删除缓存"""
+        return await self.provider.delete(*args, **kwargs)
+
+    async def scan(self, *args, **kwargs):
+        """扫描缓存键（如果支持）"""
+        if hasattr(self.provider, 'scan'):
+            return await self.provider.scan(*args, **kwargs)
+        raise NotImplementedError(f"{self.provider.__class__.__name__} does not support scan operation")
+
     @staticmethod
     def key(*args, **kwargs) -> str:
         """生成缓存键"""
@@ -71,4 +94,4 @@ class CacheManagerService(IManaged):
                 except Exception as e:
                     logger.error(f"Failed to clear {self.provider.__class__.__name__}: {e}")
 
-        self.provider = None
+        self._provider = None

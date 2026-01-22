@@ -4,7 +4,7 @@
 清晰、解耦、最佳实践的实现
 """
 import inspect
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Callable, Optional
 
 from pyspring.ioc.annotations.scope import Scope, get_scope
 from pyspring.ioc.interfaces.core import ILifecycle
@@ -40,6 +40,8 @@ class Container:
 
         # 生命周期管理
         self._lifecycle_services: List[Any] = []
+        self._initializer_manager: Optional[Any] = None
+        self._shutdown_manager: Optional[Any] = None
 
         # AOP集成
         self._enable_aop = enable_aop
@@ -174,7 +176,7 @@ class Container:
         self.registry.register(definition)
         logger.debug(f"  🌱 Bean: {bean_name} (from {config_cls.__name__}.{method_name})")
 
-    def _resolve_bean_method_dependencies(self, method: callable) -> Dict[str, Any]:
+    def _resolve_bean_method_dependencies(self, method: Callable[..., Any]) -> Dict[str, Any]:
         """解析Bean方法的依赖"""
         sig = inspect.signature(method)
         dependencies = {}
@@ -282,6 +284,10 @@ class Container:
         """获取某类型的所有实现"""
         impl_defs = self.registry.get_implementations(service_type)
         return [self.get(impl_def.name) for impl_def in impl_defs]
+
+    def get_all_instances_of(self, service_type: type) -> List[Any]:
+        """获取某类型的所有实例（别名方法）"""
+        return self.get_all_of_type(service_type)
 
     def has(self, name: str) -> bool:
         """检查服务是否已注册"""

@@ -108,7 +108,7 @@ class TestCustomConfiguration:
         print("=" * 80)
 
         from pyspring.security.authentication.contracts.login import ILoginProvider
-        from pyspring.security.authorization.contracts.schema.requests import LoginRequest
+        from pyspring.security.authentication.contracts.request import LoginRequest
         from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
 
         # 创建自定义登录提供者
@@ -497,7 +497,7 @@ class TestCustomConfiguration:
 
             # 测试响应构建
             response = await response_builder.build_login_response(
-                None, "token_xxx", None
+                None, "token_xxx", "refresh_xxx"
             )
             assert response["custom"] is True
             print(f"   Login Response: {response}")

@@ -52,12 +52,15 @@ class TestAuthenticationFlow:
     def test_1_user_registration_success(self, setup_mocks):
         """测试1: 用户注册成功"""
         from pyspring.security.authentication.services.register import DefaultRegisterService
-        from pyspring.security.authorization.contracts.schema.requests import UserInfo, User
+        from pyspring.security.authentication.contracts.response import UserInfo, User
+        from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
         async def run_test():
+            password_encoder = BCryptPasswordEncoder()
             service = DefaultRegisterService(
                 db=setup_mocks['db'],
-                component=setup_mocks['component']
+                component=setup_mocks['component'],
+                password_encoder=password_encoder
             )
 
             # 模拟：用户不存在
@@ -101,7 +104,8 @@ class TestAuthenticationFlow:
     def test_2_login_with_password_success(self):
         """测试2: 密码登录成功"""
         from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
-        from pyspring.security.authorization.contracts.schema.requests import LoginRequest
+        from pyspring.security.authentication.contracts.request import LoginRequest
+        from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
         async def run_test():
             # Mock用户提供者
@@ -117,7 +121,8 @@ class TestAuthenticationFlow:
             mock_db = Mock()
 
             # 创建登录提供者
-            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db)
+            password_encoder = BCryptPasswordEncoder()
+            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db, password_encoder)
 
             # 执行登录
             request = LoginRequest(
@@ -142,12 +147,14 @@ class TestAuthenticationFlow:
         """测试3: 时序攻击防护（用户存在vs不存在的时间应该相近）"""
         import time
         from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
-        from pyspring.security.authorization.contracts.schema.requests import LoginRequest
+        from pyspring.security.authentication.contracts.request import LoginRequest
+        from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
         async def run_test():
             mock_user_provider = Mock()
             mock_db = Mock()
-            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db)
+            password_encoder = BCryptPasswordEncoder()
+            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db, password_encoder)
 
             # 测试1：用户不存在
             mock_user_provider.get_user_by_identity = AsyncMock(return_value=None)
@@ -200,15 +207,16 @@ class TestAuthenticationFlow:
         payload = {
             "sub": "123",
             "email": "test@example.com",
-            "roles": ["user"]
+            "roles": ["user"],
+            "type": "access"
         }
 
-        access_token = token_generator.generate_access_token(payload)
+        access_token = token_generator.encode(payload)
         print(f"✅ Access Token生成成功: {access_token[:50]}...")
 
         # 验证Token
-        async def verify():
-            decoded = await token_generator.parse_token(access_token)
+        def verify():
+            decoded = token_generator.decode(access_token)
             assert decoded is not None, "Token解析失败"
             assert decoded.get("sub") == "123"
             assert decoded.get("email") == "test@example.com"
@@ -216,7 +224,7 @@ class TestAuthenticationFlow:
             print(f"✅ Token验证成功，包含JTI: {decoded['jti']}")
             return True
 
-        result = asyncio.run(verify())
+        result = verify()
         assert result
 
     def test_5_refresh_token_flow(self):
@@ -231,21 +239,22 @@ class TestAuthenticationFlow:
             token_generator = JWTTokenGenerator(encryption_manager, config_manager)
 
             # 生成Refresh Token
-            payload = {"sub": "123", "email": "test@example.com"}
-            refresh_token = await token_generator.generate_refresh_token(payload)
+            payload = {"sub": "123", "email": "test@example.com", "type": "refresh"}
+            refresh_token = token_generator.encode(payload)
             print(f"✅ Refresh Token生成: {refresh_token[:50]}...")
 
             # 解析Refresh Token
-            decoded = await token_generator.parse_token(refresh_token)
+            decoded = token_generator.decode(refresh_token)
             assert decoded is not None
             assert decoded.get("type") == "refresh"
             assert "jti" in decoded
             print(f"✅ Refresh Token包含JTI和type字段")
 
             # 使用Refresh Token生成新的Access Token
-            new_access_token = token_generator.generate_access_token({
+            new_access_token = token_generator.encode({
                 "sub": decoded.get("sub"),
-                "email": decoded.get("email")
+                "email": decoded.get("email"),
+                "type": "access"
             })
             print(f"✅ 使用Refresh Token生成新Access Token")
 
@@ -257,12 +266,14 @@ class TestAuthenticationFlow:
     def test_6_error_message_consistency(self):
         """测试6: 错误消息一致性（不泄露用户存在性）"""
         from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
-        from pyspring.security.authorization.contracts.schema.requests import LoginRequest
+        from pyspring.security.authentication.contracts.request import LoginRequest
+        from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
         async def run_test():
             mock_user_provider = Mock()
             mock_db = Mock()
-            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db)
+            password_encoder = BCryptPasswordEncoder()
+            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db, password_encoder)
 
             errors = []
 
@@ -330,9 +341,11 @@ def run_all_tests():
                     'session': AsyncMock(),
                     'component': Mock()
                 }
-                test_func(mocks)
+                if callable(test_func):
+                    test_func(mocks)
             else:
-                test_func()
+                if callable(test_func):
+                    test_func()
             passed += 1
             print(f"✅ {name} - 通过")
         except AssertionError as e:

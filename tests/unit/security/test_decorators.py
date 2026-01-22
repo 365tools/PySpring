@@ -3,8 +3,9 @@
 
 测试@require_permission、@require_role等装饰器
 """
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
 from fastapi import Request, HTTPException
 
 from pyspring.security.authorization.decorators.require import (
@@ -15,16 +16,38 @@ from pyspring.security.authorization.decorators.require import (
 )
 
 
+def create_mock_request(user_id="user123"):
+    """创建带有 user_id 的 mock Request 对象"""
+    # 创建真实的 Request 对象（简化版）
+    from starlette.requests import Request as StarletteRequest
+
+    # 创建 scope，并在其中添加 state
+    scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/",
+        "query_string": b"",
+        "headers": [],
+        "state": {},  # 在 scope 中添加 state
+    }
+
+    # 创建真实 Request 实例
+    request = StarletteRequest(scope)
+
+    # 设置 user_id 到 state
+    if user_id:
+        request.state.user_id = user_id
+
+    return request
+
+
 class TestPermissionDecorators:
     """权限装饰器测试"""
 
     @pytest.fixture
     def mock_request(self):
         """Mock FastAPI Request"""
-        request = MagicMock(spec=Request)
-        request.state = MagicMock()
-        request.state.user_id = "user123"
-        return request
+        return create_mock_request("user123")
 
     @pytest.fixture
     def mock_permission_service(self):
@@ -37,14 +60,17 @@ class TestPermissionDecorators:
     @pytest.mark.asyncio
     async def test_require_permission_success(self, mock_request, mock_permission_service):
         """测试@require_permission装饰器通过"""
+
         # Arrange
         @require_permission("user:read")
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        # Mock ApplicationContext
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act
             result = await test_endpoint(mock_request)
@@ -64,8 +90,11 @@ class TestPermissionDecorators:
             return {"status": "ok"}
 
         # Mock ApplicationContext
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act & Assert
             with pytest.raises(HTTPException) as exc_info:
@@ -77,13 +106,17 @@ class TestPermissionDecorators:
     @pytest.mark.asyncio
     async def test_require_role_success(self, mock_request, mock_permission_service):
         """测试@require_role装饰器通过"""
+
         # Arrange
         @require_role("admin")
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act
             result = await test_endpoint(mock_request)
@@ -103,8 +136,11 @@ class TestPermissionDecorators:
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act
             result = await test_endpoint(mock_request)
@@ -123,8 +159,11 @@ class TestPermissionDecorators:
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act
             result = await test_endpoint(mock_request)
@@ -144,8 +183,11 @@ class TestPermissionDecorators:
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act & Assert
             with pytest.raises(HTTPException) as exc_info:
@@ -157,16 +199,17 @@ class TestPermissionDecorators:
     async def test_require_permission_no_user_id(self, mock_permission_service):
         """测试装饰器：用户未认证（无user_id）"""
         # Arrange
-        request_no_user = MagicMock(spec=Request)
-        request_no_user.state = MagicMock()
-        request_no_user.state.user_id = None
+        request_no_user = create_mock_request(user_id=None)
 
         @require_permission("user:read")
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act & Assert
             with pytest.raises(HTTPException) as exc_info:
@@ -176,7 +219,7 @@ class TestPermissionDecorators:
 
     @pytest.mark.asyncio
     async def test_require_multiple_permissions_require_all(
-        self, mock_request, mock_permission_service
+            self, mock_request, mock_permission_service
     ):
         """测试多个权限require_all=True"""
         # Arrange
@@ -186,8 +229,11 @@ class TestPermissionDecorators:
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act
             result = await test_endpoint(mock_request)
@@ -199,7 +245,7 @@ class TestPermissionDecorators:
 
     @pytest.mark.asyncio
     async def test_require_multiple_roles_require_all_false(
-        self, mock_request, mock_permission_service
+            self, mock_request, mock_permission_service
     ):
         """测试多个角色require_all=False（任意一个）"""
         # Arrange
@@ -210,8 +256,11 @@ class TestPermissionDecorators:
         async def test_endpoint(request: Request):
             return {"status": "ok"}
 
-        with patch('pyspring.security.authorization.decorators.require.ApplicationContext') as mock_ctx:
+        # Mock ApplicationContext.get_instance().get_by_type()
+        with patch('pyspring.security.authorization.decorators.require.ApplicationContext.get_instance') as mock_get_instance:
+            mock_ctx = MagicMock()
             mock_ctx.get_by_type.return_value = mock_permission_service
+            mock_get_instance.return_value = mock_ctx
 
             # Act
             result = await test_endpoint(mock_request)

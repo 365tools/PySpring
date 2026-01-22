@@ -5,9 +5,11 @@
 ### 一、核心重构的测试状态
 
 #### 1. ✅ IPasswordEncoder接口
+
 **新增测试文件**: `tests/unit/security/test_password_encoder.py`
 
 **测试覆盖**:
+
 - ✅ 接口定义完整性验证
 - ✅ 抽象接口不可实例化验证
 - ✅ BCryptPasswordEncoder实现接口验证
@@ -25,14 +27,17 @@
 - ✅ 真实场景密码要求测试
 
 **测试质量**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 16个单元测试用例
 - 覆盖所有核心功能
 - 包含边界情况和安全性验证
 
 #### 2. ✅ BCryptPasswordEncoder实现
+
 **新增测试文件**: `tests/security/test_bcrypt_password_encoder.py`
 
 **集成测试覆盖**:
+
 - ✅ 与DefaultPasswordLoginProvider集成
 - ✅ 与DefaultRegisterService集成
 - ✅ 与UserManager集成（密码更新流程）
@@ -44,14 +49,17 @@
 - ✅ IOC容器注册验证
 
 **测试质量**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 9个集成测试用例
 - 覆盖真实使用场景
 - 验证性能和并发安全
 
 #### 3. ✅ 更新现有测试
+
 **修改文件**: `tests/security/test_security_policies.py`
 
 **更新内容**:
+
 - ❌ 移除: `"使用PasswordHelper"` 检查
 - ✅ 新增: `"使用IPasswordEncoder"` 检查
 - ✅ 新增: `"password_encoder"` 字符串检查
@@ -63,72 +71,73 @@
 #### ✅ 不需要修改的测试
 
 1. **tests/unit/security/test_token_service.py**
-   - 状态: 完全兼容 ✅
-   - 原因: 只测试Token服务，不涉及密码编码器
+    - 状态: 完全兼容 ✅
+    - 原因: 只测试Token服务，不涉及密码编码器
 
 2. **tests/unit/security/test_cached_permission.py**
-   - 状态: 完全兼容 ✅
-   - 原因: 测试权限缓存，与密码无关
+    - 状态: 完全兼容 ✅
+    - 原因: 测试权限缓存，与密码无关
 
 3. **tests/unit/security/test_decorators.py**
-   - 状态: 完全兼容 ✅
-   - 原因: 测试装饰器功能，不涉及密码
+    - 状态: 完全兼容 ✅
+    - 原因: 测试装饰器功能，不涉及密码
 
 4. **tests/unit/security/test_role_inheritance.py**
-   - 状态: 完全兼容 ✅
-   - 原因: 测试角色继承，不涉及密码
+    - 状态: 完全兼容 ✅
+    - 原因: 测试角色继承，不涉及密码
 
 5. **tests/security/test_middleware.py**
-   - 状态: 完全兼容 ✅
-   - 原因: 测试中间件功能，不直接使用密码编码器
+    - 状态: 完全兼容 ✅
+    - 原因: 测试中间件功能，不直接使用密码编码器
 
 6. **tests/security/test_integration.py**
-   - 状态: 完全兼容 ✅
-   - 原因: 集成测试使用Mock，不依赖具体编码器实现
+    - 状态: 完全兼容 ✅
+    - 原因: 集成测试使用Mock，不依赖具体编码器实现
 
 #### ⚠️ 需要注意的测试
 
 1. **tests/security/test_authentication_flow.py**
-   - 状态: 部分依赖 ⚠️
-   - 问题: 使用硬编码的BCrypt哈希值
-   - 影响: 如果DefaultPasswordLoginProvider没有注入IPasswordEncoder会失败
-   - 建议: 添加encoder注入验证
+    - 状态: 部分依赖 ⚠️
+    - 问题: 使用硬编码的BCrypt哈希值
+    - 影响: 如果DefaultPasswordLoginProvider没有注入IPasswordEncoder会失败
+    - 建议: 添加encoder注入验证
 
-2. **tests/security/test_security_policies.py** 
-   - 状态: 已更新 ✅
-   - 修改: 第234行，从PasswordHelper改为IPasswordEncoder检查
+2. **tests/security/test_security_policies.py**
+    - 状态: 已更新 ✅
+    - 修改: 第234行，从PasswordHelper改为IPasswordEncoder检查
 
 ### 三、测试覆盖缺口
 
 #### ❌ 缺少的测试
 
 1. **Token服务的fail-fast行为**
-   - 文件: `pyspring.security.authentication.token.service`
-   - 变更: 移除了legacy_兼容代码，现在JTI缺失会抛出ValueError
-   - 缺少: 测试JTI缺失时的异常行为
-   - 优先级: 中 🟡
+    - 文件: `pyspring.security.authentication.token.service`
+    - 变更: 移除了legacy_兼容代码，现在JTI缺失会抛出ValueError
+    - 缺少: 测试JTI缺失时的异常行为
+    - 优先级: 中 🟡
 
 2. **Redis SCAN缓存清理**
-   - 文件: `pyspring.security.authorization.providers.permission.cached`
-   - 变更: 实现了完整的Redis SCAN模式
-   - 缺少: 测试大量缓存键的清理性能
-   - 优先级: 低 🟢
+    - 文件: `pyspring.security.authorization.providers.permission.cached`
+    - 变更: 实现了完整的Redis SCAN模式
+    - 缺少: 测试大量缓存键的清理性能
+    - 优先级: 低 🟢
 
 3. **UserManager的fail-fast行为**
-   - 文件: `pyspring.security.authentication.services.user.manager`
-   - 变更: 移除了getattr()，现在直接访问user.id等属性
-   - 缺少: 测试属性不存在时的AttributeError
-   - 优先级: 中 🟡
+    - 文件: `pyspring.security.authentication.services.user.manager`
+    - 变更: 移除了getattr()，现在直接访问user.id等属性
+    - 缺少: 测试属性不存在时的AttributeError
+    - 优先级: 中 🟡
 
 4. **认证中间件的fail-fast行为**
-   - 文件: `pyspring.security.authentication.web.middleware.auth`
-   - 变更: 移除了hasattr(user, 'id')检查
-   - 缺少: 测试user对象缺少必需属性时的行为
-   - 优先级: 高 🔴
+    - 文件: `pyspring.security.authentication.web.middleware.auth`
+    - 变更: 移除了hasattr(user, 'id')检查
+    - 缺少: 测试user对象缺少必需属性时的行为
+    - 优先级: 高 🔴
 
 ### 四、测试执行结果
 
 #### test_password_encoder.py执行状态
+
 ```
 ✅ 16个测试通过
 ⚠️ 部分测试有ERROR标记（pytest输出重复）
@@ -136,10 +145,12 @@
 ```
 
 **失败原因分析**:
+
 - 可能是Unicode编码问题
 - 需要检查emoji和特殊字符的处理
 
 #### test_bcrypt_password_encoder.py执行状态
+
 ```
 ⏳ 待执行
 ```
@@ -162,8 +173,8 @@
    ```
 
 2. **修复test_encode_special_characters**
-   - 检查Unicode字符串的编码处理
-   - 确保emoji正确编码为bytes
+    - 检查Unicode字符串的编码处理
+    - 确保emoji正确编码为bytes
 
 #### 📌 计划执行（优先级：中）
 
@@ -187,39 +198,39 @@
 #### 💡 建议执行（优先级：低）
 
 1. **性能回归测试**
-   - 对比移除PasswordHelper前后的性能
-   - 验证直接使用bcrypt没有性能损失
+    - 对比移除PasswordHelper前后的性能
+    - 验证直接使用bcrypt没有性能损失
 
 2. **文档测试**
-   - 添加doctest到IPasswordEncoder接口
-   - 确保文档示例可执行
+    - 添加doctest到IPasswordEncoder接口
+    - 确保文档示例可执行
 
 ### 六、测试指标
 
 #### 当前测试覆盖率（估算）
 
-| 模块 | 原有覆盖率 | 新增测试 | 当前覆盖率 |
-|------|----------|---------|-----------|
-| IPasswordEncoder | 0% | +16单元测试 | **95%** ✅ |
-| BCryptPasswordEncoder | 0% | +9集成测试 | **90%** ✅ |
-| DefaultPasswordLoginProvider | 70% | 无需修改 | **70%** ⚠️ |
-| DefaultRegisterService | 65% | 无需修改 | **65%** ⚠️ |
-| UserManager | 60% | 需要fail-fast测试 | **60%** ⚠️ |
-| TokenService | 75% | 需要fail-fast测试 | **75%** ⚠️ |
-| AuthMiddleware | 80% | 需要fail-fast测试 | **80%** ⚠️ |
+| 模块                           | 原有覆盖率 | 新增测试          | 当前覆盖率      |
+|------------------------------|-------|---------------|------------|
+| IPasswordEncoder             | 0%    | +16单元测试       | **95%** ✅  |
+| BCryptPasswordEncoder        | 0%    | +9集成测试        | **90%** ✅  |
+| DefaultPasswordLoginProvider | 70%   | 无需修改          | **70%** ⚠️ |
+| DefaultRegisterService       | 65%   | 无需修改          | **65%** ⚠️ |
+| UserManager                  | 60%   | 需要fail-fast测试 | **60%** ⚠️ |
+| TokenService                 | 75%   | 需要fail-fast测试 | **75%** ⚠️ |
+| AuthMiddleware               | 80%   | 需要fail-fast测试 | **80%** ⚠️ |
 
 **综合覆盖率**: **75%** → **82%** (+7%) ⬆️
 
 #### 测试质量评分
 
-| 评估项 | 得分 | 说明 |
-|--------|------|------|
+| 评估项     | 得分   | 说明                     |
+|---------|------|------------------------|
 | 单元测试完整性 | 9/10 | IPasswordEncoder测试非常完善 |
-| 集成测试完整性 | 8/10 | BCrypt集成测试覆盖主要场景 |
-| 边界情况测试 | 7/10 | 部分边界情况未覆盖（fail-fast） |
-| 性能测试 | 8/10 | 包含基准测试和并发测试 |
-| 安全性测试 | 9/10 | 时序攻击、salt随机性等已测试 |
-| 文档和可维护性 | 8/10 | 测试代码清晰，注释充分 |
+| 集成测试完整性 | 8/10 | BCrypt集成测试覆盖主要场景       |
+| 边界情况测试  | 7/10 | 部分边界情况未覆盖（fail-fast）   |
+| 性能测试    | 8/10 | 包含基准测试和并发测试            |
+| 安全性测试   | 9/10 | 时序攻击、salt随机性等已测试       |
+| 文档和可维护性 | 8/10 | 测试代码清晰，注释充分            |
 
 **综合得分**: **8.2/10** ⭐⭐⭐⭐
 

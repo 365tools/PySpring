@@ -11,12 +11,14 @@
 ### 总体评分：**85/100**
 
 **优势：**
+
 - ✅ 采用策略模式和工厂模式，架构清晰
 - ✅ 认证和授权功能完整，支持JWT、角色继承
 - ✅ 装饰器模式用于缓存优化，性能良好
 - ✅ IOC容器集成完整，支持用户DIY扩展
 
 **需要改进的问题：**
+
 1. ❌ **冗余目录结构**：`providers/response/builder/` 嵌套过深（应扁平化）
 2. ⚠️ **兼容性代码残留**：token_service.py 中的 `legacy_{record.id}` 处理
 3. ⚠️ **依赖第三方库**：使用 `fastapi_users.password.PasswordHelper`，未抽象IPasswordEncoder接口
@@ -93,15 +95,18 @@ authentication/
 #### **发现的问题：**
 
 **问题1：冗余目录**
+
 - `providers/response/builder/default.py` 与 `providers/response/default.py` **功能重复**
 - builder目录未被引用，属于遗留代码
 
 **问题2：密码编码未抽象**
+
 - `contracts/password.py` 未定义 `IPasswordEncoder` 接口
 - 多处直接使用 `PasswordHelper`（第三方库），耦合度高
 - 不利于用户自定义密码编码器（如Argon2、Pbkdf2）
 
 **问题3：服务命名不一致**
+
 - `IUserManagerService` 命名为 "Service"，但按职责应为 `IUserManager`
 - Manager 通常指业务编排层，Service 指服务层，命名混淆
 
@@ -139,11 +144,13 @@ authorization/
 #### **评分：9/10**
 
 **优点：**
+
 - 包层级清晰（3层）
 - 接口与实现分离良好
 - 装饰器模式应用得当
 
 **问题：**
+
 - `cached.py` 中TODO未实现：模式删除逻辑
 
 ---
@@ -160,6 +167,7 @@ core/
 ```
 
 #### **评分：10/10**
+
 - 职责清晰，无冗余
 
 ---
@@ -171,6 +179,7 @@ core/
 #### ✅ **扩展点1：自定义Token生成器**
 
 **接口设计：**
+
 ```python
 class ITokenGenerator(IManaged, ABC):
     @abstractmethod
@@ -189,6 +198,7 @@ class ITokenGenerator(IManaged, ABC):
 **扩展难度：⭐⭐（简单）**
 
 **用户DIY示例：Session Token生成器**
+
 ```python
 from pyspring.security.authentication.contracts.token import ITokenGenerator
 from pyspring.ioc.annotations.component import Component, Bean
@@ -217,6 +227,7 @@ def custom_token_generator() -> ITokenGenerator:
 ```
 
 **验证结果：✅ 支持完整**
+
 - IOC自动注入，无需修改框架代码
 - TokenService自动使用新的生成器
 - 符合开闭原则
@@ -226,6 +237,7 @@ def custom_token_generator() -> ITokenGenerator:
 #### ⚠️ **扩展点2：自定义密码编码器（存在问题）**
 
 **当前问题：**
+
 ```python
 # ❌ 问题：未定义IPasswordEncoder接口，直接使用第三方库
 from fastapi_users.password import PasswordHelper
@@ -236,11 +248,13 @@ class DefaultPasswordLoginProvider(ILoginProvider):
 ```
 
 **影响：**
+
 - 用户无法通过IOC替换密码编码器
 - 不支持Argon2、Pbkdf2等其他编码器
 - 违反依赖倒置原则（依赖具体实现，而非接口）
 
 **建议改进：**
+
 ```python
 # ✅ 定义接口
 class IPasswordEncoder(IManaged, ABC):
@@ -288,6 +302,7 @@ class Argon2PasswordEncoder(IPasswordEncoder):
 #### ✅ **扩展点3：自定义登录提供者**
 
 **接口设计：**
+
 ```python
 class ILoginProvider(IManaged, ABC):
     @abstractmethod
@@ -300,6 +315,7 @@ class ILoginProvider(IManaged, ABC):
 ```
 
 **用户DIY示例：LDAP登录**
+
 ```python
 @Component()
 class LDAPLoginProvider(ILoginProvider):
@@ -318,6 +334,7 @@ class LDAPLoginProvider(ILoginProvider):
 ```
 
 **验证结果：✅ 支持完整**
+
 - 责任链模式自动编排多个Provider
 - 符合最佳实践
 
@@ -328,6 +345,7 @@ class LDAPLoginProvider(ILoginProvider):
 #### ✅ **扩展点1：自定义权限服务**
 
 **接口设计：**
+
 ```python
 class IPermissionService(IManaged, ABC):
     @abstractmethod
@@ -344,6 +362,7 @@ class IPermissionService(IManaged, ABC):
 ```
 
 **用户DIY示例：集成Casbin**
+
 ```python
 import casbin
 from pyspring.security.authorization.contracts.permission import IPermissionService
@@ -367,6 +386,7 @@ def custom_permission_service(cache: CacheManagerService) -> IPermissionService:
 ```
 
 **验证结果：✅ 支持完整**
+
 - 装饰器模式支持缓存叠加
 - 符合开闭原则
 
@@ -375,6 +395,7 @@ def custom_permission_service(cache: CacheManagerService) -> IPermissionService:
 #### ✅ **扩展点2：自定义角色提供者**
 
 **接口设计：**
+
 ```python
 class IRoleProvider(IManaged, ABC):
     @abstractmethod
@@ -391,6 +412,7 @@ class IRoleProvider(IManaged, ABC):
 ```
 
 **用户DIY示例：Redis角色提供者**
+
 ```python
 @Component()
 class RedisRoleProvider(IRoleProvider):
@@ -413,15 +435,15 @@ class RedisRoleProvider(IRoleProvider):
 
 ### 2.3 扩展性总结
 
-| 模块 | 扩展点 | 支持度 | 评分 |
-|------|--------|--------|------|
-| **Authentication** | Token生成器 | ✅ 完整 | 10/10 |
-| | 登录提供者 | ✅ 完整 | 10/10 |
-| | 密码编码器 | ❌ 缺失接口 | 5/10 |
-| | 响应构建器 | ✅ 完整 | 10/10 |
-| **Authorization** | 权限服务 | ✅ 完整 | 10/10 |
-| | 角色提供者 | ✅ 完整 | 10/10 |
-| | 装饰器 | ✅ 灵活 | 10/10 |
+| 模块                 | 扩展点      | 支持度    | 评分    |
+|--------------------|----------|--------|-------|
+| **Authentication** | Token生成器 | ✅ 完整   | 10/10 |
+|                    | 登录提供者    | ✅ 完整   | 10/10 |
+|                    | 密码编码器    | ❌ 缺失接口 | 5/10  |
+|                    | 响应构建器    | ✅ 完整   | 10/10 |
+| **Authorization**  | 权限服务     | ✅ 完整   | 10/10 |
+|                    | 角色提供者    | ✅ 完整   | 10/10 |
+|                    | 装饰器      | ✅ 灵活   | 10/10 |
 
 **总体扩展性评分：9/10**
 
@@ -436,11 +458,13 @@ class RedisRoleProvider(IRoleProvider):
 **文件：** `src/pyspring/security/authentication/providers/response/builder/default.py`
 
 **原因：**
+
 - 与 `providers/response/default.py` 功能完全重复
 - auto_config.py 已导入 `providers/response/default.py`，未使用builder目录
 - 嵌套过深，违反扁平化原则
 
 **删除操作：**
+
 ```bash
 # 删除整个builder目录
 rm -rf src/pyspring/security/authentication/providers/response/builder/
@@ -454,16 +478,19 @@ rm -rf src/pyspring/security/authentication/providers/response/builder/
 **行号：** 345
 
 **问题代码：**
+
 ```python
 # ⚠️ 兼容旧数据：使用legacy前缀
 token_jti = record.token_id if hasattr(record, 'token_id') else f"legacy_{record.id}"
 ```
 
 **分析：**
+
 - 这是为了兼容旧版本token表结构（缺少token_id字段）
 - 如果当前版本已统一使用token_id字段，此代码可删除
 
 **清理方案：**
+
 ```python
 # ✅ 清理后
 if not token_jti:
@@ -472,6 +499,7 @@ if not token_jti:
 ```
 
 **前提：**
+
 - 确认RefreshTokenTable已包含token_id字段
 - 数据库迁移已完成（旧数据已清理或迁移）
 
@@ -483,16 +511,19 @@ if not token_jti:
 **行号：** 137
 
 **问题代码：**
+
 ```python
 # TODO: 实现模式删除逻辑
 logger.info(f"[CachedPermission] 用户缓存失效: user={user_id}")
 ```
 
 **问题：**
+
 - 缓存失效只记录日志，未真正删除缓存
 - 导致用户权限变更后缓存未及时更新
 
 **完整实现：**
+
 ```python
 async def invalidate_user_cache(self, user_id):
     """使用户缓存失效（使用Redis SCAN命令）"""
@@ -524,6 +555,7 @@ async def invalidate_user_cache(self, user_id):
 #### ⚠️ **问题4：PasswordHelper直接使用（未抽象）**
 
 **影响文件：**
+
 1. `authentication/services/register.py`（line 4, 32, 123）
 2. `authentication/services/user/manager.py`（line 11, 45, 294, 482）
 3. `authentication/providers/login/password.py`（line 4, 21）
@@ -531,6 +563,7 @@ async def invalidate_user_cache(self, user_id):
 **重构方案：**
 
 **步骤1：定义IPasswordEncoder接口**
+
 ```python
 # 文件：authentication/contracts/password.py
 
@@ -555,6 +588,7 @@ class IPasswordEncoder(IManaged, ABC):
 ```
 
 **步骤2：创建默认实现**
+
 ```python
 # 文件：authentication/providers/password/bcrypt.py
 
@@ -578,6 +612,7 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 ```
 
 **步骤3：IOC配置**
+
 ```python
 # 文件：authentication/config/auto_config.py
 
@@ -589,6 +624,7 @@ def default_password_encoder() -> IPasswordEncoder:
 ```
 
 **步骤4：依赖注入**
+
 ```python
 # 文件：authentication/providers/login/password.py
 
@@ -609,10 +645,12 @@ class DefaultPasswordLoginProvider(ILoginProvider):
 #### ⚠️ **问题5：Service vs Manager命名混淆**
 
 **当前：**
+
 - `IUserManagerService`（接口）
 - `DefaultUserManagerService`（实现）
 
 **问题：**
+
 - Manager通常指业务编排层（类似Spring的Manager）
 - Service指服务层（类似Spring的Service）
 - 命名混合了两种概念
@@ -620,6 +658,7 @@ class DefaultPasswordLoginProvider(ILoginProvider):
 **建议：**
 
 **选项1：统一为Manager**
+
 ```python
 # ✅ 清晰：用户管理器（业务编排）
 IUserManager
@@ -627,6 +666,7 @@ DefaultUserManager
 ```
 
 **选项2：统一为Service**
+
 ```python
 # ✅ 清晰：用户服务（服务层）
 IUserService
@@ -658,6 +698,7 @@ grep -r "response.builder" src/pyspring/security/
 **2.1 Token Service中的legacy代码**
 
 **前提检查：**
+
 ```sql
 -- 检查RefreshTokenTable是否包含token_id字段
 SELECT column_name FROM information_schema.columns 
@@ -665,6 +706,7 @@ WHERE table_name = 'refresh_tokens' AND column_name = 'token_id';
 ```
 
 **清理代码：**
+
 ```python
 # 删除 token_service.py:345 的兼容代码
 # 替换为：
@@ -702,6 +744,7 @@ async def invalidate_user_cache(self, user_id):
 ### 阶段3：重构密码编码器（中等风险）
 
 **步骤：**
+
 1. 定义 `IPasswordEncoder` 接口
 2. 创建 `BCryptPasswordEncoder` 实现
 3. 创建 `providers/password/` 目录
@@ -710,6 +753,7 @@ async def invalidate_user_cache(self, user_id):
 6. 运行测试验证
 
 **影响范围：**
+
 - 3个文件需要修改
 - 需要添加单元测试
 
@@ -718,6 +762,7 @@ async def invalidate_user_cache(self, user_id):
 ### 阶段4：命名规范调整（高风险，可选）
 
 **影响：**
+
 - 需要修改多个文件
 - 可能影响外部用户代码
 - 建议在下一个主版本执行
@@ -728,13 +773,13 @@ async def invalidate_user_cache(self, user_id):
 
 ### 5.1 设计模式应用
 
-| 模式 | 应用位置 | 符合度 |
-|------|---------|-------|
-| **策略模式** | TokenGenerator、LoginProvider | ✅ 完整 |
-| **工厂模式** | TokenGeneratorFactory、AuthProviderFactory | ✅ 完整 |
-| **装饰器模式** | CachedPermissionService | ✅ 完整 |
-| **责任链模式** | AuthenticationChain、LoginProviders | ✅ 完整 |
-| **单例模式** | SecurityConfigManager、TokenService | ✅ 完整 |
+| 模式        | 应用位置                                      | 符合度  |
+|-----------|-------------------------------------------|------|
+| **策略模式**  | TokenGenerator、LoginProvider              | ✅ 完整 |
+| **工厂模式**  | TokenGeneratorFactory、AuthProviderFactory | ✅ 完整 |
+| **装饰器模式** | CachedPermissionService                   | ✅ 完整 |
+| **责任链模式** | AuthenticationChain、LoginProviders        | ✅ 完整 |
+| **单例模式**  | SecurityConfigManager、TokenService        | ✅ 完整 |
 
 **评分：10/10**
 
@@ -742,13 +787,13 @@ async def invalidate_user_cache(self, user_id):
 
 ### 5.2 SOLID原则
 
-| 原则 | 符合情况 | 评分 |
-|------|---------|------|
-| **单一职责（SRP）** | ✅ Token生成与管理分离<br>✅ Service与Provider分离 | 9/10 |
-| **开闭原则（OCP）** | ✅ IOC支持扩展<br>⚠️ 密码编码器耦合第三方库 | 7/10 |
-| **里氏替换（LSP）** | ✅ 接口实现可互换 | 10/10 |
-| **接口隔离（ISP）** | ✅ 接口粒度合理 | 10/10 |
-| **依赖倒置（DIP）** | ✅ 依赖接口<br>⚠️ PasswordHelper例外 | 7/10 |
+| 原则            | 符合情况                                   | 评分    |
+|---------------|----------------------------------------|-------|
+| **单一职责（SRP）** | ✅ Token生成与管理分离<br>✅ Service与Provider分离 | 9/10  |
+| **开闭原则（OCP）** | ✅ IOC支持扩展<br>⚠️ 密码编码器耦合第三方库            | 7/10  |
+| **里氏替换（LSP）** | ✅ 接口实现可互换                              | 10/10 |
+| **接口隔离（ISP）** | ✅ 接口粒度合理                               | 10/10 |
+| **依赖倒置（DIP）** | ✅ 依赖接口<br>⚠️ PasswordHelper例外          | 7/10  |
 
 **总分：43/50（86%）**
 
@@ -756,11 +801,11 @@ async def invalidate_user_cache(self, user_id):
 
 ### 5.3 可测试性
 
-| 维度 | 评估 | 评分 |
-|------|------|------|
-| **依赖注入** | ✅ 完整使用IOC | 10/10 |
+| 维度         | 评估          | 评分    |
+|------------|-------------|-------|
+| **依赖注入**   | ✅ 完整使用IOC   | 10/10 |
 | **Mock友好** | ✅ 所有依赖可Mock | 10/10 |
-| **隔离测试** | ✅ 服务层可独立测试 | 10/10 |
+| **隔离测试**   | ✅ 服务层可独立测试  | 10/10 |
 
 **总分：30/30（100%）**
 
@@ -770,14 +815,14 @@ async def invalidate_user_cache(self, user_id):
 
 ### 🔴 **高优先级（立即执行）**
 
-1. **删除冗余目录**  
+1. **删除冗余目录**
    ```bash
    rm -rf src/pyspring/security/authentication/providers/response/builder/
    ```
    **风险：** 无  
    **收益：** 代码简洁度+10%
 
-2. **实现TODO：缓存模式删除**  
+2. **实现TODO：缓存模式删除**
    ```python
    # cached.py 完善 invalidate_user_cache 方法
    ```
@@ -788,15 +833,15 @@ async def invalidate_user_cache(self, user_id):
 
 ### 🟡 **中优先级（近期执行）**
 
-3. **重构密码编码器**  
-   - 定义 `IPasswordEncoder` 接口
-   - 创建 `BCryptPasswordEncoder` 实现
-   - 修改依赖注入
+3. **重构密码编码器**
+    - 定义 `IPasswordEncoder` 接口
+    - 创建 `BCryptPasswordEncoder` 实现
+    - 修改依赖注入
 
    **风险：** 中  
    **收益：** 扩展性+30%、符合SOLID原则
 
-4. **清理Token Service兼容代码**  
+4. **清理Token Service兼容代码**
    ```python
    # 删除 token_service.py:345 的 legacy 处理
    ```
@@ -807,8 +852,8 @@ async def invalidate_user_cache(self, user_id):
 
 ### 🟢 **低优先级（可选）**
 
-5. **统一命名规范**  
-   - `IUserManagerService` → `IUserManager`
+5. **统一命名规范**
+    - `IUserManagerService` → `IUserManager`
 
    **风险：** 高（Breaking Change）  
    **收益：** 代码规范性+10%  
@@ -820,22 +865,22 @@ async def invalidate_user_cache(self, user_id):
 
 ### 代码质量提升
 
-| 指标 | 清理前 | 清理后 | 提升 |
-|------|-------|-------|------|
-| **包结构合理性** | 85% | 95% | +10% |
-| **SOLID符合度** | 86% | 95% | +9% |
-| **扩展性评分** | 82% | 95% | +13% |
-| **代码简洁度** | 80% | 92% | +12% |
-| **可维护性** | 85% | 93% | +8% |
+| 指标           | 清理前 | 清理后 | 提升   |
+|--------------|-----|-----|------|
+| **包结构合理性**   | 85% | 95% | +10% |
+| **SOLID符合度** | 86% | 95% | +9%  |
+| **扩展性评分**    | 82% | 95% | +13% |
+| **代码简洁度**    | 80% | 92% | +12% |
+| **可维护性**     | 85% | 93% | +8%  |
 
 ### 功能完整性
 
-| 功能 | 清理前 | 清理后 |
-|------|-------|-------|
-| 认证扩展 | ✅ 90% | ✅ 100% |
-| 授权扩展 | ✅ 95% | ✅ 100% |
+| 功能   | 清理前    | 清理后    |
+|------|--------|--------|
+| 认证扩展 | ✅ 90%  | ✅ 100% |
+| 授权扩展 | ✅ 95%  | ✅ 100% |
 | 缓存管理 | ⚠️ 80% | ✅ 100% |
-| 密码编码 | ❌ 60% | ✅ 100% |
+| 密码编码 | ❌ 60%  | ✅ 100% |
 
 ---
 
@@ -846,15 +891,15 @@ async def invalidate_user_cache(self, user_id):
 PySpring Security 模块在架构设计上**已达到企业级标准**，但存在以下可优化空间：
 
 1. **优秀之处：**
-   - ✅ 策略模式、工厂模式应用得当
-   - ✅ IOC集成完整，扩展性强
-   - ✅ 装饰器模式优化性能
-   - ✅ 角色继承功能完整
+    - ✅ 策略模式、工厂模式应用得当
+    - ✅ IOC集成完整，扩展性强
+    - ✅ 装饰器模式优化性能
+    - ✅ 角色继承功能完整
 
 2. **需要改进：**
-   - ⚠️ 密码编码器未抽象接口
-   - ⚠️ 存在少量兼容代码
-   - ⚠️ 缓存失效逻辑未完整实现
+    - ⚠️ 密码编码器未抽象接口
+    - ⚠️ 存在少量兼容代码
+    - ⚠️ 缓存失效逻辑未完整实现
 
 ### 最终评分
 

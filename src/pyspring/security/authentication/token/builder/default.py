@@ -3,7 +3,7 @@ from typing import Any, Dict
 from sqlalchemy import select
 
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder
 
 
@@ -39,14 +39,14 @@ class DefaultTokenPayloadBuilder(ITokenPayloadBuilder):
         # 2. 构造基础 Payload
         payload = {
             "sub": str(user.id),
-            "email": getattr(user, 'email', None),
-            "user_id": getattr(user, 'user_id', None),
+            "email": user.email,
+            "user_id": user.user_id,
             "roles": role_codes,
             "permissions": permissions,
         }
 
         # 3. 合并来自安全上下文的动态 Claims
-        if context_evaluation and hasattr(context_evaluation, 'claims'):
+        if context_evaluation and context_evaluation.claims:
             claims_to_merge = context_evaluation.claims.copy()
 
             # 特殊处理 roles 和 permissions 的合并

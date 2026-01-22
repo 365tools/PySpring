@@ -31,12 +31,14 @@ class TestSecurityPolicies:
     def test_1_timing_attack_protection(self):
         """测试1: 时序攻击防护（用户枚举）"""
         from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
-        from pyspring.security.authorization.contracts.schema.requests import LoginRequest
+        from pyspring.security.authentication.contracts.request import LoginRequest
+        from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
         async def run_test():
             mock_user_provider = Mock()
             mock_db = Mock()
-            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db)
+            password_encoder = BCryptPasswordEncoder()
+            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db, password_encoder)
 
             times = []
             scenarios = [
@@ -76,12 +78,14 @@ class TestSecurityPolicies:
     def test_2_error_message_consistency(self):
         """测试2: 错误消息一致性（不泄露用户存在性）"""
         from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
-        from pyspring.security.authorization.contracts.schema.requests import LoginRequest
+        from pyspring.security.authentication.contracts.request import LoginRequest
+        from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
         async def run_test():
             mock_user_provider = Mock()
             mock_db = Mock()
-            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db)
+            password_encoder = BCryptPasswordEncoder()
+            provider = DefaultPasswordLoginProvider(mock_user_provider, mock_db, password_encoder)
 
             errors = []
 
@@ -231,10 +235,10 @@ class TestSecurityPolicies:
         source = inspect.getsource(DefaultPasswordLoginProvider)
 
         checks = {
-            "使用PasswordHelper": "PasswordHelper" in source,
+            "使用IPasswordEncoder": "IPasswordEncoder" in source or "password_encoder" in source,
             "不使用MD5": "md5" not in source.lower(),
             "不使用SHA1": "sha1" not in source.lower(),
-            "使用bcrypt": "bcrypt" in source.lower() or "password_helper" in source.lower(),
+            "使用bcrypt": "bcrypt" in source.lower() or "password_encoder" in source.lower(),
         }
 
         print("密码哈希安全性检查：")
@@ -243,7 +247,7 @@ class TestSecurityPolicies:
             print(f"  {status} {name}")
 
         # 应该使用安全的哈希库
-        if checks["使用PasswordHelper"] and checks["不使用MD5"]:
+        if checks["使用IPasswordEncoder"] and checks["不使用MD5"]:
             print("✅ 使用安全的密码哈希机制")
             return True
         else:

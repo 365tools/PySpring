@@ -1,4 +1,4 @@
-﻿from dataclasses import dataclass, field
+from dataclasses import dataclass, field
 from typing import List, Dict, Any
 
 from pyspring.ioc.annotations.component import Component

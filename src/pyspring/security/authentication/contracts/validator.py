@@ -1,4 +1,4 @@
-﻿"""
+"""
 安全上下文验证器接口
 """
 from abc import ABC, abstractmethod

@@ -8,7 +8,7 @@ import re
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 
 from loguru import logger
 
@@ -32,7 +32,7 @@ class LoguruConfig:
     """
 
     configured: bool = False
-    project_root: Path = None
+    project_root: Optional[Path] = None
     _last_config_time: float = 0
 
     @classmethod

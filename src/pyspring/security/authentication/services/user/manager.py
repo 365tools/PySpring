@@ -8,17 +8,17 @@ from datetime import datetime, UTC
 from typing import Optional, List, Any
 
 from fastapi import HTTPException, status
-from fastapi_users.password import PasswordHelper
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
+from pyspring.security.authentication.contracts.password import IPasswordEncoder
+from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
 from pyspring.security.authentication.contracts.token import ITokenService
 from pyspring.security.authentication.contracts.user import IUserManagerService
 from pyspring.security.authentication.infrastructure.context import AuthContext
-from pyspring.security.authorization.contracts.schema.requests import UserInfo, User, Role, Permission
 
 
 class DefaultUserManagerService(IUserManagerService):
@@ -31,7 +31,11 @@ class DefaultUserManagerService(IUserManagerService):
     - 当前用户上下文获取
     """
 
-    def __init__(self, db: DBManagerService, component: SecurityEntityConfiguration, token_manager: ITokenService):
+    def __init__(self,
+                 db: DBManagerService,
+                 component: SecurityEntityConfiguration,
+                 token_manager: ITokenService,
+                 password_encoder: IPasswordEncoder):
         """
         初始化用户管理服务
         
@@ -39,11 +43,12 @@ class DefaultUserManagerService(IUserManagerService):
             db: 数据库管理服务
             component: 安全组件配置
             token_manager: Token管理服务（通过IOC注入）
+            password_encoder: 密码编码器（通过IOC注入）
         """
         self.db = db
         self.component = component
-        self.password_helper = PasswordHelper()
         self.token_manager = token_manager
+        self.password_encoder = password_encoder
 
     async def get_user_by_id(self, user_id: int) -> Optional[UserInfo]:
         """
@@ -291,7 +296,7 @@ class DefaultUserManagerService(IUserManagerService):
 
                 # 特殊处理密码字段
                 if field_name == 'password':
-                    field_value = self.password_helper.hash(field_value)
+                    field_value = self.password_encoder.encode(field_value)
 
                 setattr(db_user, field_name, field_value)
                 await session.commit()
@@ -415,11 +420,11 @@ class DefaultUserManagerService(IUserManagerService):
         # 构造用户基本信息（不返回密码）
         user = User(
             id=db_user.id,
-            user_id=getattr(db_user, 'user_id', None),
-            first_name=getattr(db_user, 'first_name', None),
-            last_name=getattr(db_user, 'last_name', None),
-            email=getattr(db_user, 'email', None),
-            is_active=getattr(db_user, 'is_active', True),
+            user_id=db_user.user_id,
+            first_name=db_user.first_name,
+            last_name=db_user.last_name,
+            email=db_user.email,
+            is_active=db_user.is_active,
         )
 
         # 查询用户角色
@@ -479,12 +484,11 @@ class DefaultUserManagerService(IUserManagerService):
 
         # 特殊处理密码
         if 'password' in update_fields and update_fields['password']:
-            update_fields['password'] = self.password_helper.hash(update_fields['password'])
+            update_fields['password'] = self.password_encoder.encode(update_fields['password'])
 
         # 更新字段
         for field, value in update_fields.items():
-            if hasattr(db_user, field):
-                setattr(db_user, field, value)
+            setattr(db_user, field, value)
 
         # 更新时间戳
         db_user.modifier = "system"

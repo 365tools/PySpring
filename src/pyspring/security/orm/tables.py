@@ -1,4 +1,4 @@
-﻿"""
+"""
 PySpring Security 模块 ORM 表定义
 
 统一管理所有安全相关的数据库表：

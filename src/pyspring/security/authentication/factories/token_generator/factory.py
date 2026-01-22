@@ -7,7 +7,7 @@ from typing import Dict, Type
 
 from pyspring.ioc.context import ApplicationContext
 from pyspring.log.instance import logger
-from pyspring.security.authentication.contracts.token_generator import ITokenGenerator
+from pyspring.security.authentication.contracts.token import ITokenGenerator
 from pyspring.security.authentication.token.generator.jwt import JWTTokenGenerator
 
 

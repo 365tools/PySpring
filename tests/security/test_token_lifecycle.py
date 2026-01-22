@@ -47,8 +47,10 @@ class TestTokenLifecycle:
             jtis = []
 
             for i in range(5):
-                token = token_generator.generate_access_token(payload)
-                decoded = await token_generator.parse_token(token)
+                # 使用新接口encode，添加type标记
+                token_payload = {**payload, "type": "access"}
+                token = token_generator.encode(token_payload)
+                decoded = token_generator.decode(token)
 
                 assert "jti" in decoded, f"Token {i + 1} 缺少JTI字段"
                 jti = decoded["jti"]
@@ -106,9 +108,9 @@ class TestTokenLifecycle:
             token_service._cache = mock_cache
 
             # 生成Token
-            payload = {"sub": "123", "email": "test@example.com"}
-            token = token_generator.generate_access_token(payload)
-            decoded = await token_generator.parse_token(token)
+            payload = {"sub": "test_user_123", "email": "test@example.com", "type": "access"}
+            token = token_generator.encode(payload)
+            decoded = token_generator.decode(token)
 
             print(f"Token JTI: {decoded['jti']}")
 
@@ -225,14 +227,14 @@ class TestTokenLifecycle:
             token_generator = JWTTokenGenerator(encryption_manager, config_manager)
 
             # 生成一个立即过期的Token
-            payload = {"sub": "123", "email": "test@example.com"}
-            short_lived_token = token_generator.generate_access_token(
+            payload = {"sub": "123", "email": "test@example.com", "type": "access"}
+            short_lived_token = token_generator.encode(
                 payload,
                 expires_delta=timedelta(seconds=-1)  # 负数，立即过期
             )
 
             # 尝试解析过期Token
-            decoded = await token_generator.parse_token(short_lived_token)
+            decoded = token_generator.decode(short_lived_token)
 
             if decoded is None:
                 print("✅ 过期Token被正确拒绝")
@@ -258,12 +260,12 @@ class TestTokenLifecycle:
             payload = {"sub": "123", "email": "test@example.com"}
 
             # 生成两种类型的Token
-            access_token = token_generator.generate_access_token(payload)
-            refresh_token = await token_generator.generate_refresh_token(payload)
+            access_token = token_generator.encode({**payload, "type": "access"})
+            refresh_token = token_generator.encode({**payload, "type": "refresh"})
 
             # 解析并检查类型字段
-            access_decoded = await token_generator.parse_token(access_token)
-            refresh_decoded = await token_generator.parse_token(refresh_token)
+            access_decoded = token_generator.decode(access_token)
+            refresh_decoded = token_generator.decode(refresh_token)
 
             assert access_decoded.get("type") == "access", "Access Token应标记type=access"
             assert refresh_decoded.get("type") == "refresh", "Refresh Token应标记type=refresh"

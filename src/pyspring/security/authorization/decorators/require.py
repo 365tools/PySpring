@@ -33,7 +33,7 @@ def require_permission(permission: Union[str, List[str]], require_all: bool = Fa
     """
     # 统一为列表
     permissions = [permission] if isinstance(permission, str) else permission
-    
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -43,18 +43,18 @@ def require_permission(permission: Union[str, List[str]], require_all: bool = Fa
                 if isinstance(arg, Request):
                     request = arg
                     break
-            
+
             if not request:
                 # 从kwargs中查找
                 request = kwargs.get('request')
-            
+
             if not request:
                 logger.error("[require_permission] 未找到Request对象，无法验证权限")
                 raise HTTPException(
                     status_code=500,
                     detail="Internal error: missing request context"
                 )
-            
+
             # 2. 提取user_id
             user_id = getattr(request.state, 'user_id', None)
             if not user_id:
@@ -63,7 +63,7 @@ def require_permission(permission: Union[str, List[str]], require_all: bool = Fa
                     status_code=401,
                     detail="Authentication required"
                 )
-            
+
             # 3. 获取权限服务
             try:
                 permission_service = ApplicationContext.get_instance().get_by_type(IPermissionService)
@@ -73,7 +73,7 @@ def require_permission(permission: Union[str, List[str]], require_all: bool = Fa
                     status_code=500,
                     detail="Permission service unavailable"
                 )
-            
+
             # 4. 检查权限
             try:
                 if require_all:
@@ -92,16 +92,16 @@ def require_permission(permission: Union[str, List[str]], require_all: bool = Fa
                         if await permission_service.has_permission(user_id, perm):
                             has_any = True
                             break
-                    
+
                     if not has_any:
                         logger.warning(f"[require_permission] 权限不足: user={user_id}, required_any={permissions}")
                         raise HTTPException(
                             status_code=403,
                             detail=f"Permission denied: requires any of {permissions}"
                         )
-                
+
                 logger.debug(f"[require_permission] 权限检查通过: user={user_id}")
-                
+
             except HTTPException:
                 raise
             except Exception as e:
@@ -110,11 +110,12 @@ def require_permission(permission: Union[str, List[str]], require_all: bool = Fa
                     status_code=500,
                     detail="Permission check failed"
                 )
-            
+
             # 5. 权限通过，执行原函数
             return await func(*args, **kwargs)
-        
+
         return wrapper
+
     return decorator
 
 
@@ -138,7 +139,7 @@ def require_role(role: Union[str, List[str]], require_all: bool = False):
     """
     # 统一为列表
     roles = [role] if isinstance(role, str) else role
-    
+
     def decorator(func: Callable):
         @wraps(func)
         async def wrapper(*args, **kwargs):
@@ -148,17 +149,17 @@ def require_role(role: Union[str, List[str]], require_all: bool = False):
                 if isinstance(arg, Request):
                     request = arg
                     break
-            
+
             if not request:
                 request = kwargs.get('request')
-            
+
             if not request:
                 logger.error("[require_role] 未找到Request对象")
                 raise HTTPException(
                     status_code=500,
                     detail="Internal error: missing request context"
                 )
-            
+
             # 2. 提取user_id
             user_id = getattr(request.state, 'user_id', None)
             if not user_id:
@@ -167,7 +168,7 @@ def require_role(role: Union[str, List[str]], require_all: bool = False):
                     status_code=401,
                     detail="Authentication required"
                 )
-            
+
             # 3. 获取权限服务
             try:
                 permission_service = ApplicationContext.get_instance().get_by_type(IPermissionService)
@@ -177,7 +178,7 @@ def require_role(role: Union[str, List[str]], require_all: bool = False):
                     status_code=500,
                     detail="Permission service unavailable"
                 )
-            
+
             # 4. 检查角色
             try:
                 if require_all:
@@ -196,16 +197,16 @@ def require_role(role: Union[str, List[str]], require_all: bool = False):
                         if await permission_service.has_role(user_id, r):
                             has_any = True
                             break
-                    
+
                     if not has_any:
                         logger.warning(f"[require_role] 角色不足: user={user_id}, required_any={roles}")
                         raise HTTPException(
                             status_code=403,
                             detail=f"Role required: any of {roles}"
                         )
-                
+
                 logger.debug(f"[require_role] 角色检查通过: user={user_id}")
-                
+
             except HTTPException:
                 raise
             except Exception as e:
@@ -214,11 +215,12 @@ def require_role(role: Union[str, List[str]], require_all: bool = False):
                     status_code=500,
                     detail="Role check failed"
                 )
-            
+
             # 5. 角色通过，执行原函数
             return await func(*args, **kwargs)
-        
+
         return wrapper
+
     return decorator
 
 

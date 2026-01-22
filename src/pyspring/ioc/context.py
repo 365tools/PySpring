@@ -25,7 +25,7 @@ class ApplicationContext:
         return cls._instance
 
     @classmethod
-    def initialize(cls, base_packages: List[str] = None, config_file: str = None, enable_aop: bool = True):
+    def initialize(cls, base_packages: Optional[List[str]] = None, config_file: Optional[str] = None, enable_aop: bool = True):
         """
         初始化应用上下文
         
@@ -74,6 +74,14 @@ class ApplicationContext:
     def get_by_type(self, service_type: type):
         """根据类型获取服务（快捷方法）"""
         return self.container.get_by_type(service_type)
+
+    def get_bean(self, service_type: type):
+        """根据类型获取Bean（别名方法）"""
+        return self.get_by_type(service_type)
+
+    def get_all_instances_of(self, service_type: type):
+        """获取某类型的所有实例（快捷方法）"""
+        return self.container.get_all_instances_of(service_type)
 
     @classmethod
     def reset(cls):

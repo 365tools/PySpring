@@ -56,15 +56,17 @@ class TestIntegration:
             # ========== 阶段3: 用户登录 ==========
             print("阶段3: 用户登录")
             # 模拟登录成功，生成Token
-            access_token = token_generator.generate_access_token({
+            access_token = token_generator.encode({
                 "sub": "1",
                 "email": user_data["email"],
-                "roles": ["user"]
+                "roles": ["user"],
+                "type": "access"
             })
 
-            refresh_token = await token_generator.generate_refresh_token({
+            refresh_token = token_generator.encode({
                 "sub": "1",
-                "email": user_data["email"]
+                "email": user_data["email"],
+                "type": "refresh"
             })
 
             print(f"✅ 登录成功")
@@ -73,7 +75,7 @@ class TestIntegration:
 
             # ========== 阶段4: 验证Token ==========
             print("阶段4: 访问受保护资源（验证Token）")
-            decoded = await token_generator.parse_token(access_token)
+            decoded = token_generator.decode(access_token)
 
             if decoded:
                 print(f"✅ Token验证成功")
@@ -86,13 +88,14 @@ class TestIntegration:
 
             # ========== 阶段5: Token刷新 ==========
             print("阶段5: 使用Refresh Token获取新Access Token")
-            refresh_decoded = await token_generator.parse_token(refresh_token)
+            refresh_decoded = token_generator.decode(refresh_token)
 
             if refresh_decoded and refresh_decoded.get("type") == "refresh":
-                new_access_token = token_generator.generate_access_token({
+                new_access_token = token_generator.encode({
                     "sub": refresh_decoded.get("sub"),
                     "email": refresh_decoded.get("email"),
-                    "roles": ["user"]
+                    "roles": ["user"],
+                    "type": "access"
                 })
                 print(f"✅ Token刷新成功")
                 print(f"   新Access Token: {new_access_token[:50]}...\n")
@@ -102,7 +105,7 @@ class TestIntegration:
 
             # ========== 阶段6: 验证新Token ==========
             print("阶段6: 验证新Token")
-            new_decoded = await token_generator.parse_token(new_access_token)
+            new_decoded = token_generator.decode(new_access_token)
 
             if new_decoded:
                 # 验证新旧Token的JTI不同
@@ -152,19 +155,20 @@ class TestIntegration:
             user_payload = {
                 "sub": "1",
                 "email": "test@example.com",
-                "roles": ["user"]
+                "roles": ["user"],
+                "type": "access"
             }
 
             # 设备1登录
             print("设备1: 笔记本登录")
-            device1_token = token_generator.generate_access_token(user_payload)
-            device1_decoded = await token_generator.parse_token(device1_token)
+            device1_token = token_generator.encode(user_payload)
+            device1_decoded = token_generator.decode(device1_token)
             print(f"✅ 设备1 Token JTI: {device1_decoded['jti']}\n")
 
             # 设备2登录
             print("设备2: 手机登录")
-            device2_token = token_generator.generate_access_token(user_payload)
-            device2_decoded = await token_generator.parse_token(device2_token)
+            device2_token = token_generator.encode(user_payload)
+            device2_decoded = token_generator.decode(device2_token)
             print(f"✅ 设备2 Token JTI: {device2_decoded['jti']}\n")
 
             # 验证：两个设备的Token应该有不同的JTI
@@ -205,19 +209,20 @@ class TestIntegration:
 
             user_payload = {
                 "sub": "1",
-                "email": "test@example.com"
+                "email": "test@example.com",
+                "type": "access"
             }
 
             # 生成一个短期Access Token（立即过期）
             print("生成短期Access Token（测试过期）")
-            short_token = token_generator.generate_access_token(
+            short_token = token_generator.encode(
                 user_payload,
                 expires_delta=timedelta(seconds=-1)
             )
 
             # 尝试使用过期Token
             print("尝试使用过期Token...")
-            expired_decoded = await token_generator.parse_token(short_token)
+            expired_decoded = token_generator.decode(short_token)
 
             if expired_decoded is None:
                 print("✅ 过期Token被正确拒绝\n")
@@ -227,17 +232,19 @@ class TestIntegration:
 
             # 生成长期Refresh Token
             print("使用Refresh Token获取新Access Token")
-            refresh_token = await token_generator.generate_refresh_token(user_payload)
-            refresh_decoded = await token_generator.parse_token(refresh_token)
+            refresh_payload = {"sub": "1", "email": "test@example.com", "type": "refresh"}
+            refresh_token = token_generator.encode(refresh_payload)
+            refresh_decoded = token_generator.decode(refresh_token)
 
             if refresh_decoded and refresh_decoded.get("type") == "refresh":
                 # 使用Refresh Token生成新Access Token
-                new_access_token = token_generator.generate_access_token({
+                new_access_token = token_generator.encode({
                     "sub": refresh_decoded.get("sub"),
-                    "email": refresh_decoded.get("email")
+                    "email": refresh_decoded.get("email"),
+                    "type": "access"
                 })
 
-                new_decoded = await token_generator.parse_token(new_access_token)
+                new_decoded = token_generator.decode(new_access_token)
                 if new_decoded:
                     print(f"✅ 新Access Token生成成功")
                     print(f"   JTI: {new_decoded['jti']}\n")

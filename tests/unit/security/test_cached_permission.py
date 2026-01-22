@@ -3,8 +3,9 @@ CachedPermissionService单元测试
 
 测试缓存装饰器模式、L1缓存、L2数据库
 """
+from unittest.mock import AsyncMock
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock
 
 from pyspring.security.authorization.providers.permission.cached import CachedPermissionService
 
@@ -128,7 +129,7 @@ class TestCachedPermissionService:
 
     @pytest.mark.asyncio
     async def test_cache_failure_fallback_to_delegate(
-        self, cached_service, mock_delegate, mock_cache
+            self, cached_service, mock_delegate, mock_cache
     ):
         """测试缓存失败时降级到数据库查询"""
         # Arrange

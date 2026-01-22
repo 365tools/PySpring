@@ -6,7 +6,7 @@
 from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authorization.contracts.permission import IPermissionService
 from pyspring.security.authorization.contracts.role import IRoleProvider
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider

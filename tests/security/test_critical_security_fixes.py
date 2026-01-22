@@ -68,13 +68,13 @@ def test_token_jti_generation():
         encryption = JWTEncryptionManager(config_mgr)
 
         jwt_config_dict = config_mgr.get_jwt_config()
-        from pyspring.security.authorization.contracts.schema.config import JWTConfig
+        from pyspring.security.authentication.contracts.config import JWTConfig
         jwt_config = JWTConfig(**jwt_config_dict)
 
         generator = JWTTokenGenerator(encryption, config_mgr)
 
-        # 生成Token
-        token = generator.generate_access_token({"sub": "test_user", "email": "test@example.com"})
+        # 生成Token（使用新接口encode）
+        token = generator.encode({"sub": "test_user", "email": "test@example.com", "type": "access"})
 
         # 解密并解析Token
         decrypted = encryption.decrypt(token)
@@ -160,9 +160,10 @@ def test_jwt_secret_strength():
         jwt_config = config_mgr.get_jwt_config()
         secret_key = jwt_config.get('secret_key')
 
-        if len(secret_key) < 32:
+        secret_len = len(secret_key) if secret_key else 0
+        if secret_len < 32:
             print(f"✅ 通过：系统接受了弱密钥但应该有警告日志")
-            print(f"   密钥长度: {len(secret_key)} bytes (推荐: >= 32 bytes)")
+            print(f"   密钥长度: {secret_len} bytes (推荐: >= 32 bytes)")
             print(f"   注意：查看日志中是否有 [SECURITY WARNING]")
             return True
         else:

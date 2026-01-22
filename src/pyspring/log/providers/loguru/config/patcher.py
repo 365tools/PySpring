@@ -7,7 +7,7 @@
 import importlib
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import Dict, List, Tuple, Any, Optional
 
 # 全局存储自动注入的默认值
 _AUTO_INJECTED_DEFAULTS: Dict[str, Any] = {}
@@ -19,7 +19,7 @@ _CONTEXT_VARS_DEFINITIONS: List[Tuple[str, str, Any]] = []
 _CTX_VARS_CACHE: Dict[tuple, List[Tuple[str, ContextVar, Any]]] = {}
 
 # 全局项目根目录缓存
-_PROJECT_ROOT: Path = None
+_PROJECT_ROOT: Optional[Path] = None
 
 
 def set_project_root(root: Path):

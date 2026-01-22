@@ -3,9 +3,10 @@ TokenService单元测试
 
 测试Token编码/解码、黑名单管理、职责分离
 """
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import timedelta
+from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 
 from pyspring.security.authentication.token.service import TokenService
 
@@ -58,15 +59,15 @@ class TestTokenService:
         return mock
 
     @pytest.fixture
-    def token_service(self, mock_token_generator, mock_db_manager, 
-                     mock_cache_manager, mock_entity_config):
+    def token_service(self, mock_token_generator, mock_db_manager,
+                      mock_cache_manager, mock_entity_config):
         """创建TokenService实例"""
-        return TokenService(
-            token_generator=mock_token_generator,
-            db_manager=mock_db_manager,
-            cache=mock_cache_manager,
-            component=mock_entity_config
-        )
+        service = TokenService()
+        # 通过属性注入Mock对象（避免懒加载）
+        service._token_generator = mock_token_generator
+        service._db = mock_db_manager
+        service._cache = mock_cache_manager
+        return service
 
     def test_create_access_token_uses_encode(self, token_service, mock_token_generator):
         """测试create_access_token使用encode方法"""
@@ -80,7 +81,7 @@ class TestTokenService:
         # Assert
         assert result == "mocked.jwt.token"
         mock_token_generator.encode.assert_called_once()
-        
+
         # 验证传递的payload包含type标记
         call_args = mock_token_generator.encode.call_args
         payload = call_args[0][0]
@@ -90,7 +91,7 @@ class TestTokenService:
 
     @pytest.mark.asyncio
     async def test_create_refresh_token_uses_encode_and_stores(
-        self, token_service, mock_token_generator, mock_db_manager
+            self, token_service, mock_token_generator, mock_db_manager
     ):
         """测试create_refresh_token使用encode并持久化"""
         # Arrange
@@ -104,7 +105,7 @@ class TestTokenService:
         }
 
         # Act
-        result = await token_service.create_refresh_token(data, expires_delta, "user123")
+        result = await token_service.create_refresh_token(data, expires_delta)
 
         # Assert
         assert result == "mocked.jwt.token"
@@ -116,10 +117,18 @@ class TestTokenService:
         mock_db_manager.session.assert_called()
 
     @pytest.mark.asyncio
-    async def test_verify_token_uses_decode(self, token_service, mock_token_generator):
+    async def test_verify_token_uses_decode(self, token_service, mock_token_generator, mock_cache_manager):
         """测试verify_token使用decode方法"""
         # Arrange
         token = "test.jwt.token"
+        # Mock decode返回完整的payload（包含jti）
+        mock_token_generator.decode.return_value = {
+            "sub": "user123",
+            "jti": "test-jti-123",
+            "exp": 9999999999
+        }
+        # Mock黑名单检查（Token不在黑名单中）
+        mock_cache_manager.exists.return_value = False
 
         # Act
         result = await token_service.verify_token(token)
@@ -131,20 +140,26 @@ class TestTokenService:
 
     @pytest.mark.asyncio
     async def test_verify_token_checks_blacklist(
-        self, token_service, mock_token_generator, mock_cache_manager
+            self, token_service, mock_token_generator, mock_cache_manager
     ):
         """测试verify_token检查黑名单"""
         # Arrange
         token = "test.jwt.token"
         # 模拟Token在黑名单中
-        mock_cache_manager.get.return_value = "blacklisted"
+        mock_token_generator.decode.return_value = {
+            "sub": "user123",
+            "jti": "token-jti-123",
+            "exp": 9999999999
+        }
+        mock_cache_manager.exists.return_value = True  # Token在黑名单中
 
         # Act
         result = await token_service.verify_token(token)
 
         # Assert
         assert result is None  # 黑名单Token返回None
-        mock_cache_manager.get.assert_called_once()
+        # 验证黑名单检查被调用
+        mock_cache_manager.exists.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_revoke_token_uses_decode(self, token_service, mock_token_generator):
@@ -162,7 +177,7 @@ class TestTokenService:
 
     @pytest.mark.asyncio
     async def test_revoke_token_adds_to_blacklist(
-        self, token_service, mock_token_generator, mock_cache_manager, mock_db_manager
+            self, token_service, mock_token_generator, mock_cache_manager, mock_db_manager
     ):
         """测试revoke_token将Token加入黑名单"""
         # Arrange
@@ -182,7 +197,7 @@ class TestTokenService:
         """测试TokenService不调用旧的generate_access_token方法"""
         # Arrange
         data = {"sub": "user123"}
-        
+
         # 确保旧方法不存在或不被调用
         if hasattr(mock_token_generator, 'generate_access_token'):
             mock_token_generator.generate_access_token = MagicMock()

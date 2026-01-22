@@ -12,9 +12,9 @@ from jose import JWTError, jwt
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
-from pyspring.security.authentication.contracts.token_generator import ITokenGenerator
+from pyspring.security.authentication.contracts.config import JWTConfig
+from pyspring.security.authentication.contracts.token import ITokenGenerator
 from pyspring.security.authentication.infrastructure.crypto.encryption import JWTEncryptionManager
-from pyspring.security.authorization.contracts.schema.config import JWTConfig
 from pyspring.security.core.config.loader import SecurityConfigManager
 
 
@@ -81,33 +81,39 @@ class JWTTokenGenerator(ITokenGenerator):
         else:
             logger.info(f"[Security] JWT密钥强度验证通过 (长度: {len(secret_key)} bytes)")
 
-    def generate_access_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    def encode(self, payload: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
         """
-        生成 JWT Access Token
+        编码JWT Token（符合新接口）
         
         Args:
-            data: Token 载荷数据
+            payload: Token载荷数据
             expires_delta: 过期时间增量（可选）
             
         Returns:
-            str: JWT Token 字符串（可能被加密）
+            str: 编码并可能加密的JWT Token
         """
-        to_encode = data.copy()
+        to_encode = payload.copy()
 
         # 生成唯一Token ID (JTI)
         token_id = str(uuid.uuid4())
+
+        # 获取token类型（用于日志）
+        token_type = payload.get("type", "access")
 
         # 设置过期时间
         if expires_delta:
             expire = datetime.now(UTC) + expires_delta
         else:
-            expire = datetime.now(UTC) + timedelta(seconds=self.jwt_config.access_token_expire)
+            # 根据token类型使用不同的过期时间
+            if token_type == "refresh":
+                expire = datetime.now(UTC) + timedelta(seconds=self.jwt_config.refresh_token_expire)
+            else:
+                expire = datetime.now(UTC) + timedelta(seconds=self.jwt_config.access_token_expire)
 
         to_encode.update({
             "exp": expire,
             "iat": datetime.now(UTC),
             "jti": token_id,  # JWT ID - 唯一标识，用于黑名单
-            "type": "access"
         })
 
         # 编码 JWT
@@ -120,97 +126,38 @@ class JWTTokenGenerator(ITokenGenerator):
         # 加密 Token（如果启用）
         encrypted_token = self.jwt_encryption.encrypt(encoded_jwt)
 
-        logger.debug(f"[TokenGen][JWT] 生成 Access Token: {data.get('email', 'unknown')}")
+        logger.debug(f"[TokenGen][JWT] 编码 {token_type} Token")
         return encrypted_token
 
-    async def generate_refresh_token(self, data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    def decode(self, token: str) -> Optional[Dict[str, Any]]:
         """
-        生成 JWT Refresh Token
+        解码JWT Token（符合新接口）
         
         Args:
-            data: Token 载荷数据
-            expires_delta: 过期时间增量（可选）
+            token: JWT Token字符串
             
         Returns:
-            str: JWT Refresh Token 字符串
-        """
-        to_encode = data.copy()
-
-        # 生成唯一Token ID (JTI)
-        token_id = str(uuid.uuid4())
-
-        # 设置过期时间
-        if expires_delta:
-            expire = datetime.now(UTC) + expires_delta
-        else:
-            expire = datetime.now(UTC) + timedelta(seconds=self.jwt_config.access_token_expire)
-
-        to_encode.update({
-            "exp": expire,
-            "iat": datetime.now(UTC),
-            "jti": token_id,  # JWT ID - 唯一标识，用于黑名单
-            "type": "refresh"
-        })
-
-        # 编码 JWT
-        encoded_jwt = jwt.encode(
-            to_encode,
-            self.jwt_config.secret_key,
-            algorithm=self.jwt_config.algorithm
-        )
-
-        logger.debug(f"[TokenGen][JWT] 生成 Refresh Token: {data.get('email', 'unknown')}")
-        return encoded_jwt
-
-    async def decode_token(self, token: str, verify: bool = True) -> Optional[Dict[str, Any]]:
-        """
-        解析 JWT Token
-        
-        Args:
-            token: JWT Token 字符串
-            verify: 是否验证签名和过期时间
-            
-        Returns:
-            Optional[Dict]: Token 载荷，解析失败返回 None
+            Optional[Dict]: 解码后的载荷，失败返回None
         """
         try:
             # 尝试解密 Token（如果加密了）
             decrypted_token = self.jwt_encryption.decrypt(token)
 
             # 解码 JWT
-            if verify:
-                payload = jwt.decode(
-                    decrypted_token,
-                    self.jwt_config.secret_key,
-                    algorithms=[self.jwt_config.algorithm]
-                )
-            else:
-                payload = jwt.decode(
-                    decrypted_token,
-                    options={"verify_signature": False}
-                )
+            payload = jwt.decode(
+                decrypted_token,
+                self.jwt_config.secret_key,
+                algorithms=[self.jwt_config.algorithm]
+            )
 
             return payload
 
         except JWTError as e:
-            logger.error(f"[TokenGen][JWT] Token 解析失败: {e}")
+            logger.error(f"[TokenGen][JWT] Token 解码失败: {e}")
             return None
         except Exception as e:
-            logger.error(f"[TokenGen][JWT] Token 解析异常: {e}")
+            logger.error(f"[TokenGen][JWT] Token 解码异常: {e}")
             return None
-
-    async def parse_token(self, token: str, token_type: str = "access") -> Optional[Dict[str, Any]]:
-        """
-        解析 Token（实现接口方法）
-        
-        Args:
-            token: Token 字符串
-            token_type: Token 类型（access/refresh）
-            
-        Returns:
-            Optional[Dict]: Token 载荷，解析失败返回 None
-        """
-        return await self.decode_token(token)
 
     def get_token_type(self) -> str:
         """返回Token类型标识"""

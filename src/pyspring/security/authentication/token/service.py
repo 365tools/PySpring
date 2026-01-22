@@ -1,4 +1,4 @@
-﻿"""
+"""
 重构后的 Token 管理服务
 
 使用策略模式，支持多种 Token 类型
@@ -15,10 +15,9 @@ from pyspring.ioc.context import ApplicationContext
 from pyspring.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.repositories.db.manager import DBManagerService
-from pyspring.security.authentication.contracts.token import ITokenService
-from pyspring.security.authentication.contracts.token_generator import ITokenGenerator
+from pyspring.security.authentication.contracts.constant import RevokeTokenReason
+from pyspring.security.authentication.contracts.token import ITokenService, ITokenGenerator
 from pyspring.security.authentication.factories.token_generator.factory import TokenGeneratorFactory
-from pyspring.security.authorization.contracts.schema.constant import RevokeTokenReason
 from pyspring.security.orm.tables import TokenBlacklistTable, RefreshTokenTable
 
 
@@ -71,7 +70,11 @@ class TokenService(ITokenService):
 
     def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[Any] = None) -> str:
         """
-        创建访问 Token（委托给策略）
+        创建访问 Token
+        
+        职责：编排Token生成流程
+        - 准备载荷（添加type标记）
+        - 委托给Generator进行编码
         
         Args:
             data: Token 载荷数据
@@ -80,11 +83,20 @@ class TokenService(ITokenService):
         Returns:
             str: Token 字符串
         """
-        return self.token_generator.generate_access_token(data, expires_delta)
+        # 准备载荷（标记Token类型）
+        payload = data.copy()
+        payload["type"] = "access"
+
+        # 委托给Generator编码
+        return self.token_generator.encode(payload, expires_delta)
 
     async def create_refresh_token(self, data: Dict[str, Any], expires_delta: Optional[Any] = None) -> str:
         """
-        创建刷新 Token（委托给策略 + 持久化）
+        创建刷新 Token
+        
+        职责：
+        1. 编排Token生成（委托Generator）
+        2. 持久化存储（数据库 + Redis）
         
         Args:
             data: Token 载荷数据
@@ -93,38 +105,45 @@ class TokenService(ITokenService):
         Returns:
             str: Refresh Token 字符串
         """
-        # 1. 生成 Token（委托给策略）
-        refresh_token = await self.token_generator.generate_refresh_token(data, expires_delta)
+        # 1. 准备载荷
+        payload = data.copy()
+        payload["type"] = "refresh"
 
-        # 2. 持久化到存储（两级架构）
+        # 2. 生成 Token（委托给Generator）
+        refresh_token = self.token_generator.encode(payload, expires_delta)
+
+        # 3. 解析Token获取过期时间（用于存储）
+        decoded = self.token_generator.decode(refresh_token)
+        if not decoded:
+            raise ValueError("生成的Refresh Token无法解码")
+
+        # 4. 持久化到存储（两级架构）
         try:
-            user_id = data.get("sub")
+            user_id = payload.get("sub")
+            exp_timestamp = decoded.get("exp")
+            expires_at = datetime.fromtimestamp(int(exp_timestamp), UTC) if exp_timestamp else datetime.now(UTC)
 
-            # 2.1 写入数据库
+            # 4.1 写入数据库
             async with await self.db.session() as session:
-                # 计算过期时间（从token中提取）
-                exp_timestamp = data.get("exp", 0)
-                expires_at = datetime.fromtimestamp(exp_timestamp, UTC) if exp_timestamp else datetime.now(UTC)
-
                 refresh_record = RefreshTokenTable(
-                    user_id=int(user_id),
+                    user_id=int(user_id) if user_id else 0,
                     refresh_token=refresh_token,
                     expires_at=expires_at,
                     is_revoked=False
                 )
                 session.add(refresh_record)
                 await session.commit()
-                logger.debug(f"[TokenService] Refresh Token 已持久化到数据库: {data.get('email', 'unknown')}")
+                logger.debug(f"[TokenService] Refresh Token 已持久化到数据库")
 
-            # 2.2 写入 Redis
+            # 4.2 写入 Redis
             try:
                 refresh_key = f"token:refresh:{user_id}:{refresh_token[:16]}"
                 await self.cache.set(refresh_key, refresh_token, ttl=7 * 24 * 3600)
-                logger.debug(f"[TokenService] Refresh Token 已写入Redis: {data.get('email', 'unknown')}")
+                logger.debug(f"[TokenService] Refresh Token 已写入Redis")
             except Exception as e:
                 logger.warning(f"[TokenService] Redis写入失败（数据库已保存）: {e}")
 
-            logger.info(f"[TokenService] 创建 Refresh Token (两级存储): {data.get('email', 'unknown')}")
+            logger.info(f"[TokenService] 创建 Refresh Token (两级存储)")
             return refresh_token
 
         except Exception as e:
@@ -133,7 +152,11 @@ class TokenService(ITokenService):
 
     async def verify_token(self, token: str) -> Optional[Dict[str, Any]]:
         """
-        验证 Token（委托给策略 + 黑名单检查）
+        验证 Token
+        
+        职责：
+        1. 解码Token（委托Generator）
+        2. 检查黑名单（服务层逻辑）
         
         Args:
             token: Token 字符串
@@ -142,12 +165,12 @@ class TokenService(ITokenService):
             Optional[Dict]: Token 载荷数据
         """
         try:
-            # 1. 解析 Token（委托给策略）
-            payload = await self.token_generator.parse_token(token, token_type="access")
+            # 1. 解码 Token（委托给Generator）
+            payload = self.token_generator.decode(token)
             if not payload:
                 return None
 
-            # 2. 检查黑名单
+            # 2. 检查黑名单（服务层逻辑）
             token_id = payload.get("jti")
             if token_id and await self._is_token_blacklisted(token_id):
                 logger.warning("[TokenService] Token 已被撤销")
@@ -212,6 +235,10 @@ class TokenService(ITokenService):
         """
         撤销 Token（加入黑名单）
         
+        职责：
+        1. 解码Token（委托Generator）
+        2. 黑名单管理（服务层逻辑）
+        
         Args:
             token: Token 字符串
             reason: 撤销原因
@@ -220,22 +247,23 @@ class TokenService(ITokenService):
             bool: 是否成功
         """
         try:
-            # 1. 解析 Token 获取信息
-            payload = await self.token_generator.parse_token(token)
+            # 1. 解码 Token 获取信息（委托Generator）
+            payload = self.token_generator.decode(token)
             if not payload:
                 logger.warning("[TokenService] Token已过期，无需撤销")
                 return True
 
-            # 强制要求JTI（不再回退到token[:16]）
+            # 2. 验证Token结构
             token_id = payload.get("jti")
             if not token_id:
                 logger.error("[Security] Token缺JTI字段，无法精确撤销")
                 raise ValueError("Token payload缺少jti字段，无法撤销")
             user_id = payload.get("sub")
-            expires_at = datetime.fromtimestamp(payload.get("exp"), UTC)
+            exp_timestamp = payload.get("exp")
+            expires_at = datetime.fromtimestamp(float(exp_timestamp), UTC) if exp_timestamp else datetime.now(UTC)
 
-            # 2. 写入黑名单（两级存储）
-            # 2.1 数据库
+            # 3. 写入黑名单（两级存储 - 服务层逻辑）
+            # 3.1 数据库持久化
             async with await self.db.session() as session:
                 blacklist_record = TokenBlacklistTable(
                     token_id=token_id,
@@ -246,9 +274,9 @@ class TokenService(ITokenService):
                 )
                 session.add(blacklist_record)
                 await session.commit()
-                logger.debug(f"[TokenService] Token黑名单已持久化: user_id={user_id}")
+                logger.debug(f"[TokenService] Token黑名单已持久化")
 
-            # 2.2 Redis
+            # 3.2 Redis缓存
             try:
                 blacklist_key = f"token:blacklist:{token_id}"
                 ttl = int((expires_at - datetime.now(UTC)).total_seconds())
@@ -303,18 +331,18 @@ class TokenService(ITokenService):
 
                     # 2.1 加入黑名单（防止已撤销的Token被用于刷新）
                     try:
-                        # 从payload获取JTI，如果解析失败使用token_id字段
+                        # 从payload获取JTI
                         token_jti = None
                         try:
-                            payload = await self.token_generator.parse_token(record.refresh_token)
+                            payload = self.token_generator.decode(record.refresh_token)
                             if payload:
                                 token_jti = payload.get("jti")
                         except Exception:
                             pass
 
                         if not token_jti:
-                            logger.warning(f"[Security] Refresh Token缺JTI，使用token_id: {record.token_id}")
-                            token_jti = record.token_id if hasattr(record, 'token_id') else f"legacy_{record.id}"
+                            logger.error(f"[Security] Refresh Token缺JTI字段，数据异常: token_id={record.token_id}")
+                            raise ValueError(f"Invalid refresh token: missing JTI (token_id={record.token_id})")
 
                         # 写入黑名单表
                         blacklist_record = TokenBlacklistTable(

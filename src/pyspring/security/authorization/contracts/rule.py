@@ -1,4 +1,4 @@
-﻿from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod
 from typing import Dict, List
 
 from pyspring.ioc.interfaces.core import IManaged

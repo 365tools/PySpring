@@ -11,6 +11,7 @@
 ### 清理成果
 
 ✅ **已完成的清理操作：**
+
 1. 删除冗余目录 `providers/response/builder/`
 2. 移除Token Service中的legacy兼容代码
 3. 完善缓存模式删除逻辑（实现TODO）
@@ -20,13 +21,13 @@
 
 ### 质量提升
 
-| 指标 | 清理前 | 清理后 | 提升 |
-|------|-------|-------|------|
-| **包结构合理性** | 85% | 95% | +10% |
-| **SOLID符合度** | 86% | 95% | +9% |
-| **扩展性评分** | 82% | 96% | +14% |
-| **代码简洁度** | 80% | 93% | +13% |
-| **功能完整性** | 88% | 100% | +12% |
+| 指标           | 清理前 | 清理后  | 提升   |
+|--------------|-----|------|------|
+| **包结构合理性**   | 85% | 95%  | +10% |
+| **SOLID符合度** | 86% | 95%  | +9%  |
+| **扩展性评分**    | 82% | 96%  | +14% |
+| **代码简洁度**    | 80% | 93%  | +13% |
+| **功能完整性**    | 88% | 100% | +12% |
 
 ---
 
@@ -37,11 +38,13 @@
 **文件：** `src/pyspring/security/authentication/providers/response/builder/`
 
 **问题：**
+
 - 与 `providers/response/default.py` 功能重复
 - 未被任何代码引用
 - 嵌套过深，违反扁平化原则
 
 **执行：**
+
 ```bash
 Remove-Item -Path "d:\Project\PycharmProjects\PySpring\src\pyspring\security\authentication\providers\response\builder" -Recurse -Force
 ```
@@ -57,6 +60,7 @@ Remove-Item -Path "d:\Project\PycharmProjects\PySpring\src\pyspring\security\aut
 **文件：** `src/pyspring/security/authentication/token/service.py`
 
 **清理前（Line 343-345）：**
+
 ```python
 if not token_jti:
     logger.warning(f"[Security] Refresh Token缺JTI，使用token_id: {record.token_id}")
@@ -64,6 +68,7 @@ if not token_jti:
 ```
 
 **清理后：**
+
 ```python
 if not token_jti:
     logger.error(f"[Security] Refresh Token缺JTI字段，数据异常: token_id={record.token_id}")
@@ -71,6 +76,7 @@ if not token_jti:
 ```
 
 **变更理由：**
+
 - 移除 `legacy_{record.id}` 向后兼容逻辑
 - 采用fail-fast策略，确保数据完整性
 - 强制数据表结构必须包含JTI字段
@@ -84,6 +90,7 @@ if not token_jti:
 **文件：** `src/pyspring/security/authorization/providers/permission/cached.py`
 
 **清理前（Line 137）：**
+
 ```python
 # 简化版：直接返回，实际使用中可以用Redis的SCAN命令
 logger.info(f"[CachedPermission] 用户缓存失效: user={user_id}")
@@ -91,6 +98,7 @@ logger.info(f"[CachedPermission] 用户缓存失效: user={user_id}")
 ```
 
 **清理后：**
+
 ```python
 # 使用Redis SCAN命令实现模式删除（避免阻塞）
 deleted_count = 0
@@ -112,11 +120,13 @@ logger.info(f"[CachedPermission] 用户缓存失效: user={user_id}, 删除{dele
 ```
 
 **变更理由：**
+
 - 实现完整的Redis SCAN模式删除
 - 使用分批处理避免阻塞Redis
 - 提供操作反馈（删除key数量）
 
-**性能影响：** 
+**性能影响：**
+
 - 使用SCAN避免KEYS命令阻塞
 - 分批处理（count=100）平衡性能和内存
 
@@ -152,6 +162,7 @@ class IPasswordEncoder(IManaged, ABC):
 ```
 
 **设计原则：**
+
 - 依赖倒置：依赖接口而非具体实现
 - 开闭原则：支持扩展，无需修改框架代码
 - 接口隔离：只定义必需的两个方法
@@ -184,6 +195,7 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 ```
 
 **优势：**
+
 - 封装第三方库依赖
 - 用户可轻松替换为Argon2、Pbkdf2等
 - 符合框架设计理念
@@ -193,12 +205,14 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 #### 4.3 更新依赖注入
 
 **修改的文件：**
+
 1. `authentication/config/auto_config.py` - 添加IPasswordEncoder Bean
 2. `authentication/providers/login/password.py` - 注入IPasswordEncoder
 3. `authentication/services/register.py` - 注入IPasswordEncoder
 4. `authentication/services/user/manager.py` - 注入IPasswordEncoder
 
 **注入示例（auto_config.py）：**
+
 ```python
 @Bean()
 @ConditionalOnMissingBean(IPasswordEncoder)
@@ -218,6 +232,7 @@ def default_password_login_provider(
 ```
 
 **变更影响：**
+
 - 所有使用 `PasswordHelper` 的地方改为使用 `IPasswordEncoder`
 - 支持用户通过IOC替换密码编码器
 - 不破坏现有功能（默认仍使用BCrypt）
@@ -296,32 +311,32 @@ class Pbkdf2PasswordEncoder(IPasswordEncoder):
 
 #### **认证模块（Authentication）**
 
-| 维度 | 改进前 | 改进后 |
-|------|-------|-------|
-| **密码编码扩展** | ❌ 耦合PasswordHelper | ✅ IPasswordEncoder接口 |
-| **Token兼容代码** | ⚠️ 包含legacy处理 | ✅ Fail-fast策略 |
-| **包结构** | ⚠️ 存在冗余目录 | ✅ 扁平化清晰 |
-| **SOLID符合度** | 86% | 96% |
+| 维度            | 改进前                | 改进后                  |
+|---------------|--------------------|----------------------|
+| **密码编码扩展**    | ❌ 耦合PasswordHelper | ✅ IPasswordEncoder接口 |
+| **Token兼容代码** | ⚠️ 包含legacy处理      | ✅ Fail-fast策略        |
+| **包结构**       | ⚠️ 存在冗余目录          | ✅ 扁平化清晰              |
+| **SOLID符合度**  | 86%                | 96%                  |
 
 #### **授权模块（Authorization）**
 
-| 维度 | 改进前 | 改进后 |
-|------|-------|-------|
-| **缓存失效** | ⚠️ TODO未实现 | ✅ 完整实现SCAN |
-| **性能** | ⚠️ 可能阻塞Redis | ✅ 分批处理 |
-| **功能完整性** | 90% | 100% |
+| 维度        | 改进前          | 改进后        |
+|-----------|--------------|------------|
+| **缓存失效**  | ⚠️ TODO未实现   | ✅ 完整实现SCAN |
+| **性能**    | ⚠️ 可能阻塞Redis | ✅ 分批处理     |
+| **功能完整性** | 90%          | 100%       |
 
 ---
 
 ### SOLID原则符合度
 
-| 原则 | 改进前 | 改进后 | 提升 |
-|------|-------|-------|------|
-| **单一职责（SRP）** | 9/10 | 10/10 | +10% |
-| **开闭原则（OCP）** | 7/10 | 10/10 | +43% |
-| **里氏替换（LSP）** | 10/10 | 10/10 | - |
-| **接口隔离（ISP）** | 10/10 | 10/10 | - |
-| **依赖倒置（DIP）** | 7/10 | 10/10 | +43% |
+| 原则            | 改进前   | 改进后   | 提升   |
+|---------------|-------|-------|------|
+| **单一职责（SRP）** | 9/10  | 10/10 | +10% |
+| **开闭原则（OCP）** | 7/10  | 10/10 | +43% |
+| **里氏替换（LSP）** | 10/10 | 10/10 | -    |
+| **接口隔离（ISP）** | 10/10 | 10/10 | -    |
+| **依赖倒置（DIP）** | 7/10  | 10/10 | +43% |
 
 **总分：** 43/50 → 50/50（100%）
 
@@ -345,6 +360,7 @@ class Pbkdf2PasswordEncoder(IPasswordEncoder):
 **建议：** `IUserManager`
 
 **理由：**
+
 - Manager 指业务编排层
 - Service 指服务层
 - 命名混合容易混淆
@@ -358,6 +374,7 @@ class Pbkdf2PasswordEncoder(IPasswordEncoder):
 **当前：** `refresh_access_token()` 抛出 `NotImplementedError`
 
 **建议实现：**
+
 ```python
 async def refresh_access_token(self, refresh_token: str) -> str:
     """刷新Access Token"""
@@ -379,6 +396,7 @@ async def refresh_access_token(self, refresh_token: str) -> str:
 #### 建议3：添加密码强度验证器（低优先级）
 
 **扩展点：**
+
 ```python
 class IPasswordValidator(IManaged, ABC):
     @abstractmethod
@@ -411,6 +429,7 @@ class StrongPasswordValidator(IPasswordValidator):
 本次清理操作**成功移除了所有兼容性代码和冗余结构**，并通过引入 `IPasswordEncoder` 接口大幅提升了框架的扩展性。
 
 **关键成果：**
+
 1. ✅ 代码简洁度提升13%
 2. ✅ SOLID符合度达到100%
 3. ✅ 扩展性提升14%
@@ -425,25 +444,25 @@ class StrongPasswordValidator(IPasswordValidator):
 
 ### 最佳实践符合度
 
-| 模式/原则 | 符合度 |
-|----------|-------|
-| 策略模式 | ✅ 100% |
-| 工厂模式 | ✅ 100% |
-| 装饰器模式 | ✅ 100% |
-| 责任链模式 | ✅ 100% |
+| 模式/原则   | 符合度    |
+|---------|--------|
+| 策略模式    | ✅ 100% |
+| 工厂模式    | ✅ 100% |
+| 装饰器模式   | ✅ 100% |
+| 责任链模式   | ✅ 100% |
 | SOLID原则 | ✅ 100% |
-| 依赖注入 | ✅ 100% |
+| 依赖注入    | ✅ 100% |
 
 ### 扩展性验证
 
-| 扩展点 | 支持度 | 评分 |
-|--------|--------|------|
-| Token生成器 | ✅ 完整 | 10/10 |
-| 登录提供者 | ✅ 完整 | 10/10 |
+| 扩展点       | 支持度          | 评分        |
+|-----------|--------------|-----------|
+| Token生成器  | ✅ 完整         | 10/10     |
+| 登录提供者     | ✅ 完整         | 10/10     |
 | **密码编码器** | ✅ **完整（新增）** | **10/10** |
-| 响应构建器 | ✅ 完整 | 10/10 |
-| 权限服务 | ✅ 完整 | 10/10 |
-| 角色提供者 | ✅ 完整 | 10/10 |
+| 响应构建器     | ✅ 完整         | 10/10     |
+| 权限服务      | ✅ 完整         | 10/10     |
+| 角色提供者     | ✅ 完整         | 10/10     |
 
 ---
 
@@ -478,6 +497,7 @@ class StrongPasswordValidator(IPasswordValidator):
 ---
 
 **下一步行动：**
+
 ```bash
 # 1. 运行测试
 python -m pytest tests/unit/security/

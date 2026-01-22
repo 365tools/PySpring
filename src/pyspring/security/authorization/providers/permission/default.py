@@ -36,7 +36,7 @@ class DefaultPermissionService(IPermissionService):
         检查用户是否拥有特定权限（细粒度权限检查）
         
         实现逻辑：
-        1. 获取用户的所有角色
+        1. 获取用户的所有有效角色（包含继承）
         2. 获取这些角色的所有权限
         3. 检查权限是否匹配（支持通配符 '*'）
         
@@ -47,8 +47,8 @@ class DefaultPermissionService(IPermissionService):
         Returns:
             bool: 是否拥有权限
         """
-        # 1. 获取用户角色
-        user_roles = await self.role_provider.get_user_roles(user_id)
+        # 1. 获取用户的有效角色（包含继承）
+        user_roles = await self.role_provider.get_effective_roles(user_id)
         if not user_roles:
             logger.debug(f"[Permission] 用户 {user_id} 没有任何角色")
             return False
@@ -74,7 +74,7 @@ class DefaultPermissionService(IPermissionService):
             if self._permission_matches(permission, perm):
                 logger.debug(f"[Permission] 用户 {user_id} 拥有权限 {permission} (通配符匹配: {perm})")
                 return True
-        
+
         logger.debug(f"[Permission] 用户 {user_id} 没有权限 {permission}")
         return False
 
@@ -99,43 +99,51 @@ class DefaultPermissionService(IPermissionService):
         if granted == '*':
             return True
 
-        # 前缀通配符（如 'user:*'）
-        if granted.endswith(':*'):
+        # 精确匹配
+        if granted == required:
+            return True
+
+        # 前缀通配符（如 'user:*'，但不包括中间有通配符的如'user:*:read'）
+        if granted.endswith(':*') and granted.count('*') == 1:
             prefix = granted[:-2]  # 移除 ':*'
             return required.startswith(prefix + ':') or required == prefix
 
-        # 逐部分匹配（如 'user:*:read'）
-        granted_parts = granted.split(':')
-        required_parts = required.split(':')
+        # 逐部分匹配（如 'user:*:read' or 'admin:*:*'）
+        if '*' in granted:
+            granted_parts = granted.split(':')
+            required_parts = required.split(':')
 
-        if len(granted_parts) != len(required_parts):
-            return False
-
-        for g_part, r_part in zip(granted_parts, required_parts):
-            if g_part == '*':
-                continue
-            if g_part != r_part:
+            if len(granted_parts) != len(required_parts):
                 return False
 
-        return True
+            for g_part, r_part in zip(granted_parts, required_parts):
+                if g_part == '*':
+                    continue
+                if g_part != r_part:
+                    return False
+
+            return True
+
+        return False
 
     async def has_role(self, user_id: Any, role: str) -> bool:
         """
-        检查用户是否拥有特定角色
+        检查用户是否拥有特定角色（支持角色继承）
         
         Args:
             user_id: 用户 ID
             role: 角色代码
             
         Returns:
-            bool: 是否拥有角色
+            bool: 是否拥有角色（包含继承）
         """
-        roles = await self.role_provider.get_user_roles(user_id)
+        # 使用有效角色（包含继承）
+        roles = await self.role_provider.get_effective_roles(user_id)
         has = role in roles
-        
+
         if has:
             logger.debug(f"[Permission] 用户 {user_id} 拥有角色 {role}")
         else:
             logger.debug(f"[Permission] 用户 {user_id} 没有角色 {role}")
-        
+
         return has
