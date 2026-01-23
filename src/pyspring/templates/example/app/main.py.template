@@ -1,0 +1,239 @@
+"""
+PySpring Example Application - FastAPI Entry Point
+
+这是一个完整的 PySpring 示例项目，展示了框架的所有核心功能：
+- IOC 容器和依赖注入
+- 生命周期管理（启动初始化器、关闭处理器）
+- 配置管理（YAML + 环境变量）
+- 数据库集成（SQLAlchemy ORM + Repository模式）
+- 缓存集成（Redis）
+- 认证授权（JWT）
+- AOP 切面编程
+- 日志系统
+- 中间件
+
+运行方式:
+    uvicorn app.main:app --reload
+    或
+    python -m app.main
+
+访问:
+    - API: http://localhost:8000
+    - 文档: http://localhost:8000/docs
+    - 健康检查: http://localhost:8000/health
+"""
+from contextlib import asynccontextmanager
+from typing import Annotated
+
+from fastapi import FastAPI, Depends, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+# PySpring 导入
+from pyspring.ioc import ApplicationContext
+from pyspring.log.instance import logger
+
+# 应用模块导入
+from app.api import health, auth, users
+from app.middleware.request_logger import request_logging_middleware
+from app.middleware.timing import timing_middleware
+from app.middleware.error_handler import global_exception_handler
+
+
+# ============================================================================
+# 全局应用上下文
+# ============================================================================
+app_context: ApplicationContext = None
+
+
+# ============================================================================
+# 应用生命周期管理
+# ============================================================================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    应用生命周期管理
+    
+    启动阶段：
+    1. 初始化 IOC 容器
+    2. 扫描并注册所有组件
+    3. 执行启动初始化器
+    
+    关闭阶段：
+    1. 执行关闭处理器
+    2. 释放资源
+    """
+    global app_context
+    
+    # ========== 启动阶段 ==========
+    logger.info("=" * 80)
+    logger.info("🚀 PySpring 示例应用启动中...")
+    logger.info("=" * 80)
+    
+    try:
+        # 1. 初始化 ApplicationContext
+        logger.info("\n📦 步骤 1/3: 初始化 IOC 容器...")
+        app_context = ApplicationContext.initialize(
+            base_packages=['app'],  # 扫描 app 包下的所有组件
+            config_file='config/container.yaml',  # 可选：从配置文件加载
+            enable_aop=True  # 启用 AOP
+        )
+        logger.info("✅ IOC 容器初始化完成")
+        
+        # 2. 显示已注册的服务
+        logger.info("\n📦 步骤 2/3: 服务注册情况...")
+        all_services = app_context.container.registry.all_names()
+        logger.info(f"已注册 {len(all_services)} 个服务:")
+        for idx, service_name in enumerate(sorted(all_services), 1):
+            logger.debug(f"  {idx:2d}. {service_name}")
+        
+        # 3. 执行启动初始化器（自动按依赖顺序执行）
+        logger.info("\n📦 步骤 3/3: 执行启动初始化器...")
+        await app_context.container.initialize_lifecycle_services()
+        logger.info("✅ 所有启动初始化器执行完成")
+        
+        logger.info("\n" + "=" * 80)
+        logger.info("✅ 应用启动完成，准备接受请求")
+        logger.info("=" * 80)
+        logger.info("📍 API 地址: http://localhost:8000")
+        logger.info("📖 API 文档: http://localhost:8000/docs")
+        logger.info("💚 健康检查: http://localhost:8000/health")
+        logger.info("=" * 80 + "\n")
+        
+    except Exception as e:
+        logger.error(f"❌ 应用启动失败: {e}", exc_info=True)
+        raise
+    
+    yield  # 应用运行期间
+    
+    # ========== 关闭阶段 ==========
+    logger.info("\n" + "=" * 80)
+    logger.info("👋 PySpring 示例应用关闭中...")
+    logger.info("=" * 80)
+    
+    try:
+        # 执行所有关闭处理器
+        logger.info("📦 执行关闭处理器...")
+        await app_context.container.shutdown_lifecycle_services()
+        logger.info("✅ 所有关闭处理器执行完成")
+        
+    except Exception as e:
+        logger.error(f"❌ 应用关闭时发生错误: {e}", exc_info=True)
+    
+    logger.info("=" * 80)
+    logger.info("✅ 应用已完全关闭")
+    logger.info("=" * 80 + "\n")
+
+
+# ============================================================================
+# 创建 FastAPI 应用
+# ============================================================================
+app = FastAPI(
+    title="PySpring 示例应用",
+    description="""
+    这是一个完整的 PySpring 框架示例项目，展示了：
+    
+    - ✅ IOC 容器和依赖注入
+    - ✅ 生命周期管理
+    - ✅ 配置管理
+    - ✅ 数据库集成
+    - ✅ 缓存服务
+    - ✅ 认证授权
+    - ✅ AOP 切面
+    - ✅ 中间件
+    - ✅ 结构化日志
+    
+    查看源码了解如何使用 PySpring 构建生产级应用。
+    """,
+    version="1.0.0",
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
+
+
+# ============================================================================
+# CORS 中间件配置
+# ============================================================================
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境应该指定具体域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# ============================================================================
+# 自定义中间件
+# ============================================================================
+app.middleware("http")(request_logging_middleware)  # 请求日志
+app.middleware("http")(timing_middleware)  # 性能计时
+
+
+# ============================================================================
+# 全局异常处理
+# ============================================================================
+@app.exception_handler(Exception)
+async def handle_exception(request: Request, exc: Exception):
+    """全局异常处理器"""
+    return await global_exception_handler(request, exc)
+
+
+# ============================================================================
+# 注册路由
+# ============================================================================
+app.include_router(health.router, tags=["健康检查"])
+app.include_router(auth.router, prefix="/api/auth", tags=["认证"])
+app.include_router(users.router, prefix="/api/users", tags=["用户管理"])
+
+
+# ============================================================================
+# 根路径
+# ============================================================================
+@app.get("/", tags=["根路径"])
+async def root():
+    """API 根路径，返回欢迎信息"""
+    return {
+        "message": "欢迎使用 PySpring 示例应用！",
+        "framework": "PySpring",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "endpoints": {
+            "认证": "/api/auth",
+            "用户": "/api/users"
+        },
+        "features": [
+            "IOC 容器",
+            "依赖注入",
+            "生命周期管理",
+            "配置管理",
+            "数据库集成",
+            "缓存服务",
+            "JWT 认证",
+            "AOP 切面",
+            "结构化日志"
+        ]
+    }
+
+
+# ============================================================================
+# 主程序入口
+# ============================================================================
+if __name__ == "__main__":
+    import uvicorn
+    
+    logger.info("🎯 启动 PySpring 示例应用")
+    logger.info("📍 访问 http://localhost:8000")
+    logger.info("📖 API 文档: http://localhost:8000/docs")
+    logger.info("🛑 按 Ctrl+C 停止应用\n")
+    
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,  # 开发模式自动重载
+        log_level="info"
+    )

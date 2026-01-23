@@ -1,0 +1,207 @@
+"""
+用户服务
+
+展示 PySpring 的核心功能：
+1. @component 装饰器 - 自动注册到 IOC 容器
+2. @inject 装饰器 - 自动依赖注入
+3. ILifecycle 接口 - 生命周期管理
+4. Repository 模式 - 数据访问层
+5. 缓存集成
+"""
+from typing import List, Optional, Dict
+
+from pyspring.ioc import component, inject
+from pyspring.core.lifecycle import ILifecycle
+from pyspring.log.instance import logger
+
+from app.repositories.user_repository import UserRepository
+from app.models.user import User
+from app.services.cache_service import CacheService
+
+
+@component
+class UserService(ILifecycle):
+    """
+    用户服务
+    
+    使用 @component 装饰器自动注册到 IOC 容器
+    实现 ILifecycle 接口进行生命周期管理
+    """
+    
+    @inject
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        cache_service: CacheService
+    ):
+        """
+        构造函数依赖注入
+        
+        PySpring 会自动注入依赖：
+        - user_repository: 用户仓储
+        - cache_service: 缓存服务
+        """
+        self.user_repository = user_repository
+        self.cache_service = cache_service
+        self._cache_prefix = "user:"
+        
+        logger.info(f"📦 创建 UserService 实例")
+    
+    # ========================================================================
+    # 生命周期方法
+    # ========================================================================
+    
+    async def on_startup(self) -> None:
+        """
+        启动初始化器
+        
+        应用启动时自动调用，用于：
+        - 初始化服务
+        - 预热缓存
+        - 加载配置
+        """
+        logger.info("🚀 UserService 启动初始化...")
+        
+        # 示例：预热缓存
+        user_count = await self.user_repository.count()
+        logger.info(f"📊 当前用户总数: {user_count}")
+        
+        logger.info("✅ UserService 启动初始化完成")
+    
+    async def on_shutdown(self) -> None:
+        """
+        关闭处理器
+        
+        应用关闭时自动调用，用于：
+        - 清理资源
+        - 保存状态
+        - 关闭连接
+        """
+        logger.info("👋 UserService 关闭处理...")
+        
+        # 示例：清理缓存
+        await self.cache_service.clear_pattern(f"{self._cache_prefix}*")
+        
+        logger.info("✅ UserService 关闭处理完成")
+    
+    # ========================================================================
+    # 业务方法
+    # ========================================================================
+    
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
+        """
+        根据 ID 获取用户（带缓存）
+        
+        缓存策略：
+        1. 先查缓存
+        2. 缓存未命中则查数据库
+        3. 结果写入缓存
+        """
+        cache_key = f"{self._cache_prefix}{user_id}"
+        
+        # 1. 尝试从缓存获取
+        cached_user = await self.cache_service.get(cache_key)
+        if cached_user:
+            logger.debug(f"✅ 缓存命中: {cache_key}")
+            return User(**cached_user)
+        
+        # 2. 缓存未命中，查询数据库
+        logger.debug(f"❌ 缓存未命中: {cache_key}, 查询数据库")
+        user = await self.user_repository.find_by_id(user_id)
+        
+        # 3. 写入缓存
+        if user:
+            await self.cache_service.set(
+                cache_key,
+                {
+                    "id": user.id,
+                    "username": user.username,
+                    "email": user.email,
+                    "is_active": user.is_active
+                },
+                ttl=300  # 5分钟过期
+            )
+        
+        return user
+    
+    async def get_user_by_username(self, username: str) -> Optional[User]:
+        """根据用户名获取用户"""
+        return await self.user_repository.find_by_username(username)
+    
+    async def get_users(self, skip: int = 0, limit: int = 10) -> List[User]:
+        """
+        获取用户列表（分页）
+        
+        Args:
+            skip: 跳过的记录数
+            limit: 返回的最大记录数
+        
+        Returns:
+            用户列表
+        """
+        return await self.user_repository.find_all(skip=skip, limit=limit)
+    
+    async def create_user(self, user_data: Dict) -> User:
+        """
+        创建用户
+        
+        Args:
+            user_data: 用户数据字典
+        
+        Returns:
+            创建的用户对象
+        """
+        user = await self.user_repository.create(user_data)
+        
+        # 清除相关缓存
+        await self.cache_service.delete(f"{self._cache_prefix}list:*")
+        
+        logger.info(f"✅ 创建用户: {user.username} (ID: {user.id})")
+        return user
+    
+    async def update_user(self, user_id: int, update_data: Dict) -> Optional[User]:
+        """
+        更新用户
+        
+        Args:
+            user_id: 用户 ID
+            update_data: 更新的数据
+        
+        Returns:
+            更新后的用户对象
+        """
+        user = await self.user_repository.update(user_id, update_data)
+        
+        if user:
+            # 清除用户缓存
+            cache_key = f"{self._cache_prefix}{user_id}"
+            await self.cache_service.delete(cache_key)
+            
+            logger.info(f"✅ 更新用户: {user.username} (ID: {user.id})")
+        
+        return user
+    
+    async def delete_user(self, user_id: int) -> bool:
+        """
+        删除用户
+        
+        Args:
+            user_id: 用户 ID
+        
+        Returns:
+            是否删除成功
+        """
+        success = await self.user_repository.delete(user_id)
+        
+        if success:
+            # 清除用户缓存
+            cache_key = f"{self._cache_prefix}{user_id}"
+            await self.cache_service.delete(cache_key)
+            
+            logger.info(f"✅ 删除用户: ID={user_id}")
+        
+        return success
+    
+    async def get_user_count(self) -> int:
+        """获取用户总数"""
+        return await self.user_repository.count()

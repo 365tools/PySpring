@@ -1,0 +1,75 @@
+"""
+认证依赖
+
+展示：
+1. FastAPI 依赖注入
+2. JWT 令牌验证
+3. 用户身份获取
+"""
+from typing import Optional
+
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+
+from pyspring.ioc import inject
+from app.services.auth_service import AuthService
+from app.models.user import User
+
+
+# HTTP Bearer 安全方案
+security = HTTPBearer()
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    auth_service: AuthService = Depends(lambda: inject(AuthService))
+) -> User:
+    """
+    获取当前登录用户
+    
+    从请求头中提取 JWT 令牌并验证，返回当前用户
+    
+    使用示例：
+        @router.get("/protected")
+        async def protected_route(current_user: User = Depends(get_current_user)):
+            return {"user": current_user.username}
+    
+    Raises:
+        HTTPException: 令牌无效或用户不存在
+    """
+    token = credentials.credentials
+    
+    user = await auth_service.get_current_user(token)
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效的认证凭据",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="用户已被禁用"
+        )
+    
+    return user
+
+
+async def get_current_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    auth_service: AuthService = Depends(lambda: inject(AuthService))
+) -> Optional[User]:
+    """
+    获取当前用户（可选）
+    
+    不强制要求认证，如果提供了令牌则验证并返回用户
+    """
+    if not credentials:
+        return None
+    
+    token = credentials.credentials
+    user = await auth_service.get_current_user(token)
+    
+    return user if user and user.is_active else None

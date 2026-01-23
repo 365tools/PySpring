@@ -1,0 +1,50 @@
+"""健康检查端点"""
+from datetime import datetime
+from typing import Dict
+
+from fastapi import APIRouter, Depends
+from pyspring.ioc import component, inject
+
+from app.services.health_check_service import HealthCheckService
+
+
+router = APIRouter()
+
+
+@router.get("/health")
+async def health_check(
+    health_service: HealthCheckService = Depends(lambda: inject(HealthCheckService))
+) -> Dict:
+    """
+    健康检查端点
+    
+    检查应用各组件状态：
+    - 数据库连接
+    - Redis连接
+    - IOC容器状态
+    """
+    status = await health_service.check_all()
+    
+    return {
+        "status": "healthy" if status["overall"] else "unhealthy",
+        "timestamp": datetime.now().isoformat(),
+        "checks": status
+    }
+
+
+@router.get("/ready")
+async def readiness_check() -> Dict:
+    """就绪检查"""
+    return {
+        "ready": True,
+        "timestamp": datetime.now().isoformat()
+    }
+
+
+@router.get("/live")
+async def liveness_check() -> Dict:
+    """存活检查"""
+    return {
+        "alive": True,
+        "timestamp": datetime.now().isoformat()
+    }

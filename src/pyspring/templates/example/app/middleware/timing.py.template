@@ -1,0 +1,41 @@
+"""
+性能计时中间件
+
+展示：
+1. 性能监控
+2. 慢请求告警
+"""
+import time
+from fastapi import Request
+from pyspring.log.instance import logger
+
+
+# 慢请求阈值（秒）
+SLOW_REQUEST_THRESHOLD = 1.0
+
+
+async def timing_middleware(request: Request, call_next):
+    """
+    性能计时中间件
+    
+    监控请求处理时间，对慢请求发出告警
+    """
+    start_time = time.time()
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    
+    # 慢请求告警
+    if process_time > SLOW_REQUEST_THRESHOLD:
+        logger.warning(
+            f"⏱️ 慢请求告警",
+            extra={
+                "method": request.method,
+                "url": str(request.url),
+                "process_time": f"{process_time:.3f}s",
+                "threshold": f"{SLOW_REQUEST_THRESHOLD}s"
+            }
+        )
+    
+    return response

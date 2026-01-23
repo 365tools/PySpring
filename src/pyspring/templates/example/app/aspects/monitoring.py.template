@@ -1,0 +1,102 @@
+"""
+AOP 切面示例（可选）
+
+展示：
+1. PySpring AOP 切面编程
+2. 方法拦截
+3. 性能监控切面
+4. 日志切面
+
+注意：这个文件是可选的，仅在需要使用 AOP 功能时启用
+"""
+from functools import wraps
+import time
+from typing import Any, Callable
+
+from pyspring.log.instance import logger
+
+
+def performance_monitor(func: Callable) -> Callable:
+    """
+    性能监控装饰器
+    
+    监控方法执行时间
+    """
+    @wraps(func)
+    async def wrapper(*args, **kwargs) -> Any:
+        start_time = time.time()
+        
+        try:
+            result = await func(*args, **kwargs)
+            execution_time = time.time() - start_time
+            
+            logger.info(
+                f"⏱️ 性能监控",
+                extra={
+                    "function": func.__name__,
+                    "module": func.__module__,
+                    "execution_time": f"{execution_time:.3f}s"
+                }
+            )
+            
+            return result
+        except Exception as e:
+            execution_time = time.time() - start_time
+            logger.error(
+                f"❌ 方法执行失败",
+                extra={
+                    "function": func.__name__,
+                    "module": func.__module__,
+                    "execution_time": f"{execution_time:.3f}s",
+                    "error": str(e)
+                }
+            )
+            raise
+    
+    return wrapper
+
+
+def log_calls(func: Callable) -> Callable:
+    """
+    日志切面
+    
+    记录方法调用
+    """
+    @wraps(func)
+    async def wrapper(*args, **kwargs) -> Any:
+        logger.debug(
+            f"📞 方法调用",
+            extra={
+                "function": func.__name__,
+                "module": func.__module__,
+                "args": str(args[1:]) if len(args) > 1 else "None",  # 跳过 self
+                "kwargs": str(kwargs)
+            }
+        )
+        
+        result = await func(*args, **kwargs)
+        
+        logger.debug(
+            f"✅ 方法返回",
+            extra={
+                "function": func.__name__,
+                "module": func.__module__
+            }
+        )
+        
+        return result
+    
+    return wrapper
+
+
+# 使用示例：
+# 
+# from app.aspects.monitoring import performance_monitor, log_calls
+# 
+# @component
+# class MyService:
+#     @performance_monitor
+#     @log_calls
+#     async def my_method(self):
+#         # 方法会被自动监控和记录日志
+#         ...

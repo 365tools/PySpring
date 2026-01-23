@@ -1,0 +1,24 @@
+# PySpring IOC 容器配置
+# 
+# 注意：通常不需要这个文件，因为 @component 装饰器会自动注册组件
+# 这个文件仅用于展示手动配置的方式
+
+container:
+  # 自动扫描的包
+  scan_packages:
+    - app
+    
+  # 组件配置
+  components:
+    # 示例：手动配置组件
+    # - name: my_service
+    #   class: app.services.my_service.MyService
+    #   scope: singleton
+    #   lazy: false
+    
+  # 属性注入
+  properties:
+    # 示例：注入配置值
+    # - bean: my_service
+    #   property: config_value
+    #   value: ${CONFIG_KEY:default_value}

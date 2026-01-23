@@ -1,0 +1,57 @@
+"""
+请求日志中间件
+
+展示：
+1. FastAPI 中间件
+2. 结构化日志
+"""
+import time
+from fastapi import Request
+from pyspring.log.instance import logger
+
+
+async def request_logging_middleware(request: Request, call_next):
+    """
+    请求日志中间件
+    
+    记录每个请求的：
+    - 请求方法和路径
+    - 处理时间
+    - 响应状态码
+    """
+    # 生成请求 ID
+    request_id = f"{int(time.time() * 1000)}"
+    
+    # 记录请求开始
+    logger.info(
+        f"🔵 请求开始",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "client": request.client.host if request.client else "unknown"
+        }
+    )
+    
+    # 执行请求
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    # 记录请求完成
+    logger.info(
+        f"🟢 请求完成",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "status_code": response.status_code,
+            "process_time": f"{process_time:.3f}s"
+        }
+    )
+    
+    # 添加自定义响应头
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time"] = f"{process_time:.3f}"
+    
+    return response

@@ -1,0 +1,79 @@
+"""
+数据库初始化器
+
+展示：
+1. ILifecycle 启动初始化器
+2. 数据库表创建
+3. 初始数据填充
+"""
+from pyspring.ioc import component
+from pyspring.core.lifecycle import ILifecycle
+from pyspring.log.instance import logger
+
+from app.database.session import init_database, engine
+from app.repositories.user_repository import UserRepository
+from app.services.auth_service import AuthService
+
+
+@component
+class DatabaseInitializer(ILifecycle):
+    """
+    数据库初始化器
+    
+    在应用启动时自动执行：
+    1. 创建数据库表
+    2. 填充初始数据
+    """
+    
+    async def on_startup(self) -> None:
+        """启动时初始化数据库"""
+        logger.info("🚀 DatabaseInitializer 启动初始化...")
+        
+        # 1. 创建表
+        await init_database()
+        
+        # 2. 填充初始数据（如果需要）
+        await self._seed_initial_data()
+        
+        logger.info("✅ DatabaseInitializer 启动初始化完成")
+    
+    async def on_shutdown(self) -> None:
+        """关闭时清理资源"""
+        logger.info("👋 DatabaseInitializer 关闭处理...")
+        
+        # 关闭数据库引擎
+        await engine.dispose()
+        
+        logger.info("✅ DatabaseInitializer 关闭处理完成")
+    
+    async def _seed_initial_data(self):
+        """填充初始数据"""
+        from app.database.session import AsyncSessionLocal
+        from app.models.user import User
+        from sqlalchemy import select
+        
+        async with AsyncSessionLocal() as session:
+            # 检查是否已有用户
+            result = await session.execute(select(User))
+            users = result.scalars().all()
+            
+            if not users:
+                logger.info("📝 填充初始用户数据...")
+                
+                # 创建管理员用户
+                from passlib.context import CryptContext
+                pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+                
+                admin = User(
+                    username="admin",
+                    email="admin@example.com",
+                    password_hash=pwd_context.hash("admin123"),
+                    is_active=True
+                )
+                
+                session.add(admin)
+                await session.commit()
+                
+                logger.info("✅ 初始用户创建完成: admin/admin123")
+            else:
+                logger.info(f"ℹ️ 数据库已有 {len(users)} 个用户，跳过初始化")

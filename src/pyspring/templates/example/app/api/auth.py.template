@@ -1,0 +1,103 @@
+"""认证相关API端点"""
+from typing import Dict
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
+
+from pyspring.ioc import inject
+from app.services.auth_service import AuthService
+from app.models.user import User
+
+
+router = APIRouter()
+
+
+class LoginRequest(BaseModel):
+    """登录请求"""
+    username: str
+    password: str
+
+
+class RegisterRequest(BaseModel):
+    """注册请求"""
+    username: str
+    email: EmailStr
+    password: str
+
+
+class TokenResponse(BaseModel):
+    """令牌响应"""
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+
+
+@router.post("/login", response_model=TokenResponse)
+async def login(
+    request: LoginRequest,
+    auth_service: AuthService = Depends(lambda: inject(AuthService))
+) -> TokenResponse:
+    """
+    用户登录
+    
+    验证用户凭据并返回 JWT 访问令牌
+    """
+    token = await auth_service.authenticate(request.username, request.password)
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户名或密码错误",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return TokenResponse(
+        access_token=token,
+        username=request.username
+    )
+
+
+@router.post("/register", response_model=Dict)
+async def register(
+    request: RegisterRequest,
+    auth_service: AuthService = Depends(lambda: inject(AuthService))
+) -> Dict:
+    """
+    用户注册
+    
+    创建新用户账户
+    """
+    try:
+        user = await auth_service.register(
+            username=request.username,
+            email=request.email,
+            password=request.password
+        )
+        
+        return {
+            "success": True,
+            "message": "注册成功",
+            "user": {
+                "id": user.id,
+                "username": user.username,
+                "email": user.email
+            }
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.post("/logout")
+async def logout() -> Dict:
+    """
+    用户登出
+    
+    注意：JWT 是无状态的，客户端应删除本地令牌
+    """
+    return {
+        "success": True,
+        "message": "登出成功（请删除客户端令牌）"
+    }

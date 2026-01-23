@@ -1,0 +1,258 @@
+# PySpring 示例项目
+
+这是一个使用 PySpring 框架构建的完整示例项目，展示了框架的所有核心功能。
+
+> 💡 **这个项目是如何创建的？**
+> 
+> 使用命令 `pyspring init --example` 或 `uvx --from pyspring pyspring init --example` 创建。
+> 
+> 如果你想创建自己的项目，查看 [PySpring 文档](https://github.com/365tools/PySpring)
+
+## 🎯 功能特性
+
+- ✅ **IOC 容器和依赖注入** - 使用 `@component` 和 `@inject` 装饰器
+- ✅ **生命周期管理** - 实现 `ILifecycle` 接口进行启动/关闭处理
+- ✅ **配置管理** - YAML 配置文件 + 环境变量
+- ✅ **数据库集成** - SQLAlchemy ORM + 异步操作
+- ✅ **Repository 模式** - 数据访问层封装
+- ✅ **缓存服务** - Redis 集成（可选降级为内存缓存）
+- ✅ **JWT 认证** - 用户登录/注册/令牌验证
+- ✅ **RESTful API** - FastAPI 路由和依赖注入
+- ✅ **中间件** - 请求日志、性能监控、异常处理
+- ✅ **结构化日志** - Loguru 日志系统
+
+## 📁 项目结构
+
+```
+.
+├── app/                    # 应用代码
+│   ├── main.py            # FastAPI 入口点
+│   ├── api/               # API 路由
+│   │   ├── health.py      # 健康检查
+│   │   ├── auth.py        # 认证相关
+│   │   └── users.py       # 用户管理
+│   ├── services/          # 业务逻辑层
+│   │   ├── user_service.py
+│   │   ├── auth_service.py
+│   │   └── cache_service.py
+│   ├── repositories/      # 数据访问层
+│   │   └── user_repository.py
+│   ├── models/            # 数据模型
+│   │   └── user.py
+│   ├── database/          # 数据库配置
+│   │   ├── session.py
+│   │   └── initializer.py
+│   ├── middleware/        # 中间件
+│   │   ├── request_logger.py
+│   │   ├── timing.py
+│   │   └── error_handler.py
+│   └── dependencies/      # FastAPI 依赖
+│       └── auth.py
+├── config/                # 配置文件
+│   ├── application.yaml   # 应用配置
+│   ├── container.yaml     # IOC 容器配置
+│   └── logging.yaml       # 日志配置
+├── data/                  # 数据目录
+│   └── app.db            # SQLite 数据库
+├── logs/                  # 日志目录
+├── tests/                 # 测试代码
+├── .env                   # 环境变量
+├── requirements.txt       # 依赖列表
+└── README.md             # 本文件
+```
+
+## 🚀 快速开始
+
+### 1. 安装依赖
+
+**稳定版本（推荐）：**
+
+```bash
+# 使用 uv（推荐）
+uv pip install -r requirements.txt
+
+# 或使用 pip
+pip install -r requirements.txt
+```
+
+**测试版本（体验最新功能）：**
+
+```bash
+# 从 TestPyPI 安装最新测试版
+uv pip install --index-url https://test.pypi.org/simple/ \
+               --extra-index-url https://pypi.org/simple/ \
+               -r requirements.txt
+```
+
+> 💡 **说明**：
+> - **稳定版本**：从 PyPI 安装正式发布版本
+> - **测试版本**：从 TestPyPI 安装最新 Beta 版本（可能包含未发布的新功能）
+> - TestPyPI 地址：https://test.pypi.org/project/pyspring/
+
+### 2. 配置环境变量
+
+复制 `.env.example` 为 `.env` 并根据需要修改：
+
+```bash
+cp .env.example .env
+```
+
+### 3. 启动应用
+
+```bash
+# 方式 1：使用 uvicorn
+uvicorn app.main:app --reload
+
+# 方式 2：直接运行
+python -m app.main
+```
+
+### 4. 访问应用
+
+- **API 地址**: http://localhost:8000
+- **API 文档**: http://localhost:8000/docs
+- **健康检查**: http://localhost:8000/health
+
+## 📖 API 使用示例
+
+### 健康检查
+
+```bash
+curl http://localhost:8000/health
+```
+
+### 用户注册
+
+```bash
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123"
+  }'
+```
+
+### 用户登录
+
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "password": "password123"
+  }'
+```
+
+### 获取用户信息（需要认证）
+
+```bash
+curl http://localhost:8000/api/users/me \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+## 🔑 默认账户
+
+应用首次启动时会自动创建一个管理员账户：
+
+- **用户名**: `admin`
+- **密码**: `admin123`
+- **邮箱**: `admin@example.com`
+
+## 🎓 学习要点
+
+### 1. IOC 容器和依赖注入
+
+查看 [app/services/user_service.py](app/services/user_service.py)：
+
+```python
+@component
+class UserService(ILifecycle):
+    @inject
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        cache_service: CacheService
+    ):
+        # PySpring 自动注入依赖
+        ...
+```
+
+### 2. 生命周期管理
+
+查看 [app/services/user_service.py](app/services/user_service.py)：
+
+```python
+async def on_startup(self) -> None:
+    """应用启动时执行"""
+    logger.info("初始化服务...")
+
+async def on_shutdown(self) -> None:
+    """应用关闭时执行"""
+    logger.info("清理资源...")
+```
+
+### 3. Repository 模式
+
+查看 [app/repositories/user_repository.py](app/repositories/user_repository.py)：
+
+```python
+@component
+class UserRepository(ILifecycle):
+    async def find_by_id(self, user_id: int) -> Optional[User]:
+        # 数据访问逻辑封装
+        ...
+```
+
+### 4. 缓存集成
+
+查看 [app/services/cache_service.py](app/services/cache_service.py)：
+
+```python
+@component
+class CacheService(ILifecycle):
+    async def get(self, key: str) -> Optional[Any]:
+        # 支持 Redis 和内存缓存
+        ...
+```
+
+### 5. FastAPI 集成
+
+查看 [app/main.py](app/main.py)：
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动阶段
+    app_context = ApplicationContext.initialize(['app'])
+    await app_context.container.initialize_lifecycle_services()
+    
+    yield
+    
+    # 关闭阶段
+    await app_context.container.shutdown_lifecycle_services()
+```
+
+## 🧪 运行测试
+
+```bash
+# 使用 uv
+uv run pytest tests/
+
+# 或直接运行
+pytest tests/
+```
+
+## 📚 更多文档
+
+- [PySpring 官方文档](https://github.com/your-org/pyspring)
+- [FastAPI 文档](https://fastapi.tiangolo.com/)
+- [SQLAlchemy 文档](https://docs.sqlalchemy.org/)
+
+## 📝 License
+
+MIT License
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！
