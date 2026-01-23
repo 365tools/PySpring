@@ -8,15 +8,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy import create_engine
-from sqlalchemy.schema import CreateTable
-
 from pyspring.cli.core.ui.console import Colors, print_header, print_success, print_info, print_warning, print_error, print_title
 from pyspring.cli.core.ui.help import print_standard_command_help
 from pyspring.security.orm.tables import (
     UserTable, RoleTable, PermissionTable, UserRoleTable,
     RolePermissionTable, RefreshTokenTable, TokenBlacklistTable
 )
+from sqlalchemy import create_engine
+from sqlalchemy.schema import CreateTable
+
 from .keygen import generate_jwt_secret, generate_encryption_key
 from .templates import (
     ENV_FILE_CONTENT, POSTGRES_INIT_SCRIPT, SQLITE_INIT_SCRIPT,
@@ -146,8 +146,6 @@ def create_database_scripts(target_dir: Path):
     print_success(f"Directory created: {db_dir}")
 
     try:
-        # Try to generate SQL scripts from SQLAlchemy models
-
         print_info("Generating database scripts from ORM models...")
 
         # PostgreSQL script generation
@@ -321,11 +319,173 @@ def create_gitignore(target_dir: Path, force: bool = False):
     print_success(f"Created: {gitignore_path}")
 
 
+def copy_template_dir_recursive(src_dir: Path, dst_dir: Path, force: bool = False):
+    """
+    递归复制模板目录，去除 .template 后缀
+    
+    Args:
+        src_dir: 源模板目录
+        dst_dir: 目标目录
+        force: 是否强制覆盖
+    """
+    for item in src_dir.rglob("*"):
+        if item.is_file():
+            # 计算相对路径
+            rel_path = item.relative_to(src_dir)
+
+            # 去除 .template 后缀
+            if rel_path.name.endswith('.template'):
+                target_name = rel_path.name[:-9]  # 去除 '.template'
+                target_path = dst_dir / rel_path.parent / target_name
+            else:
+                target_path = dst_dir / rel_path
+
+            # 跳过已存在的文件（除非 force）
+            if target_path.exists() and not force:
+                print_info(f"File exists, skipping: {target_path}")
+                continue
+
+            # 创建目标目录
+            target_path.parent.mkdir(parents=True, exist_ok=True)
+
+            # 复制文件
+            shutil.copy2(item, target_path)
+            print_success(f"Created: {target_path}")
+
+
+def create_example_project(target_dir: Path, force: bool = False):
+    """
+    创建完整的示例项目
+    
+    包含所有 PySpring 功能的可运行示例：
+    - IOC 容器和依赖注入
+    - 生命周期管理
+    - 数据库集成（SQLAlchemy）
+    - 缓存服务（Redis）
+    - JWT 认证
+    - FastAPI 路由
+    - 中间件
+    - 结构化日志
+    """
+    print_header("Creating Complete Example Project")
+    print_info(f"Target Directory: {target_dir}")
+
+    # 检查示例模板目录
+    example_template_dir = get_template_dir() / "example"
+    if not example_template_dir.exists():
+        print_error(f"Example template directory not found: {example_template_dir}")
+        print_warning("Please ensure PySpring is properly installed with example templates.")
+        return False
+
+    # 复制整个示例项目结构
+    print_info("\nCopying example project files...")
+    copy_template_dir_recursive(example_template_dir, target_dir, force)
+
+    print_header("Example Project Created Successfully")
+
+    # 显示项目结构
+    print_title("Project Structure")
+    print(f"""
+  {target_dir.name}/
+  ├── app/                         # Application code
+  │   ├── main.py                  # FastAPI entry point with lifecycle
+  │   ├── api/                     # API endpoints
+  │   │   ├── health.py           # Health check endpoints
+  │   │   ├── auth.py             # Authentication endpoints
+  │   │   └── users.py            # User management endpoints
+  │   ├── services/               # Business logic layer
+  │   │   ├── user_service.py     # User service with caching
+  │   │   ├── auth_service.py     # JWT authentication
+  │   │   └── cache_service.py    # Redis cache service
+  │   ├── repositories/           # Data access layer
+  │   │   └── user_repository.py  # User repository
+  │   ├── models/                 # ORM models
+  │   │   └── user.py             # User model
+  │   ├── database/               # Database configuration
+  │   │   ├── session.py          # SQLAlchemy session
+  │   │   └── initializer.py      # DB initializer
+  │   ├── middleware/             # Middleware
+  │   │   ├── request_logger.py   # Request logging
+  │   │   ├── timing.py           # Performance monitoring
+  │   │   └── error_handler.py    # Global exception handler
+  │   └── dependencies/           # FastAPI dependencies
+  │       └── auth.py             # Auth dependencies
+  ├── config/                     # Configuration files
+  │   ├── application.yaml        # Application config
+  │   ├── container.yaml          # IOC container config
+  │   └── logging.yaml            # Logging config
+  ├── data/                       # Data directory
+  │   └── app.db                  # SQLite database (auto-created)
+  ├── logs/                       # Log files (auto-created)
+  ├── tests/                      # Test files
+  ├── pyproject.toml              # Project config and dependencies
+  ├── .env.example                # Environment variables template
+  ├── .gitignore                  # Git ignore file
+  └── README.md                   # Project documentation
+    """)
+
+    # 使用说明
+    print_title("Quick Start")
+    print("  1. Install dependencies:")
+    print(f"     cd {target_dir.name}")
+    print()
+    print("     # Stable (recommended):")
+    print("     uv pip install -r requirements.txt")
+    print()
+    print("     # Or test version from TestPyPI:")
+    print("     uv pip install --index-url https://test.pypi.org/simple/ \\")
+    print("                    --extra-index-url https://pypi.org/simple/ \\")
+    print("                    -r requirements.txt")
+    print()
+    print("  2. Configure environment (optional):")
+    print("     cp .env.example .env")
+    print("     # Edit .env for Redis, database, etc.")
+    print()
+    print("  3. Start the application:")
+    print("     uvicorn app.main:app --reload")
+    print("     # or")
+    print("     python -m app.main")
+    print()
+    print("  4. Access the application:")
+    print(f"     {Colors.OKBLUE}• API:          http://localhost:8000{Colors.ENDC}")
+    print(f"     {Colors.OKBLUE}• API Docs:     http://localhost:8000/docs{Colors.ENDC}")
+    print(f"     {Colors.OKBLUE}• Health Check: http://localhost:8000/health{Colors.ENDC}")
+
+    print_title("Default Credentials")
+    print("  Username: admin")
+    print("  Password: admin123")
+    print(f"  {Colors.WARNING}(Created automatically on first run){Colors.ENDC}")
+
+    print_title("Features Demonstrated")
+    features = [
+        "✅ IOC Container - @component and @inject decorators",
+        "✅ Lifecycle Management - ILifecycle with on_startup/on_shutdown",
+        "✅ Configuration - YAML + Environment variables",
+        "✅ Database Integration - SQLAlchemy async ORM",
+        "✅ Repository Pattern - Clean data access layer",
+        "✅ Caching - Redis integration with fallback",
+        "✅ JWT Authentication - Login, register, token validation",
+        "✅ RESTful API - FastAPI routes with dependency injection",
+        "✅ Middleware - Request logging, timing, error handling",
+        "✅ Structured Logging - Loguru with rotation"
+    ]
+    for feature in features:
+        print(f"  {feature}")
+
+    print_title("Important Notes")
+    print(f"  {Colors.WARNING}• Redis is optional - falls back to memory cache if unavailable{Colors.ENDC}")
+    print(f"  {Colors.WARNING}• SQLite is used by default (see .env to change database){Colors.ENDC}")
+    print(f"  {Colors.WARNING}• Check README.md for detailed usage and learning guide{Colors.ENDC}")
+
+    return True
+
+
 def init_project(
         target_dir: Optional[str] = None,
         force: bool = False,
         minimal: bool = False,
-        skip_env: bool = False
+        skip_env: bool = False,
+        example: bool = False
 ):
     """
     Initialize PySpring Project Configuration
@@ -335,7 +495,20 @@ def init_project(
         force: Whether to force overwrite existing files
         minimal: Whether to create minimal configuration only
         skip_env: Whether to skip .env file generation
+        example: Whether to create complete example project
     """
+    # 如果是创建示例项目，使用完全不同的逻辑
+    if example:
+        # Determine target directory
+        if target_dir:
+            target_path = Path(target_dir).resolve()
+        else:
+            target_path = Path.cwd()
+
+        # 创建示例项目
+        return create_example_project(target_path, force)
+
+    # 原有的初始化逻辑
     print_header("PySpring Framework Initialization")
 
     # Determine target directory
@@ -499,7 +672,8 @@ def run(args):
             target_dir=target_dir,
             force=args.force,
             minimal=args.minimal,
-            skip_env=args.skip_env
+            skip_env=args.skip_env,
+            example=getattr(args, 'example', False)
         )
     except KeyboardInterrupt:
         print_error("\nUpdate cancelled")

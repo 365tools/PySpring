@@ -83,6 +83,31 @@ class ApplicationContext:
         """获取某类型的所有实例（快捷方法）"""
         return self.container.get_all_instances_of(service_type)
 
+    @staticmethod
+    def service(service_type: type):
+        """
+        静态方法：根据类型获取服务实例
+        
+        兼容旧版 AppContainerManager.service() 的用法，可在 FastAPI Depends 中直接使用：
+        
+        Example:
+            from fastapi import Depends
+            from typing import Annotated
+            
+            @app.post("/login")
+            async def login(
+                login_service: Annotated[ILoginService, Depends(lambda: ApplicationContext.service(ILoginService))]
+            ):
+                ...
+        
+        Args:
+            service_type: 服务类型（可以是接口或具体类）
+            
+        Returns:
+            服务实例
+        """
+        return ApplicationContext.get_instance().get_by_type(service_type)
+
     @classmethod
     def reset(cls):
         """重置应用上下文（主要用于测试）"""
@@ -93,4 +118,32 @@ class ApplicationContext:
 # 向后兼容的别名
 AppContext = ApplicationContext
 
-__all__ = ['ApplicationContext', 'AppContext']
+
+def inject(service_type: type):
+    """
+    依赖注入快捷函数
+    
+    用于快速从 ApplicationContext 获取服务实例，
+    特别适合在 FastAPI Depends 中使用。
+    
+    Example:
+        from pyspring.ioc import inject
+        from fastapi import Depends
+        from typing import Annotated
+        
+        @app.post("/login")
+        async def login(
+            login_service: Annotated[ILoginService, Depends(lambda: inject(ILoginService))]
+        ):
+            ...
+    
+    Args:
+        service_type: 服务类型（可以是接口或具体类）
+        
+    Returns:
+        服务实例
+    """
+    return ApplicationContext.service(service_type)
+
+
+__all__ = ['ApplicationContext', 'AppContext', 'inject']

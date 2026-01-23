@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyspring"
-version = "1.0.0"
+version = "1.1.0b1"
 authors = [
   { name="Yingchun", email="allureyc@gmail.com" },
 ]
@@ -40,6 +40,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# 开发工具依赖（包含 CLI 工具�?
+cli = [
+    # CLI 工具目前只依赖标准库，但保留�?extra 用于未来扩展
+    # 例如：可能添�?rich、click 等增�?CLI 体验的库
+]
+
+# 开发环境依赖（测试、格式化、类型检查等�?
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -47,6 +54,11 @@ dev = [
     "black>=23.0.0",
     "flake8>=6.0.0",
     "mypy>=1.5.0",
+]
+
+# 完整开发环境（包含 CLI + 开发工具）
+full = [
+    "pyspring[cli,dev]",
 ]
 
 [tool.pytest.ini_options]
@@ -62,20 +74,38 @@ package = true
 "Homepage" = "https://github.com/365tools/PySpring"
 "Bug Tracker" = "https://github.com/365tools/PySpring/issues"
 
+# CLI 命令入口（始终可用，但可通过文档引导用户按需安装�?
 [project.scripts]
 pyspring = "pyspring.cli.main:main"
+
+# 注意�?
+# - 生产环境：pip install pyspring（CLI 会被安装但不使用�?
+# - 开发环境：pip install pyspring[cli] �?pyspring[full]（明确安�?CLI�?
+# - 或使用临时执行：uvx --from pyspring pyspring init（无需安装�?
 
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["pyspring*"]
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
 [tool.setuptools.package-data]
 pyspring = [
+    "templates/**/*",
+    "templates/**/*.template",
+    "templates/**/*.yaml",
     "templates/config/*.yaml",
     "templates/app/*.template",
     "templates/project/*.template",
-    "templates/*.yaml",
-    "templates/pyproject.toml.template",
-    "templates/.gitignore.template",
-    "templates/main.py.template"
+    "templates/example/**/*",
+    "templates/example/**/*.template",
+]
+
+[tool.setuptools.exclude-package-data]
+pyspring = [
+    "**/*.json",
+    "**/*.log",
+    "**/*.db",
+    "**/*.sqlite",
+    "**/*.pyc",
+    "**/__pycache__",
 ]

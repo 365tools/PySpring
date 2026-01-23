@@ -94,26 +94,64 @@ graph TD
 
 ## 🚀 快速上手
 
-### 1. 安装 (推荐使用 uv)
+### 1. 安装
 
-[uv](https://github.com/astral-sh/uv) 是一个极速的 Python 包管理器，推荐用它来管理环境。
+#### 临时使用（无需安装）- 推荐新用户 ⚡
 
-```powershell
-# 安装 uv (如果尚未安装)
-powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+使用 [uvx](https://github.com/astral-sh/uv) 零安装快速创建项目：
 
-# 创建虚拟环境并激活
-uv venv
-.venv\Scripts\Activate.ps1
+```bash
+# 一键创建项目（自动下载临时 PySpring，用完即删）
+uvx --from pyspring pyspring init my-project --example
+cd my-project
+```
 
-# 安装 PySpring
+> **为什么推荐 uvx？**
+> - ✅ 无需提前安装 PySpring
+> - ✅ 自动使用最新版本
+> - ✅ 隔离环境，不污染全局
+> - ✅ 类似 npx，用完即删
+
+#### 开发环境安装 🛠️
+
+如果需要频繁使用 CLI 工具，可全局安装：
+
+```bash
+# 方式 1：使用 pipx（推荐，隔离安装）
+pipx install pyspring
+
+# 方式 2：使用 uv tool（现代化）
+uv tool install pyspring
+
+# 方式 3：在项目中安装（包含开发工具）
+uv pip install "pyspring[full]"
+```
+
+#### 生产环境安装 🚀
+
+生产环境只需核心框架，无需开发工具：
+
+```bash
+# 标准安装（包含 CLI，但生产环境通常不使用）
+pip install pyspring
+
+# 或使用 uv（更快）
 uv pip install pyspring
 ```
 
-或者使用标准 pip：
-```bash
-pip install pyspring
-```
+> **注意**：CLI 工具代码会被安装（约 50 KB），但不会影响运行时性能。  
+> 详见 [生产环境部署指南](docs/PRODUCTION_DEPLOYMENT.md)。
+
+#### 安装方式对比
+
+| 方式                           | 适用场景      | CLI 可用 | 开发工具 |
+|------------------------------|-----------|--------|------|
+| `uvx --from pyspring`        | 临时创建项目    | ✅ 临时   | ❌    |
+| `pipx install pyspring`      | 全局 CLI 工具 | ✅ 是    | ❌    |
+| `pip install pyspring[full]` | 开发环境      | ✅ 是    | ✅ 是  |
+| `pip install pyspring`       | 生产环境      | ✅ 是*   | ❌    |
+
+*生产环境的 CLI 通常不使用，但会被安装（无额外依赖）。
 
 ### 2. 初始化项目
 

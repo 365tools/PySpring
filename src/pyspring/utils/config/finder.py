@@ -48,20 +48,17 @@ def _search_config_file(
     搜索策略：
     1. 优先查找 config/ 子目录下的文件
     2. 其次查找当前目录下的文件
-    3. 递归搜索子目录（跳过常见的大型目录）
+    3. 不再递归搜索子目录（避免性能问题）
     
     Args:
         filename: 配置文件名
         path: 搜索路径
-        max_depth: 最大深度
-        current_depth: 当前深度
+        max_depth: 最大深度（已废弃，保留以兼容）
+        current_depth: 当前深度（已废弃，保留以兼容）
         
     Returns:
         找到的文件路径或 None
     """
-    if current_depth > max_depth:
-        return None
-
     # 0. 基础检查
     if not path.exists() or not path.is_dir():
         return None
@@ -76,22 +73,7 @@ def _search_config_file(
     if curr_file.exists():
         return curr_file
 
-    # 3. 递归搜索子目录
-    # 跳过特定的系统/缓存目录以提高速度
-    skip_dirs = {
-        '__pycache__', '.git', '.idea', '.vscode', 'venv', '.venv',
-        'node_modules', 'dist', 'build', 'site-packages'
-    }
-    
-    try:
-        for child in path.iterdir():
-            if child.is_dir() and child.name not in skip_dirs:
-                found = _search_config_file(filename, child, max_depth, current_depth + 1)
-                if found:
-                    return found
-    except PermissionError:
-        pass
-
+    # 3. 不再递归搜索子目录，避免在大型项目中性能问题
     return None
 
 
@@ -120,21 +102,27 @@ def find_config_file(
     Examples:
         >>> # 查找日志配置文件
         >>> path = find_config_file('logging.yaml')
+    查找配置文件（仅检查固定位置，不递归搜索）
+    
+    优先级：
+    1. 当前工作目录的 config/ 子目录
+    2. 当前工作目录
+    3. 项目根目录的 config/ 子目录
+    4. 项目根目录
+    
+    Args:
+        filename: 配置文件名（如 'logging.yaml', 'repositories.yaml'）
+        start_path: 开始搜索的路径（默认为当前工作目录）
+        project_root: 项目根目录（默认为检测到的项目根）
+        max_depth: 最大搜索深度（已废弃，保留以兼容）
+        
+    Returns:
+        找到的配置文件路径，未找到则返回 None
+        
+    Examples:
+        >>> # 查找日志配置文件
+        >>> path = find_config_file('logging.yaml')
         >>> 
         >>> # 查找安全配置文件
         >>> path = find_config_file('security.yaml')
     """
-    if start_path is None:
-        start_path = Path.cwd()
-
-    if project_root is None:
-        project_root = detect_project_root()
-
-    # 优先搜索当前工作目录（用户项目）
-    config_path = _search_config_file(filename, start_path, max_depth)
-
-    # 如果当前工作目录没找到，再搜索框架项目根目录
-    if not config_path and start_path != project_root:
-        config_path = _search_config_file(filename, project_root, max_depth)
-
-    return config_path

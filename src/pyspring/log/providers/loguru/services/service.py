@@ -3,12 +3,27 @@ from pathlib import Path
 from typing import Any, Dict
 
 from loguru import logger as _loguru
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.core.interface import ILoggerService
+
 from ..config.manager import LoggingConfigManager
+
+
+class _SafeExtraDict(dict):
+    """安全的 extra 字典，访问不存在的键时返回空字符串而不是抛出 KeyError"""
+
+    def __missing__(self, key):
+        """当访问不存在的键时返回空字符串"""
+        return ""
+
+    def __getitem__(self, key):
+        """重写 __getitem__ 以支持 __missing__"""
+        try:
+            return super().__getitem__(key)
+        except KeyError:
+            return self.__missing__(key)
 
 
 class _BoundLogger(ILoggerService):
@@ -90,15 +105,38 @@ class LoguruService(IManaged, ILoggerService):
 
     @staticmethod
     def _add_relative_path(record):
-        """为日志记录添加相对路径字段"""
+        """
+        为日志记录添加相对路径字段，并将 extra 包装为 SafeDict
+        
+        使用 _SafeExtraDict 包装 extra 字典，这样在日志格式中使用任何
+        不存在的字段时都不会抛出 KeyError，而是返回空字符串。
+        
+        这使得日志配置更加灵活和健壮：
+        - 用户可以在格式中使用任何字段（如 session_id, request_id 等）
+        - 如果字段不存在，显示为空而不是报错
+        - 可以通过 logger.bind() 随时添加字段值
+        """
+        # 确保 extra 字典存在
+        if "extra" not in record:
+            record["extra"] = _SafeExtraDict()
+        elif not isinstance(record["extra"], _SafeExtraDict):
+            # 将现有的 extra 字典包装为 SafeDict
+            record["extra"] = _SafeExtraDict(record["extra"])
+
+        # 只在字段不存在时添加 file_relative
         if "file_relative" not in record["extra"]:
             try:
                 project_root = LoguruService._detect_project_root()
                 file_path = Path(record["file"].path)
                 relative_path = file_path.relative_to(project_root)
                 record["extra"]["file_relative"] = str(relative_path)
-            except (ValueError, AttributeError):
-                record["extra"]["file_relative"] = record["file"].name
+            except (ValueError, AttributeError, KeyError):
+                # 安全回退：使用文件名
+                try:
+                    record["extra"]["file_relative"] = record["file"].name
+                except (AttributeError, KeyError):
+                    record["extra"]["file_relative"] = "unknown"
+        
         return record
 
     def _setup_logging(self):

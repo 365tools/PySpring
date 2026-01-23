@@ -26,6 +26,9 @@ Examples:
   # Create minimal configuration
   pyspring init --minimal
   
+  # Create complete example project with all features
+  pyspring init --example
+  
   # Skip .env file generation
   pyspring init --skip-env
     """
@@ -47,6 +50,11 @@ Examples:
             flags=['-m', '--minimal'],
             action='store_true',
             help='Create minimal configuration only'
+        ),
+        CommandArg(
+            flags=['-e', '--example'],
+            action='store_true',
+            help='Create complete example project with all PySpring features'
         ),
         CommandArg(
             flags='--skip-env',

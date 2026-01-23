@@ -1,3 +1,19 @@
 include README.md
 include LICENSE
-recursive-include src/pyspring/templates *.yaml
+recursive-include src/pyspring/templates *.yaml *.template
+
+# Exclude test data and cache files
+global-exclude *.json
+global-exclude *.log
+global-exclude *.db
+global-exclude *.sqlite
+global-exclude *.pyc
+global-exclude __pycache__
+prune src/.venv
+prune src/data
+prune tests
+prune docs
+prune scripts
+prune logs
+prune data
+prune .venv

@@ -21,11 +21,11 @@ class OutputFilter:
         # Fast path for suppressing everything
         for p in self.patterns:
             if p.pattern == r'.*':
-                return
+                return len(data) if data else 0
 
         if any(p.search(data) for p in self.patterns):
-            return
-        self.original_stream.write(data)
+            return len(data) if data else 0
+        return self.original_stream.write(data)
 
     def flush(self):
         self.original_stream.flush()
