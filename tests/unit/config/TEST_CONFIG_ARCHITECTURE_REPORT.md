@@ -49,13 +49,11 @@
 ### ✅ 三层配置架构正确性
 
 **配置加载顺序验证：**
-
 ```
 框架默认值 (3600秒) → 用户配置 (7200秒) → 环境变量 (覆盖一切)
 ```
 
 **测试验证：**
-
 - ✅ 框架默认值能正确加载（access_token_expire = 3600）
 - ✅ 用户配置能覆盖框架默认（access_token_expire = 7200）
 - ✅ 环境变量能覆盖用户配置（JWT_SECRET_KEY 从环境变量读取）
@@ -63,7 +61,6 @@
 ### ✅ 深度合并机制
 
 **嵌套配置测试：**
-
 ```yaml
 # 用户只覆盖深层的一个值
 authentication:
@@ -73,7 +70,6 @@ authentication:
 ```
 
 **验证结果：**
-
 - ✅ 深层覆盖成功（encryption.enabled = true）
 - ✅ 同级其他值保持框架默认（encryption.algorithm = "Fernet"）
 - ✅ 父级配置保持完整（jwt.algorithm = "HS256"）
@@ -81,7 +77,6 @@ authentication:
 ### ✅ 环境变量覆盖
 
 **测试的环境变量：**
-
 - `JWT_SECRET_KEY` → 覆盖 JWT 密钥
 - `JWT_ENCRYPTION_KEY` → 覆盖 JWT 加密密钥
 - `POSTGRES_PASSWORD` → 覆盖 PostgreSQL 密码
@@ -89,14 +84,12 @@ authentication:
 - `REDIS_PASSWORD` → 覆盖 Redis 密码
 
 **验证结果：**
-
 - ✅ 所有环境变量正确覆盖用户配置
 - ✅ 未设置环境变量的项保持用户配置或框架默认
 
 ### ✅ 多配置文件支持
 
 测试了三种配置文件：
-
 - `security.yaml` - 安全配置 ✅
 - `database.yaml` - 数据库配置 ✅
 - `logging.yaml` - 日志配置 ✅
@@ -106,7 +99,6 @@ authentication:
 ### ✅ 配置缓存机制
 
 **验证内容：**
-
 - ✅ 首次加载后配置被缓存
 - ✅ 使用缓存时不重新读取文件
 - ✅ `reload_config()` 强制重新加载
@@ -115,7 +107,6 @@ authentication:
 ### ✅ 边界情况处理
 
 **测试场景：**
-
 1. **空配置文件** - ✅ 降级到框架默认值
 2. **无效YAML** - ✅ 优雅降级，不崩溃
 3. **null值** - ✅ 正确保留（用于环境变量）
@@ -124,7 +115,6 @@ authentication:
 ### ✅ 便捷函数
 
 **测试的函数：**
-
 ```python
 from pyspring.config_manager import (
     load_security_config,
@@ -134,15 +124,14 @@ from pyspring.config_manager import (
 ```
 
 **验证结果：**
-
 - ✅ 所有便捷函数能正常工作
 - ✅ 返回正确的配置结构
 
 ## 测试代码统计
 
 - **测试类数量：** 2个
-    - `TestConfigArchitecture` - 核心功能测试
-    - `TestConfigManagerEdgeCases` - 边界情况测试
+  - `TestConfigArchitecture` - 核心功能测试
+  - `TestConfigManagerEdgeCases` - 边界情况测试
 - **测试方法数量：** 14个
 - **代码行数：** ~450行
 - **断言数量：** 80+ 个断言
@@ -162,7 +151,6 @@ from pyspring.config_manager import (
 ✅ **三层配置架构设计完全正确，所有功能按预期工作！**
 
 **核心优势：**
-
 1. ✅ 配置层次清晰（框架级 / 默认值 / 用户级）
 2. ✅ 配置覆盖机制完善（深度合并 + 环境变量）
 3. ✅ 错误处理健壮（优雅降级，不影响系统）

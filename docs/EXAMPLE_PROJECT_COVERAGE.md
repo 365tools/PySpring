@@ -9,14 +9,12 @@ PySpring 示例项目是一个**完整的、生产级的示例应用**，全面�
 ### 1. ✅ IoC 容器与依赖注入
 
 **涉及文件：**
-
 - `app/main.py` - ApplicationContext 初始化
 - `app/services/*.py` - @Component 装饰器
 - `app/repositories/*.py` - 依赖注入示例
 - `config/container.yaml` - IoC 容器配置
 
 **展示内容：**
-
 - ✅ 组件自动扫描（`base_packages=['app']`）
 - ✅ 依赖注入（构造函数注入）
 - ✅ 单例模式（所有服务默认单例）
@@ -25,7 +23,6 @@ PySpring 示例项目是一个**完整的、生产级的示例应用**，全面�
 - ✅ 容器缓存优化
 
 **示例代码：**
-
 ```python
 @Component()
 class UserService:
@@ -38,13 +35,11 @@ class UserService:
 ### 2. ✅ 生命周期管理
 
 **涉及文件：**
-
 - `app/database/initializer.py` - IStartupInitializer
 - `app/database/shutdown.py` - IShutdownHandler
 - `app/main.py` - lifespan 管理
 
 **展示内容：**
-
 - ✅ 启动初始化器（`IStartupInitializer`）
 - ✅ 关闭处理器（`IShutdownHandler`）
 - ✅ 生命周期编排（`StartupInitializerManager`）
@@ -53,7 +48,6 @@ class UserService:
 - ✅ 异步启动/关闭
 
 **示例代码：**
-
 ```python
 @Component()
 class DatabaseInitializer(IStartupInitializer):
@@ -72,14 +66,12 @@ class DatabaseInitializer(IStartupInitializer):
 ### 3. ✅ 配置管理
 
 **涉及文件：**
-
 - `config/application.yaml` - 应用配置
 - `config/container.yaml` - IoC 容器配置
 - `config/logging.yaml` - 日志配置
 - `.env.example` - 环境变量模板
 
 **展示内容：**
-
 - ✅ YAML 配置文件
 - ✅ 环境变量支持
 - ✅ 配置文件加载（`IoCConfigLoader`）
@@ -88,7 +80,6 @@ class DatabaseInitializer(IStartupInitializer):
 - ✅ 配置验证
 
 **配置示例：**
-
 ```yaml
 # container.yaml
 container:
@@ -104,14 +95,12 @@ container:
 ### 4. ✅ 数据库集成
 
 **涉及文件：**
-
 - `app/models/user.py` - ORM 模型（继承 BaseUserTable）
 - `app/database/session.py` - 数据库会话管理
 - `app/database/initializer.py` - 数据库初始化
 - `app/repositories/user_repository.py` - Repository 模式
 
 **展示内容：**
-
 - ✅ SQLAlchemy ORM 集成
 - ✅ 异步数据库操作（AsyncSession）
 - ✅ Repository 模式
@@ -121,13 +110,11 @@ container:
 - ✅ 多数据库支持（SQLite/PostgreSQL/MySQL）
 
 **关键特性：**
-
 - 继承框架的 `BaseUserTable`（获得审计字段、软删除）
 - 与框架 `DBManagerService` 共享引擎
 - 自动创建框架的用户、角色、权限表
 
 **示例代码：**
-
 ```python
 class User(BaseUserTable):
     """继承框架基类，获得完整功能"""
@@ -141,7 +128,6 @@ class User(BaseUserTable):
 ### 5. ✅ 安全模块（认证授权）- 用户自定义扩展示例 ⭐
 
 **涉及文件：**
-
 - `app/models/user.py` - 用户模型（继承 BaseUserTable）
 - `app/services/custom_register_service.py` - 自定义注册服务 ⭐
 - `app/config/security_config.py` - 安全配置
@@ -149,7 +135,6 @@ class User(BaseUserTable):
 - `app/database/initializer.py` - 使用自定义服务初始化
 
 **展示内容：**
-
 - ✅ **@ConditionalOnMissingBean 机制**（核心！）
 - ✅ 用户自定义 `IRegisterService` 实现
 - ✅ 框架自动选择用户实现（跳过 DefaultRegisterService）
@@ -162,7 +147,6 @@ class User(BaseUserTable):
 - ✅ 用户表映射（SecurityEntityConfiguration）
 
 **关键设计模式：**
-
 ```python
 # 1. 框架提供默认实现 + @ConditionalOnMissingBean
 @Bean()
@@ -190,12 +174,10 @@ def register(register_service: IRegisterService):  # 注入接口
 ### 6. ✅ 缓存集成
 
 **涉及文件：**
-
 - `app/services/cache_service.py` - Redis 缓存服务
 - `app/health/cache_indicator.py` - 缓存健康检查
 
 **展示内容：**
-
 - ✅ Redis 集成
 - ✅ 缓存操作（get/set/delete/exists）
 - ✅ 过期时间控制
@@ -204,7 +186,6 @@ def register(register_service: IRegisterService):  # 注入接口
 - ✅ 缓存健康检查
 
 **示例代码：**
-
 ```python
 @Component()
 class CacheService:
@@ -222,13 +203,11 @@ class CacheService:
 ### 7. ✅ AOP 切面编程
 
 **涉及文件：**
-
 - `app/aspects/logging_aspect.py` - 日志切面
 - `app/aspects/transaction_aspect.py` - 事务切面
 - `app/main.py` - 启用 AOP
 
 **展示内容：**
-
 - ✅ `@Before` 前置增强
 - ✅ `@After` 后置增强
 - ✅ `@Around` 环绕增强
@@ -237,7 +216,6 @@ class CacheService:
 - ✅ 横切关注点分离
 
 **示例代码：**
-
 ```python
 @Aspect()
 class LoggingAspect:
@@ -252,13 +230,11 @@ class LoggingAspect:
 ### 8. ✅ 日志系统
 
 **涉及文件：**
-
 - `config/logging.yaml` - 日志配置
 - `app/middleware/request_logger.py` - 请求日志中间件
 - `app/aspects/logging_aspect.py` - 日志切面
 
 **展示内容：**
-
 - ✅ Loguru 集成
 - ✅ YAML 配置
 - ✅ 分级日志（DEBUG/INFO/WARNING/ERROR）
@@ -268,7 +244,6 @@ class LoggingAspect:
 - ✅ 框架级 DEBUG 日志
 
 **配置示例：**
-
 ```yaml
 logging:
   level: INFO
@@ -281,13 +256,11 @@ logging:
 ### 9. ✅ 中间件
 
 **涉及文件：**
-
 - `app/middleware/request_logger.py` - 请求日志
 - `app/middleware/timing.py` - 请求计时
 - `app/middleware/error_handler.py` - 全局异常处理
 
 **展示内容：**
-
 - ✅ FastAPI 中间件集成
 - ✅ 请求/响应拦截
 - ✅ 性能监控
@@ -296,7 +269,6 @@ logging:
 - ✅ 中间件链
 
 **示例代码：**
-
 ```python
 @app.middleware("http")
 async def timing_middleware(request: Request, call_next):
@@ -313,7 +285,6 @@ async def timing_middleware(request: Request, call_next):
 ### 10. ✅ 健康检查
 
 **涉及文件：**
-
 - `app/services/health_check_service.py` - 健康检查服务
 - `app/health/database_indicator.py` - 数据库健康检查
 - `app/health/cache_indicator.py` - 缓存健康检查
@@ -321,7 +292,6 @@ async def timing_middleware(request: Request, call_next):
 - `app/api/health.py` - 健康检查端点
 
 **展示内容：**
-
 - ✅ 健康检查框架
 - ✅ 多组件监控（数据库、缓存、外部 API）
 - ✅ 自定义健康检查指标
@@ -329,7 +299,6 @@ async def timing_middleware(request: Request, call_next):
 - ✅ 详细状态报告
 
 **示例代码：**
-
 ```python
 @Component()
 class DatabaseHealthIndicator(IHealthIndicator):
@@ -347,13 +316,11 @@ class DatabaseHealthIndicator(IHealthIndicator):
 ### 11. ✅ RESTful API
 
 **涉及文件：**
-
 - `app/api/auth.py` - 认证 API
 - `app/api/users.py` - 用户 API
 - `app/api/health.py` - 健康检查 API
 
 **展示内容：**
-
 - ✅ FastAPI 路由
 - ✅ 请求验证（Pydantic）
 - ✅ 统一响应格式（`Response.success()`）
@@ -362,7 +329,6 @@ class DatabaseHealthIndicator(IHealthIndicator):
 - ✅ 依赖注入集成
 
 **统一响应示例：**
-
 ```python
 from pyspring.web.core.response import Response
 
@@ -377,12 +343,10 @@ async def register(request: RegisterRequest):
 ### 12. ✅ 依赖管理
 
 **涉及文件：**
-
 - `app/dependencies/auth.py` - 认证依赖
 - `app/dependencies/database.py` - 数据库依赖
 
 **展示内容：**
-
 - ✅ FastAPI 依赖注入
 - ✅ 与 PySpring IoC 集成
 - ✅ JWT Token 验证
@@ -390,7 +354,6 @@ async def register(request: RegisterRequest):
 - ✅ 权限验证
 
 **示例代码：**
-
 ```python
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -406,11 +369,9 @@ async def get_current_user(
 ### 13. ✅ 测试
 
 **涉及文件：**
-
 - `tests/test_api.py` - API 测试
 
 **展示内容：**
-
 - ✅ pytest 集成
 - ✅ 异步测试
 - ✅ API 端点测试
@@ -421,7 +382,6 @@ async def get_current_user(
 ### 14. ✅ 项目结构与最佳实践
 
 **涉及文件：**
-
 - `README.md` - 项目说明
 - `requirements.txt` - 依赖管理
 - `pyproject.toml` - 项目配置
@@ -429,7 +389,6 @@ async def get_current_user(
 - `.env.example` - 环境变量模板
 
 **展示内容：**
-
 - ✅ 标准项目结构
 - ✅ 分层架构（Controller/Service/Repository）
 - ✅ 配置文件组织
@@ -442,7 +401,6 @@ async def get_current_user(
 ## 📊 功能分类统计
 
 ### 核心框架功能（10项）
-
 1. ✅ IoC 容器与依赖注入
 2. ✅ 生命周期管理
 3. ✅ 配置管理
@@ -455,7 +413,6 @@ async def get_current_user(
 10. ✅ **@ConditionalOnMissingBean 机制** ⭐
 
 ### 集成功能（7项）
-
 1. ✅ 数据库集成（SQLAlchemy）
 2. ✅ 缓存集成（Redis）
 3. ✅ FastAPI 集成
@@ -465,7 +422,6 @@ async def get_current_user(
 7. ✅ 测试框架
 
 ### 最佳实践（8项）
-
 1. ✅ Repository 模式
 2. ✅ 分层架构
 3. ✅ 面向接口编程
@@ -480,24 +436,20 @@ async def get_current_user(
 ## 🌟 示例项目的核心价值
 
 ### 1. 完整性
-
 - 覆盖框架 **100%** 核心功能
 - 展示从项目初始化到部署的完整流程
 - 包含生产级的错误处理和日志记录
 
 ### 2. 最佳实践
-
 - 遵循 SOLID 原则
 - 采用分层架构
 - 面向接口编程
 - 依赖注入解耦
 
 ### 3. 用户自定义扩展 ⭐⭐⭐
-
 **这是示例项目最重要的价值！**
 
 通过 `CustomRegisterService` 示例，完整展示了：
-
 - 如何实现框架接口
 - 如何通过 `@Bean()` 注册自定义实现
 - 框架如何通过 `@ConditionalOnMissingBean` 自动选择用户实现
@@ -506,13 +458,11 @@ async def get_current_user(
 这就是 **Spring Boot "约定优于配置"** 的核心理念！
 
 ### 4. 可扩展性
-
 - 清晰的扩展点
 - 插件化架构
 - 易于添加新功能
 
 ### 5. 生产就绪
-
 - 完整的错误处理
 - 健康检查
 - 日志记录
@@ -580,21 +530,18 @@ example/
 ## 🎓 学习路径建议
 
 ### 初学者（基础功能）
-
 1. IoC 容器和依赖注入（`app/services/`）
 2. 生命周期管理（`app/database/initializer.py`）
 3. 配置管理（`config/*.yaml`）
 4. RESTful API（`app/api/`）
 
 ### 进阶开发者（高级功能）
-
 1. AOP 切面编程（`app/aspects/`）
 2. 数据库集成（`app/models/`, `app/repositories/`）
 3. 缓存集成（`app/services/cache_service.py`）
 4. 中间件（`app/middleware/`）
 
 ### 高级开发者（自定义扩展）⭐
-
 1. **@ConditionalOnMissingBean 机制**
 2. **自定义 IRegisterService 实现**（`app/services/custom_register_service.py`）
 3. 自定义 IPasswordEncoder
@@ -606,25 +553,21 @@ example/
 ## 💡 关键设计理念
 
 ### 1. 约定优于配置
-
 - 框架提供默认实现
 - 用户可选择性覆盖
 - 零配置启动
 
 ### 2. 面向接口编程
-
 - 依赖接口而非实现
 - 易于扩展和测试
 - 符合依赖倒置原则
 
 ### 3. 关注点分离
-
 - 分层架构清晰
 - 每层职责单一
 - 横切关注点通过 AOP 处理
 
 ### 4. 开闭原则
-
 - 对扩展开放（通过 @Bean）
 - 对修改关闭（不改框架代码）
 - **@ConditionalOnMissingBean 是关键！**
@@ -643,7 +586,6 @@ example/
 ## ✨ 总结
 
 PySpring 示例项目是一个：
-
 - ✅ **功能完整**：覆盖框架 100% 核心功能
 - ✅ **最佳实践**：展示生产级代码组织
 - ✅ **用户自定义**：重点展示 @ConditionalOnMissingBean 扩展机制 ⭐

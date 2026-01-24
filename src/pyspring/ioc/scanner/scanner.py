@@ -57,12 +57,12 @@ class ComponentScanner:
         Returns:
             发现的组件字典 {类型: 元数据}
         """
-        logger.info(f"🔍 开始扫描组件，包路径: {base_packages}")
+        logger.debug(f"🔍 开始扫描组件，包路径: {base_packages}")
 
         for package_name in base_packages:
             self._scan_package(package_name)
 
-        logger.info(f"✅ 组件扫描完成，发现 {len(self.scanned_components)} 个组件")
+        logger.debug(f"✅ 组件扫描完成，发现 {len(self.scanned_components)} 个组件")
         return self.scanned_components
 
     def _scan_package(self, package_name: str):

@@ -84,24 +84,6 @@ def find_config_file(
         max_depth: int = 4
 ) -> Optional[Path]:
     """
-    递归查找配置文件
-    
-    优先级：
-    1. 当前工作目录（用户项目）
-    2. 项目根目录（框架目录）
-    
-    Args:
-        filename: 配置文件名（如 'logging.yaml', 'repositories.yaml'）
-        start_path: 开始搜索的路径（默认为当前工作目录）
-        project_root: 项目根目录（默认为检测到的项目根）
-        max_depth: 最大搜索深度，防止搜索过深
-        
-    Returns:
-        找到的配置文件路径，未找到则返回 None
-        
-    Examples:
-        >>> # 查找日志配置文件
-        >>> path = find_config_file('logging.yaml')
     查找配置文件（仅检查固定位置，不递归搜索）
     
     优先级：
@@ -126,3 +108,28 @@ def find_config_file(
         >>> # 查找安全配置文件
         >>> path = find_config_file('security.yaml')
     """
+    # 1. 确定起始路径
+    if start_path is None:
+        start_path = Path.cwd()
+    else:
+        start_path = Path(start_path)
+
+    # 2. 确定项目根目录
+    if project_root is None:
+        project_root = detect_project_root(start_path)
+    else:
+        project_root = Path(project_root)
+
+    # 3. 按优先级查找配置文件
+    search_paths = [
+        start_path / "config" / filename,  # 1. 当前工作目录的 config/ 子目录
+        start_path / filename,  # 2. 当前工作目录
+        project_root / "config" / filename,  # 3. 项目根目录的 config/ 子目录
+        project_root / filename  # 4. 项目根目录
+    ]
+
+    for path in search_paths:
+        if path.exists() and path.is_file():
+            return path
+
+    return None

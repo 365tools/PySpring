@@ -3,7 +3,6 @@
 ## 📁 配置文件结构（重构后）
 
 ### 1. 框架级配置（Framework Level）
-
 **位置：** `src/pyspring/config/`  
 **维护者：** 框架开发者  
 **用户权限：** 🚫 不可编辑（打包到框架内部）
@@ -18,7 +17,6 @@ src/pyspring/config/
 ```
 
 ### 2. 用户项目配置（User Project Level）
-
 **位置：** `<your_project>/config/`  
 **维护者：** 用户  
 **用户权限：** ✅ 完全可编辑
@@ -32,7 +30,6 @@ your_project/config/
 ```
 
 ### 3. 配置模板（Templates）
-
 **位置：** `src/pyspring/templates/example/config/`  
 **用途：** 示例项目配置（生成新项目时复制）
 
@@ -57,7 +54,6 @@ src/pyspring/templates/example/config/
 ```
 
 **示例：**
-
 ```yaml
 # 框架默认值 (src/pyspring/config/defaults/security.yaml)
 authentication:
@@ -135,7 +131,6 @@ password:
 支持的环境变量：
 
 **安全配置 (security.yaml):**
-
 - `JWT_SECRET_KEY` - JWT 密钥
 - `JWT_ENCRYPTION_KEY` - JWT 加密密钥
 - `JWT_ALGORITHM` - JWT 算法
@@ -143,7 +138,6 @@ password:
 - `REFRESH_TOKEN_EXPIRE` - Refresh Token 过期时间
 
 **数据库配置 (database.yaml):**
-
 - `POSTGRES_PASSWORD` - PostgreSQL 密码
 - `MYSQL_PASSWORD` - MySQL 密码
 - `REDIS_PASSWORD` - Redis 密码
@@ -151,7 +145,6 @@ password:
 ## 📝 迁移指南（旧配置到新配置）
 
 ### 旧结构（已废弃）
-
 ```
 config/                     # 混乱：不知道是谁的配置
 ├── security.yaml
@@ -163,7 +156,6 @@ src/pyspring/templates/config/  # 旧模板（已废弃）
 ```
 
 ### 新结构（推荐）
-
 ```
 src/pyspring/config/
 ├── framework.yaml          # 框架核心
@@ -192,7 +184,6 @@ python -m pytest tests/unit/config/test_config_architecture.py -v
 ```
 
 测试覆盖：
-
 - ✅ 框架默认配置加载
 - ✅ 用户配置覆盖框架默认
 - ✅ 深度合并嵌套配置

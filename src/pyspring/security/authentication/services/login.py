@@ -1,7 +1,7 @@
 ﻿from typing import Optional, List
 
 from fastapi import HTTPException, status
-
+from pyspring.ioc.annotations.component import ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.security.authentication.contracts.constant import RevokeTokenReason
 from pyspring.security.authentication.contracts.flow import ILoginService
@@ -12,6 +12,7 @@ from pyspring.security.authentication.contracts.user import IUserProvider
 from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
 
 
+@ConditionalOnMissingBean(ILoginService)
 class DefaultLoginService(ILoginService):
     """
     默认登录认证服务（编排者）

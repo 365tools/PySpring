@@ -60,11 +60,11 @@ database:
   # 在应用启动时自动创建数据库表结构
   initialization:
     # 是否启用自动初始化
-    # 开发环境: 建议开启，方便快速搭建环境
-    # 生产环境: 建议关闭，使用 Alembic 等迁移工具
+    # 开发环境: 建议开启，框架会使用 SQLAlchemy metadata.create_all() 自动建表
+    # 生产环境: 建议关闭，使用 Alembic 等迁移工具管理表结构变更
     enabled: true              # 是否启用自动初始化（开发环境建议 true，生产环境建议 false）
-    mode: "incremental"        # 初始化模式: incremental（增量）或 full（全覆盖，危险！）
-    script_path: null          # SQL 脚本路径（null 则自动检测）
+    mode: "incremental"        # 初始化模式: incremental（增量，只创建不存在的表）或 full（全覆盖，危险！）
+    script_path: null          # SQL 脚本路径（null 则使用 SQLAlchemy 自动建表）
     auto_detect: true          # 是否自动检测脚本路径
   
   # PostgreSQL 配置

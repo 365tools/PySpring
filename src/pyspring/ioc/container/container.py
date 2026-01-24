@@ -64,13 +64,13 @@ class Container:
         Args:
             base_packages: 要扫描的包路径列表
         """
-        logger.info("🚀 启动IOC容器...")
+        logger.debug("🚀 启动IOC容器...")
 
         # 1. 扫描组件
         components = self.scanner.scan(base_packages)
 
         # 2. 注册组件
-        logger.info(f"📝 注册组件...")
+        logger.debug(f"📝 注册组件...")
         for cls, metadata in components.items():
             self._register_component(metadata)
 
@@ -79,7 +79,7 @@ class Container:
             if metadata.is_configuration:
                 self._register_beans(metadata)
 
-        logger.info(f"✅ IOC容器初始化完成，已注册 {len(self.registry.all_names())} 个服务")
+        logger.debug(f"✅ IOC容器初始化完成，已注册 {len(self.registry.all_names())} 个服务")
         self._initialized = True
 
     def _register_component(self, metadata: ComponentMetadata):
@@ -111,7 +111,7 @@ class Container:
         config_cls = config_metadata.cls
         config_name = config_metadata.name
 
-        logger.info(f"📦 注册配置类 {config_cls.__name__} 的Bean (共{len(config_metadata.bean_methods)}个)")
+        logger.debug(f"📦 注册配置类 {config_cls.__name__} 的Bean (共{len(config_metadata.bean_methods)}个)")
 
         # 先确保配置类自己被注册
         if not self.registry.has(config_name):
@@ -119,7 +119,7 @@ class Container:
 
         # 注册每个Bean方法
         for method_name in config_metadata.bean_methods:
-            logger.info(f"  🌱 注册Bean方法: {method_name}")
+            logger.debug(f"  🌱 注册Bean方法: {method_name}")
             self._register_bean_method(config_cls, config_name, method_name)
 
     def _register_bean_method(self, config_cls: type, config_name: str, method_name: str):
@@ -293,9 +293,30 @@ class Container:
         """检查服务是否已注册"""
         return self.registry.has(name)
 
+    def get_service(self, service_type: type) -> Any:
+        """
+        根据类型获取服务实例（用于HealthCheckManager）
+        
+        Args:
+            service_type: 服务类型
+            
+        Returns:
+            服务实例
+        """
+        return self.get_by_type(service_type)
+
+    def get_all_registered_types(self) -> List[type]:
+        """
+        获取所有已注册的服务类型（用于自动发现）
+        
+        Returns:
+            服务类型列表
+        """
+        return self.registry.all_types()
+
     async def initialize_lifecycle_services(self):
         """初始化所有实现了ILifecycle的服务"""
-        logger.info("🔧 初始化生命周期服务...")
+        logger.debug("🔧 初始化生命周期服务...")
 
         # 1. 初始化Initializer管理器
         from pyspring.ioc.lifecycle.initializer import StartupInitializerManager
@@ -313,14 +334,14 @@ class Container:
                 continue
                 
             try:
-                await service.on_init()
+                await service.on_startup()
                 logger.debug(f"  ✅ {service.__class__.__name__}")
             except Exception as e:
                 logger.error(f"  ❌ {service.__class__.__name__}: {e}")
 
     async def destroy_lifecycle_services(self):
         """销毁所有实现了ILifecycle的服务"""
-        logger.info("🔄 销毁生命周期服务...")
+        logger.debug("🔄 销毁生命周期服务...")
 
         # 1. 初始化Shutdown管理器
         from pyspring.ioc.lifecycle.shutdown import ShutdownHandlerManager
@@ -335,7 +356,7 @@ class Container:
                 continue
                 
             try:
-                await service.on_destroy()
+                await service.on_shutdown()
                 logger.debug(f"  ✅ {service.__class__.__name__}")
             except Exception as e:
                 logger.error(f"  ❌ {service.__class__.__name__}: {e}")

@@ -1,10 +1,12 @@
 from typing import Any
 
+from pyspring.ioc.annotations.component import ConditionalOnMissingBean
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.response import IResponseBuilder
 from pyspring.security.authentication.contracts.token import ITokenService
 
 
+@ConditionalOnMissingBean(IResponseBuilder)
 class DefaultResponseBuilder(IResponseBuilder):
     """
     默认响应构建器（策略无关）

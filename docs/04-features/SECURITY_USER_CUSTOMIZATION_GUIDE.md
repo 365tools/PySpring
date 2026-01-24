@@ -23,7 +23,7 @@ PySpring 框架采用 **Spring Boot 的"约定优于配置"设计模式**：
 @Configuration
 class AuthenticationConfiguration:
 
-    @Bean()
+   @Bean()
     @ConditionalOnMissingBean(IRegisterService)  # 关键！
     def default_register_service(...) -> IRegisterService:
         """
@@ -39,7 +39,7 @@ class AuthenticationConfiguration:
 @Configuration
 class CustomRegisterServiceConfiguration:
 
-    @Bean()  # 通过 @Bean() 注册到容器
+   @Bean()  # 通过 @Bean() 注册到容器
     def custom_register_service(...) -> IRegisterService:
         """
         框架检测到用户提供了 IRegisterService 实现
@@ -92,7 +92,6 @@ from pyspring.ioc.annotations.component import Configuration, Bean
 from pyspring.security.authentication.contracts.flow import IRegisterService
 from pyspring.security.authentication.contracts.response import UserInfo, User, Role
 from pyspring.repositories.db.manager import DBManagerService
-
 
 class CustomRegisterService(IRegisterService):
     """
@@ -159,7 +158,7 @@ class CustomRegisterService(IRegisterService):
             email=user.email,
             password=hashed_password,
             username=getattr(user, 'username', user.user_id),  # 自定义字段
-            phone=getattr(user, 'phone', None),  # 自定义字段
+           phone=getattr(user, 'phone', None),  # 自定义字段
             active=True,
             creator="system"
         )
@@ -198,7 +197,6 @@ class CustomRegisterServiceConfiguration:
 # app/api/auth.py
 from pyspring.security.authentication.contracts.flow import IRegisterService
 
-
 @router.post("/register")
 async def register(
         request: RegisterRequest,
@@ -218,7 +216,7 @@ async def register(
             user_id=request.username,
             email=request.email,
             password=request.password,  # 明文，服务自动加密
-            username=request.username  # 自定义字段
+           username=request.username  # 自定义字段
         ),
         roles=[Role(code="USER", name="普通用户", status=True)]
     )
@@ -229,7 +227,6 @@ async def register(
 ```
 
 **工作流程：**
-
 ```
 用户请求 POST /register
     ↓
@@ -253,7 +250,7 @@ IoC 容器查找 IRegisterService 实现
 @Component()
 class DatabaseInitializer(IStartupInitializer):
 
-    def __init__(self, register_service: IRegisterService):
+   def __init__(self, register_service: IRegisterService):
         """
         注入的是用户的 CustomRegisterService
         （框架通过 @ConditionalOnMissingBean 自动选择）
@@ -261,7 +258,7 @@ class DatabaseInitializer(IStartupInitializer):
         super().__init__(enabled=True)
         self.register_service = register_service
 
-    async def _seed_initial_data(self):
+   async def _seed_initial_data(self):
         """使用自定义注册服务创建管理员"""
         user_request = UserInfo(
             user=User(
@@ -290,7 +287,6 @@ class DatabaseInitializer(IStartupInitializer):
 # app/config/security_config.py
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 
-
 class CustomPasswordEncoder(IPasswordEncoder):
     """自定义密码加密器（使用 Argon2）"""
 
@@ -302,7 +298,6 @@ class CustomPasswordEncoder(IPasswordEncoder):
 
     def verify(self, raw_password: str, hashed_password: str) -> bool:
         return self.pwd_context.verify(raw_password, hashed_password)
-
 
 @Configuration
 class CustomPasswordConfiguration:
@@ -333,7 +328,6 @@ class SmsLoginProvider(ILoginProvider):
 
         return user_id
 
-
 @Configuration
 class SmsLoginConfiguration:
     @Bean()  # 框架会收集所有 ILoginProvider 实现
@@ -342,7 +336,6 @@ class SmsLoginConfiguration:
 ```
 
 **使用：**
-
 ```bash
 curl -X POST http://localhost:8000/auth/login \
   -d '{"type": "sms", "username": "13800138000", "password": "123456"}'
@@ -358,7 +351,6 @@ curl -X POST http://localhost:8000/auth/login \
 ```
 
 **特点：**
-
 - ✅ 开箱即用
 - ✅ 标准功能完整
 - ❌ 无法扩展自定义字段
@@ -376,7 +368,6 @@ class CustomRegisterServiceConfiguration:
 ```
 
 **特点：**
-
 - ✅ 完全控制业务逻辑
 - ✅ 支持自定义字段
 - ✅ 可添加后置操作
@@ -406,9 +397,9 @@ class CustomRegisterServiceConfiguration:
    ```
 
 3. **参考框架实现**
-    - 查看 `DefaultRegisterService` 源码
-    - 复用框架的会话管理、事务处理
-    - 在关键点插入自定义逻辑
+   - 查看 `DefaultRegisterService` 源码
+   - 复用框架的会话管理、事务处理
+   - 在关键点插入自定义逻辑
 
 4. **利用框架依赖注入**
    ```python
@@ -461,7 +452,6 @@ class CustomRegisterServiceConfiguration:
 ### Q1: 如何验证我的自定义实现生效了？
 
 A: 查看日志，构造函数应输出：
-
 ```
 🔧 注册自定义 IRegisterService 实现
 📦 创建自定义 CustomRegisterService 实例
@@ -470,27 +460,21 @@ A: 查看日志，构造函数应输出：
 ### Q2: 可以同时使用多个实现吗？
 
 A: 可以，通过命名 Bean：
-
 ```python
 @Bean(name="custom")
 def custom_register() -> IRegisterService: ...
 
-
 @Bean(name="default")
 def default_register() -> IRegisterService: ...
 
-
 # 使用时指定名称
 @Inject(name="custom")
-
-
 register_service: IRegisterService
 ```
 
 ### Q3: @ConditionalOnMissingBean 如何检测？
 
 A: 按类型检测，不考虑名称：
-
 ```python
 # 只要容器中有任何 IRegisterService 实例
 # 就会跳过 @ConditionalOnMissingBean 的创建
@@ -499,7 +483,6 @@ A: 按类型检测，不考虑名称：
 ### Q4: 用户实现必须实现所有方法吗？
 
 A: 是的，必须实现接口的所有抽象方法。参考：
-
 ```python
 # src/pyspring/security/authentication/services/register.py
 class DefaultRegisterService(IRegisterService):

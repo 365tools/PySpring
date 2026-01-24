@@ -255,28 +255,34 @@ def Bean(
     return decorator
 
 
-def ConditionalOnMissingBean(bean_type: type) -> Callable[[Callable[..., T]], Callable[..., T]]:
+def ConditionalOnMissingBean(bean_type: type) -> Callable[[Union[Type[T], Callable[..., T]]], Union[Type[T], Callable[..., T]]]:
     """
-    条件Bean装饰器
+    条件Bean装饰器（支持装饰类和方法）
     
-    仅当指定类型的Bean不存在时，才注册此Bean。
+    仅当指定类型的Bean不存在时，才注册此Bean/组件。
     用于提供默认实现，允许用户覆盖。
     
     Args:
         bean_type: 检查的Bean类型
     
-    示例:
+    使用场景1: 装饰 @Bean 方法（在配置类中）
         @Configuration
         class DefaultConfig:
-            @Bean
+            @Bean()
             @ConditionalOnMissingBean(IAuthProvider)
             def default_auth_provider(self) -> IAuthProvider:
                 return DefaultAuthProvider()
+    
+    使用场景2: 装饰组件类（实现了 IManaged 的默认实现类）
+        @ConditionalOnMissingBean(ILoginProvider)
+        class DefaultPasswordLoginProvider(ILoginProvider):
+            '''用户可以通过提供自己的 ILoginProvider 实现来替换此默认类'''
+            pass
     """
 
-    def decorator(func: Callable[..., T]) -> Callable[..., T]:
-        setattr(func, "__pyspring_conditional_on_missing_bean__", bean_type)
-        return func
+    def decorator(target: Union[Type[T], Callable[..., T]]) -> Union[Type[T], Callable[..., T]]:
+        setattr(target, "__pyspring_conditional_on_missing_bean__", bean_type)
+        return target
 
     return decorator
 

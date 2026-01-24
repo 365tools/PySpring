@@ -11,6 +11,7 @@ from pyspring.ioc.lifecycle.initializer import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.security.authentication.contracts.request_auth import IRequestAuthenticationProvider
 from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
+
 from .chain import AuthenticationChain
 from ..contracts.validator import ISecurityContextValidator
 
@@ -64,13 +65,23 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
 
             # 1. 动态获取并注册认证提供者到认证链
             try:
-                authentication_providers = container.get_all_instances_of(IRequestAuthenticationProvider)
+                # 优先尝试从@Bean方法获取providers列表
+                authentication_providers = None
+                if container.container.has("authentication_providers"):
+                    authentication_providers = container.get("authentication_providers")
+                    logger.debug(f"[Debug] 从@Bean获取到 {len(authentication_providers) if authentication_providers else 0} 个认证提供者")
+
+                # 降级：从IoC容器中查找所有IRequestAuthenticationProvider实现
+                if not authentication_providers:
+                    authentication_providers = container.get_all_instances_of(IRequestAuthenticationProvider)
+                    logger.debug(f"[Debug] 从IoC容器扫描到 {len(authentication_providers)} 个认证提供者")
+                
                 if authentication_providers:
                     self.auth_chain.register_providers(authentication_providers)
-                    logger.debug(f"[Debug] 注册了 {len(authentication_providers)} 个认证提供者: "
+                    logger.info(f"[Success] 注册了 {len(authentication_providers)} 个认证提供者: "
                                  f"{[p.__class__.__name__ for p in authentication_providers]}")
                 else:
-                    logger.warning("[Warning] 未发现任何认证提供者，认证系统可能无法正常工作。")
+                    logger.debug("[Debug] 未发现任何认证提供者（如果不使用认证功能，这是正常的）")
             except Exception as e:
                 logger.warning(f"[Warning] 获取认证提供者失败: {e}")
 

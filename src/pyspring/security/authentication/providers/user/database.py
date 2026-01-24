@@ -1,12 +1,13 @@
 from typing import Any, Optional
 
-from sqlalchemy import select
-
+from pyspring.ioc.annotations.component import ConditionalOnMissingBean
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.user import IUserProvider
+from sqlalchemy import select
 
 
+@ConditionalOnMissingBean(IUserProvider)
 class DefaultUserProvider(IUserProvider):
     """
     Default User Provider: Query database using SQLAlchemy

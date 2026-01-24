@@ -85,6 +85,7 @@ class AuthProviderFactory:
     def create_providers_from_config(
             cls,
             token_manager: Optional[ITokenService] = None,
+            config_manager: Optional['SecurityConfigManager'] = None,
             **kwargs
     ) -> List[IRequestAuthenticationProvider]:
         """
@@ -92,13 +93,30 @@ class AuthProviderFactory:
         
         Args:
             token_manager: Token 管理服务
+            config_manager: 安全配置管理器（可选，如未提供则从容器获取）
             **kwargs: 其他依赖服务
             
         Returns:
             List[IRequestAuthenticationProvider]: 认证提供者列表
         """
-        config_manager = ApplicationContext.get_instance().get(SecurityConfigManager)
+        # 如果没有传入config_manager，则从容器获取
+        if config_manager is None:
+            try:
+                config_manager = ApplicationContext.get_instance().get(SecurityConfigManager)
+            except Exception as e:
+                logger.error(f"[Factory] 无法获取SecurityConfigManager: {e}")
+                return []
+
+        if config_manager is None:
+            logger.error("[Factory] SecurityConfigManager 未提供且无法从容器获取")
+            return []
+        
         providers_config = config_manager.get_providers_config()
+
+        logger.debug(f"[Factory] 从配置中加载了 {len(providers_config)} 个认证提供者配置")
+        if not providers_config:
+            logger.warning("[Factory] 配置中没有定义任何认证提供者")
+            return []
 
         providers = []
         failed_providers = []  # 记录失败的提供者
@@ -106,6 +124,11 @@ class AuthProviderFactory:
         for provider_config in providers_config:
             provider_name = provider_config.get('name')
             provider_type = provider_config.get('type')
+            enabled = provider_config.get('enabled', True)
+
+            if not enabled:
+                logger.debug(f"[Factory] 跳过已禁用的认证提供者: {provider_name} ({provider_type})")
+                continue
 
             try:
                 provider = cls.create_provider(

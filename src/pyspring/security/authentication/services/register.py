@@ -1,17 +1,18 @@
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from pyspring.ioc.annotations.component import ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.flow import IRegisterService
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
+@ConditionalOnMissingBean(IRegisterService)
 class DefaultRegisterService(IRegisterService):
     """
     默认用户注册服务

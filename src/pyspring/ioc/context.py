@@ -33,6 +33,12 @@ class ApplicationContext:
             base_packages: 要扫描的包路径列表（可选，如果提供config_file则可为None）
             config_file: 配置文件路径（可选）
             enable_aop: 是否启用AOP（默认启用）
+            
+        框架级组件自动加载：
+            框架会自动优先扫描以下包，确保框架级服务可用：
+            - pyspring.security (安全模块：DBManagerService、IPasswordEncoder等)
+            - pyspring.repositories (数据库模块)
+            用户无需在 base_packages 中手动添加这些包
         """
         instance = cls()
         instance._container = Container(enable_aop=enable_aop)
@@ -43,15 +49,75 @@ class ApplicationContext:
             loader = IoCConfigLoader(config_file)
             loader.apply_to_container(instance._container)
 
-        # 如果提供了base_packages，扫描包
+        # 自动扫描框架级别的包和用户包
+        # 关键顺序：框架包先扫描 → 用户包后扫描
+        # 原因：
+        # 1. 用户的实现可能依赖框架的底层服务（DBManagerService, IPasswordEncoder等）
+        # 2. 框架的 @ConditionalOnMissingBean Bean 先注册
+        # 3. 用户的 Bean 后注册时，Registry 检测到旧Bean是conditional → 允许替换
+        from pyspring.log.instance import logger
+        framework_packages = cls._load_framework_packages()
+        all_packages = []
+
+        # 1️⃣ 优先扫描框架包（提供底层服务和默认实现）
+        if framework_packages:
+            logger.debug(f"📦 优先扫描框架级别的包: {framework_packages}")
+            all_packages.extend(framework_packages)
+
+        # 2️⃣ 然后扫描用户包（用户的 Bean 可以替换框架的 @ConditionalOnMissingBean Bean）
         if base_packages:
-            instance._container.scan(base_packages)
+            user_packages = [pkg for pkg in base_packages if pkg not in framework_packages]
+            if user_packages:
+                logger.debug(f"📦 扫描用户包: {user_packages}")
+                all_packages.extend(user_packages)
+
+            # 如果用户手动指定了框架包，给出警告
+            duplicate_packages = [pkg for pkg in base_packages if pkg in framework_packages]
+            if duplicate_packages:
+                logger.warning(f"⚠️  用户配置中包含框架包 {duplicate_packages}，已自动去重。框架包会自动扫描，无需手动配置。")
+
+        # 一次性扫描所有包
+        if all_packages:
+            instance._container.scan(all_packages)
 
         # 如果既没有配置文件也没有包列表，报错
         if not config_file and not base_packages:
             raise ValueError("必须提供 base_packages 或 config_file 中的至少一个")
         
         return instance
+
+    @classmethod
+    def _load_framework_packages(cls) -> List[str]:
+        """
+        从框架配置文件加载框架级别的包列表
+        
+        Returns:
+            框架包列表
+        """
+        import os
+        import yaml
+
+        try:
+            # 获取框架配置文件路径
+            framework_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            config_path = os.path.join(framework_dir, 'config', 'framework.yaml')
+
+            if not os.path.exists(config_path):
+                from pyspring.log.instance import logger
+                logger.warning(f"⚠️ 框架配置文件不存在: {config_path}，使用默认配置")
+                return ['pyspring.security', 'pyspring.repositories']
+
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = yaml.safe_load(f)
+
+            packages = config.get('framework', {}).get('scan_packages', [])
+            return packages if packages else []
+
+        except Exception as e:
+            from pyspring.log.instance import logger
+            logger.warning(f"⚠️ 加载框架配置失败: {e}，使用默认配置")
+            # 降级到默认配置
+            return ['pyspring.security', 'pyspring.repositories']
 
     @classmethod
     def get_instance(cls) -> 'ApplicationContext':
