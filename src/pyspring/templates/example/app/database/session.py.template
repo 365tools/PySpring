@@ -24,6 +24,6 @@ PySpring v1.1.0+ 推荐使用框架提供的 DBManagerService：
 
 数据库表初始化：
 - 使用 MigrationInitializer（框架自动调用）
-- 配置 config/database.yaml 中的 initialization 部分
+- 配置 config/repositories.yaml 中的 initialization 部分
 - 支持 SQL 脚本或 SQLAlchemy metadata.create_all()
 """

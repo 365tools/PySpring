@@ -140,7 +140,7 @@ class Container:
             else:
                 bean_name = method_name
 
-        logger.debug(f"📝 准备注册Bean: {bean_name} (方法: {method_name}, 返回类型: {return_type})")
+        # logger.debug(f"📝 准备注册Bean: {bean_name} (方法: {method_name}, 返回类型: {return_type})")
 
         # 检查条件注册
         conditional_type = getattr(method, "__pyspring_conditional_on_missing_bean__", None)

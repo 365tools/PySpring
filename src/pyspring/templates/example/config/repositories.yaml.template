@@ -43,18 +43,18 @@ cache:
 
 # 数据库配置
 database:
-  # 数据库类型: postgresql, sqlite, mysql, auto（自动选择）
+  # 数据库类型: postgresql, sqlite, auto（自动选择）
   # - postgresql: 使用 PostgreSQL 数据库
   # - sqlite: 使用 SQLite 数据库
-  # - mysql: 使用 MySQL 数据库
   # - auto: 自动选择（优先 PostgreSQL，失败则降级到 SQLite）
   # 开发环境: 建议使用 auto 或 sqlite（简单快速）
-  # 生产环境: 建议使用 postgresql 或 mysql
+  # 生产环境: 建议使用 postgresql
   type: "auto"
   
-  # PostgreSQL 失败时是否降级到 SQLite
-  # 当 type="auto" 且 PostgreSQL 连接失败时，自动切换到 SQLite
-  fallback_to_sqlite: true
+  # auto 模式说明：
+  # - 默认尝试连接 PostgreSQL
+  # - 如果 PostgreSQL 配置不完整或连接失败，自动降级到 SQLite
+  # - 无需手动切换，适合开发环境
   
   # 数据库初始化配置
   # 在应用启动时自动创建数据库表结构
@@ -62,10 +62,22 @@ database:
     # 是否启用自动初始化
     # 开发环境: 建议开启，框架会使用 SQLAlchemy metadata.create_all() 自动建表
     # 生产环境: 建议关闭，使用 Alembic 等迁移工具管理表结构变更
-    enabled: true              # 是否启用自动初始化（开发环境建议 true，生产环境建议 false）
-    mode: "incremental"        # 初始化模式: incremental（增量，只创建不存在的表）或 full（全覆盖，危险！）
-    script_path: null          # SQL 脚本路径（null 则使用 SQLAlchemy 自动建表）
-    auto_detect: true          # 是否自动检测脚本路径
+    enabled: true              # 是否启用自动初始化
+    
+    # 表名前缀配置（可选）
+    # 为所有表添加项目前缀，避免多个项目共用数据库时的表名冲突
+    # 例如: table_prefix: "myapp" → users 表会变成 myapp_users
+    # 设置为 null 或空字符串则不添加前缀
+    table_prefix: null         # 表名前缀（null 或项目名称，如 "myapp"）
+    
+    # 是否使用 SQL 脚本补充初始数据
+    # false: 只使用 ORM 模型创建表（推荐）
+    # true: 在 ORM 建表后，额外执行 scripts/db/init_data.sql 脚本
+    use_sql_script: false      # 是否使用 SQL 脚本补充初始数据
+    
+    mode: "incremental"        # 初始化模式（保留兼容）
+    script_path: null          # SQL 脚本路径（已废弃，使用 use_sql_script 替代）
+    auto_detect: true          # 是否自动检测脚本路径（已废弃）
   
   # PostgreSQL 配置
   postgresql:

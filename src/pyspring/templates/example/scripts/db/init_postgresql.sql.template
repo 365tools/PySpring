@@ -1,0 +1,179 @@
+-- ============================================================================
+-- Example 项目数据库表结构 - PostgreSQL
+-- ============================================================================
+-- 说明：
+-- 1. 这是用户项目自定义的数据库表结构
+-- 2. 继承框架默认的鉴权授权表（users, roles, permissions 等）
+-- 3. 扩展业务相关的自定义表
+-- 4. 演示如何自定义数据库初始化
+-- ============================================================================
+
+-- ============================================================================
+-- 框架默认表（鉴权授权）
+-- ============================================================================
+
+-- 用户表
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    is_superuser BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 角色表
+CREATE TABLE IF NOT EXISTS roles (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) UNIQUE NOT NULL,
+    description VARCHAR(200),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 权限表
+CREATE TABLE IF NOT EXISTS permissions (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) UNIQUE NOT NULL,
+    resource VARCHAR(100) NOT NULL,
+    action VARCHAR(50) NOT NULL,
+    description VARCHAR(200),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 用户角色关联表
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, role_id)
+);
+
+-- 角色权限关联表
+CREATE TABLE IF NOT EXISTS role_permissions (
+    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (role_id, permission_id)
+);
+
+-- ============================================================================
+-- 业务自定义表（Example 项目特有）
+-- ============================================================================
+
+-- 文章表（示例业务表）
+CREATE TABLE IF NOT EXISTS articles (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    author_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) DEFAULT 'draft',
+    published_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 评论表（示例业务表）
+CREATE TABLE IF NOT EXISTS comments (
+    id SERIAL PRIMARY KEY,
+    article_id INTEGER NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ============================================================================
+-- 索引
+-- ============================================================================
+
+-- 用户表索引
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
+
+-- 角色权限索引
+CREATE INDEX IF NOT EXISTS idx_roles_name ON roles(name);
+CREATE INDEX IF NOT EXISTS idx_permissions_resource ON permissions(resource);
+CREATE INDEX IF NOT EXISTS idx_permissions_action ON permissions(action);
+
+-- 业务表索引
+CREATE INDEX IF NOT EXISTS idx_articles_author ON articles(author_id);
+CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
+CREATE INDEX IF NOT EXISTS idx_comments_article ON comments(article_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id);
+
+-- ============================================================================
+-- 默认数据
+-- ============================================================================
+
+-- 插入默认角色
+INSERT INTO roles (name, description) VALUES 
+    ('admin', '管理员角色，拥有所有权限'),
+    ('editor', '编辑角色，可以管理文章'),
+    ('user', '普通用户角色，拥有基本权限')
+ON CONFLICT (name) DO NOTHING;
+
+-- 插入默认权限
+INSERT INTO permissions (name, resource, action, description) VALUES 
+    -- 用户权限
+    ('users:read', 'users', 'read', '查看用户信息'),
+    ('users:write', 'users', 'write', '创建/更新用户'),
+    ('users:delete', 'users', 'delete', '删除用户'),
+    -- 角色权限
+    ('roles:read', 'roles', 'read', '查看角色'),
+    ('roles:write', 'roles', 'write', '管理角色'),
+    -- 文章权限（自定义）
+    ('articles:read', 'articles', 'read', '查看文章'),
+    ('articles:write', 'articles', 'write', '创建/编辑文章'),
+    ('articles:delete', 'articles', 'delete', '删除文章'),
+    ('articles:publish', 'articles', 'publish', '发布文章'),
+    -- 评论权限（自定义）
+    ('comments:read', 'comments', 'read', '查看评论'),
+    ('comments:write', 'comments', 'write', '发表评论'),
+    ('comments:delete', 'comments', 'delete', '删除评论')
+ON CONFLICT (name) DO NOTHING;
+
+-- 为 admin 角色分配所有权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.name = 'admin'
+ON CONFLICT DO NOTHING;
+
+-- 为 editor 角色分配文章管理权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.name = 'editor' AND p.resource IN ('articles', 'comments')
+ON CONFLICT DO NOTHING;
+
+-- 为 user 角色分配基本权限
+INSERT INTO role_permissions (role_id, permission_id)
+SELECT r.id, p.id
+FROM roles r, permissions p
+WHERE r.name = 'user' AND p.name IN ('users:read', 'articles:read', 'comments:read', 'comments:write')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================================
+-- 触发器
+-- ============================================================================
+
+-- 更新时间戳触发器
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_users_updated_at
+    BEFORE UPDATE ON users
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_articles_updated_at
+    BEFORE UPDATE ON articles
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

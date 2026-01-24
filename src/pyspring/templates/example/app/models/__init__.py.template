@@ -1,1 +1,10 @@
-"""Models package"""
+"""
+Models 包
+
+自动导出所有模型，方便 MigrationInitializer 扫描加载
+"""
+from .user import User
+from .article import Article
+
+__all__ = ['User', 'Article']
+

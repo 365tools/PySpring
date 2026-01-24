@@ -8,11 +8,11 @@ import json
 from typing import Optional, Any
 
 import redis.asyncio as redis
-from redis.asyncio.connection import ConnectionPool
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
+from redis.asyncio.connection import ConnectionPool
+
 from ..interfaces.service import IRedisService
 from ....config import CacheConfig
 
@@ -46,29 +46,22 @@ class RedisService(IRedisService):
         self.socket_connect_timeout = pool_config.socket_connect_timeout
         self.retry_on_timeout = pool_config.retry_on_timeout
 
-        # 延迟初始化（在 connect() 中创建）
-        self._connection_pool: Optional[ConnectionPool] = None
-        self._redis_client: Optional[redis.Redis] = None
+        # 创建连接池（轻量级，不建立实际连接）
+        self._connection_pool: ConnectionPool = ConnectionPool(
+            host=self.host,
+            port=self.port,
+            db=self.db,
+            password=self.password,
+            encoding="utf-8",
+            decode_responses=True,
+            max_connections=self.max_connections,
+            socket_keepalive=self.socket_keepalive,
+            socket_connect_timeout=self.socket_connect_timeout,
+            retry_on_timeout=self.retry_on_timeout
+        )
+        self._redis_client: redis.Redis = redis.Redis(connection_pool=self._connection_pool)
 
-        logger.debug(f"RedisService initialized for {self.host}:{self.port}")
-
-    async def connect(self):
-        """初始化 Redis 连接池（延迟调用）"""
-        if self._connection_pool is None:
-            self._connection_pool = ConnectionPool(
-                host=self.host,
-                port=self.port,
-                db=self.db,
-                password=self.password,
-                encoding="utf-8",
-                decode_responses=True,
-                max_connections=self.max_connections,
-                socket_keepalive=self.socket_keepalive,
-                socket_connect_timeout=self.socket_connect_timeout,
-                retry_on_timeout=self.retry_on_timeout
-            )
-            self._redis_client = redis.Redis(connection_pool=self._connection_pool)
-            logger.debug(f"Redis connection pool created: {self._mask_password(self.url)} (max_connections={self.max_connections})")
+        logger.debug(f"RedisService initialized for {self.host}:{self.port} (max_connections={self.max_connections})")
 
     def _build_url(self) -> str:
         if self.password:

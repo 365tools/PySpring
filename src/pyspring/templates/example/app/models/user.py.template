@@ -1,29 +1,39 @@
 """
 用户模型
 
-展示：
-1. SQLAlchemy ORM 模型
-2. Pydantic 集成
+演示：
+1. 继承框架的 BaseUserTable 基类
+2. 自动获得鉴权授权所需的所有字段
+3. 可扩展自定义字段
+4. 表名会自动应用项目前缀（repositories.yaml 中配置 table_prefix）
 """
-from datetime import datetime
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, String
+
+from pyspring.repositories.db.models.common.define import BaseUserTable
 
 
-Base = declarative_base()
-
-
-class User(Base):
-    """用户模型"""
-    __tablename__ = "users"
+class User(BaseUserTable):
+    """
+    用户模型
     
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(50), unique=True, index=True, nullable=False)
-    email = Column(String(100), unique=True, index=True, nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    继承自框架的 BaseUserTable，自动包含：
+    - id: 主键
+    - user_id: 用户ID
+    - email: 邮箱
+    - password: 密码哈希
+    - first_name/last_name: 姓名
+    - uuid: UUID
+    - active/deleted: 状态标识
+    - creator/modifier: 审计字段
+    - created_time/modified_time: 时间戳
+    
+    自定义扩展字段：
+    - phone: 手机号（示例）
+    """
+    __tablename__ = "users"  # 基础表名，实际会应用前缀（如 myapp_users）
+    
+    # 自定义字段
+    phone = Column(String(20), nullable=True, comment="手机号")
     
     def __repr__(self):
-        return f"<User(id={self.id}, username='{self.username}')>"
+        return f"<User(id={self.id}, user_id='{self.user_id}', email='{self.email}')>"

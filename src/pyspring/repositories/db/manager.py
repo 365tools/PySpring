@@ -1,9 +1,8 @@
-from typing import Optional
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.instance import logger
+
 from .factory import DBServiceFactory
 from .service import IDBService
 
@@ -14,7 +13,7 @@ class DBManagerService(IManaged):
     """
     数据库管理服务（由 IOC 容器管理单例）
     
-    通过 DBServiceFactory 自动选择数据库实现
+    通过 DBServiceFactory 获取已验证的数据库实例
     """
 
     def __init__(self, db_service_factory: DBServiceFactory):
@@ -26,20 +25,18 @@ class DBManagerService(IManaged):
         """
         super().__init__()
         self.factory: DBServiceFactory = db_service_factory
-        self._provider: Optional[IDBService] = None
 
     @property
     def provider(self) -> IDBService:
         """
-        延迟获取数据库服务（首次调用时从工厂获取）
+        获取数据库服务（Factory 内部已实现单例）
+        
+        Factory 已完成连接检测和降级，返回已验证的实例
         
         Returns:
             IDBService: SQLite 或 PostgreSQL 实现
         """
-        if self._provider is None:
-            self._provider = self.factory.get_service()
-            logger.debug(f"DBManager: Provider initialized to {self._provider.__class__.__name__}")
-        return self._provider
+        return self.factory.get_service()
 
     async def service(self) -> IDBService:
         """

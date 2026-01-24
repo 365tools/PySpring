@@ -1,12 +1,17 @@
 """
 缓存服务工厂（根据配置选择实现）
 """
+import asyncio
+from typing import Optional
+
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
+
 from .config import CacheConfig
 from .providers.memory.services.service import MemoryService
 from .providers.redis.services.service import RedisService
+from .service import ICacheService
 
 
 @Component()
@@ -14,37 +19,114 @@ from .providers.redis.services.service import RedisService
 class CacheServiceFactory:
     """缓存服务工厂（由 IOC 容器管理）"""
 
-    def __init__(self, cache_config: CacheConfig, redis_service: RedisService, memory_service: MemoryService):
+    def __init__(self, cache_config: CacheConfig):
         """
-        通过 IOC 注入配置和所有服务实现
+        通过 IOC 注入配置
         
         Args:
             cache_config: CacheConfig 实例（自动注入）
-            redis_service: RedisService 实例（自动注入）
-            memory_service: MemoryService 实例（自动注入）
         """
         self.config: CacheConfig = cache_config
-        self.redis_service: RedisService = redis_service
-        self.memory_service: MemoryService = memory_service
+        self._service: Optional[ICacheService] = None
+        self._service_type: Optional[str] = None
 
-    def get_service(self) -> 'ICacheService':
+    def get_service(self) -> ICacheService:
         """
-        根据配置返回正确的缓存服务
+        根据配置返回正确的缓存服务（单例模式）
         
         Returns:
             ICacheService: Redis 或 Memory 实现
         """
+        # 如果已创建，直接返回（单例）
+        if self._service is not None:
+            return self._service
+
         cache_type = self.config.type.lower()
 
         if cache_type == "redis":
-            logger.debug("CacheServiceFactory: Using RedisService")
-            return self.redis_service
+            self._service = self._create_redis_service()
+            self._service_type = "redis"
         elif cache_type == "memory":
-            logger.debug("CacheServiceFactory: Using MemoryService")
-            return self.memory_service
+            self._service = self._create_memory_service()
+            self._service_type = "memory"
         elif cache_type == "auto":
-            # 自动模式：优先 Redis，失败则降级 Memory
-            logger.debug("CacheServiceFactory: Auto mode - trying Redis first")
-            return self.redis_service
+            # auto 模式：默认 Redis，失败降级到 Memory
+            logger.debug("CacheServiceFactory: Auto mode - trying Redis first...")
+            self._service = self._try_redis_or_fallback()
         else:
             raise ValueError(f"Unsupported cache type: {cache_type}. Use 'redis', 'memory', or 'auto'.")
+
+        return self._service
+
+    def _create_redis_service(self) -> RedisService:
+        """创建 Redis 服务"""
+        logger.info("✅ 使用 Redis 缓存")
+        return RedisService(self.config)
+
+    def _create_memory_service(self) -> MemoryService:
+        """创建 Memory 服务"""
+        logger.info("✅ 使用内存缓存")
+        return MemoryService(self.config)
+
+    def _try_redis_or_fallback(self) -> ICacheService:
+        """
+        尝试连接 Redis，失败则降级到内存缓存
+        
+        策略：
+        1. 检查 Redis 配置完整性
+        2. 创建 Redis 服务并测试连接（同步 ping）
+        3. 连接成功：使用 Redis
+        4. 连接失败：降级到 Memory
+        
+        Returns:
+            ICacheService: Redis 或 Memory 服务
+        """
+        redis_config = self.config.redis
+
+        # 1. 检查配置完整性
+        if not redis_config.host:
+            logger.warning("⚠️ Redis 配置不完整，降级到内存缓存")
+            self._service_type = "memory"
+            return self._create_memory_service()
+
+        # 2. 创建并测试 Redis 连接
+        try:
+            service = RedisService(self.config)
+
+            # 检测是否有运行中的事件循环
+            try:
+                asyncio.get_running_loop()
+                # 已有运行中的循环，无法同步测试连接
+                logger.warning("⚠️ 检测到运行中的事件循环，跳过 Redis 连接测试，降级到内存缓存")
+                self._service_type = "memory"
+                return self._create_memory_service()
+            except RuntimeError:
+                # 没有运行中的循环，可以安全执行同步测试
+                logger.info("🔍 Auto 模式：测试 Redis 连接...")
+                loop = asyncio.new_event_loop()
+                try:
+                    is_connected = loop.run_until_complete(service.ping())
+                finally:
+                    loop.close()
+
+                if is_connected:
+                    logger.info("✅ Redis 连接成功，使用 Redis 缓存")
+                    self._service_type = "redis"
+                    return service
+                else:
+                    logger.warning("⚠️ Redis 连接失败，降级到内存缓存")
+                    self._service_type = "memory"
+                    return self._create_memory_service()
+
+        except Exception as e:
+            logger.warning(f"⚠️ Redis 初始化失败，降级到内存缓存: {e}")
+            self._service_type = "memory"
+            return self._create_memory_service()
+
+    async def verify_and_fallback(self) -> ICacheService:
+        """
+        异步验证 Redis 连接并在失败时降级（已废弃，保留兼容性）
+        
+        注意：连接检测已在 get_service() 中同步完成
+        """
+        return self.get_service()

@@ -19,8 +19,8 @@ from app.repositories.user_repository import UserRepository
 from app.models.user import User
 
 
-# 密码加密上下文
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# 密码加密上下文（使用 argon2 算法，更安全且无长度限制）
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # JWT 配置（生产环境应从配置文件读取）
 SECRET_KEY = "your-secret-key-change-in-production"

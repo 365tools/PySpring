@@ -5,6 +5,7 @@
 """
 from pyspring.ioc.lifecycle.shutdown import IShutdownHandler
 from pyspring.log.instance import logger
+
 from ..manager import CacheManagerService
 
 
@@ -18,7 +19,8 @@ class CacheShutdownHandler(IShutdownHandler):
     async def shutdown(self) -> bool:
         """关闭缓存连接"""
         try:
-            if self.cache_manager and self.cache_manager.provider:
+            # 检查 Factory 单例，避免触发延迟初始化
+            if self.cache_manager and self.cache_manager.factory._service is not None:
                 await self.cache_manager.close()
                 logger.info("Cache connection closed")
                 return True

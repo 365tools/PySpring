@@ -5,6 +5,7 @@
 """
 from pyspring.ioc.lifecycle.shutdown import IShutdownHandler
 from pyspring.log.instance import logger
+
 from ..manager import DBManagerService
 
 
@@ -32,7 +33,8 @@ class DBShutdownHandler(IShutdownHandler):
             bool: 是否成功关闭
         """
         try:
-            if self.db_manager and self.db_manager.provider:
+            # 检查 Factory 单例，避免触发延迟初始化
+            if self.db_manager and self.db_manager.factory._service is not None:
                 await self.db_manager.close()
                 logger.info("Database connection closed")
                 return True

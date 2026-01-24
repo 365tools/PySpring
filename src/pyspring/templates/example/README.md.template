@@ -206,7 +206,7 @@ class UserRepository:
 
 ### 4. 数据库初始化
 
-数据库表由框架的 MigrationInitializer 自动创建，在 `config/database.yaml` 配置：
+数据库表由框架的 MigrationInitializer 自动创建，在 `config/repositories.yaml` 配置：
 
 ```yaml
 initialization:

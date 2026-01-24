@@ -4,13 +4,12 @@ import asyncio
 import os
 from typing import Any, Optional, List, Dict
 
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
-from pyspring.utils.config.finder import detect_project_root
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
+
 from ..interfaces.service import ISqliteService
 from ....config import DatabaseConfig
 
@@ -31,14 +30,12 @@ class SqliteService(ISqliteService):
 
         sqlite_config = self.config.sqlite
         self.database = sqlite_config.database
-        
-        # 如果是相对路径, 基于项目根目录解析
+
+        # 如果是相对路径，基于当前工作目录解析（用户项目根目录）
         if not os.path.isabs(self.database):
-            try:
-                project_root = detect_project_root()
-                self.database = str(project_root / self.database)
-            except Exception:
-                pass
+            # 优先使用当前工作目录（用户项目），而不是框架安装目录
+            cwd = os.getcwd()
+            self.database = os.path.join(cwd, self.database)
 
         # 确保数据库目录存在
         db_dir = os.path.dirname(self.database)

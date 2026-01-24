@@ -3,12 +3,11 @@
 
 管理缓存服务提供者，支持 Redis 和内存缓存
 """
-from typing import Optional
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.instance import logger
+
 from .factory import CacheServiceFactory
 from .service import ICacheService
 
@@ -19,7 +18,7 @@ class CacheManagerService(IManaged):
     """
     缓存管理服务（由 IOC 容器管理单例）
     
-    通过 CacheServiceFactory 自动选择缓存实现
+    通过 CacheServiceFactory 获取已验证的缓存实例
     """
 
     def __init__(self, cache_service_factory: CacheServiceFactory):
@@ -31,20 +30,18 @@ class CacheManagerService(IManaged):
         """
         super().__init__()
         self.factory: CacheServiceFactory = cache_service_factory
-        self._provider: Optional[ICacheService] = None
 
     @property
     def provider(self) -> ICacheService:
         """
-        延迟获取缓存服务（首次调用时从工厂获取）
+        获取缓存服务（Factory 内部已实现单例）
+        
+        Factory 已完成连接检测和降级，返回已验证的实例
         
         Returns:
             ICacheService: Redis 或 Memory 实现
         """
-        if self._provider is None:
-            self._provider = self.factory.get_service()
-            logger.debug(f"CacheManager: Provider initialized to {self._provider.__class__.__name__}")
-        return self._provider
+        return self.factory.get_service()
 
     # Proxy methods to provider
     async def get(self, *args, **kwargs):

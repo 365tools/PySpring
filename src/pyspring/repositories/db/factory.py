@@ -1,12 +1,17 @@
 """
 数据库服务工厂（根据配置选择实现）
 """
+import asyncio
+from typing import Optional
+
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
+
 from .config import DatabaseConfig
 from .providers.postgres.services.service import PostgresService
 from .providers.sqlite.services.service import SqliteService
+from .service import IDBService
 
 
 @Component()
@@ -14,33 +19,105 @@ from .providers.sqlite.services.service import SqliteService
 class DBServiceFactory:
     """数据库服务工厂（由 IOC 容器管理）"""
 
-    def __init__(self, database_config: DatabaseConfig, sqlite_service: SqliteService, postgres_service: PostgresService):
+    def __init__(self, database_config: DatabaseConfig):
         """
-        通过 IOC 注入配置和所有服务实现
+        通过 IOC 注入配置
         
         Args:
             database_config: DatabaseConfig 实例（自动注入）
-            sqlite_service: SqliteService 实例（自动注入）
-            postgres_service: PostgresService 实例（自动注入）
         """
         self.config: DatabaseConfig = database_config
-        self.sqlite_service: SqliteService = sqlite_service
-        self.postgres_service: PostgresService = postgres_service
+        self._service: Optional[IDBService] = None
+        self._service_type: Optional[str] = None
 
-    def get_service(self) -> 'IDatabaseService':
+    def get_service(self) -> IDBService:
         """
-        根据配置返回正确的数据库服务
+        根据配置返回正确的数据库服务（单例模式）
         
         Returns:
-            IDatabaseService: SQLite 或 PostgreSQL 实现
+            IDBService: SQLite 或 PostgreSQL 实现
         """
+        # 如果已创建，直接返回（单例）
+        if self._service is not None:
+            return self._service
+
         db_type = self.config.type.lower()
 
         if db_type == "sqlite":
-            logger.debug("DBServiceFactory: Using SqliteService")
-            return self.sqlite_service
+            self._service = self._create_sqlite_service()
+            self._service_type = "sqlite"
         elif db_type == "postgresql":
-            logger.debug("DBServiceFactory: Using PostgresService")
-            return self.postgres_service
+            self._service = self._create_postgres_service()
+            self._service_type = "postgresql"
+        elif db_type == "auto":
+            # auto 模式：默认 PostgreSQL，失败降级到 SQLite
+            logger.debug("DBServiceFactory: Auto mode - trying PostgreSQL first...")
+            self._service = self._try_postgres_or_fallback()
         else:
-            raise ValueError(f"Unsupported database type: {db_type}. Use 'sqlite' or 'postgresql'.")
+            raise ValueError(f"Unsupported database type: {db_type}. Use 'sqlite', 'postgresql', or 'auto'.")
+
+        return self._service
+
+    def _create_sqlite_service(self) -> SqliteService:
+        """创建 SQLite 服务"""
+        logger.info("✅ 使用 SQLite 数据库")
+        return SqliteService(self.config)
+
+    def _create_postgres_service(self) -> PostgresService:
+        """创建 PostgreSQL 服务"""
+        logger.info("✅ 使用 PostgreSQL 数据库")
+        return PostgresService(self.config)
+
+    def _try_postgres_or_fallback(self) -> IDBService:
+        """
+        尝试连接 PostgreSQL，失败则降级到 SQLite
+        
+        策略：
+        1. 检查 PostgreSQL 配置完整性
+        2. 创建 PostgreSQL 服务并测试连接（同步 ping）
+        3. 连接成功：使用 PostgreSQL
+        4. 连接失败：降级到 SQLite
+        
+        Returns:
+            IDBService: PostgreSQL 或 SQLite 服务
+        """
+        # 1. 检查配置完整性
+        pg_config = self.config.postgresql
+        if not (pg_config.host and pg_config.database and pg_config.user):
+            logger.warning("⚠️ PostgreSQL 配置不完整，降级到 SQLite")
+            self._service_type = "sqlite"
+            return self._create_sqlite_service()
+
+        # 2. 创建并测试 PostgreSQL 连接
+        try:
+            service = PostgresService(self.config)
+
+            # 检测是否有运行中的事件循环
+            try:
+                asyncio.get_running_loop()
+                # 已有运行中的循环，无法同步测试连接
+                logger.warning("⚠️ 检测到运行中的事件循环，跳过 PostgreSQL 连接测试，降级到 SQLite")
+                self._service_type = "sqlite"
+                return self._create_sqlite_service()
+            except RuntimeError:
+                # 没有运行中的循环，可以安全执行同步测试
+                logger.info("🔍 Auto 模式：测试 PostgreSQL 连接...")
+                loop = asyncio.new_event_loop()
+                try:
+                    is_connected = loop.run_until_complete(service.ping())
+                finally:
+                    loop.close()
+
+                if is_connected:
+                    logger.info("✅ PostgreSQL 连接成功，使用 PostgreSQL")
+                    self._service_type = "postgresql"
+                    return service
+                else:
+                    logger.warning("⚠️ PostgreSQL 连接失败，降级到 SQLite")
+                    self._service_type = "sqlite"
+                    return self._create_sqlite_service()
+
+        except Exception as e:
+            logger.warning(f"⚠️ PostgreSQL 初始化失败，降级到 SQLite: {e}")
+            self._service_type = "sqlite"
+            return self._create_sqlite_service()
