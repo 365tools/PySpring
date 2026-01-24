@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Dict
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
 from pyspring.ioc import Inject
+from pyspring.web.core.response import Response
 
 from app.services.health_check_service import HealthCheckService
 
@@ -14,7 +16,7 @@ router = APIRouter()
 @router.get("/health")
 async def health_check(
     health_service: HealthCheckService = Depends(lambda: Inject(HealthCheckService))
-) -> Dict:
+) -> JSONResponse:
     """
     健康检查端点
     
@@ -25,26 +27,26 @@ async def health_check(
     """
     status = await health_service.check_all()
     
-    return {
+    return Response.success({
         "status": "healthy" if status["overall"] else "unhealthy",
         "timestamp": datetime.now().isoformat(),
         "checks": status
-    }
+    })
 
 
 @router.get("/ready")
-async def readiness_check() -> Dict:
+async def readiness_check() -> JSONResponse:
     """就绪检查"""
-    return {
+    return Response.success({
         "ready": True,
         "timestamp": datetime.now().isoformat()
-    }
+    })
 
 
 @router.get("/live")
-async def liveness_check() -> Dict:
+async def liveness_check() -> JSONResponse:
     """存活检查"""
-    return {
+    return Response.success({
         "alive": True,
         "timestamp": datetime.now().isoformat()
-    }
+    })

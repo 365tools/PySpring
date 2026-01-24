@@ -2,9 +2,11 @@
 from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 
 from pyspring.ioc import Inject
+from pyspring.web.core.response import Response
 from app.services.auth_service import AuthService
 from app.models.user import User
 
@@ -32,11 +34,11 @@ class TokenResponse(BaseModel):
     username: str
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login")
 async def login(
     request: LoginRequest,
     auth_service: AuthService = Depends(lambda: Inject(AuthService))
-) -> TokenResponse:
+) -> JSONResponse:
     """
     用户登录
     
@@ -45,23 +47,28 @@ async def login(
     token = await auth_service.authenticate(request.username, request.password)
     
     if not token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误",
-            headers={"WWW-Authenticate": "Bearer"},
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="用户名或密码错误"
+            ),
+            default_status_code=status.HTTP_401_UNAUTHORIZED
         )
     
-    return TokenResponse(
-        access_token=token,
-        username=request.username
+    return Response.success(
+        TokenResponse(
+            access_token=token,
+            username=request.username
+        ),
+        message="登录成功"
     )
 
 
-@router.post("/register", response_model=Dict)
+@router.post("/register")
 async def register(
     request: RegisterRequest,
     auth_service: AuthService = Depends(lambda: Inject(AuthService))
-) -> Dict:
+) -> JSONResponse:
     """
     用户注册
     
@@ -74,30 +81,32 @@ async def register(
             password=request.password
         )
         
-        return {
-            "success": True,
-            "message": "注册成功",
-            "user": {
+        return Response.success(
+            {
                 "id": user.id,
                 "username": user.username,
                 "email": user.email
-            }
-        }
+            },
+            message="注册成功"
+        )
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e)
+            ),
+            default_status_code=status.HTTP_400_BAD_REQUEST
         )
 
 
 @router.post("/logout")
-async def logout() -> Dict:
+async def logout() -> JSONResponse:
     """
     用户登出
     
     注意：JWT 是无状态的，客户端应删除本地令牌
     """
-    return {
-        "success": True,
-        "message": "登出成功（请删除客户端令牌）"
-    }
+    return Response.success(
+        None,
+        message="登出成功（请删除客户端令牌）"
+    )

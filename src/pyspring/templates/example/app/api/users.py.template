@@ -2,9 +2,11 @@
 from typing import List, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr
 
 from pyspring.ioc import Inject
+from pyspring.web.core.response import Response
 from app.services.user_service import UserService
 from app.dependencies.auth import get_current_user
 from app.models.user import User
@@ -30,25 +32,25 @@ class UserUpdateRequest(BaseModel):
     is_active: bool | None = None
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me")
 async def get_current_user_info(
     current_user: User = Depends(get_current_user)
-) -> UserResponse:
+) -> JSONResponse:
     """
     获取当前登录用户信息
     
     需要认证：是
     """
-    return UserResponse.from_orm(current_user)
+    return Response.success(UserResponse.from_orm(current_user))
 
 
-@router.get("", response_model=List[UserResponse])
+@router.get("")
 async def list_users(
     skip: int = 0,
     limit: int = 10,
     user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
-) -> List[UserResponse]:
+) -> JSONResponse:
     """
     获取用户列表
     
@@ -56,15 +58,15 @@ async def list_users(
     分页参数：skip, limit
     """
     users = await user_service.get_users(skip=skip, limit=limit)
-    return [UserResponse.from_orm(user) for user in users]
+    return Response.success([UserResponse.from_orm(user) for user in users])
 
 
-@router.get("/{user_id}", response_model=UserResponse)
+@router.get("/{user_id}")
 async def get_user(
     user_id: int,
     user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
-) -> UserResponse:
+) -> JSONResponse:
     """
     获取指定用户信息
     
@@ -73,21 +75,24 @@ async def get_user(
     user = await user_service.get_user_by_id(user_id)
     
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            ),
+            default_status_code=status.HTTP_404_NOT_FOUND
         )
     
-    return UserResponse.from_orm(user)
+    return Response.success(UserResponse.from_orm(user))
 
 
-@router.put("/{user_id}", response_model=UserResponse)
+@router.put("/{user_id}")
 async def update_user(
     user_id: int,
     request: UserUpdateRequest,
     user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
-) -> UserResponse:
+) -> JSONResponse:
     """
     更新用户信息
     
@@ -96,9 +101,12 @@ async def update_user(
     """
     # 权限检查：只能更新自己
     if current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权限修改其他用户信息"
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限修改其他用户信息"
+            ),
+            default_status_code=status.HTTP_403_FORBIDDEN
         )
     
     # 准备更新数据
@@ -109,18 +117,21 @@ async def update_user(
         update_data['is_active'] = request.is_active
     
     if not update_data:
-        return UserResponse.from_orm(current_user)
+        return Response.success(UserResponse.from_orm(current_user))
     
     # 执行更新
     updated_user = await user_service.update_user(user_id, update_data)
     
     if not updated_user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            ),
+            default_status_code=status.HTTP_404_NOT_FOUND
         )
     
-    return UserResponse.from_orm(updated_user)
+    return Response.success(UserResponse.from_orm(updated_user), message="用户信息更新成功")
 
 
 @router.delete("/{user_id}")
@@ -128,7 +139,7 @@ async def delete_user(
     user_id: int,
     user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
-) -> Dict:
+) -> JSONResponse:
     """
     删除用户
     
@@ -137,20 +148,23 @@ async def delete_user(
     """
     # 权限检查：只能删除自己
     if current_user.id != user_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="无权限删除其他用户"
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="无权限删除其他用户"
+            ),
+            default_status_code=status.HTTP_403_FORBIDDEN
         )
     
     success = await user_service.delete_user(user_id)
     
     if not success:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在"
+            ),
+            default_status_code=status.HTTP_404_NOT_FOUND
         )
     
-    return {
-        "success": True,
-        "message": "用户删除成功"
-    }
+    return Response.success(None, message="用户删除成功")
