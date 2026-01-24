@@ -7,14 +7,6 @@
 3. 缓存集成验证
 4. 实际业务场景测试
 """
-import io
-import sys
-
-# 设置标准输出编码为UTF-8，解决Windows下中文乱码问题
-if sys.platform == 'win32':
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-
 import os
 
 os.environ['JWT_SECRET_KEY'] = 'test-secret-key-for-role-inheritance-integration-testing'

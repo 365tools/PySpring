@@ -1,31 +1,136 @@
-# 应用配置
+# 应用配置示例
+# 复制此文件为 application.yaml 并根据需要修改
+
+# 应用基本信息
 app:
-  name: ${APP_NAME:PySpring 示例应用}
-  version: ${APP_VERSION:1.0.0}
-  debug: ${DEBUG:false}
-  
+  name: "PySpring Application"
+  version: "1.0.0"
+  description: "基于 PySpring 框架构建的应用"
+  # 环境：development, staging, production
+  environment: "development"
+
 # 服务器配置
 server:
-  host: 0.0.0.0
+  # 监听地址
+  # 开发环境: 0.0.0.0 或 127.0.0.1
+  # 生产环境: 0.0.0.0（需配合反向代理）
+  host: "0.0.0.0"
+  
+  # 监听端口
   port: 8000
+  
+  # 是否启用热重载（仅开发环境）
+  reload: true
+  
+  # Uvicorn 服务器日志级别（控制启动和请求日志）
+  # 注意：这与 logging.yaml 中的 logging.level 不同
+  # - server.log_level: 控制 Uvicorn 服务器的日志输出
+  # - logging.level: 控制应用内部（Loguru）的日志级别
+  # 可选值: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: "INFO"
+  
+  # 工作进程数（生产环境建议设置为 CPU 核心数）
   workers: 1
   
-# 数据库配置
-database:
-  url: ${DATABASE_URL:sqlite+aiosqlite:///./data/app.db}
-  echo: ${DB_ECHO:false}
-  pool_size: 5
-  max_overflow: 10
+  # 请求超时时间（秒）
+  timeout: 30
   
-# Redis 配置
-redis:
-  host: ${REDIS_HOST:localhost}
-  port: ${REDIS_PORT:6379}
-  db: ${REDIS_DB:0}
-  password: ${REDIS_PASSWORD:}
+  # 最大请求体大小（字节）
+  max_request_size: 10485760  # 10MB
+
+# API 配置
+api:
+  # API 前缀
+  prefix: "/api/v1"
   
-# JWT 配置
-jwt:
-  secret_key: ${SECRET_KEY:your-secret-key-change-in-production}
-  algorithm: ${JWT_ALGORITHM:HS256}
-  access_token_expire_minutes: ${ACCESS_TOKEN_EXPIRE_MINUTES:30}
+  # 是否启用 OpenAPI 文档
+  openapi_enabled: true
+  
+  # OpenAPI 文档路径
+  docs_url: "/docs"
+  redoc_url: "/redoc"
+  openapi_url: "/openapi.json"
+
+# 中间件配置
+middleware:
+  # 是否启用请求 ID 追踪
+  request_id: true
+  
+  # 是否启用请求日志
+  request_logging: true
+  
+  # 是否启用响应压缩
+  gzip: true
+  
+  # 最小压缩大小（字节）
+  gzip_minimum_size: 1024
+
+# 安全配置
+security:
+  # 是否启用 HTTPS 重定向
+  https_redirect: false
+  
+  # 是否启用 HSTS
+  hsts_enabled: false
+  hsts_max_age: 31536000
+  
+  # 是否启用 X-Frame-Options
+  frame_options: "DENY"
+  
+  # 是否启用 Content-Security-Policy
+  csp_enabled: false
+
+# 性能配置
+performance:
+  # 是否启用响应缓存
+  response_cache: false
+  
+  # 缓存过期时间（秒）
+  cache_ttl: 300
+  
+  # 是否启用请求限流
+  rate_limit: false
+  
+  # 每分钟请求数限制
+  rate_limit_per_minute: 60
+
+# 监控配置
+monitoring:
+  # 是否启用健康检查端点
+  health_check: true
+  health_check_path: "/health"
+  
+  # 是否启用指标端点
+  metrics: false
+  metrics_path: "/metrics"
+  
+  # 是否启用性能分析
+  profiling: false
+
+# 开发配置
+development:
+  # 是否显示详细错误信息
+  debug: true
+  
+  # 是否启用自动重载
+  auto_reload: true
+  
+  # 是否启用测试模式
+  testing: false
+
+# 生产配置（当 app.environment = production 时生效）
+production:
+  debug: false
+  auto_reload: false
+  server:
+    workers: 4
+    reload: false
+  cors:
+    allow_origins: [ ]  # 请配置具体域名
+
+# 注意事项：
+# 1. 开发环境和生产环境应使用不同的配置
+# 2. 敏感信息（如密钥）应使用环境变量，不要写在配置文件中
+# 3. 生产环境建议禁用 debug、reload 等开发特性
+# 4. CORS 配置在生产环境必须限制具体域名
+# 5. 建议使用 Nginx/Caddy 等反向代理处理 HTTPS

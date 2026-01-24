@@ -1,8 +1,4 @@
-"""
-关闭处理器管理
-
-兼容旧版IShutdownHandler接口
-"""
+"""关闭处理器管理"""
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -12,18 +8,17 @@ from pyspring.log.instance import logger
 
 class IShutdownHandler(IManaged, ILifecycle, ABC):
     """
-    关闭处理器接口（兼容旧版）
+    关闭处理器接口
     
     用于在应用关闭时执行清理任务，如：
     - 关闭数据库连接
     - 释放资源
     - 保存状态
     
-    迁移指南：
-    1. 继承 IShutdownHandler（自动包含ILifecycle）
+    使用方法：
+    1. 继承 IShutdownHandler（自动包含 ILifecycle）
     2. 实现 shutdown() 方法
     3. 实现 get_name() 方法
-    4. 无需手动实现 on_shutdown()（自动调用shutdown）
     """
 
     @abstractmethod
@@ -46,12 +41,12 @@ class IShutdownHandler(IManaged, ILifecycle, ABC):
         """
         pass
 
-    async def on_init(self):
-        """ILifecycle接口实现 - 关闭处理器无需初始化"""
+    async def on_startup(self):
+        """ILifecycle 接口实现 - 关闭处理器无需启动初始化"""
         pass
 
-    async def on_destroy(self):
-        """ILifecycle接口实现 - 自动调用shutdown()"""
+    async def on_shutdown(self):
+        """ILifecycle 接口实现 - 自动调用 shutdown()"""
         await self.execute()
 
     async def execute(self) -> bool:

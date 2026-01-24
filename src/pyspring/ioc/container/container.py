@@ -339,17 +339,17 @@ class Container:
             except Exception as e:
                 logger.error(f"  ❌ {service.__class__.__name__}: {e}")
 
-    async def destroy_lifecycle_services(self):
-        """销毁所有实现了ILifecycle的服务"""
-        logger.debug("🔄 销毁生命周期服务...")
+    async def shutdown_lifecycle_services(self):
+        """关闭所有实现了ILifecycle的服务"""
+        logger.debug("🔄 关闭生命周期服务...")
 
         # 1. 初始化Shutdown管理器
         from pyspring.ioc.lifecycle.shutdown import ShutdownHandlerManager
         self._shutdown_manager = ShutdownHandlerManager(self)
         self._shutdown_manager.discover()
 
-        # 2. 先销毁其他生命周期服务
-        for service in reversed(self._lifecycle_services):  # 反向销毁
+        # 2. 先关闭其他生命周期服务
+        for service in reversed(self._lifecycle_services):  # 反向关闭
             # 跳过ShutdownHandler（最后执行）
             from pyspring.ioc.lifecycle.shutdown import IShutdownHandler
             if isinstance(service, IShutdownHandler):

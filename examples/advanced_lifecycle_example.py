@@ -80,15 +80,15 @@ class DatabaseService(ILifecycle, IManaged):
         self.connected = False
         logger.info(f"🗄️  DatabaseService 实例创建，配置: {database_config}")
 
-    async def on_init(self):
+    async def on_startup(self):
         """初始化时自动调用 - 建立连接"""
         logger.info("🔌 DatabaseService 正在建立连接...")
         await asyncio.sleep(0.5)  # 模拟连接延迟
         self.connected = True
         logger.info("✅ DatabaseService 连接成功")
 
-    async def on_destroy(self):
-        """销毁时自动调用 - 关闭连接"""
+    async def on_shutdown(self):
+        """关闭时自动调用 - 关闭连接"""
         logger.info("🔌 DatabaseService 正在关闭连接...")
         await asyncio.sleep(0.3)
         self.connected = False
@@ -113,15 +113,15 @@ class CacheService(ILifecycle, IManaged):
         self.cache_data = {}
         logger.info(f"💾 CacheService 实例创建，配置: {cache_config}")
 
-    async def on_init(self):
+    async def on_startup(self):
         """初始化时自动调用"""
         logger.info("🔌 CacheService 正在建立连接...")
         await asyncio.sleep(0.3)
         self.connected = True
         logger.info("✅ CacheService 连接成功")
 
-    async def on_destroy(self):
-        """销毁时自动调用"""
+    async def on_shutdown(self):
+        """关闭时自动调用"""
         logger.info("🔌 CacheService 正在关闭连接...")
         await asyncio.sleep(0.2)
         self.connected = False

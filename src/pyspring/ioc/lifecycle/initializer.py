@@ -1,8 +1,4 @@
-"""
-启动初始化器管理
-
-兼容旧版IStartupInitializer接口
-"""
+"""启动初始化器管理"""
 from abc import ABC, abstractmethod
 from typing import List
 
@@ -12,7 +8,7 @@ from pyspring.log.instance import logger
 
 class IStartupInitializer(IManaged, ILifecycle, ABC):
     """
-    启动初始化器接口（兼容旧版）
+    启动初始化器接口
     
     用于在应用启动时执行初始化任务，如：
     - 数据库表结构初始化
@@ -20,11 +16,10 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
     - 配置验证
     - 数据迁移
     
-    迁移指南：
-    1. 继承 IStartupInitializer（自动包含ILifecycle）
+    使用方法：
+    1. 继承 IStartupInitializer（自动包含 ILifecycle）
     2. 实现 initialize() 方法
     3. 实现 get_name() 方法
-    4. 无需手动实现 on_startup()（自动调用initialize）
     """
 
     def __init__(self, enabled: bool = True):
@@ -55,11 +50,11 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
         pass
 
     async def on_startup(self):
-        """ILifecycle接口实现 - 自动调用execute()"""
+        """ILifecycle 接口实现 - 自动调用 execute()"""
         await self.execute()
 
     async def on_shutdown(self):
-        """ILifecycle接口实现 - 初始化器无需清理"""
+        """ILifecycle 接口实现 - 初始化器无需关闭清理"""
         pass
 
     async def execute(self) -> bool:

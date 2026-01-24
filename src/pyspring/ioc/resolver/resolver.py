@@ -121,6 +121,34 @@ class DependencyResolver:
                     logger.warning(f"⚠️ 参数 '{param_name}' 缺少类型注解，跳过注入")
                     continue
 
+                # 🔧 跳过有默认值的参数（除非是 IManaged 实例需要注入）
+                # 如果参数有默认值，通常表示这是一个可选的配置参数，不需要从容器注入
+                if param.default != inspect.Parameter.empty:
+                    # 检查是否是基本类型
+                    basic_types = (bool, int, str, float, type(None), type)
+                    if param_type in basic_types:
+                        logger.debug(f"⏩ 跳过有默认值的基本类型参数: '{param_name}'")
+                        continue
+
+                    # 检查是否是 Type[...] 泛型（如 Type[BaseUserTable]）
+                    # 这些通常是类型参数，不是需要注入的服务
+                    origin = getattr(param_type, '__origin__', None)
+                    if origin is type:
+                        logger.debug(f"⏩ 跳过有默认值的类型参数: '{param_name}'")
+                        continue
+
+                    # 如果不是 IManaged 的子类，也跳过
+                    # 只有明确需要注入的服务类型才应该被注入
+                    try:
+                        from pyspring.ioc.interfaces.core import IManaged
+                        if isinstance(param_type, type) and not issubclass(param_type, IManaged):
+                            logger.debug(f"⏩ 跳过有默认值的非服务类型参数: '{param_name}'")
+                            continue
+                    except (TypeError, ImportError):
+                        # 如果无法检查，默认跳过有默认值的参数
+                        logger.debug(f"⏩ 跳过有默认值的参数: '{param_name}'")
+                        continue
+
                 # 解析依赖服务名称
                 service_name = self._resolve_service_name(param_name, param_type)
                 if service_name:

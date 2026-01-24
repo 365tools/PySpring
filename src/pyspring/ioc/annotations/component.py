@@ -278,10 +278,22 @@ def ConditionalOnMissingBean(bean_type: type) -> Callable[[Union[Type[T], Callab
         class DefaultPasswordLoginProvider(ILoginProvider):
             '''用户可以通过提供自己的 ILoginProvider 实现来替换此默认类'''
             pass
+    
+    使用场景3: 装饰普通配置类（不继承 IManaged）
+        @ConditionalOnMissingBean(object)
+        class SecurityEntityConfiguration:
+            '''用户可以完全替换此配置类'''
+            pass
     """
 
     def decorator(target: Union[Type[T], Callable[..., T]]) -> Union[Type[T], Callable[..., T]]:
         setattr(target, "__pyspring_conditional_on_missing_bean__", bean_type)
+
+        # 🔧 如果装饰的是类（不是方法），自动标记为组件
+        # 这样扫描器才能识别它，即使它不继承 IManaged
+        if isinstance(target, type):
+            setattr(target, "__pyspring_component__", True)
+        
         return target
 
     return decorator

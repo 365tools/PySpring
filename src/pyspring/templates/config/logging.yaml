@@ -10,7 +10,7 @@ logging:
   # 日志级别选项: TRACE, DEBUG, INFO, SUCCESS, WARNING, ERROR, CRITICAL
   # 开发环境建议: DEBUG
   # 生产环境建议: INFO 或 WARNING
-  level: "INFO"
+  level: "DEBUG"
   
   # 控制台日志配置
   console:

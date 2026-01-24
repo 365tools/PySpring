@@ -155,10 +155,10 @@ class TestConfigArchitecture:
                 del os.environ["JWT_SECRET_KEY"]
                 del os.environ["JWT_ENCRYPTION_KEY"]
 
-    def test_database_config_loading(self):
+    def test_repositories_config_loading(self):
         """
-        测试场景5：数据库配置加载
-        验证 database.yaml 的三层架构
+        测试场景5：数据仓储配置加载
+        验证 repositories.yaml 的三层架构
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             # 用户覆盖数据库类型和部分配置
@@ -175,11 +175,11 @@ class TestConfigArchitecture:
                 }
             }
 
-            user_config_file = Path(temp_dir) / "database.yaml"
+            user_config_file = Path(temp_dir) / "repositories.yaml"
             with open(user_config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(user_config, f)
 
-            config = ConfigManager.load_config("database", user_config_dir=temp_dir)
+            config = ConfigManager.load_config("repositories", user_config_dir=temp_dir)
 
             # 验证用户配置覆盖
             assert config["database"]["type"] == "postgresql"
@@ -191,9 +191,9 @@ class TestConfigArchitecture:
             assert config["database"]["postgresql"]["port"] == 5432  # 框架默认
             assert config["cache"]["redis"]["host"] == "localhost"  # 框架默认
 
-    def test_database_env_overrides(self):
+    def test_repositories_env_overrides(self):
         """
-        测试场景6：数据库配置的环境变量覆盖
+        测试场景6：数据仓储配置的环境变量覆盖
         """
         with tempfile.TemporaryDirectory() as temp_dir:
             user_config = {
@@ -209,7 +209,7 @@ class TestConfigArchitecture:
                 }
             }
 
-            user_config_file = Path(temp_dir) / "database.yaml"
+            user_config_file = Path(temp_dir) / "repositories.yaml"
             with open(user_config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(user_config, f)
 
@@ -219,7 +219,7 @@ class TestConfigArchitecture:
             os.environ["MYSQL_PASSWORD"] = "env_mysql_password"
 
             try:
-                config = ConfigManager.load_config("database", user_config_dir=temp_dir)
+                config = ConfigManager.load_config("repositories", user_config_dir=temp_dir)
 
                 # 验证环境变量覆盖
                 assert config["database"]["postgresql"]["password"] == "env_pg_password"
@@ -323,7 +323,7 @@ class TestConfigArchitecture:
         """
         from pyspring.config_manager import (
             load_security_config,
-            load_database_config,
+            load_repositories_config,
             load_logging_config
         )
 
@@ -332,9 +332,9 @@ class TestConfigArchitecture:
         assert security_config is not None
         assert "authentication" in security_config
 
-        database_config = load_database_config()
-        assert database_config is not None
-        assert "database" in database_config or "cache" in database_config
+        repositories_config = load_repositories_config()
+        assert repositories_config is not None
+        assert "database" in repositories_config or "cache" in repositories_config
 
         logging_config = load_logging_config()
         assert logging_config is not None

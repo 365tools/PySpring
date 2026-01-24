@@ -12,7 +12,7 @@ src/pyspring/config/
 ├── framework.yaml          # 框架核心配置（自动扫描的包、自动配置开关）
 └── defaults/               # 框架默认值（可被用户覆盖）
     ├── security.yaml       # 安全模块默认配置
-    ├── database.yaml       # 数据库模块默认配置
+    ├── repositories.yaml   # 数据仓储模块默认配置（数据库+缓存）
     └── logging.yaml        # 日志模块默认配置
 ```
 
@@ -25,7 +25,7 @@ src/pyspring/config/
 your_project/config/
 ├── application.yaml        # 应用基本信息、服务器配置
 ├── security.yaml          # 安全配置（覆盖框架默认）
-├── database.yaml          # 数据库配置（覆盖框架默认）
+├── repositories.yaml      # 数据仓储配置（覆盖框架默认）
 └── logging.yaml           # 日志配置（覆盖框架默认）
 ```
 
@@ -37,7 +37,7 @@ your_project/config/
 src/pyspring/templates/example/config/
 ├── application.yaml.template
 ├── security.yaml.template
-├── database.yaml.template
+├── repositories.yaml.template
 └── logging.yaml.template
 ```
 
@@ -89,22 +89,22 @@ config = ConfigManager.load_config("security")
 # 便捷函数
 from pyspring.config_manager import (
     load_security_config,
-    load_database_config,
+    load_repositories_config,
     load_logging_config
 )
 
 security_config = load_security_config()
-database_config = load_database_config()
+repositories_config = load_repositories_config()
 logging_config = load_logging_config()
 ```
 
 ### 各模块配置管理器
 
-| 配置管理器                       | 配置文件          | 状态    | 说明               |
-|-----------------------------|---------------|-------|------------------|
-| `SecurityConfigManager`     | security.yaml | ✅ 已更新 | 使用 ConfigManager |
-| `RepositoriesConfigManager` | database.yaml | ✅ 已更新 | 使用 ConfigManager |
-| `LoggingConfigManager`      | logging.yaml  | ✅ 已更新 | 使用 ConfigManager |
+| 配置管理器                       | 配置文件              | 状态    | 说明               |
+|-----------------------------|-------------------|-------|------------------|
+| `SecurityConfigManager`     | security.yaml     | ✅ 已更新 | 使用 ConfigManager |
+| `RepositoriesConfigManager` | repositories.yaml | ✅ 已更新 | 使用 ConfigManager |
+| `LoggingConfigManager`      | logging.yaml      | ✅ 已更新 | 使用 ConfigManager |
 
 ## 🛠️ 用户使用指南
 
@@ -137,7 +137,7 @@ password:
 - `ACCESS_TOKEN_EXPIRE` - Token 过期时间
 - `REFRESH_TOKEN_EXPIRE` - Refresh Token 过期时间
 
-**数据库配置 (database.yaml):**
+**数据仓储配置 (repositories.yaml):**
 - `POSTGRES_PASSWORD` - PostgreSQL 密码
 - `MYSQL_PASSWORD` - MySQL 密码
 - `REDIS_PASSWORD` - Redis 密码

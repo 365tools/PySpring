@@ -1,24 +1,29 @@
-# PySpring IOC 容器配置
-# 
-# 注意：通常不需要这个文件，因为 @component 装饰器会自动注册组件
-# 这个文件仅用于展示手动配置的方式
+# IoC 容器配置示例
+# 复制此文件为 container.yaml 并根据需要修改
 
+# 服务扫描配置
+scan:
+  # 需要扫描的包路径列表
+  # 示例：添加自定义服务包
+  packages:
+    # - your.custom.package  # 添加您的自定义包路径
+
+  # 是否启用递归扫描（扫描子包）
+  recursive: true
+
+
+# 容器配置
 container:
-  # 自动扫描的包
-  scan_packages:
-    - app
-    
-  # 组件配置
-  components:
-    # 示例：手动配置组件
-    # - name: my_service
-    #   class: app.services.my_service.MyService
-    #   scope: singleton
-    #   lazy: false
-    
-  # 属性注入
-  properties:
-    # 示例：注入配置值
-    # - bean: my_service
-    #   property: config_value
-    #   value: ${CONFIG_KEY:default_value}
+  # 是否启用懒加载（首次使用时才实例化）
+  lazy_loading: true
+  
+  # 是否启用接口自动映射
+  auto_interface_mapping: true
+  
+  # 是否记录详细日志（开发环境建议开启）
+  debug: false
+
+# 注意事项：
+# 1. 包路径必须是有效的 Python 模块路径
+# 2. 实现了 ISingletonService 接口的服务会被注册为单例
+# 3. 其他服务默认注册为工厂模式（每次请求创建新实例）

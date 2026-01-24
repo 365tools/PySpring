@@ -148,7 +148,7 @@ class ConfigManager:
         
         环境变量命名规则：
         - security.yaml: JWT_SECRET_KEY, JWT_ENCRYPTION_KEY
-        - database.yaml: POSTGRES_PASSWORD, MYSQL_PASSWORD, REDIS_PASSWORD
+        - repositories.yaml: POSTGRES_PASSWORD, MYSQL_PASSWORD, REDIS_PASSWORD
         """
         result = config.copy()
 
@@ -163,7 +163,7 @@ class ConfigManager:
                 cls._set_nested(result, ["authentication", "jwt", "encryption", "encryption_key"], jwt_enc_key)
                 logger.debug("✅ 从环境变量加载 JWT_ENCRYPTION_KEY")
 
-        elif config_name == "database":
+        elif config_name == "repositories":
             # PostgreSQL 密码
             if pg_password := os.getenv("POSTGRES_PASSWORD"):
                 cls._set_nested(result, ["database", "postgresql", "password"], pg_password)
@@ -209,9 +209,9 @@ def load_security_config(user_config_dir: Optional[str] = None) -> Dict[str, Any
     return ConfigManager.load_config("security", user_config_dir)
 
 
-def load_database_config(user_config_dir: Optional[str] = None) -> Dict[str, Any]:
-    """加载数据库配置"""
-    return ConfigManager.load_config("database", user_config_dir)
+def load_repositories_config(user_config_dir: Optional[str] = None) -> Dict[str, Any]:
+    """加载数据仓储配置（数据库+缓存）"""
+    return ConfigManager.load_config("repositories", user_config_dir)
 
 
 def load_logging_config(user_config_dir: Optional[str] = None) -> Dict[str, Any]:
