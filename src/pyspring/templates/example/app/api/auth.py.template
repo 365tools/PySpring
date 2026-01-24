@@ -4,7 +4,7 @@ from typing import Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
-from pyspring.ioc import inject
+from pyspring.ioc import Inject
 from app.services.auth_service import AuthService
 from app.models.user import User
 
@@ -35,7 +35,7 @@ class TokenResponse(BaseModel):
 @router.post("/login", response_model=TokenResponse)
 async def login(
     request: LoginRequest,
-    auth_service: AuthService = Depends(lambda: inject(AuthService))
+    auth_service: AuthService = Depends(lambda: Inject(AuthService))
 ) -> TokenResponse:
     """
     用户登录
@@ -60,7 +60,7 @@ async def login(
 @router.post("/register", response_model=Dict)
 async def register(
     request: RegisterRequest,
-    auth_service: AuthService = Depends(lambda: inject(AuthService))
+    auth_service: AuthService = Depends(lambda: Inject(AuthService))
 ) -> Dict:
     """
     用户注册

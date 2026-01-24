@@ -4,7 +4,7 @@ from typing import List, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 
-from pyspring.ioc import inject
+from pyspring.ioc import Inject
 from app.services.user_service import UserService
 from app.dependencies.auth import get_current_user
 from app.models.user import User
@@ -46,7 +46,7 @@ async def get_current_user_info(
 async def list_users(
     skip: int = 0,
     limit: int = 10,
-    user_service: UserService = Depends(lambda: inject(UserService)),
+    user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
 ) -> List[UserResponse]:
     """
@@ -62,7 +62,7 @@ async def list_users(
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
-    user_service: UserService = Depends(lambda: inject(UserService)),
+    user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
 ) -> UserResponse:
     """
@@ -85,7 +85,7 @@ async def get_user(
 async def update_user(
     user_id: int,
     request: UserUpdateRequest,
-    user_service: UserService = Depends(lambda: inject(UserService)),
+    user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
 ) -> UserResponse:
     """
@@ -126,7 +126,7 @@ async def update_user(
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: int,
-    user_service: UserService = Depends(lambda: inject(UserService)),
+    user_service: UserService = Depends(lambda: Inject(UserService)),
     current_user: User = Depends(get_current_user)
 ) -> Dict:
     """

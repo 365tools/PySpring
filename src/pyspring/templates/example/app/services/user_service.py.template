@@ -10,8 +10,8 @@
 """
 from typing import List, Optional, Dict
 
-from pyspring.ioc import component, inject
-from pyspring.core.lifecycle import ILifecycle
+from pyspring.ioc import Component
+from pyspring.ioc.interfaces import ILifecycle
 from pyspring.log.instance import logger
 
 from app.repositories.user_repository import UserRepository
@@ -19,16 +19,15 @@ from app.models.user import User
 from app.services.cache_service import CacheService
 
 
-@component
+@Component()
 class UserService(ILifecycle):
     """
     用户服务
     
-    使用 @component 装饰器自动注册到 IOC 容器
+    使用 @Component 装饰器自动注册到 IOC 容器
     实现 ILifecycle 接口进行生命周期管理
     """
     
-    @inject
     def __init__(
         self,
         user_repository: UserRepository,

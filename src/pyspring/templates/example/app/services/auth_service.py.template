@@ -12,7 +12,7 @@ from typing import Optional
 import jwt
 from passlib.context import CryptContext
 
-from pyspring.ioc import component, inject
+from pyspring.ioc import Component
 from pyspring.log.instance import logger
 
 from app.repositories.user_repository import UserRepository
@@ -28,11 +28,10 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-@component
+@Component()
 class AuthService:
     """认证服务"""
     
-    @inject
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
         logger.info("📦 创建 AuthService 实例")

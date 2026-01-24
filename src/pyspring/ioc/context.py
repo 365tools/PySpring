@@ -146,4 +146,7 @@ def inject(service_type: type):
     return ApplicationContext.service(service_type)
 
 
-__all__ = ['ApplicationContext', 'AppContext', 'inject']
+# 大写别名（推荐用于 FastAPI Depends，保持命名一致性）
+Inject = inject
+
+__all__ = ['ApplicationContext', 'AppContext', 'Inject']

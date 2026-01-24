@@ -6,8 +6,8 @@
 2. 数据库表创建
 3. 初始数据填充
 """
-from pyspring.ioc import component
-from pyspring.core.lifecycle import ILifecycle
+from pyspring.ioc import Component
+from pyspring.ioc.interfaces import ILifecycle
 from pyspring.log.instance import logger
 
 from app.database.session import init_database, engine
@@ -15,7 +15,7 @@ from app.repositories.user_repository import UserRepository
 from app.services.auth_service import AuthService
 
 
-@component
+@Component()
 class DatabaseInitializer(ILifecycle):
     """
     数据库初始化器

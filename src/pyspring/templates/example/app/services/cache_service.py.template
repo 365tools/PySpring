@@ -9,8 +9,8 @@
 from typing import Optional, Any
 import json
 
-from pyspring.ioc import component
-from pyspring.core.lifecycle import ILifecycle
+from pyspring.ioc import Component
+from pyspring.ioc.interfaces import ILifecycle
 from pyspring.log.instance import logger
 
 try:
@@ -21,7 +21,7 @@ except ImportError:
     logger.warning("⚠️ redis 未安装，使用内存缓存")
 
 
-@component
+@Component()
 class CacheService(ILifecycle):
     """
     缓存服务

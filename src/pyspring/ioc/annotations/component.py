@@ -3,22 +3,40 @@ IOC组件注解
 
 定义组件的注册方式
 """
-from typing import TypeVar, Type, Optional, Callable
+from typing import TypeVar, Type, Optional, Callable, Union, overload
 
 T = TypeVar('T')
 
 
+@overload
+def Component(cls: Type[T]) -> Type[T]: ...
+
+
+@overload
 def Component(
         name: Optional[str] = None,
         primary: bool = False,
         lazy: bool = False
-) -> Callable[[Type[T]], Type[T]]:
+) -> Callable[[Type[T]], Type[T]]: ...
+
+
+def Component(
+        cls: Optional[Type[T]] = None,
+        name: Optional[str] = None,
+        primary: bool = False,
+        lazy: bool = False
+) -> Union[Type[T], Callable[[Type[T]], Type[T]]]:
     """
     组件装饰器
     
     标记一个类为IOC组件，将被自动扫描和注册。
     
+    支持两种使用方式：
+    1. 不带括号：@Component（使用默认参数）
+    2. 带括号：@Component(name="xxx", primary=True)（自定义参数）
+    
     Args:
+        cls: 被装饰的类（内部使用，自动传入）
         name: 组件名称（可选，默认使用类名的snake_case形式）
         primary: 是否为主要候选者（当有多个实现时优先使用）
         lazy: 是否懒加载（延迟到第一次使用时才实例化）
@@ -29,11 +47,18 @@ def Component(
     - 管理器类
     
     示例：
+        # 不带括号
         @Component
         @Singleton
         class UserService:
             def __init__(self, user_repo: IUserRepository):
                 self.user_repo = user_repo
+        
+        # 带括号和参数
+        @Component(name="custom_user_service", primary=True)
+        @Singleton
+        class UserService:
+            pass
     """
 
     def decorator(cls: Type[T]) -> Type[T]:
@@ -46,45 +71,99 @@ def Component(
             setattr(cls, "__pyspring_lazy__", True)
         return cls
 
-    return decorator
+    # 判断是否直接作为装饰器使用（不带括号）
+    if cls is not None:
+        # @Component 形式：直接装饰类
+        return decorator(cls)
+    else:
+        # @Component() 或 @Component(name="xxx") 形式：返回装饰器函数
+        return decorator
 
 
+@overload
+def Service(cls: Type[T]) -> Type[T]: ...
+
+
+@overload
 def Service(
         name: Optional[str] = None,
         primary: bool = False,
         lazy: bool = False
-) -> Callable[[Type[T]], Type[T]]:
+) -> Callable[[Type[T]], Type[T]]: ...
+
+
+def Service(
+        cls: Optional[Type[T]] = None,
+        name: Optional[str] = None,
+        primary: bool = False,
+        lazy: bool = False
+) -> Union[Type[T], Callable[[Type[T]], Type[T]]]:
     """
     服务装饰器（@Component的语义化别名）
     
     功能与 @Component 完全相同，仅为了代码语义更清晰。
     
+    支持两种使用方式：
+    1. 不带括号：@Service
+    2. 带括号：@Service(name="xxx", primary=True)
+    
     示例：
+        # 不带括号
         @Service
         @Singleton
         class AuthenticationService:
             pass
+        
+        # 带括号
+        @Service(name="auth_service", primary=True)
+        @Singleton
+        class AuthenticationService:
+            pass
     """
-    return Component(name=name, primary=primary, lazy=lazy)
+    return Component(cls=cls, name=name, primary=primary, lazy=lazy)
 
 
+@overload
+def Repository(cls: Type[T]) -> Type[T]: ...
+
+
+@overload
 def Repository(
         name: Optional[str] = None,
         primary: bool = False,
         lazy: bool = False
-) -> Callable[[Type[T]], Type[T]]:
+) -> Callable[[Type[T]], Type[T]]: ...
+
+
+def Repository(
+        cls: Optional[Type[T]] = None,
+        name: Optional[str] = None,
+        primary: bool = False,
+        lazy: bool = False
+) -> Union[Type[T], Callable[[Type[T]], Type[T]]]:
     """
     仓储装饰器（@Component的语义化别名）
     
     专门用于标记Repository层的类。
     
+    支持两种使用方式：
+    1. 不带括号：@Repository
+    2. 带括号：@Repository(name="xxx", primary=True)
+    
     示例：
+        # 不带括号
         @Repository
         @Singleton
         class UserRepository:
             pass
+        
+        # 带括号
+        @Repository(name="user_repo", primary=True)
+        @Singleton
+        class UserRepository:
+            pass
     """
-    return Component(name=name, primary=primary, lazy=lazy)
+    return Component(cls=cls, name=name, primary=primary, lazy=lazy)
 
 
 def Configuration(cls: Type[T]) -> Type[T]:

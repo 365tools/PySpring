@@ -11,7 +11,7 @@ from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-from pyspring.ioc import inject
+from pyspring.ioc import Inject
 from app.services.auth_service import AuthService
 from app.models.user import User
 
@@ -22,7 +22,7 @@ security = HTTPBearer()
 
 async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    auth_service: AuthService = Depends(lambda: inject(AuthService))
+    auth_service: AuthService = Depends(lambda: Inject(AuthService))
 ) -> User:
     """
     获取当前登录用户
@@ -59,7 +59,7 @@ async def get_current_user(
 
 async def get_current_user_optional(
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    auth_service: AuthService = Depends(lambda: inject(AuthService))
+    auth_service: AuthService = Depends(lambda: Inject(AuthService))
 ) -> Optional[User]:
     """
     获取当前用户（可选）

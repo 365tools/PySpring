@@ -7,18 +7,17 @@
 """
 from typing import Dict
 
-from pyspring.ioc import component, inject
+from pyspring.ioc import Component
 from pyspring.log.instance import logger
 
 from app.repositories.user_repository import UserRepository
 from app.services.cache_service import CacheService
 
 
-@component
+@Component()
 class HealthCheckService:
     """健康检查服务"""
     
-    @inject
     def __init__(
         self,
         user_repository: UserRepository,

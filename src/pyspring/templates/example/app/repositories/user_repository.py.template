@@ -11,15 +11,15 @@ from typing import List, Optional, Dict
 from sqlalchemy import select, update, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pyspring.ioc import component, inject
-from pyspring.core.lifecycle import ILifecycle
+from pyspring.ioc import Component
+from pyspring.ioc.interfaces import ILifecycle
 from pyspring.log.instance import logger
 
 from app.models.user import User
 from app.database.session import get_db_session
 
 
-@component
+@Component()
 class UserRepository(ILifecycle):
     """
     用户仓储
@@ -27,7 +27,6 @@ class UserRepository(ILifecycle):
     使用 Repository 模式封装数据访问逻辑
     """
     
-    @inject
     def __init__(self):
         self.db: Optional[AsyncSession] = None
         logger.info("📦 创建 UserRepository 实例")
