@@ -1,0 +1,61 @@
+"""
+数据库健康检查指标示例
+"""
+
+from loguru import logger
+from pyspring.ioc.annotations import Component
+from pyspring.health import HealthIndicator, HealthCheckResult, HealthStatus
+from app.repositories.user_repository import UserRepository
+
+
+@Component
+class DatabaseHealthIndicator(HealthIndicator):
+    """数据库健康检查"""
+
+    def __init__(self, user_repository: UserRepository):
+        self.user_repository = user_repository
+
+    def name(self) -> str:
+        return "database"
+
+    def order(self) -> int:
+        return 2  # 第二个检查
+
+    async def check(self) -> HealthCheckResult:
+        """检查数据库连接是否正常"""
+        try:
+            # 尝试查询用户（测试数据库连接）
+            user = await self.user_repository.find_by_id(1)
+            
+            # 检查默认用户是否存在
+            if user is not None:
+                all_users = await self.user_repository.find_all()
+                return HealthCheckResult(
+                    status=HealthStatus.UP,
+                    name=self.name(),
+                    details={
+                        "type": "in-memory",
+                        "connection": "active",
+                        "records": len(all_users)
+                    }
+                )
+            else:
+                # 数据库可访问，但没有数据
+                return HealthCheckResult(
+                    status=HealthStatus.UP,
+                    name=self.name(),
+                    details={
+                        "type": "in-memory",
+                        "connection": "active",
+                        "records": 0,
+                        "warning": "No test data found"
+                    }
+                )
+                
+        except Exception as e:
+            logger.error(f"数据库健康检查失败: {e}")
+            return HealthCheckResult(
+                status=HealthStatus.DOWN,
+                name=self.name(),
+                error=str(e)
+            )

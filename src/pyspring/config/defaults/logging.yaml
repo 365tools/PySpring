@@ -1,0 +1,83 @@
+# 日志模块框架默认配置
+# ⚠️  此文件由 PySpring 框架维护
+# ✅ 用户可通过项目的 config/logging.yaml 覆盖这些默认值
+# 📦 打包到框架内部，不应直接修改
+
+# 基本配置（框架默认）
+logging:
+  # 应用日志级别
+  # 可选值: TRACE, DEBUG, INFO, SUCCESS, WARNING, ERROR, CRITICAL
+  level: "INFO"
+  
+  # 控制台日志配置
+  console:
+    # 是否启用控制台输出
+    enabled: true
+    # 是否启用彩色输出
+    colorize: true
+    # 日志格式
+    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}"
+
+  # 文件日志配置
+  file:
+    # 是否启用文件日志
+    enabled: false
+    # 日志文件路径（相对于项目根目录）
+    path: "logs/app.log"
+    # 日志轮转大小
+    rotation: "10 MB"
+    # 日志保留时间
+    retention: "7 days"
+    # 压缩格式: zip, gz, tar, tar.gz, tar.bz2
+    compression: "zip"
+    # 文件日志格式
+    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]}:{line} | {message}"
+
+  # 高级配置
+  advanced:
+    # 是否显示回溯信息（异常时显示完整调用栈）
+    backtrace: true
+    # 是否启用诊断模式（显示变量值）
+    diagnose: false  # 生产环境建议关闭
+    # 是否使用异步队列（提高性能）
+    enqueue: false  # 默认同步，避免复杂性
+    # 日志深度偏移（用于调整调用位置定位）
+    depth_offset: 1
+
+  # 过滤器配置
+  filters:
+    # 过滤健康检查请求（避免日志过多）
+    health_check:
+      enabled: true
+      paths:
+        - "/health"
+        - "/healthz"
+        - "/ping"
+    
+    # 过滤静态文件请求
+    static_files:
+      enabled: true
+      paths:
+        - "/static"
+        - "/favicon.ico"
+
+# 框架内部日志配置
+framework:
+  # 框架组件日志级别
+  components:
+    # IoC 容器
+    ioc: "INFO"
+    # AOP 切面
+    aop: "INFO"
+    # 安全模块
+    security: "INFO"
+    # 数据库
+    database: "INFO"
+    # HTTP 服务器
+    server: "INFO"
+  
+  # 是否启用启动横幅
+  banner:
+    enabled: true
+    # 自定义横幅文本
+    text: null  # null 表示使用框架默认横幅

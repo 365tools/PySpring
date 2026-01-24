@@ -1,0 +1,132 @@
+"""
+API端点健康检查指标 - 端到端集成检查
+"""
+
+from loguru import logger
+from pyspring.ioc.annotations import Component
+from pyspring.health import HealthIndicator, HealthCheckResult, HealthStatus
+
+
+@Component
+class APIHealthIndicator(HealthIndicator):
+    """
+    API端点健康检查 - 通过实际调用 /health 端点验证整个框架栈
+    
+    检查内容：
+    - FastAPI路由是否正确注册
+    - 依赖注入是否正常工作
+    - IOC容器是否完整初始化
+    - 中间件是否正常执行
+    - 完整的请求处理链路
+    """
+
+    def name(self) -> str:
+        return "api"
+
+    def order(self) -> int:
+        return 0  # 最先检查（基础集成检查）
+
+    async def check(self) -> HealthCheckResult:
+        """通过实际调用API端点来检查整个框架栈"""
+        try:
+            # 使用TestClient模拟HTTP请求（不需要真实端口）
+            from fastapi.testclient import TestClient
+            from app.main import app
+            
+            logger.info("🔍 开始端到端API检查...")
+            
+            # 创建测试客户端
+            client = TestClient(app)
+            
+            # 实际调用 /health 端点
+            logger.debug("  → 调用 GET /health")
+            response = client.get("/health")
+            logger.debug(f"  ← 状态码: {response.status_code}")
+            
+            # 解析响应内容
+            try:
+                response_data = response.json()
+            except Exception:
+                return HealthCheckResult(
+                    status=HealthStatus.DOWN,
+                    name=self.name(),
+                    error=f"健康检查端点返回非JSON响应: {response.status_code}",
+                    details={
+                        "status_code": response.status_code,
+                        "response": response.text[:200]
+                    }
+                )
+            
+            # 统一按照 Response.success() / Response.error() 结构处理
+            if not isinstance(response_data, dict) or "success" not in response_data:
+                return HealthCheckResult(
+                    status=HealthStatus.DOWN,
+                    name=self.name(),
+                    error="健康检查端点未使用框架统一响应格式",
+                    details={"response": response_data}
+                )
+            
+            # 检查是否成功
+            if not response_data["success"]:
+                # Response.error() 格式
+                return HealthCheckResult(
+                    status=HealthStatus.DOWN,
+                    name=self.name(),
+                    error=response_data.get("message", "健康检查失败"),
+                    details=response_data.get("data", {})
+                )
+            
+            # Response.success() 格式，提取 data
+            health_data = response_data.get("data", {})
+            
+            # 检查 data 中的 status 字段
+            if "status" not in health_data:
+                return HealthCheckResult(
+                    status=HealthStatus.DOWN,
+                    name=self.name(),
+                    error="健康检查响应缺少status字段",
+                    details={"response": response_data}
+                )
+            
+            # 检查路由数量
+            routes = [
+                route.path for route in app.routes 
+                if hasattr(route, 'path')
+            ]
+            
+            logger.info(f"✅ 端到端检查成功: 路由({len(routes)}个), 依赖注入正常, 中间件工作")
+            
+            return HealthCheckResult(
+                status=HealthStatus.UP,
+                name=self.name(),
+                details={
+                    "endpoint_test": "✅ 完整请求周期验证成功",
+                    "status_code": response.status_code,
+                    "response_status": health_data.get("status"),
+                    "total_routes": len(routes),
+                    "verified": [
+                        "FastAPI应用初始化",
+                        "路由注册",
+                        "依赖注入(Inject)",
+                        "IOC容器服务获取",
+                        "中间件执行",
+                        "完整请求-响应周期"
+                    ]
+                }
+            )
+                
+        except ImportError as e:
+            logger.error(f"无法导入FastAPI依赖: {e}")
+            return HealthCheckResult(
+                status=HealthStatus.DOWN,
+                name=self.name(),
+                error=f"FastAPI或TestClient未安装: {str(e)}"
+            )
+        except Exception as e:
+            logger.error(f"API端点调用失败: {e}")
+            return HealthCheckResult(
+                status=HealthStatus.DOWN,
+                name=self.name(),
+                error=f"端点调用异常: {str(e)}",
+                details={"exception_type": type(e).__name__}
+            )

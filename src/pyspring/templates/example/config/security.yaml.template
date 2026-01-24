@@ -1,0 +1,30 @@
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# PySpring 用户项目配置 - 安全配置
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ✅ 此文件由用户维护，可自由编辑
+# 🔄 此文件中的配置会覆盖框架默认值（src/pyspring/config/defaults/security.yaml）
+# 💡 只需配置您要覆盖的值，未配置的项将使用框架默认值
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# 示例：覆盖 JWT 配置
+authentication:
+  jwt:
+    # 覆盖 Token 过期时间（框架默认 3600 秒）
+    access_token_expire: 7200  # 2小时
+    
+    # 生产环境必须通过环境变量设置密钥
+    # secret_key: ${JWT_SECRET_KEY}
+
+# 示例：覆盖密码策略
+password:
+  # 覆盖最小长度（框架默认 8）
+  min_length: 10
+  # 要求特殊字符（框架默认 false）
+  require_special: true
+
+# 示例：添加自定义白名单路径
+# authentication:
+#   whitelist:
+#     exact_paths:
+#       - "/api/public/status"
+#       - "/api/public/version"

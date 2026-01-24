@@ -1,0 +1,158 @@
+"""
+PySpring 安全模块自定义配置示例
+
+展示：
+1. 如何自定义 SecurityEntityConfiguration（自定义用户表映射）
+2. 如何自定义 IPasswordEncoder（自定义密码加密算法）
+3. 如何自定义 ILoginProvider（自定义登录方式）
+4. 如何集成框架的完整认证授权体系
+
+使用场景：
+- 当需要使用自定义用户表结构时
+- 当需要实现特殊的认证方式（OAuth2、LDAP、短信验证码等）
+- 当需要自定义密码加密算法时
+- 当需要扩展框架的默认行为时
+
+注意：
+- 此文件为可选配置，如不需要自定义，可删除
+- 框架提供的默认配置（DefaultRegisterService, DefaultLoginService）已满足大多数需求
+- @ConditionalOnMissingBean 确保自定义配置优先
+
+最佳实践（v1.1.0b26+）：
+- ✅ 推荐：直接继承类，无需任何装饰器
+- ✅ 优点：只需重写需要修改的部分，其他字段自动继承
+- ✅ 机制：子类自动替换父类的条件注册
+- ❌ 过时：使用 @Configuration + @Bean() 创建新实例（代码冗余）
+
+工作原理（替换机制）：
+- 框架包先扫描 → 注册 SecurityEntityConfiguration（带 @ConditionalOnMissingBean）
+- 用户包后扫描 → 发现 CustomSecurityEntityConfiguration 继承父类
+- 检测父类有条件装饰器 → 移除父类服务 → 注册子类服务
+- 结果：容器里只有子类，父类被完全替换
+"""
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
+
+# 导入自定义的用户模型
+from app.models.user import User
+
+
+# ============================================================
+# 方式1：自定义 SecurityEntityConfiguration（推荐）
+# ============================================================
+
+class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
+    """
+    自定义安全实体配置 - 最简洁的方式
+    
+    使用场景：
+    - 告诉框架使用我们自定义的 User 模型
+    - 只需重写 user_orm_model，其他字段自动继承默认值
+    
+    工作原理（替换机制 v1.1.0b26+）：
+    1. 继承 SecurityEntityConfiguration 并重写 __init__
+    2. 无需任何装饰器（自动检测父类的 @ConditionalOnMissingBean）
+    3. 框架先注册父类 → 用户包扫描到子类 → 移除父类 → 注册子类
+    4. 结果：容器里只有子类，实现真正的"替换"
+    
+    优点：
+    - ✅ 极简：无需装饰器
+    - ✅ 清晰：只写需要改的代码
+    - ✅ 高效：容器里只有一个实现（真正的替换）
+    - ✅ 可维护：框架新增字段自动继承
+    
+    注意：不需要 @ConditionalOnMissingBean 装饰器！
+    - 框架检测到父类有条件装饰器，自动执行替换逻辑
+    - 单例保证：容器里只有子类，父类被移除
+    """
+    
+    def __init__(self):
+        super().__init__()  # 继承所有默认值
+        
+        # 只重写需要自定义的字段
+        self.user_orm_model = User  # 使用自定义的 User 模型
+        
+        # 其他字段（role_orm_model, permission_orm_model 等）自动继承默认值
+        # 无需显式声明！
+
+
+# ============================================================
+# 高级自定义示例（可选）
+# ============================================================
+
+# 示例2：自定义密码加密器（推荐方式）
+"""
+from passlib.context import CryptContext
+from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+
+@ConditionalOnMissingBean(IPasswordEncoder)
+class CustomPasswordEncoder(IPasswordEncoder):
+    '''自定义密码加密器（使用 Argon2） - 推荐方式'''
+    
+    def __init__(self):
+        self.pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+    
+    def encode(self, raw_password: str) -> str:
+        return self.pwd_context.hash(raw_password)
+    
+    def verify(self, raw_password: str, hashed_password: str) -> bool:
+        return self.pwd_context.verify(raw_password, hashed_password)
+
+# 无需 @Configuration + @Bean()！
+# 框架会自动扫描并注册此实现
+# 由于 @ConditionalOnMissingBean，框架的 BCryptPasswordEncoder 会被跳过
+"""
+
+# 示例3：自定义登录提供者（短信验证码登录）
+"""
+from pyspring.security.authentication.contracts.login import ILoginProvider
+from pyspring.security.authentication.contracts.request import LoginRequest
+from pyspring.ioc.annotations.component import Component
+
+@Component()  # 不需要 @ConditionalOnMissingBean，因为可以有多个 ILoginProvider
+class SmsLoginProvider(ILoginProvider):
+    '''短信验证码登录提供者'''
+    
+    def support_type(self) -> str:
+        return "sms"  # 登录类型
+    
+    async def authenticate(self, request: LoginRequest) -> Optional[int]:
+        '''验证短信验证码'''
+        phone = request.username  # 手机号
+        code = request.password   # 验证码
+        
+        # TODO: 验证短信验证码
+        # 1. 从缓存获取验证码
+        # 2. 验证验证码是否正确
+        # 3. 返回用户ID
+        
+        return user_id  # 返回用户ID或None
+
+# 无需 @Configuration + @Bean()！
+# 框架会自动扫描并收集所有 ILoginProvider 实现
+"""
+
+# 示例4：完全自定义用户表（不继承 BaseUserTable）
+"""
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base
+
+CustomBase = declarative_base()
+
+class CustomUser(CustomBase):
+    '''完全自定义的用户表（不继承 BaseUserTable）'''
+    __tablename__ = "custom_users"
+    
+    id = Column(Integer, primary_key=True)
+    login_name = Column(String(100), unique=True, nullable=False)
+    email_address = Column(String(100), unique=True, nullable=False)
+    hashed_pwd = Column(String(255), nullable=False)
+    
+    # 注意：需要实现字段映射逻辑
+    # 框架期望的字段名：user_id, email, password
+    # 自定义表的字段名：login_name, email_address, hashed_pwd
+    # 
+    # 解决方案：
+    # 1. 使用 property 映射字段
+    # 2. 或修改框架代码支持字段映射
+    # 3. 或自定义 IUserProvider
+"""

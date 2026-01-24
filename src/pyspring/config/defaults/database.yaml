@@ -1,0 +1,99 @@
+# 数据库模块框架默认配置
+# ⚠️  此文件由 PySpring 框架维护
+# ✅ 用户可通过项目的 config/database.yaml 覆盖这些默认值
+# 📦 打包到框架内部，不应直接修改
+
+# 缓存配置（框架默认）
+cache:
+  # 缓存类型: redis, memory, auto
+  type: "memory"  # 默认使用内存缓存
+  
+  # Redis 失败时是否降级到 Memory
+  fallback_to_memory: true
+  
+  # Redis 配置（框架默认）
+  redis:
+    host: "localhost"
+    port: 6379
+    db: 0
+    password: null
+    pool:
+      max_connections: 50
+      socket_keepalive: true
+      socket_connect_timeout: 5
+      retry_on_timeout: true
+  
+  # 内存缓存配置（框架默认）
+  memory:
+    max_size: 1000      # 最大缓存项数
+    ttl: 3600           # 默认过期时间（秒）
+
+# 数据库配置（框架默认）
+database:
+  # 数据库类型: postgresql, sqlite, mysql, auto
+  type: "auto"  # 默认自动选择
+  
+  # PostgreSQL 失败时是否降级到 SQLite
+  fallback_to_sqlite: true
+  
+  # PostgreSQL 配置（框架默认）
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "pyspring"
+    user: "postgres"
+    password: null  # 通过环境变量 POSTGRES_PASSWORD 设置
+    pool:
+      min_size: 5
+      max_size: 20
+      timeout: 30
+  
+  # SQLite 配置（框架默认）
+  sqlite:
+    # 数据库文件路径（相对于项目根目录）
+    path: "data/db.sqlite"
+    # 是否在内存中运行（测试用）
+    in_memory: false
+    # 是否启用外键约束
+    foreign_keys: true
+    # 是否启用 WAL 模式
+    wal_mode: true
+  
+  # MySQL 配置（框架默认）
+  mysql:
+    host: "localhost"
+    port: 3306
+    database: "pyspring"
+    user: "root"
+    password: null  # 通过环境变量 MYSQL_PASSWORD 设置
+    charset: "utf8mb4"
+    pool:
+      min_size: 5
+      max_size: 20
+      timeout: 30
+
+# ORM 配置（框架默认）
+orm:
+  # 是否显示 SQL 语句（开发环境）
+  echo: false
+  # 是否自动创建表
+  auto_create_tables: true
+  # 是否启用查询缓存
+  query_cache: true
+  # 连接池配置
+  pool:
+    # 连接池大小
+    size: 20
+    # 连接回收时间（秒）
+    recycle: 3600
+    # 连接超时（秒）
+    timeout: 30
+
+# 迁移配置（框架默认）
+migration:
+  # 是否启用自动迁移
+  auto_migrate: false
+  # 迁移文件目录
+  directory: "migrations"
+  # 迁移表名
+  table: "alembic_version"

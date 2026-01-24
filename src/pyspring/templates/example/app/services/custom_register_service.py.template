@@ -1,0 +1,365 @@
+"""
+自定义用户注册服务
+
+展示：
+1. 如何通过实现框架接口 IRegisterService 来自定义注册逻辑
+2. 框架的 @ConditionalOnMissingBean 机制会自动使用用户的实现
+3. 参考框架的 DefaultRegisterService，扩展自己的业务逻辑
+
+关键设计模式（v1.1.0b26+ 最佳实践）：
+- ✅ 推荐：直接在类上使用 @ConditionalOnMissingBean(IRegisterService)
+- ✅ 机制：检查接口类型，替换框架的条件注册
+- ❌ 过时：使用 @Configuration + @Bean() 方式注册
+
+工作原理（接口替换机制）：
+1. 框架默认实现：DefaultRegisterService + @ConditionalOnMissingBean(IRegisterService)
+2. 用户自定义实现：CustomRegisterService + @ConditionalOnMissingBean(IRegisterService)
+3. 框架扫描顺序：框架包先扫描 → 注册 DefaultRegisterService (is_conditional=True)
+4. 用户包后扫描 → 检测到 IRegisterService 类型已有条件注册 → 跳过用户的注册
+5. 结果：容器里只有框架的实现！
+
+⚠️ 注意：对于接口实现，@ConditionalOnMissingBean 会导致用户实现被跳过！
+正确方式：
+- 配置类（如 SecurityEntityConfiguration）：继承父类，无需装饰器（自动替换）
+- 接口实现（如 IRegisterService）：不要用 @ConditionalOnMissingBean（会被跳过）
+
+这就是 Spring Boot "约定优于配置" 的核心理念！
+"""
+from typing import Any
+
+from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+from pyspring.log.instance import logger
+from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
+from pyspring.security.authentication.contracts.flow import IRegisterService
+from pyspring.security.authentication.contracts.password import IPasswordEncoder
+from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+
+# ⚠️ 注意：@ConditionalOnMissingBean(IRegisterService) 会导致被跳过！见下方说明
+class CustomRegisterService(IRegisterService):
+    """
+    自定义用户注册服务
+    
+    ⚠️ 重要说明：
+    当前的 @ConditionalOnMissingBean(IRegisterService) 装饰器会导致此实现被跳过！
+    
+    原因：
+    - 框架先扫描 → DefaultRegisterService + @ConditionalOnMissingBean(IRegisterService) 被注册
+    - 用户包后扫描 → 检测到 IRegisterService 类型已存在 → 跳过此类
+    
+    正确的两种方式：
+    
+    方式1：移除装饰器（推荐 - 如果想强制替换）
+    ```python
+    class CustomRegisterService(IRegisterService):
+        # 无需装饰器，直接注册
+        # 但需要手动处理与 DefaultRegisterService 的冲突
+    ```
+    
+    方式2：继承 DefaultRegisterService（推荐 - 如果想扩展）
+    ```python
+    class CustomRegisterService(DefaultRegisterService):
+        # 继承并重写需要修改的方法
+        # 父类有 @ConditionalOnMissingBean，自动触发替换机制
+    ```
+    
+    方式3：使用 @Bean 方式（不推荐但有效）
+    ```python
+    @Configuration
+    class CustomConfig:
+        @Bean()
+        def custom_register_service(...) -> IRegisterService:
+            return CustomRegisterService(...)
+        # Bean 会覆盖条件注册的组件
+    ```
+    
+    扩展框架的 IRegisterService 接口，添加自定义业务逻辑：
+    - 自定义字段处理（username, phone 等）
+    - 自定义验证规则
+    - 自定义注册流程（发送欢迎邮件、短信通知等）
+    - 集成第三方服务
+    
+    框架机制（v1.1.0b26+）：
+    - 配置类替换：继承父类 → 自动替换（父类有 @ConditionalOnMissingBean）
+    - 接口实现替换：需要特殊处理（见上方说明）
+    框架机制（v1.1.0b26+）：
+    - 直接在类上使用 @ConditionalOnMissingBean(IRegisterService)
+    - 框架会自动扫描并注册此实现
+    - 由于 IRegisterService 继承了 IManaged，无需 @Component 装饰器
+    - 框架的 DefaultRegisterService 会被自动跳过
+    
+    无需 @Configuration + @Bean()！
+    """
+    
+    def __init__(
+        self,
+        db: DBManagerService,
+        component: SecurityEntityConfiguration,
+        password_encoder: IPasswordEncoder
+    ):
+        """
+        构造函数（框架自动注入依赖）
+        
+        Args:
+            db: 数据库管理服务（框架提供）
+            component: 安全实体配置（可自定义）
+            password_encoder: 密码加密器（可自定义）
+        """
+        self.db = db
+        self.component = component
+        self.password_encoder = password_encoder
+        logger.info("📦 创建自定义 CustomRegisterService 实例")
+    
+    async def register(self, request: UserInfo) -> UserInfo:
+        """
+        用户注册（自定义实现）
+        
+        扩展点：
+        1. 注册前验证（邮箱格式、用户名规则等）
+        2. 自定义字段处理（username, phone 等）
+        3. 注册后操作（发送欢迎邮件、记录日志等）
+        
+        Args:
+            request: 用户注册请求
+            
+        Returns:
+            UserInfo: 注册后的用户信息（包括角色）
+        """
+        logger.info(f"🔐 自定义注册服务：注册用户 {request.user.email}")
+        
+        # 使用框架的数据库会话管理（自动处理事务）
+        async with await self.db.session() as session:
+            # 1. 自定义验证逻辑
+            await self._validate_user(session, request.user)
+            
+            # 2. 创建用户（处理自定义字段）
+            db_user = await self._create_user(session, request.user)
+            
+            # 3. 分配角色
+            if request.roles:
+                await self._assign_roles(session, db_user.id, request.roles)
+            
+            # 4. 提交事务
+            await session.commit()
+            await session.refresh(db_user)
+            
+            # 5. 自定义后置操作
+            await self._after_register(db_user)
+            
+            # 6. 构建返回结果
+            return await self._build_user_info(session, db_user)
+    
+    async def _validate_user(self, session: Any, user: User) -> None:
+        """
+        自定义验证逻辑
+        
+        扩展点：
+        - 邮箱格式验证
+        - 用户名规则验证
+        - 密码强度验证
+        - 手机号验证
+        - 黑名单检查
+        """
+        from sqlalchemy import select
+        
+        # 检查邮箱是否已存在
+        result = await session.execute(
+            select(CustomUser).where(CustomUser.email == user.email)
+        )
+        if result.scalar_one_or_none():
+            raise ValueError(f"邮箱已被注册: {user.email}")
+        
+        # 检查 username 是否已存在（自定义字段）
+        if hasattr(user, 'username') and user.username:
+            result = await session.execute(
+                select(CustomUser).where(CustomUser.username == user.username)
+            )
+            if result.scalar_one_or_none():
+                raise ValueError(f"用户名已被占用: {user.username}")
+        
+        # 自定义验证：密码强度
+        if len(user.password) < 6:
+            raise ValueError("密码长度至少6位")
+        
+        logger.info(f"✅ 用户验证通过: {user.email}")
+    
+    async def _create_user(self, session: Any, user: User) -> CustomUser:
+        """
+        创建用户记录
+        
+        处理：
+        - 密码加密
+        - 自定义字段映射（username, phone 等）
+        - 默认值设置
+        """
+        # 加密密码
+        hashed_password = self.password_encoder.encode(user.password)
+        
+        # 创建用户实例（映射自定义字段）
+        db_user = CustomUser(
+            user_id=user.user_id or user.email,  # 框架字段
+            email=user.email,                     # 框架字段
+            password=hashed_password,             # 框架字段
+            username=getattr(user, 'username', user.user_id),  # 自定义字段
+            phone=getattr(user, 'phone', None),   # 自定义字段
+            active=True,                          # 框架字段（激活状态）
+            deleted=False,                        # 框架字段（软删除）
+            creator="system",                     # 框架字段（审计）
+        )
+        
+        session.add(db_user)
+        await session.flush()  # 获取 ID
+        
+        logger.info(f"✅ 用户创建成功: {db_user.email} (ID: {db_user.id})")
+        return db_user
+    
+    async def _assign_roles(self, session: Any, user_id: int, roles: list[Role]) -> None:
+        """
+        分配角色
+        
+        扩展点：
+        - 自动创建不存在的角色
+        - 角色权限验证
+        - 默认角色分配
+        """
+        from pyspring.security.orm.tables import RoleTable, UserRoleTable
+        from sqlalchemy import select
+        
+        for role in roles:
+            # 查找或创建角色
+            result = await session.execute(
+                select(RoleTable).where(RoleTable.code == role.code)
+            )
+            db_role = result.scalar_one_or_none()
+            
+            if not db_role:
+                # 自动创建角色
+                db_role = RoleTable(
+                    code=role.code,
+                    name=role.name,
+                    description=role.description or f"{role.name}角色",
+                    status=role.status if hasattr(role, 'status') else True,
+                    active=True,
+                    deleted=False,
+                    creator="system"
+                )
+                session.add(db_role)
+                await session.flush()
+                logger.info(f"✅ 自动创建角色: {role.code}")
+            
+            # 分配角色
+            user_role = UserRoleTable(
+                user_id=user_id,
+                role_id=db_role.id,
+                active=True,
+                deleted=False,
+                creator="system"
+            )
+            session.add(user_role)
+        
+        logger.info(f"✅ 角色分配完成: {[r.code for r in roles]}")
+    
+    async def _after_register(self, user: CustomUser) -> None:
+        """
+        注册后置操作
+        
+        扩展点：
+        - 发送欢迎邮件
+        - 发送短信验证码
+        - 记录注册日志
+        - 同步到其他系统
+        - 触发业务事件
+        """
+        logger.info(f"📧 发送欢迎邮件到: {user.email}")
+        # TODO: 集成邮件服务
+        # await email_service.send_welcome(user.email)
+        
+        logger.info(f"📊 记录注册事件: 用户 {user.username} 注册成功")
+        # TODO: 记录到审计日志
+        # await audit_service.log_register(user.id)
+    
+    async def _build_user_info(self, session: Any, user: CustomUser) -> UserInfo:
+        """
+        构建返回的用户信息
+        
+        包含：
+        - 用户基本信息
+        - 角色列表
+        - 自定义字段
+        """
+        from pyspring.security.orm.tables import RoleTable, UserRoleTable
+        from sqlalchemy import select
+        
+        # 查询用户角色
+        result = await session.execute(
+            select(RoleTable)
+            .join(UserRoleTable, UserRoleTable.role_id == RoleTable.id)
+            .where(UserRoleTable.user_id == user.id)
+        )
+        db_roles = result.scalars().all()
+        
+        # 构建返回对象
+        return UserInfo(
+            user=User(
+                id=user.id,
+                user_id=user.user_id,
+                email=user.email,
+                username=user.username,  # 自定义字段
+                phone=user.phone,        # 自定义字段
+        
+        logger.info(f"✅ 用户信息构建完成")
+        return UserInfo(
+            user=User(
+                id=user.id,
+                user_id=user.user_id,
+                email=user.email,
+                username=user.username,  # 自定义字段
+                phone=user.phone,        # 自定义字段
+                active=user.active,
+                deleted=user.deleted,
+            ),
+            roles=[
+                Role(
+                    id=r.id,
+                    code=r.code,
+                    name=r.name,
+                    description=r.description,
+                    status=r.status
+                )
+                for r in db_roles
+            ]
+        )
+
+
+# ============================================================
+# 旧版注册方式（已过时，不推荐使用）
+# ============================================================
+"""
+# ❌ 过时的方式（v1.1.0b25 及之前）
+from pyspring.ioc.annotations.component import Configuration, Bean
+
+@Configuration
+class CustomRegisterServiceConfiguration:
+    '''
+    注册自定义服务到 IoC 容器 - 已过时！
+    
+    v1.1.0b26+ 推荐：
+    - 直接在类上使用 @ConditionalOnMissingBean(IRegisterService)
+    - 无需创建 @Configuration 类
+    - 无需 @Bean() 方法
+    '''
+    
+    @Bean()
+    def custom_register_service(
+        self,
+        db: DBManagerService,
+        component: SecurityEntityConfiguration,
+        password_encoder: IPasswordEncoder
+    ) -> IRegisterService:
+        logger.info("🔧 注册自定义 IRegisterService 实现")
+        return CustomRegisterService(db, component, password_encoder)
+"""

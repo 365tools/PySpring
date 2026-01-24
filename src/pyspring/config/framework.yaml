@@ -1,0 +1,25 @@
+# PySpring Framework Core Configuration
+#
+# This is the framework-level configuration file.
+# DO NOT modify this file unless you are developing the PySpring framework itself.
+#
+# Framework components are automatically loaded before user components,
+# ensuring proper dependency injection order.
+
+framework:
+  # Framework packages to scan (loaded first)
+  scan_packages:
+    - pyspring.security           # Security module (authentication, authorization, user management)
+    - pyspring.repositories       # Database repositories and ORM support
+    # Add more framework packages here as needed
+  
+  # Component auto-configuration
+  auto_configuration:
+    enabled: true
+
+  # Logging
+  logging:
+    # Framework-level logging (distinct from user application logging)
+    level: INFO
+    show_startup_info: true
+    show_component_registration: false
