@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyspring"
-version = "1.1.0b6"
+version = "1.1.0b19"
 authors = [
   { name="Yingchun", email="allureyc@gmail.com" },
 ]
@@ -40,13 +40,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# 开发工具依赖（包含 CLI 工具�?
+# CLI tools dependencies
 cli = [
-    # CLI 工具目前只依赖标准库，但保留�?extra 用于未来扩展
-    # 例如：可能添�?rich、click 等增�?CLI 体验的库
+    # CLI tools currently only depend on standard libraries, but keep this extra for future extensions
+    # For example: rich, click and other libraries to enhance CLI experience
 ]
 
-# 开发环境依赖（测试、格式化、类型检查等�?
+# Development environment dependencies (testing, formatting, type checking, etc.)
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
@@ -56,7 +56,7 @@ dev = [
     "mypy>=1.5.0",
 ]
 
-# 完整开发环境（包含 CLI + 开发工具）
+# Full development environment (includes CLI + dev tools)
 full = [
     "pyspring[cli,dev]",
 ]
@@ -74,14 +74,14 @@ package = true
 "Homepage" = "https://github.com/365tools/PySpring"
 "Bug Tracker" = "https://github.com/365tools/PySpring/issues"
 
-# CLI 命令入口（始终可用，但可通过文档引导用户按需安装�?
+# CLI command entry point (always available, but guide users to install on demand via documentation)
 [project.scripts]
 pyspring = "pyspring.cli.main:main"
 
-# 注意�?
-# - 生产环境：pip install pyspring（CLI 会被安装但不使用�?
-# - 开发环境：pip install pyspring[cli] �?pyspring[full]（明确安�?CLI�?
-# - 或使用临时执行：uvx --from pyspring pyspring init（无需安装�?
+# Notes:
+# - Production: pip install pyspring (CLI will be installed but not used)
+# - Development: pip install pyspring[cli] or pyspring[full] (explicitly install CLI)
+# - Or use temporary execution: uvx --from pyspring pyspring init (no installation needed)
 
 [tool.setuptools.packages.find]
 where = ["src"]

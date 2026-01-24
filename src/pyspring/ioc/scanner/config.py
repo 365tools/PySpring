@@ -81,20 +81,17 @@ LIFECYCLE_EXCLUDED_TYPES = {
 
 
 def is_lifecycle_component(cls: type) -> bool:
-    """判断是否是生命周期组件（Initializer/Handler）"""
+    """
+    判断是否是生命周期组件基类（应该被排除扫描）
+    
+    注意：只排除基类接口本身，不排除实现类
+    例如：排除 IStartupInitializer，但不排除 DatabaseInitializer
+    """
     class_name = cls.__name__
 
-    # 检查类名
-    if any(keyword in class_name.lower() for keyword in ['initializer', 'handler']):
+    # 只排除生命周期接口基类本身，不排除实现类
+    if class_name in LIFECYCLE_EXCLUDED_TYPES:
         return True
-
-    # 检查是否继承了生命周期接口
-    try:
-        for base in cls.__mro__[1:]:  # 跳过自己
-            if base.__name__ in LIFECYCLE_EXCLUDED_TYPES:
-                return True
-    except (AttributeError, TypeError):
-        pass
 
     return False
 

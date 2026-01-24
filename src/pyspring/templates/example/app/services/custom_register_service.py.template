@@ -303,14 +303,6 @@ class CustomRegisterService(IRegisterService):
         db_roles = result.scalars().all()
         
         # 构建返回对象
-        return UserInfo(
-            user=User(
-                id=user.id,
-                user_id=user.user_id,
-                email=user.email,
-                username=user.username,  # 自定义字段
-                phone=user.phone,        # 自定义字段
-        
         logger.info(f"✅ 用户信息构建完成")
         return UserInfo(
             user=User(

@@ -2,16 +2,14 @@
 用户服务
 
 展示 PySpring 的核心功能：
-1. @component 装饰器 - 自动注册到 IOC 容器
-2. @inject 装饰器 - 自动依赖注入
-3. ILifecycle 接口 - 生命周期管理
-4. Repository 模式 - 数据访问层
-5. 缓存集成
+1. @Component 装饰器 - 自动注册到 IOC 容器
+2. 依赖注入
+3. Repository 模式 - 数据访问层
+4. 缓存集成
 """
 from typing import List, Optional, Dict
 
 from pyspring.ioc import Component
-from pyspring.ioc.interfaces import ILifecycle
 from pyspring.log.instance import logger
 
 from app.repositories.user_repository import UserRepository
@@ -20,12 +18,16 @@ from app.services.cache_service import CacheService
 
 
 @Component()
-class UserService(ILifecycle):
+class UserService:
     """
     用户服务
     
     使用 @Component 装饰器自动注册到 IOC 容器
-    实现 ILifecycle 接口进行生命周期管理
+    
+    注意：
+    - 普通业务服务不需要 ILifecycle
+    - 只有需要管理外部资源的服务才需要 ILifecycle（如缓存、消息队列等）
+    - Repository 和业务服务直接注入依赖即可
     """
     
     def __init__(
@@ -45,43 +47,6 @@ class UserService(ILifecycle):
         self._cache_prefix = "user:"
         
         logger.info(f"📦 创建 UserService 实例")
-    
-    # ========================================================================
-    # 生命周期方法
-    # ========================================================================
-    
-    async def on_startup(self) -> None:
-        """
-        启动初始化器
-        
-        应用启动时自动调用，用于：
-        - 初始化服务
-        - 预热缓存
-        - 加载配置
-        """
-        logger.info("🚀 UserService 启动初始化...")
-        
-        # 示例：预热缓存
-        user_count = await self.user_repository.count()
-        logger.info(f"📊 当前用户总数: {user_count}")
-        
-        logger.info("✅ UserService 启动初始化完成")
-    
-    async def on_shutdown(self) -> None:
-        """
-        关闭处理器
-        
-        应用关闭时自动调用，用于：
-        - 清理资源
-        - 保存状态
-        - 关闭连接
-        """
-        logger.info("👋 UserService 关闭处理...")
-        
-        # 示例：清理缓存
-        await self.cache_service.clear_pattern(f"{self._cache_prefix}*")
-        
-        logger.info("✅ UserService 关闭处理完成")
     
     # ========================================================================
     # 业务方法

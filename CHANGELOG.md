@@ -7,6 +7,498 @@ PySpring 的所有重要变更都将记录在此文件中。
 
 ---
 
+## [1.1.0b25] - 2026-01-24
+
+### 🎯 Critical Fix: @ConditionalOnMissingBean 替换机制重构（正确方案）
+
+#### 设计理念
+
+**框架先注册，用户后替换** - 这是更合理的设计，因为：
+
+1. ✅ 用户的实现依赖框架的底层服务（DBManagerService, IPasswordEncoder 等）
+2. ✅ 框架服务必须先注册，才能注入到用户的 Bean 方法参数中
+3. ✅ 用户的 Bean 可以安全地替换掉框架的 `@ConditionalOnMissingBean` Bean
+
+#### 实现方案
+
+**1. 扫描顺序恢复为：框架包 → 用户包**
+
+```python
+# 正确顺序（考虑依赖关系）
+all_packages = [框架包...] + [用户包...]
+
+# 原因：
+# - 框架包先扫描 → DBManagerService, IPasswordEncoder 等底层服务先注册
+# - 用户包后扫描 → CustomRegisterService 的依赖可以正确注入
+```
+
+**2. ServiceDefinition 添加 `is_conditional` 字段**
+
+```python
+@dataclass
+class ServiceDefinition:
+  is_conditional: bool = False  # 标记是否是 @ConditionalOnMissingBean
+```
+
+**3. 注册时传递条件标记**
+
+```python
+definition = ServiceDefinition(
+  name=bean_name,
+  is_bean=True,
+  is_conditional=bool(conditional_type)  # 👈 保存条件信息
+)
+```
+
+**4. Registry 支持替换逻辑**
+
+```python
+if existing.is_conditional and definition.is_bean:
+    # 旧的是条件Bean，新的是用户Bean → 允许替换
+    logger.debug(f"🔄 用户Bean替换条件Bean: '{name}'")
+    logger.debug(f"   旧实现: {existing.config_class}.{existing.bean_method}() [框架默认]")
+    logger.debug(f"   新实现: {definition.config_class}.{definition.bean_method}() [用户自定义]")
+    pass  # 继续注册，覆盖旧的
+```
+
+#### 工作流程
+
+```
+1️⃣ 框架包先扫描（pyspring.security）
+   ├─ 注册底层服务：DBManagerService, IPasswordEncoder ✅
+   ├─ 注册默认实现：default_register_service() -> IRegisterService
+   │  └─ 标记：is_conditional=True (因为有 @ConditionalOnMissingBean)
+   └─ 容器状态：i_register_service → DefaultRegisterService [可被替换]
+
+2️⃣ 用户包后扫描（app）
+   ├─ 依赖注入成功：DBManagerService, IPasswordEncoder 已存在 ✅
+   ├─ 注册用户实现：custom_register_service() -> IRegisterService
+   │  ├─ 检测到重复：i_register_service 已存在
+   │  ├─ 检查旧Bean：existing.is_conditional=True ✅
+   │  ├─ 检查新Bean：definition.is_bean=True ✅
+   │  └─ 允许替换：覆盖旧的 DefaultRegisterService
+   └─ 容器状态：i_register_service → CustomRegisterService [用户自定义生效]
+```
+
+#### Debug 日志输出
+
+```
+🔄 用户Bean替换条件Bean: 'i_register_service' (IRegisterService → IRegisterService)
+   旧实现: AuthenticationConfiguration.default_register_service() [框架默认]
+   新实现: CustomRegisterServiceConfiguration.custom_register_service() [用户自定义]
+```
+
+#### 对比之前的错误方案
+
+| 方案          | 扫描顺序      | 依赖注入          | 替换机制                         | 结果           |
+|-------------|-----------|---------------|------------------------------|--------------|
+| ❌ v1.1.0b24 | 用户先 → 框架后 | ❌ 失败（底层服务不存在） | @ConditionalOnMissingBean 跳过 | 用户Bean依赖注入报错 |
+| ✅ v1.1.0b25 | 框架先 → 用户后 | ✅ 成功（底层服务已注册） | Registry 允许替换                | 用户Bean正常替换   |
+
+---
+
+## [1.1.0b24] - 2026-01-24 [REVERTED]
+
+### 🎯 Critical Fix: @ConditionalOnMissingBean 机制修复
+
+#### 问题描述
+
+`@ConditionalOnMissingBean` 机制无法正常工作，用户的自定义实现无法替换框架的默认实现。
+
+#### 根本原因
+
+**扫描顺序错误**：框架包先扫描 → 用户包后扫描
+
+```python
+# 错误的顺序
+all_packages = [框架包...] + [用户包...]
+```
+
+导致流程：
+
+1. 框架的 `@Bean() @ConditionalOnMissingBean(IRegisterService)` 先注册
+2. 此时容器中没有 `IRegisterService` → 注册框架默认实现
+3. 用户的 `@Bean() -> IRegisterService` 后注册
+4. 名称冲突 → 抛出 `ValueError: 服务 'i_register_service' 已注册`
+
+#### 修复方案
+
+**调整扫描顺序**：用户包先扫描 → 框架包后扫描
+
+```python
+# 正确的顺序
+all_packages = [用户包...] + [框架包...]
+```
+
+正确流程：
+
+1. ✅ 用户的 `@Bean() -> IRegisterService` 先注册
+2. ✅ 框架的 `@ConditionalOnMissingBean(IRegisterService)` 检查
+3. ✅ 发现已存在 → 跳过框架默认实现
+4. ✅ 用户的自定义实现生效！
+
+#### 影响范围
+
+- ✅ 修复 `IRegisterService` 用户自定义实现
+- ✅ 修复所有 `@ConditionalOnMissingBean` 标记的服务
+- ✅ 恢复 Spring Boot "约定优于配置" 设计模式
+
+---
+
+## [1.1.0b23] - 2026-01-24
+
+### 🐛 Bug Fixes
+
+- **修复服务重复注册问题** (Critical)
+  - 问题：多次调用 `Container.scan()` 时，配置类的 Bean 方法会被重复注册，导致 `ValueError: 服务 'xxx' 已注册`
+  - 原因：容器没有追踪已处理的配置类，导致同一个 `@Configuration` 类的 `@Bean()` 方法被多次注册
+  - 修复：在 Container 中添加 `_registered_component_types: Set[type]` 集合，追踪已处理的配置类
+  - 影响：现在可以安全地多次调用 `scan()` 而不会导致重复注册错误
+
+### 📝 Technical Details
+
+```python
+# Before (会重复注册):
+for cls, metadata in components.items():
+    if metadata.is_configuration:
+        self._register_beans(metadata)  # 每次 scan() 都会注册
+
+# After (防止重复):
+for cls, metadata in components.items():
+    if metadata.is_configuration:
+        if cls not in self._registered_component_types:
+            self._register_beans(metadata)
+            self._registered_component_types.add(cls)  # 标记已处理
+        else:
+            logger.debug(f"⏩ 跳过已注册的配置类: {metadata.name}")
+```
+
+---
+
+## [1.1.0b22] - 2026-01-24
+
+### 🐛 Bug Fixes
+
+* **配置文件打包问题**:
+  - 修复框架配置文件未被包含在安装包中的问题
+  - 更新 MANIFEST.in，添加 `recursive-include src/pyspring/config *.yaml`
+  - 确保 framework.yaml 和 defaults/*.yaml 被正确打包
+
+* **服务重复注册问题**:
+  - 修复框架包被重复扫描导致的服务重复注册错误
+  - 优化 ApplicationContext.initialize() 的包扫描逻辑
+  - 自动去重：当用户在 base_packages 中指定框架包时自动过滤
+  - 添加警告提示：框架包会自动扫描，无需手动配置
+
+### 改进 (Improvements)
+
+* **扫描逻辑优化**:
+  - 合并框架包和用户包，一次性扫描（避免多次扫描）
+  - 添加重复包检测和警告机制
+  - 更清晰的日志输出
+
+### 技术细节 (Technical Details)
+
+**修复前的问题：**
+
+```python
+# 框架包被扫描
+instance._container.scan(['pyspring.security', 'pyspring.repositories'])
+
+# 用户包也包含框架包，导致重复扫描
+instance._container.scan(['pyspring.security', 'app'])  # ❌ 重复！
+```
+
+**修复后的逻辑：**
+
+```python
+# 合并并去重
+framework_packages = ['pyspring.security', 'pyspring.repositories']
+user_packages = ['pyspring.security', 'app']
+
+# 去重后只扫描一次
+all_packages = ['pyspring.security', 'pyspring.repositories', 'app']
+instance._container.scan(all_packages)  # ✅ 无重复
+```
+
+---
+
+## [1.1.0b21] - 2026-01-24
+
+### 🎯 重大重构 - 配置架构优化 (Major Refactoring - Configuration Architecture)
+
+**问题诊断：**
+
+- 配置文件职责不清：`config/` 目录用途模糊（框架测试？用户项目？）
+- 配置层次混乱：框架配置、框架默认值、用户配置混在一起
+- 无配置覆盖机制：用户无法优雅地覆盖框架默认值
+- 用户体验差：不知道哪些配置可以改，哪些不能改
+
+**解决方案：三层配置架构** ⭐
+
+1. **框架级配置** (`src/pyspring/config/`)
+  - `framework.yaml` - 框架核心行为（如自动扫描的包列表）
+  - 🚫 用户不可编辑，打包到框架内部
+
+2. **框架默认值** (`src/pyspring/config/defaults/`)
+  - `security.yaml` - 安全模块默认配置
+  - `database.yaml` - 数据库模块默认配置
+  - `logging.yaml` - 日志模块默认配置
+  - ✅ 用户可通过项目配置覆盖
+
+3. **用户项目配置** (`<project>/config/`)
+  - 用户自由编辑，覆盖框架默认值
+  - 支持环境变量覆盖（最高优先级）
+
+**配置加载顺序：** `框架默认值 < 用户配置 < 环境变量`
+
+### 新增 (Added)
+
+* **ConfigManager 配置管理器** (`src/pyspring/config_manager.py`):
+  - 统一的配置加载接口
+  - 自动深度合并框架默认值和用户配置
+  - 支持环境变量覆盖（JWT_SECRET_KEY, POSTGRES_PASSWORD 等）
+  - 配置缓存机制，提高性能
+  - 便捷函数：`load_security_config()`, `load_database_config()`, `load_logging_config()`
+
+* **框架默认配置目录** (`src/pyspring/config/defaults/`):
+  - `security.yaml` - 认证、授权、密码策略、会话管理等默认配置
+  - `database.yaml` - 缓存（Redis/Memory）、数据库（PostgreSQL/SQLite/MySQL）、ORM 等默认配置
+  - `logging.yaml` - 控制台日志、文件日志、高级配置等默认值
+
+* **配置架构分析文档** (`docs/CONFIG_ARCHITECTURE_ANALYSIS.md`):
+  - 详细的问题诊断和解决方案
+  - 三层配置架构原理和实施步骤
+  - 配置覆盖规则和最佳实践
+
+### 改进 (Improvements)
+
+* **目录结构优化**:
+  - 将 `config/` 移动到 `tests/config/`，明确其为测试配置
+  - 创建 `src/pyspring/config/defaults/` 存放框架默认值
+  - 分离框架级配置和用户级配置
+
+* **配置加载器重构**:
+  - `SecurityConfigManager` 现在使用 `ConfigManager` 加载配置
+  - `RepositoriesConfigManager` 现在使用 `ConfigManager` 加载配置
+  - 移除重复的配置加载逻辑
+  - 统一的配置合并和环境变量覆盖机制
+
+* **模板配置文件更新**:
+  - 所有模板配置文件增加清晰的注释说明
+  - 标明配置层级（框架级/用户级）和编辑权限
+  - 提供配置覆盖示例
+
+### 用户体验改进 (User Experience)
+
+**改进前（混乱）：**
+
+```yaml
+# config/security.yaml - 不知道这是什么，能不能改？
+authentication:
+  jwt:
+    access_token_expire: 3600
+  # ... 很多配置，哪些能改？
+```
+
+**改进后（清晰）：**
+
+```yaml
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# PySpring 用户项目配置 - 安全配置
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# ✅ 此文件由用户维护，可自由编辑
+# 🔄 此文件中的配置会覆盖框架默认值
+# 💡 只需配置您要覆盖的值，未配置的项将使用框架默认值
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+# 示例：覆盖 JWT 配置
+authentication:
+  jwt:
+    access_token_expire: 7200  # 覆盖框架默认的 3600 秒
+```
+
+### 技术细节 (Technical Details)
+
+**配置文件映射关系：**
+
+| 原路径       | 新路径                                   | 用途     |
+|-----------|---------------------------------------|--------|
+| `config/` | `tests/config/`                       | 测试配置   |
+| -         | `src/pyspring/config/framework.yaml`  | 框架核心配置 |
+| -         | `src/pyspring/config/defaults/*.yaml` | 框架默认值  |
+| -         | `<project>/config/*.yaml`             | 用户项目配置 |
+
+**配置覆盖示例：**
+
+```python
+# 框架默认值 (src/pyspring/config/defaults/security.yaml)
+authentication:
+  jwt:
+    access_token_expire: 3600  # 1小时
+
+# 用户配置 (config/security.yaml)
+authentication:
+  jwt:
+    access_token_expire: 7200  # 覆盖为2小时
+    
+# 环境变量 (最高优先级)
+# JWT_SECRET_KEY=your_secret → 覆盖 secret_key
+```
+
+---
+
+## [1.1.0b20] - 2026-01-24
+
+### 重大改进 (Major Improvements)
+
+* **框架级包自动加载机制** ⭐:
+  * ApplicationContext 现在自动优先扫描框架级包
+  * 自动加载 `pyspring.security`（安全模块）和 `pyspring.repositories`（数据库仓储）
+  * 用户无需在配置文件或代码中手动指定框架包的扫描顺序
+  * 真正实现"约定优于配置"，简化用户配置
+
+* **框架配置外部化** ⭐:
+  * 创建 `src/pyspring/config/framework.yaml` 框架级配置文件
+  * 框架包列表现在从配置文件读取，而非硬编码
+  * 支持优雅降级：配置文件缺失时自动使用默认值
+  * 提高框架的可维护性和灵活性
+
+### 改进 (Improvements)
+
+* **简化示例项目配置**:
+  * 移除 container.yaml 中手动配置 `pyspring.security` 的要求
+  * 移除 main.py 中手动指定框架包的代码
+  * 用户只需配置自己的应用包（`app`）即可
+  * 框架自动处理依赖加载顺序
+
+* **优化日志输出**:
+  * 添加框架级包扫描的 DEBUG 日志
+  * 明确显示扫描顺序（框架包 → 用户包）
+
+### 文档 (Documentation)
+
+* 更新 ApplicationContext.initialize() 文档说明
+* 更新示例项目注释，说明框架自动加载机制
+* 更新 CustomRegisterServiceConfiguration 注释
+* 新增 framework.yaml 配置文件说明（框架开发者使用）
+
+### 技术细节
+
+**之前的问题：**
+
+```python
+# 用户需要手动配置扫描顺序
+ApplicationContext.initialize(
+    base_packages=['pyspring.security', 'app']  # 顺序很重要！
+)
+```
+
+**现在的解决方案：**
+
+```python
+# 框架自动处理，用户只需配置自己的包
+ApplicationContext.initialize(
+    base_packages=['app']  # 简单！
+)
+
+# 框架内部自动：
+# 1. 先扫描 pyspring.security、pyspring.repositories
+# 2. 然后扫描用户的 app 包
+```
+
+---
+
+## [1.1.0b19] - 2026-01-24
+
+### 重大变更 (Breaking Changes)
+
+* **示例项目全面集成框架安全模块**:
+  * 将示例项目从自定义认证改为使用框架的完整安全系统
+  * User 模型现在继承 `BaseUserTable`（框架提供的用户表基类）
+  * API 端点使用框架的 `ILoginService` 和 `IRegisterService`
+  * DatabaseInitializer 使用框架的 `IRegisterService` 进行用户初始化
+
+### 新增 (Features)
+
+* **用户自定义扩展示例** ⭐:
+  * 新增 `CustomRegisterService` 展示如何通过 `@ConditionalOnMissingBean` 机制自定义扩展
+  * 展示如何实现框架接口并通过 `@Bean()` 注册
+  * 框架自动检测用户实现，跳过默认实现
+  * 完整的自定义字段处理、验证规则、后置操作示例
+* **安全模块用户自定义指南**:
+  * 新增 `SECURITY_USER_CUSTOMIZATION_GUIDE.md` 详细文档
+  * 展示 `@ConditionalOnMissingBean` 机制的工作原理
+  * 包含完整的自定义示例和最佳实践
+  * 可自定义组件清单（IRegisterService、IPasswordEncoder、ILoginProvider 等）
+* **项目功能覆盖总结**:
+  * 新增 `EXAMPLE_PROJECT_COVERAGE.md` 总结文档
+  * 详细列出示例项目覆盖的所有框架功能
+  * 功能分类统计和学习路径建议
+
+### 改进 (Improvements)
+
+* **用户模型 (User)**:
+  * 继承框架的 `BaseUserTable` 而不是自定义 Base
+  * 自动获得框架提供的审计字段（creator, created_time 等）
+  * 自动获得软删除支持（deleted 字段）
+  * 添加详细注释说明框架提供的字段和自定义方式
+* **数据库初始化器 (DatabaseInitializer)**:
+  * 使用框架的 `IRegisterService` 替代自定义 AuthService
+  * 自动处理数据库会话管理（无需手动 AsyncSessionLocal）
+  * 支持角色分配（创建 ADMIN 角色）
+  * 自动密码加密
+  * 完整的事务安全保障
+* **认证 API (auth.py)**:
+  * 使用框架的 `ILoginService` 处理登录
+  * 使用框架的 `IRegisterService` 处理注册
+  * 返回完整的用户信息、角色、Token（包括 refreshToken）
+  * 支持多种认证方式（框架自动扩展）
+* **数据库会话 (session.py)**:
+  * 添加与框架 DBManagerService 的集成说明
+  * 使用框架的 Base 创建数据库表（包括角色权限表）
+  * 添加详细注释说明框架和示例项目的会话管理
+* **自定义认证服务 (auth_service.py)**:
+  * 标记为"可选扩展示例"
+  * 添加详细警告说明何时应使用框架服务
+  * 添加框架 vs 自定义的对比表格
+  * 保留作为学习目的和特殊业务需求的参考
+
+### 文档 (Documentation)
+
+* **安全集成指南** (`SECURITY_INTEGRATION_GUIDE.md`):
+  * 框架安全架构概述
+  * 快速开始指南（用户模型、注册、登录、初始化）
+  * 自定义配置示例（用户表、密码加密、登录方式）
+  * 框架 vs 自定义对比表
+  * 数据库表结构说明
+  * 常见问题解答
+  * 最佳实践建议
+  * 完整的 cURL 示例
+
+### 修复 (Bug Fixes)
+
+* **依赖注入顺序问题**:
+  * 修复 CustomRegisterService 无法解析依赖的问题
+  * 确保框架的安全模块（pyspring.security）先被扫描
+  * 在 container.yaml 和 main.py 中添加 pyspring.security 到扫描包列表
+  * 添加详细注释说明依赖注入的前提条件
+* **数据库会话管理问题**:
+  * 修复 DatabaseInitializer 中"数据库会话未初始化"错误
+  * 通过使用框架的 IRegisterService 自动处理会话生命周期
+  * 无需手动创建 User 对象和管理事务
+
+### 其他说明
+
+* **推荐架构**:
+  * ✅ 使用框架的 `ILoginService`/`IRegisterService`（自动会话管理、角色权限、Token管理）
+  * ✅ 继承 `BaseUserTable`（与框架完美集成）
+  * ✅ 通过 `SecurityEntityConfiguration` 配置自定义实体映射
+  * ✅ 实现 `ILoginProvider` 扩展认证方式（OAuth2、LDAP、短信等）
+  * ❌ 避免自己实现认证逻辑（除非有特殊需求）
+
+---
+
 ## [1.0.1] - 2026-01-13
 
 ### 新增 (Features)

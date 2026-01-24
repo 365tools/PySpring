@@ -30,16 +30,16 @@ class ILifecycle(Protocol):
     """
     生命周期接口（可选）
     
-    如果服务需要在创建后和销毁前执行特定操作，可以实现此接口。
+    如果服务需要在应用启动后和关闭前执行特定操作，可以实现此接口。
     
     注意：这是可选接口，只有需要生命周期管理的类才实现。
     """
 
-    async def on_init(self) -> None:
+    async def on_startup(self) -> None:
         """
-        初始化回调
+        应用启动回调
         
-        在依赖注入完成后、服务正式使用前调用。
+        在依赖注入完成后、应用正式启动时调用。
         可以在此进行资源初始化、连接建立等操作。
         
         注意：
@@ -49,11 +49,11 @@ class ILifecycle(Protocol):
         """
         ...
 
-    async def on_destroy(self) -> None:
+    async def on_shutdown(self) -> None:
         """
-        销毁回调
+        应用关闭回调
         
-        在容器关闭或服务被销毁前调用。
+        在容器关闭或应用停止前调用。
         可以在此进行资源清理、连接关闭等操作。
         """
         ...

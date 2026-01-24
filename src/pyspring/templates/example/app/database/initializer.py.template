@@ -2,78 +2,202 @@
 数据库初始化器
 
 展示：
-1. ILifecycle 启动初始化器
-2. 数据库表创建
-3. 初始数据填充
+1. IStartupInitializer 接口使用
+2. 数据库初始数据填充
+3. DBManagerService 集成
+4. 完整的 RBAC 初始化流程
 """
 from pyspring.ioc import Component
-from pyspring.ioc.interfaces import ILifecycle
+from pyspring.ioc.lifecycle.initializer import IStartupInitializer
 from pyspring.log.instance import logger
-
-from app.database.session import init_database, engine
-from app.repositories.user_repository import UserRepository
-from app.services.auth_service import AuthService
+from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.contracts.flow import IRegisterService
+from pyspring.security.authentication.contracts.response import UserInfo, User, Role
 
 
 @Component()
-class DatabaseInitializer(ILifecycle):
+class DatabaseInitializer(IStartupInitializer):
     """
     数据库初始化器
     
     在应用启动时自动执行：
-    1. 创建数据库表
-    2. 填充初始数据
+    1. 填充权限数据（通过框架的 MigrationInitializer 自动创建表）
+    2. 填充角色数据
+    3. 分配角色权限
+    4. 创建默认管理员用户
+    
+    注意：
+    - 数据库表由 MigrationInitializer 自动创建（配置 initialization.enabled=true）
+    - 依赖 DBManagerService 进行会话管理
+    - 使用 IRegisterService 注册用户（自动处理密码加密和角色分配）
     """
     
-    async def on_startup(self) -> None:
-        """启动时初始化数据库"""
-        logger.info("🚀 DatabaseInitializer 启动初始化...")
-        
-        # 1. 创建表
-        await init_database()
-        
-        # 2. 填充初始数据（如果需要）
-        await self._seed_initial_data()
-        
-        logger.info("✅ DatabaseInitializer 启动初始化完成")
+    def __init__(
+        self,
+        register_service: IRegisterService,
+        db_manager: DBManagerService,
+        enabled: bool = True
+    ):
+        """
+        Args:
+            register_service: 用户注册服务（框架提供）
+            db_manager: 数据库管理服务（框架提供）
+            enabled: 是否启用初始化器
+        """
+        super().__init__(enabled)
+        self.register_service = register_service
+        self.db_manager = db_manager
+        logger.info("📦 创建 DatabaseInitializer 实例")
     
-    async def on_shutdown(self) -> None:
-        """关闭时清理资源"""
-        logger.info("👋 DatabaseInitializer 关闭处理...")
+    def get_name(self) -> str:
+        return "DatabaseInitializer"
+    
+    async def initialize(self) -> bool:
+        """执行数据库初始化"""
+        logger.info("🚀 DatabaseInitializer 开始初始化...")
         
-        # 关闭数据库引擎
-        await engine.dispose()
-        
-        logger.info("✅ DatabaseInitializer 关闭处理完成")
+        try:
+            # 填充初始数据
+            await self._seed_initial_data()
+            
+            logger.info("✅ DatabaseInitializer 初始化完成")
+            return True
+        except Exception as e:
+            logger.error(f"❌ DatabaseInitializer 初始化失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
     
     async def _seed_initial_data(self):
-        """填充初始数据"""
-        from app.database.session import AsyncSessionLocal
-        from app.models.user import User
+        """
+        填充初始数据
+        
+        完整的 RBAC 初始化流程：
+        1. 创建权限（Permissions）
+        2. 创建角色（Roles）
+        3. 分配角色权限（Role-Permission）
+        4. 创建管理员用户（User）
+        5. 分配用户角色（User-Role）
+        """
+        from pyspring.security.orm.tables import PermissionTable, RoleTable, RolePermissionTable
         from sqlalchemy import select
         
-        async with AsyncSessionLocal() as session:
-            # 检查是否已有用户
-            result = await session.execute(select(User))
-            users = result.scalars().all()
+        async with await self.db_manager.session() as session:
+            # 检查是否已有数据
+            result = await session.execute(select(RoleTable))
+            roles = result.scalars().all()
             
-            if not users:
-                logger.info("📝 填充初始用户数据...")
-                
-                # 创建管理员用户
-                from passlib.context import CryptContext
-                pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-                
-                admin = User(
-                    username="admin",
-                    email="admin@example.com",
-                    password_hash=pwd_context.hash("admin123"),
-                    is_active=True
+            if roles:
+                logger.info(f"ℹ️ 数据库已有 {len(roles)} 个角色，跳过初始化")
+                return
+            
+            logger.info("📝 开始填充 RBAC 初始数据...")
+            
+            # ====================================================================
+            # 1. 创建权限（Permissions）
+            # ====================================================================
+            permissions_data = [
+                {"code": "user:read", "name": "查看用户", "description": "查看用户信息"},
+                {"code": "user:write", "name": "编辑用户", "description": "创建、更新、删除用户"},
+                {"code": "role:read", "name": "查看角色", "description": "查看角色信息"},
+                {"code": "role:write", "name": "编辑角色", "description": "创建、更新、删除角色"},
+                {"code": "system:admin", "name": "系统管理", "description": "系统管理员权限"},
+            ]
+            
+            permissions = []
+            for perm_data in permissions_data:
+                perm = PermissionTable(
+                    code=perm_data["code"],
+                    name=perm_data["name"],
+                    description=perm_data["description"],
+                    active=True,
+                    deleted=False,
+                    creator="system"
                 )
-                
-                session.add(admin)
-                await session.commit()
-                
-                logger.info("✅ 初始用户创建完成: admin/admin123")
-            else:
-                logger.info(f"ℹ️ 数据库已有 {len(users)} 个用户，跳过初始化")
+                session.add(perm)
+                permissions.append(perm)
+            
+            await session.flush()
+            logger.info(f"✅ 创建 {len(permissions)} 个权限")
+            
+            # ====================================================================
+            # 2. 创建角色（Roles）
+            # ====================================================================
+            admin_role = RoleTable(
+                code="admin",
+                name="管理员",
+                description="系统管理员，拥有所有权限",
+                active=True,
+                deleted=False,
+                creator="system"
+            )
+            session.add(admin_role)
+            
+            user_role = RoleTable(
+                code="user",
+                name="普通用户",
+                description="普通用户，只能查看和编辑自己的信息",
+                active=True,
+                deleted=False,
+                creator="system"
+            )
+            session.add(user_role)
+            
+            await session.flush()
+            logger.info("✅ 创建角色: admin, user")
+            
+            # ====================================================================
+            # 3. 分配角色权限（Role-Permission）
+            # ====================================================================
+            # 管理员拥有所有权限
+            for perm in permissions:
+                role_perm = RolePermissionTable(
+                    role_id=admin_role.id,
+                    permission_id=perm.id,
+                    active=True,
+                    deleted=False,
+                    creator="system"
+                )
+                session.add(role_perm)
+            
+            # 普通用户只有查看权限
+            for perm in permissions:
+                if "read" in perm.code:
+                    role_perm = RolePermissionTable(
+                        role_id=user_role.id,
+                        permission_id=perm.id,
+                        active=True,
+                        deleted=False,
+                        creator="system"
+                    )
+                    session.add(role_perm)
+            
+            await session.flush()
+            logger.info("✅ 分配角色权限完成")
+            
+            # ====================================================================
+            # 4. 创建管理员用户（使用 IRegisterService）
+            # ====================================================================
+            # 使用框架的注册服务，自动处理密码加密和角色分配
+            admin_user = UserInfo(
+                user=User(
+                    user_id="admin",
+                    email="admin@example.com",
+                    password="admin123",  # 会被自动加密
+                    active=True,
+                    deleted=False,
+                ),
+                roles=[
+                    Role(
+                        code="admin",
+                        name="管理员",
+                        description="系统管理员"
+                    )
+                ]
+            )
+            
+            # 注册用户（框架会自动提交事务）
+            await self.register_service.register(admin_user)
+            
+            logger.info("✅ 创建默认管理员: admin/admin123")
+            logger.info("✅ RBAC 初始数据填充完成")

@@ -178,26 +178,78 @@ class UserService(ILifecycle):
         ...
 ```
 
-### 2. 生命周期管理
+### 3. 数据库访问 - DBManagerService
 
-查看 [app/services/user_service.py](app/services/user_service.py)：
+PySpring v1.1.0+ 使用统一的 DBManagerService 进行数据库访问：
 
 ```python
-async def on_startup(self) -> None:
-    """应用启动时执行"""
-    logger.info("初始化服务...")
+from pyspring.repositories.db.manager import DBManagerService
 
-async def on_shutdown(self) -> None:
-    """应用关闭时执行"""
-    logger.info("清理资源...")
+@Component()
+class UserRepository:
+    def __init__(self, db_manager: DBManagerService):
+        self.db = db_manager
+    
+    async def find_by_id(self, user_id: int):
+        async with await self.db.session() as session:
+            result = await session.execute(
+                select(User).where(User.id == user_id)
+            )
+            return result.scalar_one_or_none()
 ```
 
-### 3. Repository 模式
+优势：
+- 自动管理连接池
+- 支持多数据库切换
+- 集成到 IoC 容器
+- 统一的会话管理
+
+### 4. 数据库初始化
+
+数据库表由框架的 MigrationInitializer 自动创建，在 `config/database.yaml` 配置：
+
+```yaml
+initialization:
+  enabled: true                 # 启用自动初始化
+  mode: "incremental"           # 增量模式（只创建不存在的表）
+  script_path: null             # null 则使用 SQLAlchemy metadata.create_all()
+```
+
+初始数据由 `DatabaseInitializer` 填充（示例项目自动创建管理员用户和权限）。
+
+### 5. Repository 模式
 
 查看 [app/repositories/user_repository.py](app/repositories/user_repository.py)：
 
 ```python
-@component
+@Component()
+class UserRepository:
+    def __init__(self, db_manager: DBManagerService):
+        self.db = db_manager
+    
+    async def find_by_id(self, user_id: int):
+        async with await self.db.session() as session:
+            # 数据库操作
+            ...
+```
+
+### 6. 生命周期管理 - IStartupInitializer
+
+查看 [app/database/initializer.py](app/database/initializer.py)：
+
+```python
+@Component()
+class DatabaseInitializer(IStartupInitializer):
+    async def initialize(self) -> bool:
+        """应用启动时执行"""
+        logger.info("初始化数据库...")
+        return True
+```
+
+注意：
+- 普通业务服务（Service、Repository）**不需要** ILifecycle
+- 只有管理外部资源的服务（缓存、消息队列等）才需要 ILifecycle
+- 数据库初始化使用 IStartupInitializer
 class UserRepository(ILifecycle):
     async def find_by_id(self, user_id: int) -> Optional[User]:
         # 数据访问逻辑封装

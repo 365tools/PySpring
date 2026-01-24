@@ -23,7 +23,7 @@ class IShutdownHandler(IManaged, ILifecycle, ABC):
     1. 继承 IShutdownHandler（自动包含ILifecycle）
     2. 实现 shutdown() 方法
     3. 实现 get_name() 方法
-    4. 无需手动实现 on_destroy()（自动调用shutdown）
+    4. 无需手动实现 on_shutdown()（自动调用shutdown）
     """
 
     @abstractmethod
@@ -65,7 +65,7 @@ class IShutdownHandler(IManaged, ILifecycle, ABC):
             logger.debug(f"🔄 开始执行关闭处理器: {self.get_name()}")
             result = await self.shutdown()
             if result:
-                logger.info(f"✅ 关闭处理器 [{self.get_name()}] 执行成功")
+                logger.debug(f"✅ 关闭处理器 [{self.get_name()}] 执行成功")
             else:
                 logger.warning(f"⚠️  关闭处理器 [{self.get_name()}] 执行失败")
             return result
@@ -87,11 +87,11 @@ class ShutdownHandlerManager:
 
     def discover(self):
         """发现所有关闭处理器"""
-        logger.info("🔍 搜索关闭处理器...")
+        logger.debug("🔍 搜索关闭处理器...")
 
         try:
             self._handlers = self.container.get_all_of_type(IShutdownHandler)
-            logger.info(f"📋 发现 {len(self._handlers)} 个关闭处理器")
+            logger.debug(f"📋 发现 {len(self._handlers)} 个关闭处理器")
         except ValueError:
             logger.debug("未发现任何关闭处理器")
             self._handlers = []
@@ -104,10 +104,10 @@ class ShutdownHandlerManager:
             bool: 是否全部成功
         """
         if not self._handlers:
-            logger.info("⏭️  没有需要执行的关闭处理器")
+            logger.debug("⏭️  没有需要执行的关闭处理器")
             return True
 
-        logger.info(f"🔄 开始执行 {len(self._handlers)} 个关闭处理器...")
+        logger.debug(f"🔄 开始执行 {len(self._handlers)} 个关闭处理器...")
 
         success_count = 0
         # 反向执行（与初始化相反的顺序）
@@ -121,7 +121,7 @@ class ShutdownHandlerManager:
 
         all_success = success_count == len(self._handlers)
         if all_success:
-            logger.info(f"✅ 所有关闭处理器执行完成 ({success_count}/{len(self._handlers)})")
+            logger.debug(f"✅ 所有关闭处理器执行完成 ({success_count}/{len(self._handlers)})")
         else:
             logger.warning(f"⚠️  部分关闭处理器执行失败 ({success_count}/{len(self._handlers)})")
 

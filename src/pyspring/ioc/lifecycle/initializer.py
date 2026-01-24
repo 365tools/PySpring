@@ -24,7 +24,7 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
     1. 继承 IStartupInitializer（自动包含ILifecycle）
     2. 实现 initialize() 方法
     3. 实现 get_name() 方法
-    4. 无需手动实现 on_init()（自动调用initialize）
+    4. 无需手动实现 on_startup()（自动调用initialize）
     """
 
     def __init__(self, enabled: bool = True):
@@ -54,11 +54,11 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
         """
         pass
 
-    async def on_init(self):
-        """ILifecycle接口实现 - 自动调用initialize()"""
+    async def on_startup(self):
+        """ILifecycle接口实现 - 自动调用execute()"""
         await self.execute()
 
-    async def on_destroy(self):
+    async def on_shutdown(self):
         """ILifecycle接口实现 - 初始化器无需清理"""
         pass
 
@@ -77,7 +77,7 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
             logger.debug(f"🚀 开始执行初始化器: {self.get_name()}")
             result = await self.initialize()
             if result:
-                logger.info(f"✅ 初始化器 [{self.get_name()}] 执行成功")
+                logger.debug(f"✅ 初始化器 [{self.get_name()}] 执行成功")
             else:
                 logger.warning(f"⚠️  初始化器 [{self.get_name()}] 执行失败")
             return result
@@ -99,12 +99,12 @@ class StartupInitializerManager:
 
     def discover(self):
         """发现所有初始化器"""
-        logger.info("🔍 搜索启动初始化器...")
+        logger.debug("🔍 搜索启动初始化器...")
 
         # 获取所有IStartupInitializer类型的服务
         try:
             self._initializers = self.container.get_all_of_type(IStartupInitializer)
-            logger.info(f"📋 发现 {len(self._initializers)} 个初始化器")
+            logger.debug(f"📋 发现 {len(self._initializers)} 个初始化器")
         except ValueError:
             # 没有找到任何初始化器
             logger.debug("未发现任何初始化器")
@@ -118,10 +118,10 @@ class StartupInitializerManager:
             bool: 是否全部成功
         """
         if not self._initializers:
-            logger.info("⏭️  没有需要执行的初始化器")
+            logger.debug("⏭️  没有需要执行的初始化器")
             return True
 
-        logger.info(f"🚀 开始执行 {len(self._initializers)} 个初始化器...")
+        logger.debug(f"🚀 开始执行 {len(self._initializers)} 个初始化器...")
 
         success_count = 0
         for initializer in self._initializers:
@@ -134,7 +134,7 @@ class StartupInitializerManager:
 
         all_success = success_count == len(self._initializers)
         if all_success:
-            logger.info(f"✅ 所有初始化器执行完成 ({success_count}/{len(self._initializers)})")
+            logger.debug(f"✅ 所有初始化器执行完成 ({success_count}/{len(self._initializers)})")
         else:
             logger.warning(f"⚠️  部分初始化器执行失败 ({success_count}/{len(self._initializers)})")
 

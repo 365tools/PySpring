@@ -7,7 +7,6 @@ import os
 from typing import Dict, Any, List, Optional
 
 import yaml
-
 from pyspring.ioc.annotations.scope import Scope
 from pyspring.log.instance import logger
 
@@ -90,11 +89,29 @@ class IoCConfigLoader:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f) or {}
                 self.config = IoCConfig(data)
-                logger.info(f"✅ 加载IOC配置: {self.config_path}")
+                logger.debug(f"✅ 加载IOC配置: {self.config_path}")
                 return self.config
         except Exception as e:
             logger.error(f"❌ 加载配置文件失败: {e}")
             return IoCConfig({})
+
+    def get_health_config(self) -> Dict[str, Any]:
+        """
+        获取健康检查配置
+        
+        Returns:
+            Dict: 健康检查配置，包含 enabled 和 indicators
+        """
+        if not os.path.exists(self.config_path):
+            return {'enabled': True}  # 默认启用
+
+        try:
+            with open(self.config_path, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f) or {}
+                return data.get('health', {'enabled': True})
+        except Exception as e:
+            logger.warning(f"⚠️  读取健康检查配置失败: {e}")
+            return {'enabled': True}
 
     def get_scan_packages(self) -> List[str]:
         """获取要扫描的包列表"""
@@ -120,7 +137,7 @@ class IoCConfigLoader:
 
         # 扫描包
         if self.config.scan_packages:
-            logger.info(f"📦 从配置文件扫描包: {self.config.scan_packages}")
+            logger.debug(f"📦 从配置文件扫描包: {self.config.scan_packages}")
             container.scan(self.config.scan_packages)
 
         # 注册配置中的服务（不推荐，建议用@Component）
@@ -153,7 +170,7 @@ class IoCConfigLoader:
                     is_bean=True
                 )
                 container.registry.register(definition)
-                logger.info(f"✅ 从配置注册Bean: {name}")
+                logger.debug(f"✅ 从配置注册Bean: {name}")
 
             # 如果定义了class，使用类实例化（不推荐）
             elif 'class' in service_def:

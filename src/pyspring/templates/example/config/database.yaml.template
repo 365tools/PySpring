@@ -18,6 +18,15 @@ database:
     # 生产环境通过环境变量设置密码
     # password: ${POSTGRES_PASSWORD}
 
+# 数据库表结构初始化配置（开发环境建议启用）
+initialization:
+  # 启用自动创建表
+  enabled: true
+  # 增量模式：只创建不存在的表
+  mode: "incremental"
+  # 使用 SQLAlchemy 自动建表（不使用 SQL 脚本）
+  script_path: null
+
 # 示例：使用 SQLite（开发环境）
 # database:
 #   type: "sqlite"

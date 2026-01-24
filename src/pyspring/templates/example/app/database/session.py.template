@@ -1,60 +1,29 @@
 """
-数据库会话管理
+数据库会话管理（已废弃）
 
-展示：
-1. SQLAlchemy 异步引擎
-2. 会话工厂
+⚠️ 注意：此文件中的代码已废弃，仅作示例保留
+
+PySpring v1.1.0+ 推荐使用框架提供的 DBManagerService：
+- 自动管理数据库连接池
+- 统一的会话管理
+- 支持多数据库切换
+- 集成到 IoC 容器
+
+使用示例：
+    from pyspring.repositories.db.manager import DBManagerService
+    
+    @Component()
+    class MyRepository:
+        def __init__(self, db_manager: DBManagerService):
+            self.db = db_manager
+        
+        async def query(self):
+            async with await self.db.session() as session:
+                # 使用 session 进行数据库操作
+                ...
+
+数据库表初始化：
+- 使用 MigrationInitializer（框架自动调用）
+- 配置 config/database.yaml 中的 initialization 部分
+- 支持 SQL 脚本或 SQLAlchemy metadata.create_all()
 """
-from typing import AsyncGenerator
-
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-
-from pyspring.log.instance import logger
-
-
-# 数据库 URL（SQLite 示例）
-DATABASE_URL = "sqlite+aiosqlite:///./data/app.db"
-
-# 创建异步引擎
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,  # 生产环境设为 False
-    future=True
-)
-
-# 创建会话工厂
-AsyncSessionLocal = async_sessionmaker(
-    engine,
-    class_=AsyncSession,
-    expire_on_commit=False
-)
-
-
-async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    获取数据库会话
-    
-    使用示例：
-        async for session in get_db_session():
-            # 使用 session
-            ...
-    """
-    async with AsyncSessionLocal() as session:
-        try:
-            yield session
-        except Exception as e:
-            logger.error(f"数据库会话错误: {e}")
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
-
-
-async def init_database():
-    """初始化数据库表"""
-    from app.models.user import Base
-    
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    logger.info("✅ 数据库表初始化完成")
