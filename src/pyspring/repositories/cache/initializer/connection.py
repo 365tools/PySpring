@@ -30,7 +30,7 @@ class CacheConnectionInitializer(IStartupInitializer):
         super().__init__(enabled=True)
         self.cache_manager = cache_manager
 
-    async def startup(self) -> bool:
+    async def initialize(self) -> bool:
         """
         触发缓存服务创建
         

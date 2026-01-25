@@ -29,7 +29,7 @@ class DBConnectionInitializer(IStartupInitializer):
         super().__init__(enabled=True)
         self.db_manager = db_manager
 
-    async def startup(self) -> bool:
+    async def initialize(self) -> bool:
         """
         触发数据库服务创建
         
