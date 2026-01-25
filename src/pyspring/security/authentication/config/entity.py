@@ -19,14 +19,14 @@ from pyspring.security.orm.tables import (
 )
 
 
-@ConditionalOnMissingBean(object)
+@ConditionalOnMissingBean
 class SecurityEntityConfiguration:
     """
     Component for holding Security Entity types (Tables/Models) and Pydantic schemas.
     Default services use this component to know which classes to use for ORM operations and validation.
     
     设计说明：
-    - 使用 @ConditionalOnMissingBean(object) 让用户可以完全替换这个配置类
+    - 使用 @ConditionalOnMissingBean 让用户可以完全替换这个配置类
     - 不是 @dataclass，是一个普通的配置类，方便继承和自定义
     """
 

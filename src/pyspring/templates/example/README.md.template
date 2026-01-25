@@ -121,26 +121,60 @@ python -m app.main
 curl http://localhost:8000/health
 ```
 
-### 用户注册
+### 用户认证（框架服务 + 自定义扩展）
 
+示例项目使用框架的完整认证服务（`ILoginService`、`IRegisterService`），并通过自定义实现扩展功能。
+
+**用户注册**
 ```bash
 curl -X POST http://localhost:8000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
     "email": "test@example.com",
-    "password": "password123"
+    "password": "password123",
+    "phone": "13800138000"
   }'
+
+# 框架自动使用你的 CustomRegisterService（如果配置了）
+# 支持自定义字段（username、phone）、自定义验证、注册后置处理
 ```
 
-### 用户登录
-
+**用户登录**
 ```bash
 curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "username": "testuser",
-    "password": "password123"
+    "user_id": "admin",
+    "password": "admin123"
+  }'
+
+# 或使用邮箱登录：
+# {
+#   "email": "admin@example.com",
+#   "password": "admin123"
+# }
+
+# 响应包含完整的令牌信息：
+# {
+#   "success": true,
+#   "data": {
+#     "access_token": "eyJ...",
+#     "refresh_token": "eyJ...",
+#     "token_type": "bearer",
+#     "expires_in": 3600,
+#     "refresh_token_expire": 2592000,
+#     "message": "登录成功"
+#   }
+# }
+```
+
+**刷新令牌**
+```bash
+curl -X POST http://localhost:8000/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "YOUR_REFRESH_TOKEN"
   }'
 ```
 
@@ -150,6 +184,24 @@ curl -X POST http://localhost:8000/api/auth/login \
 curl http://localhost:8000/api/users/me \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
 ```
+
+### 🎨 自定义扩展说明
+
+示例项目展示了如何扩展框架功能：
+
+1. **CustomRegisterService** - 自定义注册服务
+   - 位置：`app/services/custom_register_service.py`
+   - 扩展：自定义字段处理、验证规则、注册后置操作
+
+2. **CustomUser 模型** - 扩展用户表
+   - 位置：`app/config/security_config.py`
+   - 扩展：添加 username、phone 等自定义字段
+
+3. **可选的其他自定义**
+   - `ILoginProvider` - 自定义登录方式（OAuth2、LDAP、短信验证码）
+   - `IResponseBuilder` - 自定义响应格式
+
+**框架会自动检测并使用你的自定义实现，无需额外配置！**
 
 ## 🔑 默认账户
 

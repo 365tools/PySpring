@@ -28,6 +28,7 @@ class DefaultResponseBuilder(IResponseBuilder):
             refresh_token=refresh_token,
             token_type=generator.get_token_type().lower(),
             expires_in=generator.get_access_token_expire(),
+            refresh_token_expire=generator.get_refresh_token_expire(),
             message=warning_msg if warning_msg else "登录成功"
         )
 

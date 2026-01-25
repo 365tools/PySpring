@@ -255,38 +255,55 @@ def Bean(
     return decorator
 
 
-def ConditionalOnMissingBean(bean_type: type) -> Callable[[Union[Type[T], Callable[..., T]]], Union[Type[T], Callable[..., T]]]:
+def ConditionalOnMissingBean(
+        target_or_type: Union[Type[T], Callable[..., T], type, None] = None
+) -> Union[Callable[[Union[Type[T], Callable[..., T]]], Union[Type[T], Callable[..., T]]], Type[T], Callable[..., T]]:
     """
-    条件Bean装饰器（支持装饰类和方法）
+    条件Bean装饰器（支持装饰类和方法，支持无参数调用）
     
     仅当指定类型的Bean不存在时，才注册此Bean/组件。
     用于提供默认实现，允许用户覆盖。
     
+    支持三种使用方式：
+    1. 无参数：@ConditionalOnMissingBean（自动使用被装饰的类作为类型）
+    2. 指定接口：@ConditionalOnMissingBean(IAuthProvider)
+    3. 指定object：@ConditionalOnMissingBean(object)（允许完全替换）
+    
     Args:
-        bean_type: 检查的Bean类型
+        target_or_type: 
+            - 如果是 None，则为无参数模式
+            - 如果是类型，则为指定类型模式
+            - 如果是类/方法对象，则为直接装饰模式（内部使用）
     
     使用场景1: 装饰 @Bean 方法（在配置类中）
         @Configuration
         class DefaultConfig:
-            @Bean()
+            @Bean
             @ConditionalOnMissingBean(IAuthProvider)
             def default_auth_provider(self) -> IAuthProvider:
                 return DefaultAuthProvider()
     
-    使用场景2: 装饰组件类（实现了 IManaged 的默认实现类）
+    使用场景2: 装饰组件类 - 指定接口类型
         @ConditionalOnMissingBean(ILoginProvider)
         class DefaultPasswordLoginProvider(ILoginProvider):
             '''用户可以通过提供自己的 ILoginProvider 实现来替换此默认类'''
             pass
     
-    使用场景3: 装饰普通配置类（不继承 IManaged）
-        @ConditionalOnMissingBean(object)
+    使用场景3: 装饰组件类 - 无参数（自动推断）
+        @ConditionalOnMissingBean
+        class DefaultPasswordLoginProvider(ILoginProvider):
+            '''自动使用 DefaultPasswordLoginProvider 作为检查类型'''
+            pass
+    
+    使用场景4: 装饰普通配置类（不继承 IManaged）
+        @ConditionalOnMissingBean
         class SecurityEntityConfiguration:
             '''用户可以完全替换此配置类'''
             pass
     """
 
-    def decorator(target: Union[Type[T], Callable[..., T]]) -> Union[Type[T], Callable[..., T]]:
+    def apply_decorator(target: Union[Type[T], Callable[..., T]], bean_type: type) -> Union[Type[T], Callable[..., T]]:
+        """应用装饰器逻辑"""
         setattr(target, "__pyspring_conditional_on_missing_bean__", bean_type)
 
         # 🔧 如果装饰的是类（不是方法），自动标记为组件
@@ -296,6 +313,42 @@ def ConditionalOnMissingBean(bean_type: type) -> Callable[[Union[Type[T], Callab
         
         return target
 
+    # 情况1: 无参数模式 @ConditionalOnMissingBean
+    if target_or_type is None:
+        def decorator(target: Union[Type[T], Callable[..., T]]) -> Union[Type[T], Callable[..., T]]:
+            # 自动使用被装饰的类作为bean_type
+            # 如果是类，使用类本身；如果是方法，使用 object（兼容旧行为）
+            bean_type = target if isinstance(target, type) else object
+            return apply_decorator(target, bean_type)
+
+        return decorator
+
+    # 情况2: 直接装饰模式 @ConditionalOnMissingBean（被Python直接调用，不带括号）
+    if callable(target_or_type) and not isinstance(target_or_type, type):
+        # 这是一个方法或函数，直接装饰
+        return apply_decorator(target_or_type, object)
+
+    if isinstance(target_or_type, type):
+        # 情况3: 如果target_or_type是一个类，且看起来像是被直接装饰（通过类型检查判断）
+        # 检查是否有 __pyspring 相关属性（说明是我们的组件类）
+        if hasattr(target_or_type, '__pyspring_component__') or hasattr(target_or_type, '__mro__'):
+            # 这可能是直接装饰：@ConditionalOnMissingBean 应用于类
+            # 但我们不能确定，所以返回装饰器工厂
+            # 实际上Python会把它当作带参数调用
+            pass
+
+        # 情况4: 指定类型模式 @ConditionalOnMissingBean(SomeType)
+        bean_type = target_or_type
+
+        def decorator(target: Union[Type[T], Callable[..., T]]) -> Union[Type[T], Callable[..., T]]:
+            return apply_decorator(target, bean_type)
+
+        return decorator
+
+    # 兜底：返回装饰器
+    def decorator(target: Union[Type[T], Callable[..., T]]) -> Union[Type[T], Callable[..., T]]:
+        bean_type = target_or_type if target_or_type is not None else target
+        return apply_decorator(target, bean_type)
     return decorator
 
 

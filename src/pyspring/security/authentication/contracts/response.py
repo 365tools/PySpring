@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field, EmailStr, model_validator, ConfigDict
-
 from pyspring.ioc.interfaces.core import IManaged
 
 
@@ -76,6 +75,7 @@ class TokenResponse(BaseModel):
 class LoginResponse(TokenResponse):
     """登录成功响应"""
     refresh_token: str = Field(..., description="刷新令牌")
+    refresh_token_expire: int = Field(..., description="刷新令牌有效期(秒)")
     message: str = Field(default="登录成功", description="响应消息")
     user_info: Optional[Any] = Field(default=None, description="用户信息(可选)")
 

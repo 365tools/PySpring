@@ -1,7 +1,7 @@
 from typing import Any
 
 from fastapi import HTTPException, status
-
+from pyspring.ioc.annotations.component import ConditionalOnMissingBean
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.contracts.login import ILoginProvider
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
@@ -9,6 +9,7 @@ from pyspring.security.authentication.contracts.request import LoginRequest
 from pyspring.security.authentication.contracts.user import IUserProvider
 
 
+@ConditionalOnMissingBean  # 允许用户通过继承或创建同名类来替换
 class DefaultPasswordLoginProvider(ILoginProvider):
     """
     Default Authentication Provider: Base on Password

@@ -1,101 +1,168 @@
-"""认证相关API端点"""
-from typing import Dict
+"""认证相关API端点
 
+展示如何使用框架的认证服务（ILoginService、IRegisterService）
+并通过自定义实现扩展功能：
+
+可自定义的部分：
+1. CustomPasswordLoginProvider（app/services/custom_login_provider.py）
+   - 继承 DefaultPasswordLoginProvider
+   - 扩展支持多种登录标识符（用户名/邮箱/手机号）
+   - 保持框架的安全特性（防时序攻击、密码验证）
+   
+2. CustomRegisterService（app/services/custom_register_service.py）
+   - 自定义注册逻辑、字段验证、后置处理
+   
+3. CustomUser 模型（app/config/security_config.py）
+   - 扩展用户表字段（username、phone 等）
+   
+4. 其他可选扩展：
+   - ILoginProvider：支持其他认证方式（OAuth2、LDAP、短信验证码）
+   - IResponseBuilder：自定义响应格式
+
+框架自动集成你的自定义实现，无需额外配置！
+"""
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 
 from pyspring.ioc import Inject
 from pyspring.web.core.response import Response
-from app.services.auth_service import AuthService
-from app.models.user import User
+from pyspring.security.authentication.contracts.flow import ILoginService, IRegisterService
+from pyspring.security.authentication.contracts.request import LoginRequest
+from pyspring.security.authentication.contracts.response import UserInfo, User
 
 
 router = APIRouter()
 
 
-class LoginRequest(BaseModel):
-    """登录请求"""
-    login_identifier: str  # 用户名/邮箱/手机号
-    password: str
-
+# ============================================================================
+# 注册请求模型（扩展框架的 User 模型，添加自定义字段）
+# ============================================================================
 
 class RegisterRequest(BaseModel):
-    """注册请求"""
-    username: str
-    email: EmailStr
+    """注册请求（包含自定义字段）"""
+    username: str  # 自定义字段
+    email: str
     password: str
-    phone: str | None = None
+    phone: str | None = None  # 自定义字段
 
 
-class TokenResponse(BaseModel):
-    """令牌响应"""
-    access_token: str
-    token_type: str = "bearer"
-    username: str
-
+# ============================================================================
+# 认证端点（使用框架服务 + 自定义扩展）
+# ============================================================================
 
 @router.post("/login")
 async def login(
     request: LoginRequest,
-    auth_service: AuthService = Depends(lambda: Inject(AuthService))
+    login_service: ILoginService = Depends(lambda: Inject(ILoginService))
 ) -> JSONResponse:
     """
-    用户登录
+    用户登录（使用框架认证服务）
     
-    验证用户凭据并返回 JWT 访问令牌
+    框架特性：
+    - ✅ 自动返回 access_token 和 refresh_token
+    - ✅ 支持多种登录策略（密码、OAuth2、LDAP 等）
+    - ✅ 支持角色和权限验证
+    - ✅ Token 过期时间配置（access_token_expire、refresh_token_expire）
     
-    支持多种登录方式：
-    - 用户名
-    - 邮箱
-    - 手机号
+    可自定义：
+    - ILoginProvider：自定义登录方式
+    - IResponseBuilder：自定义响应格式
+    
+    请求示例（支持多种登录方式）：
+    {
+        "user_id": "admin",  # 可以是用户名、邮箱、手机号
+        "password": "admin123"
+    }
+    
+    或直接使用邮箱：
+    {
+        "email": "admin@example.com",
+        "password": "admin123"
+    }
+    
+    扩展说明：
+    - CustomPasswordLoginProvider 扩展了查询逻辑
+    - user_id 支持：用户名、邮箱、手机号（自动匹配）
+    - 保持框架的安全特性（防时序攻击、密码验证）
+    
+    响应示例：
+    {
+        "success": true,
+        "data": {
+            "access_token": "eyJ...",
+            "refresh_token": "eyJ...",
+            "token_type": "bearer",
+            "expires_in": 3600,
+            "refresh_token_expire": 2592000,
+            "message": "登录成功"
+        }
+    }
     """
-    token = await auth_service.authenticate(request.login_identifier, request.password)
-    
-    if not token:
+    try:
+        login_response = await login_service.login(request)
+        
+        return Response.success(
+            login_response.model_dump(),
+            message="登录成功"
+        )
+    except HTTPException as e:
+        return Response.error(e, default_status_code=e.status_code)
+    except Exception as e:
         return Response.error(
             HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户名/邮箱或密码错误"
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
             ),
-            default_status_code=status.HTTP_401_UNAUTHORIZED
+            default_status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-    
-    # 获取用户信息返回 username
-    user = await auth_service.get_current_user(token)
-    return Response.success(
-        TokenResponse(
-            access_token=token,
-            username=user.username if user else request.login_identifier
-        ),
-        message="登录成功"
-    )
 
 
 @router.post("/register")
 async def register(
     request: RegisterRequest,
-    auth_service: AuthService = Depends(lambda: Inject(AuthService))
+    register_service: IRegisterService = Depends(lambda: Inject(IRegisterService))
 ) -> JSONResponse:
     """
-    用户注册
+    用户注册（使用框架注册服务 + 自定义扩展）
     
-    创建新用户账户
+    框架特性：
+    - ✅ 自动密码加密（BCrypt）
+    - ✅ 邮箱/用户名唯一性验证
+    - ✅ 用户角色分配
+    - ✅ 事务管理（失败自动回滚）
+    
+    自定义扩展（CustomRegisterService）：
+    - ✅ 自定义字段处理（username、phone）
+    - ✅ 自定义验证规则（密码强度、黑名单检查）
+    - ✅ 注册后置处理（发送欢迎邮件、短信通知）
+    
+    请求示例：
+    {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "password123",
+        "phone": "13800138000"
+    }
     """
     try:
-        user = await auth_service.register(
-            username=request.username,
-            email=request.email,
-            password=request.password,
-            phone=request.phone
+        # 构建用户信息（包含自定义字段）
+        user_info = UserInfo(
+            user=User(
+                email=request.email,
+                password=request.password,
+                **{"username": request.username, "phone": request.phone}  # 自定义字段
+            )
         )
+        
+        # 调用框架注册服务（会自动使用你的 CustomRegisterService）
+        result = await register_service.register(user_info)
         
         return Response.success(
             {
-                "id": user.id,
-                "username": user.username,
-                "email": user.email,
-                "user_id": user.user_id  # UUID
+                "user_id": result.user.user_id,
+                "email": result.user.email,
+                "username": getattr(result.user, "username", None),  # 自定义字段
             },
             message="注册成功"
         )
@@ -107,16 +174,87 @@ async def register(
             ),
             default_status_code=status.HTTP_400_BAD_REQUEST
         )
+    except Exception as e:
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"注册失败: {str(e)}"
+            ),
+            default_status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@router.post("/refresh")
+async def refresh_token(
+    refresh_token: str,
+    login_service: ILoginService = Depends(lambda: Inject(ILoginService))
+) -> JSONResponse:
+    """
+    刷新访问令牌（使用框架服务）
+    
+    当 access_token 过期时，使用 refresh_token 获取新的 access_token
+    
+    请求示例：
+    {
+        "refresh_token": "eyJ..."
+    }
+    
+    响应示例：
+    {
+        "success": true,
+        "data": {
+            "access_token": "eyJ...",
+            "token_type": "bearer",
+            "expires_in": 3600
+        }
+    }
+    """
+    try:
+        token_response = await login_service.refresh_token(refresh_token)
+        
+        return Response.success(
+            token_response.model_dump(),
+            message="令牌刷新成功"
+        )
+    except HTTPException as e:
+        return Response.error(e, default_status_code=e.status_code)
+    except Exception as e:
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="刷新令牌无效或已过期"
+            ),
+            default_status_code=status.HTTP_401_UNAUTHORIZED
+        )
 
 
 @router.post("/logout")
-async def logout() -> JSONResponse:
+async def logout(
+    token: str,
+    login_service: ILoginService = Depends(lambda: Inject(ILoginService))
+) -> JSONResponse:
     """
-    用户登出
+    用户登出（使用框架服务）
     
-    注意：JWT 是无状态的，客户端应删除本地令牌
+    撤销令牌，使其失效
+    
+    请求示例：
+    {
+        "token": "eyJ..."
+    }
     """
-    return Response.success(
-        None,
-        message="登出成功（请删除客户端令牌）"
-    )
+    try:
+        logout_response = await login_service.logout(token)
+        
+        return Response.success(
+            logout_response.model_dump() if hasattr(logout_response, "model_dump") else None,
+            message="登出成功"
+        )
+    except Exception as e:
+        return Response.error(
+            HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=str(e)
+            ),
+            default_status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
