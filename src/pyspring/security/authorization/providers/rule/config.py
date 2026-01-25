@@ -42,33 +42,19 @@ class DefaultPathPermissionProvider(IPathPermissionProvider):
         """
         从配置文件加载路径权限规则
         
-        支持的配置结构：
-        1. authorization.role_mappings (字典格式)
-        2. authorization.rules (列表格式，兼容旧版)
+        配置结构：
+        authorization.role_mappings (字典格式)
         """
         try:
             # 获取授权配置
             authz_config = self.config_manager.get_authorization_config()
 
-            # 优先使用role_mappings（字典格式）
+            # 使用role_mappings（字典格式）
             role_mappings = authz_config.get("role_mappings", {})
             if isinstance(role_mappings, dict) and role_mappings:
                 self._rules = role_mappings
                 logger.info(f"[PathRuleProvider] 已加载 {len(self._rules)} 条路径权限规则")
                 return
-
-            # 兼容旧版rules格式（列表格式）
-            rules_config = authz_config.get("rules", [])
-            if isinstance(rules_config, list):
-                for item in rules_config:
-                    path = item.get("path")
-                    roles = item.get("roles", [])
-                    if path and isinstance(roles, list):
-                        self._rules[path] = roles
-
-                if self._rules:
-                    logger.info(f"[PathRuleProvider] 已加载 {len(self._rules)} 条路径权限规则（兼容模式）")
-                    return
 
             # 没有配置规则
             logger.warning("[PathRuleProvider] 未找到路径权限规则配置")

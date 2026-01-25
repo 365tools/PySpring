@@ -181,10 +181,6 @@ class ApplicationContext:
         cls._container = None
 
 
-# 向后兼容的别名
-AppContext = ApplicationContext
-
-
 def inject(service_type: type):
     """
     依赖注入快捷函数
@@ -215,4 +211,4 @@ def inject(service_type: type):
 # 大写别名（推荐用于 FastAPI Depends，保持命名一致性）
 Inject = inject
 
-__all__ = ['ApplicationContext', 'AppContext', 'Inject']
+__all__ = ['ApplicationContext', 'Inject']

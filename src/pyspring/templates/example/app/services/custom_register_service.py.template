@@ -2,36 +2,31 @@
 自定义用户注册服务
 
 展示：
-1. 如何通过实现框架接口 IRegisterService 来自定义注册逻辑
-2. 框架的 @ConditionalOnMissingBean 机制会自动使用用户的实现
-3. 参考框架的 DefaultRegisterService，扩展自己的业务逻辑
+1. 如何通过继承框架的 DefaultRegisterService 来自定义注册逻辑
+2. 无需装饰器，由于父类使用 @ConditionalOnMissingBean，子类自动替换
+3. 只需重写需要自定义的方法，其他逻辑自动继承
 
 关键设计模式（v1.1.0b26+ 最佳实践）：
-- ✅ 推荐：直接在类上使用 @ConditionalOnMissingBean(IRegisterService)
-- ✅ 机制：检查接口类型，替换框架的条件注册
-- ❌ 过时：使用 @Configuration + @Bean() 方式注册
+- ✅ 推荐：继承 DefaultRegisterService，无需装饰器
+- ✅ 机制：父类有 @ConditionalOnMissingBean(IRegisterService)，子类自动替换
+- ✅ 优点：只需重写需要修改的方法，复用框架其他逻辑
+- ❌ 过时：使用 @Configuration + @Bean() 方式注册（代码冗余）
 
-工作原理（接口替换机制）：
+工作原理（替换机制）：
 1. 框架默认实现：DefaultRegisterService + @ConditionalOnMissingBean(IRegisterService)
-2. 用户自定义实现：CustomRegisterService + @ConditionalOnMissingBean(IRegisterService)
-3. 框架扫描顺序：框架包先扫描 → 注册 DefaultRegisterService (is_conditional=True)
-4. 用户包后扫描 → 检测到 IRegisterService 类型已有条件注册 → 跳过用户的注册
-5. 结果：容器里只有框架的实现！
-
-⚠️ 注意：对于接口实现，@ConditionalOnMissingBean 会导致用户实现被跳过！
-正确方式：
-- 配置类（如 SecurityEntityConfiguration）：继承父类，无需装饰器（自动替换）
-- 接口实现（如 IRegisterService）：不要用 @ConditionalOnMissingBean（会被跳过）
+2. 用户继承实现：CustomRegisterService extends DefaultRegisterService
+3. 框架先扫描 → 注册 DefaultRegisterService（条件组件）
+4. 用户后扫描 → 发现 CustomRegisterService 继承父类
+5. IoC容器：检测到已注册的是条件组件 → 用户实现优先
+6. 结果：容器中使用 CustomRegisterService，真正的替换
 
 这就是 Spring Boot "约定优于配置" 的核心理念！
 """
 from typing import Any
-
-from pyspring.ioc.annotations.component import ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.services.register import DefaultRegisterService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
-from pyspring.security.authentication.contracts.flow import IRegisterService
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
 from fastapi import HTTPException, status
@@ -42,58 +37,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.security_config import CustomUser
 
 
-# ⚠️ 注意：@ConditionalOnMissingBean(IRegisterService) 会导致被跳过！见下方说明
-class CustomRegisterService(IRegisterService):
+class CustomRegisterService(DefaultRegisterService):
     """
-    自定义用户注册服务
+    自定义用户注册服务（继承框架默认实现）
     
-    ⚠️ 重要说明：
-    当前的 @ConditionalOnMissingBean(IRegisterService) 装饰器会导致此实现被跳过！
+    无需装饰器：
+    - 父类 DefaultRegisterService 已有 @ConditionalOnMissingBean(IRegisterService)
+    - 子类继承父类，框架自动识别并替换
+    - 由于 IRegisterService 继承了 IManaged，会被自动扫描
     
-    原因：
-    - 框架先扫描 → DefaultRegisterService + @ConditionalOnMissingBean(IRegisterService) 被注册
-    - 用户包后扫描 → 检测到 IRegisterService 类型已存在 → 跳过此类
+    继承的优点：
+    - ✅ 复用框架逻辑：只需重写需要自定义的方法
+    - ✅ 自动替换：无需装饰器，IoC容器自动选择子类
+    - ✅ 类型安全：保持与框架接口的兼容性
     
-    正确的两种方式：
-    
-    方式1：移除装饰器（推荐 - 如果想强制替换）
-    ```python
-    class CustomRegisterService(IRegisterService):
-        # 无需装饰器，直接注册
-        # 但需要手动处理与 DefaultRegisterService 的冲突
-    ```
-    
-    方式2：继承 DefaultRegisterService（推荐 - 如果想扩展）
-    ```python
-    class CustomRegisterService(DefaultRegisterService):
-        # 继承并重写需要修改的方法
-        # 父类有 @ConditionalOnMissingBean，自动触发替换机制
-    ```
-    
-    方式3：使用 @Bean 方式（不推荐但有效）
-    ```python
-    @Configuration
-    class CustomConfig:
-        @Bean()
-        def custom_register_service(...) -> IRegisterService:
-            return CustomRegisterService(...)
-        # Bean 会覆盖条件注册的组件
-    ```
-    
-    扩展框架的 IRegisterService 接口，添加自定义业务逻辑：
-    - 自定义字段处理（username, phone 等）
-    - 自定义验证规则
-    - 自定义注册流程（发送欢迎邮件、短信通知等）
-    - 集成第三方服务
-    
-    框架机制（v1.1.0b26+）：
-    - 配置类替换：继承父类 → 自动替换（父类有 @ConditionalOnMissingBean）
-    - 接口实现替换：需要特殊处理（见上方说明）
-    框架机制（v1.1.0b26+）：
-    - 直接在类上使用 @ConditionalOnMissingBean(IRegisterService)
-    - 框架会自动扫描并注册此实现
-    - 由于 IRegisterService 继承了 IManaged，无需 @Component 装饰器
-    - 框架的 DefaultRegisterService 会被自动跳过
+    可重写的方法：
+    - register(): 完整的注册流程
+    - _validate_user(): 验证用户输入
+    - _create_user(): 创建用户记录
+    - _assign_roles(): 分配角色
     
     无需 @Configuration + @Bean()！
     """
@@ -328,33 +290,3 @@ class CustomRegisterService(IRegisterService):
                 for r in db_roles
             ]
         )
-
-
-# ============================================================
-# 旧版注册方式（已过时，不推荐使用）
-# ============================================================
-"""
-# ❌ 过时的方式（v1.1.0b25 及之前）
-from pyspring.ioc.annotations.component import Configuration, Bean
-
-@Configuration
-class CustomRegisterServiceConfiguration:
-    '''
-    注册自定义服务到 IoC 容器 - 已过时！
-    
-    v1.1.0b26+ 推荐：
-    - 直接在类上使用 @ConditionalOnMissingBean(IRegisterService)
-    - 无需创建 @Configuration 类
-    - 无需 @Bean() 方法
-    '''
-    
-    @Bean()
-    def custom_register_service(
-        self,
-        db: DBManagerService,
-        component: SecurityEntityConfiguration,
-        password_encoder: IPasswordEncoder
-    ) -> IRegisterService:
-        logger.info("🔧 注册自定义 IRegisterService 实现")
-        return CustomRegisterService(db, component, password_encoder)
-"""

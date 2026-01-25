@@ -87,6 +87,16 @@ class Container:
         cls = metadata.cls
         scope = get_scope(cls)
 
+        # 检查条件注册：@ConditionalOnMissingBean
+        conditional_type = getattr(cls, "__pyspring_conditional_on_missing_bean__", None)
+        is_conditional = conditional_type is not None
+
+        if is_conditional:
+            # 如果指定了条件类型，检查该类型是否已存在
+            if self.registry.has_type(conditional_type):
+                logger.debug(f"⏩ 跳过组件 {metadata.name}：{conditional_type.__name__} 已存在")
+                return
+
         # 创建工厂函数
         def factory():
             return self._create_instance(metadata.name)
@@ -99,12 +109,13 @@ class Container:
             factory=factory,
             is_lazy=metadata.is_lazy,
             is_primary=metadata.is_primary,
+            is_conditional=is_conditional,
             module=metadata.module
         )
 
         # 注册
         self.registry.register(definition)
-        logger.debug(f"  ✅ {metadata.name} ({scope.value})")
+        logger.debug(f"  ✅ {metadata.name} ({scope.value}){' [conditional]' if is_conditional else ''}")
 
     def _register_beans(self, config_metadata: ComponentMetadata):
         """注册配置类中的Bean"""

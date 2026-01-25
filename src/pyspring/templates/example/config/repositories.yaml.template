@@ -74,10 +74,6 @@ database:
     # false: 只使用 ORM 模型创建表（推荐）
     # true: 在 ORM 建表后，额外执行 scripts/db/init_data.sql 脚本
     use_sql_script: false      # 是否使用 SQL 脚本补充初始数据
-    
-    mode: "incremental"        # 初始化模式（保留兼容）
-    script_path: null          # SQL 脚本路径（已废弃，使用 use_sql_script 替代）
-    auto_detect: true          # 是否自动检测脚本路径（已废弃）
   
   # PostgreSQL 配置
   postgresql:

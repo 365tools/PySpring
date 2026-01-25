@@ -316,10 +316,10 @@ class TestPasswordEncoderDependencyInjection:
         print("\n=== IOC容器集成测试 ===")
 
         try:
-            from pyspring.security.authentication.config import SecurityAutoConfiguration
+            from pyspring.security.authentication.config import AuthenticationConfiguration
             from pyspring.security.authentication.contracts.password import IPasswordEncoder
 
-            config = SecurityAutoConfiguration()
+            config = AuthenticationConfiguration()
             encoder = config.default_password_encoder()
 
             # 应该返回IPasswordEncoder实例

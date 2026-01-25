@@ -16,19 +16,17 @@ PySpring 安全模块自定义配置示例
 注意：
 - 此文件为可选配置，如不需要自定义，可删除
 - 框架提供的默认配置（DefaultRegisterService, DefaultLoginService）已满足大多数需求
-- @ConditionalOnMissingBean 确保自定义配置优先
 
 最佳实践（v1.1.0b26+）：
-- ✅ 推荐：直接继承类，无需任何装饰器
+- ✅ 推荐：直接继承父类，无需任何装饰器
 - ✅ 优点：只需重写需要修改的部分，其他字段自动继承
-- ✅ 机制：子类自动替换父类的条件注册
-- ❌ 过时：使用 @Configuration + @Bean() 创建新实例（代码冗余）
+- ✅ 机制：父类有 @ConditionalOnMissingBean，子类自动替换
 
 工作原理（替换机制）：
 - 框架包先扫描 → 注册 SecurityEntityConfiguration（带 @ConditionalOnMissingBean）
 - 用户包后扫描 → 发现 CustomSecurityEntityConfiguration 继承父类
-- 检测父类有条件装饰器 → 移除父类服务 → 注册子类服务
-- 结果：容器里只有子类，父类被完全替换
+- IoC容器检测：已注册的是条件组件 → 用户实现优先
+- 结果：容器里使用子类实例，父类被替换
 """
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 
@@ -50,19 +48,21 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     
     工作原理（替换机制 v1.1.0b26+）：
     1. 继承 SecurityEntityConfiguration 并重写 __init__
-    2. 无需任何装饰器（自动检测父类的 @ConditionalOnMissingBean）
-    3. 框架先注册父类 → 用户包扫描到子类 → 移除父类 → 注册子类
-    4. 结果：容器里只有子类，实现真正的"替换"
+    2. 无需任何装饰器（父类已有 @ConditionalOnMissingBean）
+    3. 框架先扫描 → 注册父类（条件组件）
+    4. 用户包后扫描 → 发现子类继承自父类
+    5. IoC容器：检测到已注册的是条件组件 → 用户实现优先
+    6. 结果：容器里使用子类实例，真正的替换
     
     优点：
     - ✅ 极简：无需装饰器
     - ✅ 清晰：只写需要改的代码
-    - ✅ 高效：容器里只有一个实现（真正的替换）
+    - ✅ 高效：容器里只有一个实例（真正的替换）
     - ✅ 可维护：框架新增字段自动继承
     
-    注意：不需要 @ConditionalOnMissingBean 装饰器！
-    - 框架检测到父类有条件装饰器，自动执行替换逻辑
-    - 单例保证：容器里只有子类，父类被移除
+    注意：不需要 @Component 或 @ConditionalOnMissingBean 装饰器！
+    - 父类已有 @ConditionalOnMissingBean
+    - 子类继承父类，框架自动识别并替换
     """
     
     def __init__(self):

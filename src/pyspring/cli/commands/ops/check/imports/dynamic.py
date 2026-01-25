@@ -72,7 +72,6 @@ def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list = None)
 def run_check_import(args):
     """Run import check logic"""
     target_arg = getattr(args, 'target', '.')
-    # static_mode = getattr(args, 'static', False) # Legacy argument
 
     target_path = os.path.abspath(target_arg)
 

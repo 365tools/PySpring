@@ -73,16 +73,19 @@ class ServiceRegistry:
                 from pyspring.log.instance import logger
                 logger.debug(f"📝 Bean覆盖组件注册: '{name}' (组件 → Bean)")
                 pass  # 继续注册，Bean覆盖组件
-            # 👉 关键：如果旧的是 @ConditionalOnMissingBean Bean，允许用户的 Bean 替换
-            elif existing.is_conditional and definition.is_bean:
+            # 👉 关键：如果旧的是 @ConditionalOnMissingBean，允许用户的实现替换
+            elif existing.is_conditional:
                 from pyspring.log.instance import logger
-                logger.debug(f"🔄 用户Bean替换条件Bean: '{name}' ({existing.service_type.__name__} → {service_type.__name__})")
-                logger.debug(f"   旧实现: {existing.config_class.__name__ if existing.config_class else 'Unknown'}.{existing.bean_method}() [框架默认]")
-                logger.debug(f"   新实现: {definition.config_class.__name__ if definition.config_class else 'Unknown'}.{definition.bean_method}() [用户自定义]")
-                pass  # 继续注册，用户Bean覆盖框架条件Bean
+                if definition.is_bean and existing.is_bean:
+                    logger.debug(f"🔄 用户Bean替换条件Bean: '{name}' ({existing.service_type.__name__} → {service_type.__name__})")
+                    logger.debug(f"   旧实现: {existing.config_class.__name__ if existing.config_class else 'Unknown'}.{existing.bean_method}() [框架默认]")
+                    logger.debug(f"   新实现: {definition.config_class.__name__ if definition.config_class else 'Unknown'}.{definition.bean_method}() [用户自定义]")
+                else:
+                    logger.debug(f"🔄 用户组件替换条件组件: '{name}' ({existing.service_type.__name__} → {service_type.__name__})")
+                pass  # 继续注册，用户实现覆盖框架条件注册
             else:
                 from pyspring.log.instance import logger
-                logger.warning(f"⚠️ 服务 '{name}' 重复注册: 已存在={existing.service_type}, 新={service_type}, 旧is_bean={existing.is_bean}, 新is_bean={definition.is_bean}")
+                logger.warning(f"⚠️ 服务 '{name}' 重复注册: 已存在={existing.service_type}, 新={service_type}, 旧is_conditional={existing.is_conditional}, 新is_conditional={definition.is_conditional}")
                 raise ValueError(f"服务 '{name}' 已注册: {existing.service_type}")
 
         # 注册服务

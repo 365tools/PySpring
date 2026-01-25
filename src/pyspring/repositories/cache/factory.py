@@ -109,11 +109,3 @@ class CacheServiceFactory:
             logger.warning(f"⚠️ Redis 初始化失败，降级到内存缓存: {e}")
             self._service_type = "memory"
             return self._create_memory_service()
-
-    async def verify_and_fallback(self) -> ICacheService:
-        """
-        异步验证 Redis 连接并在失败时降级（已废弃，保留兼容性）
-        
-        注意：连接检测已在 get_service() 中同步完成
-        """
-        return self.get_service()
