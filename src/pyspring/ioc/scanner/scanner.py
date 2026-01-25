@@ -6,6 +6,7 @@
 import importlib
 import inspect
 import pkgutil
+import traceback
 from dataclasses import dataclass
 from typing import List, Set, Dict, Optional
 
@@ -86,15 +87,18 @@ class ComponentScanner:
                     try:
                         self._scan_module(modname)
                     except Exception as e:
-                        logger.warning(f"⚠️ 扫描模块失败 {modname}: {e}")
+                        logger.error(f"❌ 扫描模块失败 {modname}: {e}")
+                        raise
             else:
                 # 单个模块
                 self._scan_module(package_name)
 
         except ImportError as e:
             logger.error(f"❌ 无法导入包 {package_name}: {e}")
+            raise
         except Exception as e:
             logger.error(f"❌ 扫描包时发生错误 {package_name}: {e}")
+            raise
 
     def _scan_module(self, module_name: str):
         """扫描单个模块"""
@@ -107,23 +111,38 @@ class ComponentScanner:
             module = importlib.import_module(module_name)
 
             # 扫描模块中的所有类
-            for name, obj in inspect.getmembers(module, inspect.isclass):
-                # 只处理在当前模块中定义的类
-                if obj.__module__ != module_name:
-                    continue
+            try:
+                members = inspect.getmembers(module, inspect.isclass)
+            except Exception as e:
+                logger.error(f"❌ 获取模块成员失败 {module_name}: {e}")
+                logger.error(f"调用栈:\n{traceback.format_exc()}")
+                raise
 
-                # 应用过滤规则
-                if not self._should_process_class(obj):
-                    continue
+            for name, obj in members:
+                try:
+                    # 只处理在当前模块中定义的类
+                    if obj.__module__ != module_name:
+                        continue
 
-                # 提取元数据
-                metadata = self._extract_metadata(obj)
-                if metadata:
-                    self.scanned_components[obj] = metadata
-                    logger.debug(f"📦 发现组件: {name} ({module_name})")
+                    # 应用过滤规则
+                    if not self._should_process_class(obj):
+                        continue
+
+                    # 提取元数据
+                    metadata = self._extract_metadata(obj)
+                    if metadata:
+                        self.scanned_components[obj] = metadata
+                        logger.debug(f"📦 发现组件: {name} ({module_name})")
+
+                except Exception as e:
+                    logger.error(f"❌ 处理类 {name} 时发生错误: {e}")
+                    logger.error(f"调用栈:\n{traceback.format_exc()}")
+                    raise
 
         except Exception as e:
-            logger.warning(f"⚠️ 扫描模块 {module_name} 时发生错误: {e}")
+            logger.error(f"❌ 扫描模块 {module_name} 时发生错误: {e}")
+            logger.error(f"调用栈:\n{traceback.format_exc()}")
+            raise
 
     def _should_process_class(self, cls: type) -> bool:
         """判断是否应该处理该类"""
@@ -209,10 +228,15 @@ class ComponentScanner:
     def _scan_bean_methods(self, cls: type) -> List[str]:
         """扫描配置类中的Bean方法"""
         bean_methods = []
-        for name, method in inspect.getmembers(cls, inspect.isfunction):
-            if hasattr(method, "__pyspring_bean__"):
-                bean_methods.append(name)
-                logger.debug(f"  🌱 发现Bean方法: {name}")
+        try:
+            for name, method in inspect.getmembers(cls, inspect.isfunction):
+                if hasattr(method, "__pyspring_bean__"):
+                    bean_methods.append(name)
+                    logger.debug(f"  🌱 发现Bean方法: {name}")
+        except Exception as e:
+            logger.error(f"❌ 扫描Bean方法失败 {cls.__name__}: {e}")
+            logger.error(f"调用栈:\n{traceback.format_exc()}")
+            raise
         return bean_methods
 
     @staticmethod

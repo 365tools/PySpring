@@ -1,6 +1,6 @@
 from typing import Type
 
-from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+from pyspring.ioc.annotations.component import Component, ConditionalOnMissingBean
 # ORM Models
 from pyspring.repositories.db.models.common.define import (
     BaseUserTable, BaseRoleTable, BasePermissionTable,
@@ -19,6 +19,7 @@ from pyspring.security.orm.tables import (
 )
 
 
+@Component()
 @ConditionalOnMissingBean
 class SecurityEntityConfiguration:
     """
@@ -26,6 +27,7 @@ class SecurityEntityConfiguration:
     Default services use this component to know which classes to use for ORM operations and validation.
     
     设计说明：
+    - 使用 @Component 让扫描器能够识别这个配置类
     - 使用 @ConditionalOnMissingBean 让用户可以完全替换这个配置类
     - 不是 @dataclass，是一个普通的配置类，方便继承和自定义
     """

@@ -6,23 +6,26 @@
 2. 扩展支持多种登录标识符（用户名/邮箱/手机号）
 3. 保持框架的其他功能不变（防时序攻击、密码验证等）
 
-关键设计：
-- 继承 DefaultPasswordLoginProvider（复用框架逻辑）
-- 重写查询用户的方法（支持多种登录标识符）
-- 无需 @ConditionalOnMissingBean（父类已有，继承会自动替换）
+关键设计（v1.1.0b26+ 最佳实践）：
+- ✅ 推荐：继承 DefaultPasswordLoginProvider + @Component 装饰器
+- ✅ 机制：父类有 @ConditionalOnMissingBean，子类自动替换父类
+- ✅ 优点：只需重写需要修改的方法，复用框架其他逻辑
 
-工作原理：
-1. 框架扫描到 DefaultPasswordLoginProvider（@ConditionalOnMissingBean）
-2. 扫描到用户的 CustomPasswordLoginProvider（继承自 DefaultPasswordLoginProvider）
-3. 由于子类会覆盖父类，框架使用子类实现
-4. LoginService 自动使用你的自定义实现
+工作原理（替换机制）：
+1. 框架默认实现：DefaultPasswordLoginProvider + @ConditionalOnMissingBean(IPasswordLoginProvider)
+2. 用户继承实现：CustomPasswordLoginProvider extends DefaultPasswordLoginProvider
+3. 框架先扫描 → 注册 DefaultPasswordLoginProvider（条件组件）
+4. 用户后扫描 → 发现 CustomPasswordLoginProvider（带 @Component 装饰器）
+5. IoC容器：检测到已注册的是条件组件 → 用户实现优先
+6. 结果：容器中使用 CustomPasswordLoginProvider，实现真正的替换
 
-这就是继承扩展的完美应用！
+这就是 Spring Boot "约定优于配置" 的核心理念！
 """
 from typing import Any
 
 from fastapi import HTTPException, status
 
+from pyspring.ioc.annotations.component import Component
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
@@ -37,6 +40,7 @@ from app.config.security_config import CustomUser
 # 自定义密码登录提供者（继承框架默认实现，扩展多种登录标识符）
 # ============================================================================
 
+@Component()
 class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     """
     自定义密码登录提供者 - 扩展支持多种登录标识符
@@ -58,8 +62,9 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     - 🔧 支持多种登录标识符（user_id 可以是用户名、邮箱、手机号）
     - 🔧 使用 CustomUser 模型（包含自定义字段）
     
-    无需 @Component 或 @ConditionalOnMissingBean！
-    继承会自动替换父类实现。
+    使用 @Component() 装饰器：
+    - 让扫描器能够识别这个类
+    - 父类有 @ConditionalOnMissingBean，子类会自动替换父类实现
     """
 
     def __init__(self, user_provider: IUserProvider, db: DBManagerService, password_encoder: IPasswordEncoder):

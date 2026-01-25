@@ -24,10 +24,11 @@ PySpring 安全模块自定义配置示例
 
 工作原理（替换机制）：
 - 框架包先扫描 → 注册 SecurityEntityConfiguration（带 @ConditionalOnMissingBean）
-- 用户包后扫描 → 发现 CustomSecurityEntityConfiguration 继承父类
+- 用户包后扫描 → 发现 CustomSecurityEntityConfiguration（带 @Component）
 - IoC容器检测：已注册的是条件组件 → 用户实现优先
 - 结果：容器里使用子类实例，父类被替换
 """
+from pyspring.ioc.annotations.component import Component
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 
 # 导入自定义的用户模型
@@ -38,6 +39,7 @@ from app.models.user import User
 # 方式1：自定义 SecurityEntityConfiguration（推荐）
 # ============================================================
 
+@Component()
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     """
     自定义安全实体配置 - 最简洁的方式
@@ -48,21 +50,21 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     
     工作原理（替换机制 v1.1.0b26+）：
     1. 继承 SecurityEntityConfiguration 并重写 __init__
-    2. 无需任何装饰器（父类已有 @ConditionalOnMissingBean）
-    3. 框架先扫描 → 注册父类（条件组件）
-    4. 用户包后扫描 → 发现子类继承自父类
-    5. IoC容器：检测到已注册的是条件组件 → 用户实现优先
+    2. 使用 @Component() 装饰器让扫描器识别
+    3. 框架先扫描 → 注册父类（条件组件，@ConditionalOnMissingBean）
+    4. 用户包后扫描 → 发现子类（带 @Component）
+    5. IoC容器：检测到已注册的同名是条件组件 → 用户实现替换
     6. 结果：容器里使用子类实例，真正的替换
     
     优点：
-    - ✅ 极简：无需装饰器
-    - ✅ 清晰：只写需要改的代码
+    - ✅ 简洁：继承 + @Component，只写需要改的代码
+    - ✅ 清晰：明确标记这是一个组件
     - ✅ 高效：容器里只有一个实例（真正的替换）
     - ✅ 可维护：框架新增字段自动继承
     
-    注意：不需要 @Component 或 @ConditionalOnMissingBean 装饰器！
-    - 父类已有 @ConditionalOnMissingBean
-    - 子类继承父类，框架自动识别并替换
+    注意：需要 @Component() 装饰器！
+    - 让扫描器能够识别这个类
+    - 父类有 @ConditionalOnMissingBean，子类会替换父类
     """
     
     def __init__(self):

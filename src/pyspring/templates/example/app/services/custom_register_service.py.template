@@ -3,11 +3,11 @@
 
 展示：
 1. 如何通过继承框架的 DefaultRegisterService 来自定义注册逻辑
-2. 无需装饰器，由于父类使用 @ConditionalOnMissingBean，子类自动替换
+2. 使用 @Component 装饰器让扫描器识别
 3. 只需重写需要自定义的方法，其他逻辑自动继承
 
 关键设计模式（v1.1.0b26+ 最佳实践）：
-- ✅ 推荐：继承 DefaultRegisterService，无需装饰器
+- ✅ 推荐：继承 DefaultRegisterService + @Component 装饰器
 - ✅ 机制：父类有 @ConditionalOnMissingBean(IRegisterService)，子类自动替换
 - ✅ 优点：只需重写需要修改的方法，复用框架其他逻辑
 - ❌ 过时：使用 @Configuration + @Bean() 方式注册（代码冗余）
@@ -16,13 +16,15 @@
 1. 框架默认实现：DefaultRegisterService + @ConditionalOnMissingBean(IRegisterService)
 2. 用户继承实现：CustomRegisterService extends DefaultRegisterService
 3. 框架先扫描 → 注册 DefaultRegisterService（条件组件）
-4. 用户后扫描 → 发现 CustomRegisterService 继承父类
+4. 用户后扫描 → 发现 CustomRegisterService（带 @Component 装饰器）
 5. IoC容器：检测到已注册的是条件组件 → 用户实现优先
 6. 结果：容器中使用 CustomRegisterService，真正的替换
 
 这就是 Spring Boot "约定优于配置" 的核心理念！
 """
 from typing import Any
+
+from pyspring.ioc.annotations.component import Component
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.services.register import DefaultRegisterService
@@ -37,18 +39,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config.security_config import CustomUser
 
 
+@Component()
 class CustomRegisterService(DefaultRegisterService):
     """
     自定义用户注册服务（继承框架默认实现）
     
-    无需装饰器：
+    使用 @Component() 装饰器：
+    - 让扫描器能够识别这个类
     - 父类 DefaultRegisterService 已有 @ConditionalOnMissingBean(IRegisterService)
-    - 子类继承父类，框架自动识别并替换
-    - 由于 IRegisterService 继承了 IManaged，会被自动扫描
+    - 子类后注册，由于父类是条件组件，子类会替换父类
     
     继承的优点：
     - ✅ 复用框架逻辑：只需重写需要自定义的方法
-    - ✅ 自动替换：无需装饰器，IoC容器自动选择子类
+    - ✅ 自动替换：父类条件注册，子类优先
     - ✅ 类型安全：保持与框架接口的兼容性
     
     可重写的方法：
