@@ -128,10 +128,18 @@ class ConfigManager:
         """
         深度合并两个字典
         override 中的值会覆盖 base 中的值
+        
+        **重要**: None 值会被忽略，不会覆盖框架默认值
+        这允许用户配置中使用 null 而不破坏框架默认配置
         """
         result = base.copy()
 
         for key, value in override.items():
+            # 🔧 忽略 None 值，保留框架默认值
+            # 这符合三层配置架构：用户配置的 null 不应覆盖框架默认值
+            if value is None:
+                continue
+                
             if key in result and isinstance(result[key], dict) and isinstance(value, dict):
                 # 递归合并字典
                 result[key] = cls._deep_merge(result[key], value)

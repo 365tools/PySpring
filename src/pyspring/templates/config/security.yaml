@@ -21,7 +21,12 @@ authentication:
   
   # JWT 配置
   jwt:
-    # ⚠️ 密钥必须通过环境变量 JWT_SECRET_KEY 设置（生产环境）
+    # ⚠️ 密钥配置说明：
+    # - 开发环境：框架自动提供安全的默认密钥（无需配置）
+    # - 生产环境：必须通过环境变量 JWT_SECRET_KEY 覆盖
+    # - 可选：设置自定义密钥覆盖框架默认值（不推荐硬编码）
+    # 
+    # 注意：设置为 null 会保留框架默认值（不会覆盖）
     secret_key: null
     algorithm: "HS256"
     # Access Token 过期时间（秒）

@@ -3,19 +3,24 @@
 用于加载和管理 security.yaml 配置文件
 """
 
-import os
 from typing import Any, Dict, List, Optional
 
-import yaml
+from pyspring.config_manager import ConfigManager
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.instance import logger
-from pyspring.utils.config.finder import find_config_file
 
 
 @Singleton
 class SecurityConfigManager(IManaged):
-    """认证与授权配置管理器（由IOC容器管理单例）"""
+    """
+    认证与授权配置管理器（由IOC容器管理单例）
+    
+    使用框架 ConfigManager 实现三层配置架构：
+    1. 框架默认配置 (src/pyspring/config/defaults/security.yaml)
+    2. 用户项目配置 (project/config/security.yaml)  
+    3. 环境变量覆盖 (JWT_SECRET_KEY 等)
+    """
 
     _config: Optional[Dict[str, Any]] = None
 
@@ -24,70 +29,27 @@ class SecurityConfigManager(IManaged):
         self._load_config()
 
     def _load_config(self):
-        """加载配置文件（优先级：当前工作目录 > 项目根目录）"""
-        try:
-            config_file = find_config_file('security.yaml')
-
-            if not config_file:
-                self._config = self._get_default_config()
-                return
-
-            with open(config_file, 'r', encoding='utf-8') as f:
-                self._config = yaml.safe_load(f)
-
-            # 应用环境变量覆盖
-            self._apply_env_overrides()
-
-        except Exception as e:
-            logger.warning(f"[SecurityConfigManager] 加载配置异常 (已恢复默认): {e}")
-            self._config = self._get_default_config()
-
-    def _apply_env_overrides(self):
-        """应用环境变量覆盖"""
-        if self._config is None:
-            return
-
-        # JWT 密钥
-        jwt_secret = os.getenv("JWT_SECRET_KEY")
-        if jwt_secret:
-            if "authentication" not in self._config:
-                self._config["authentication"] = {}
-            if "jwt" not in self._config["authentication"]:
-                self._config["authentication"]["jwt"] = {}
-            self._config["authentication"]["jwt"]["secret_key"] = jwt_secret
-
-        # JWT 算法
-        jwt_algorithm = os.getenv("JWT_ALGORITHM")
-        if jwt_algorithm:
-            self._config["authentication"]["jwt"]["algorithm"] = jwt_algorithm
-
-        # Token 过期时间
-        access_token_expire = os.getenv("ACCESS_TOKEN_EXPIRE")
-        if access_token_expire:
-            self._config["authentication"]["jwt"]["access_token_expire"] = int(access_token_expire)
-
-        refresh_token_expire = os.getenv("REFRESH_TOKEN_EXPIRE")
-        if refresh_token_expire:
-            self._config["authentication"]["jwt"]["refresh_token_expire"] = int(refresh_token_expire)
-
-        # JWT 加密配置
-        jwt_encryption_enabled = os.getenv("JWT_ENCRYPTION_ENABLED")
-        if jwt_encryption_enabled:
-            if "encryption" not in self._config["authentication"]["jwt"]:
-                self._config["authentication"]["jwt"]["encryption"] = {}
-            self._config["authentication"]["jwt"]["encryption"]["enabled"] = jwt_encryption_enabled.lower() == "true"
-
-        jwt_encryption_key = os.getenv("JWT_ENCRYPTION_KEY")
-        if jwt_encryption_key:
-            if "encryption" not in self._config["authentication"]["jwt"]:
-                self._config["authentication"]["jwt"]["encryption"] = {}
-            self._config["authentication"]["jwt"]["encryption"]["encryption_key"] = jwt_encryption_key
-
-    def _get_default_config(self) -> Dict[str, Any]:
         """
-        获取最小可用的后备配置
+        加载配置文件（使用框架 ConfigManager 实现三层架构）
         
-        仅在配置文件加载失败时使用，提供最基本的安全配置
+        配置优先级（后面的覆盖前面的）：
+        1. 框架默认配置
+        2. 用户项目配置
+        3. 环境变量
+        """
+        try:
+            # 使用框架 ConfigManager 加载配置（自动处理三层合并）
+            self._config = ConfigManager.load_config('security')
+            logger.debug("[SecurityConfigManager] 已加载安全配置（三层架构：框架默认 + 用户配置 + 环境变量）")
+        except Exception as e:
+            logger.warning(f"[SecurityConfigManager] 加载配置异常，使用极简后备配置: {e}")
+            self._config = self._get_fallback_config()
+
+    def _get_fallback_config(self) -> Dict[str, Any]:
+        """
+        获取极简后备配置（仅在 ConfigManager 加载失败时使用）
+        
+        这是最后的防御措施，正常情况下应该使用 ConfigManager 加载的三层配置
         完整配置请参考 src/pyspring/config/defaults/security.yaml
         """
         return {
