@@ -14,9 +14,6 @@ PySpring Security 模块 ORM 表定义
 import uuid
 from datetime import datetime, UTC
 
-from sqlalchemy import Column, String, INT, Integer, DateTime, Text
-from sqlalchemy.sql.schema import ForeignKey
-
 from pyspring.repositories.db.models.common.define import (
     Base,
     BaseUserTable,
@@ -25,6 +22,8 @@ from pyspring.repositories.db.models.common.define import (
     BaseUserRoleTable,
     BaseRolePermissionTable
 )
+from sqlalchemy import Column, String, INT, Integer, DateTime, Text, Boolean
+from sqlalchemy.sql.schema import ForeignKey
 
 
 # ============================================================
@@ -121,10 +120,12 @@ class RefreshTokenTable(Base):
     roles = Column(Text, nullable=True, comment="用户角色(JSON数组)")
     issued_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC), comment="签发时间")
     expires_at = Column(DateTime, nullable=False, comment="过期时间")
+    is_revoked = Column(Boolean, nullable=False, default=False, index=True, comment="是否已撤销")
+    revoked_at = Column(DateTime, nullable=True, comment="撤销时间")
     revoke_reason = Column(String(200), nullable=True, comment="撤销原因(如: 用户重新登录、主动登出、安全原因等)")
 
     def __repr__(self):
-        return f"<RefreshToken(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at})>"
+        return f"<RefreshToken(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at}, is_revoked={self.is_revoked})>"
 
 
 # ============================================================

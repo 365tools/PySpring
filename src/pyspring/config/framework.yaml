@@ -11,6 +11,7 @@ framework:
   scan_packages:
     - pyspring.security           # Security module (authentication, authorization, user management)
     - pyspring.repositories       # Database repositories and ORM support
+    - pyspring.web                # Web handlers (exception handler, response builders)
     # Add more framework packages here as needed
   
   # Component auto-configuration

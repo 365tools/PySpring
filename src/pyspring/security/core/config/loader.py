@@ -4,11 +4,9 @@
 """
 
 import os
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
-
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.instance import logger
@@ -25,36 +23,17 @@ class SecurityConfigManager(IManaged):
         """初始化配置管理器"""
         self._load_config()
 
-    @staticmethod
-    def _find_project_root() -> Path:
-        """查找项目根目录"""
-        current = Path(__file__).resolve()
-
-        # 向上查找，直到找到包含 config 目录的父目录
-        while current != current.parent:
-            config_dir = current / "config"
-            if config_dir.exists() and config_dir.is_dir():
-                return current
-            current = current.parent
-
-        # 如果没找到，返回当前文件所在目录的三级父目录
-        return Path(__file__).resolve().parent.parent.parent.parent
-
     def _load_config(self):
         """加载配置文件（优先级：当前工作目录 > 项目根目录）"""
         try:
             config_file = find_config_file('security.yaml')
 
             if not config_file:
-                # logger.debug("[SecurityConfigManager] 配置文件不存在")
-                # logger.debug("[SecurityConfigManager] 使用默认配置")
                 self._config = self._get_default_config()
                 return
 
             with open(config_file, 'r', encoding='utf-8') as f:
                 self._config = yaml.safe_load(f)
-
-            # logger.debug(f"[SecurityConfigManager] 已加载配置文件: {config_file}")
 
             # 应用环境变量覆盖
             self._apply_env_overrides()
@@ -76,7 +55,6 @@ class SecurityConfigManager(IManaged):
             if "jwt" not in self._config["authentication"]:
                 self._config["authentication"]["jwt"] = {}
             self._config["authentication"]["jwt"]["secret_key"] = jwt_secret
-            # logger.debug("[SecurityConfigManager] JWT_SECRET_KEY 已从环境变量加载")
 
         # JWT 算法
         jwt_algorithm = os.getenv("JWT_ALGORITHM")
@@ -104,15 +82,19 @@ class SecurityConfigManager(IManaged):
             if "encryption" not in self._config["authentication"]["jwt"]:
                 self._config["authentication"]["jwt"]["encryption"] = {}
             self._config["authentication"]["jwt"]["encryption"]["encryption_key"] = jwt_encryption_key
-            # logger.debug("[SecurityConfigManager] JWT_ENCRYPTION_KEY 已从环境变量加载")
 
     def _get_default_config(self) -> Dict[str, Any]:
-        """获取默认配置"""
+        """
+        获取最小可用的后备配置
+        
+        仅在配置文件加载失败时使用，提供最基本的安全配置
+        完整配置请参考 src/pyspring/config/defaults/security.yaml
+        """
         return {
             "authentication": {
                 "enabled": True,
                 "jwt": {
-                    "secret_key": os.getenv("JWT_SECRET_KEY"),  # 必须通过环境变量提供
+                    "secret_key": "pyspring-dev-secret-key-CHANGE-IN-PRODUCTION-32bytes-minimum",
                     "algorithm": "HS256",
                     "access_token_expire": 3600,
                     "refresh_token_expire": 2592000
@@ -131,32 +113,13 @@ class SecurityConfigManager(IManaged):
                 ],
                 "whitelist": {
                     "exact_paths": [
-                        "/", "/health", "/favicon.ico",
-                        "/docs", "/redoc", "/openapi.json",
+                        "/", "/health", "/docs", "/redoc", "/openapi.json",
                         "/api/auth/login", "/api/auth/register", "/api/auth/token/refresh"
-                    ],
-                    "prefix_paths": ["/static/", "/api/docs/", "/api/public/"],
-                    "regex_patterns": ["^/api/v[0-9]+/public/.*"]
+                    ]
                 }
             },
             "authorization": {
-                "enabled": True,
-                "role_mappings": {},
-                "role_hierarchy": {}
-            },
-            "security": {
-                "rate_limit": {
-                    "enabled": False,
-                    "default_limit": 60,
-                    "path_limits": {}
-                },
-                "cors": {
-                    "enabled": True,
-                    "allow_origins": ["http://localhost:3000"],
-                    "allow_credentials": True,
-                    "allow_methods": ["GET", "POST", "PUT", "DELETE", "PATCH"],
-                    "allow_headers": ["*"]
-                }
+                "enabled": True
             }
         }
 
@@ -250,6 +213,3 @@ class SecurityConfigManager(IManaged):
         """重新加载配置"""
         self._config = None
         self._load_config()
-
-# 导出单例实例 (Removed potentially dangerous global instantiation)
-# security_config = SecurityConfigManager()

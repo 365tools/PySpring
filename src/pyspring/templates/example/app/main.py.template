@@ -32,18 +32,31 @@ from fastapi.responses import JSONResponse
 # PySpring 导入
 from pyspring.ioc import ApplicationContext
 from pyspring.log.instance import logger
+from pyspring.web.handlers.exception import GlobalExceptionHandler
 
 # 应用模块导入
 from app.api import health, auth, users
 from app.middleware.request_logger import request_logging_middleware
 from app.middleware.timing import timing_middleware
-from app.middleware.error_handler import global_exception_handler
 
 
 # ============================================================================
 # 全局应用上下文
 # ============================================================================
-app_context: ApplicationContext = None
+# 注意：这里只初始化基础容器，不执行生命周期初始化
+# 生命周期相关的初始化（启动/关闭处理器）在 lifespan 中执行
+logger.info("=" * 80)
+logger.info("📦 步骤 1/3: 初始化 IoC 容器（组件扫描与注册）")
+logger.info("=" * 80)
+
+app_context = ApplicationContext.initialize(
+    base_packages=['app'],  # 扫描 app 包下的所有组件
+    config_file='config/container.yaml',  # 可选：从配置文件加载
+    enable_aop=True  # 启用 AOP
+)
+logger.info("✅ IoC 容器初始化完成，已注册 {0} 个组件\n".format(
+    len(app_context.container.registry.all_names())
+))
 
 
 # ============================================================================
@@ -55,45 +68,33 @@ async def lifespan(app: FastAPI):
     应用生命周期管理
     
     启动阶段：
-    1. 初始化 IOC 容器
-    2. 扫描并注册所有组件
-    3. 执行启动初始化器
+    1. 执行启动初始化器（数据库连接、缓存初始化等）
+    2. 显示已注册的服务
     
     关闭阶段：
     1. 执行关闭处理器
     2. 释放资源
     """
-    global app_context
-    
     # ========== 启动阶段 ==========
     logger.info("=" * 80)
-    logger.info("🚀 PySpring 示例应用启动中...")
+    logger.info("📦 步骤 2/3: 启动应用服务（数据库、缓存、初始化器）")
     logger.info("=" * 80)
     
     try:
-        # 1. 初始化 ApplicationContext
-        logger.info("\n📦 步骤 1/3: 初始化 IOC 容器...")
-        app_context = ApplicationContext.initialize(
-            base_packages=['app'],  # 扫描 app 包下的所有组件
-            config_file='config/container.yaml',  # 可选：从配置文件加载
-            enable_aop=True  # 启用 AOP
-        )
-        logger.info("✅ IOC 容器初始化完成")
-        
-        # 2. 显示已注册的服务
-        logger.info("\n📦 步骤 2/3: 服务注册情况...")
-        all_services = app_context.container.registry.all_names()
-        logger.info(f"已注册 {len(all_services)} 个服务:")
-        for idx, service_name in enumerate(sorted(all_services), 1):
-            logger.debug(f"  {idx:2d}. {service_name}")
-        
-        # 3. 执行启动初始化器（自动按依赖顺序执行）
-        logger.info("\n📦 步骤 3/3: 执行启动初始化器...")
+        # 1. 执行启动初始化器（自动按依赖顺序执行）
+        logger.info("\n🔧 正在执行启动初始化器...")
         await app_context.container.initialize_lifecycle_services()
         logger.info("✅ 所有启动初始化器执行完成")
         
+        # 2. 显示已注册的服务
+        logger.info("\n📋 服务注册情况:")
+        all_services = app_context.container.registry.all_names()
+        logger.info(f"   共 {len(all_services)} 个服务")
+        for idx, service_name in enumerate(sorted(all_services), 1):
+            logger.debug(f"  {idx:2d}. {service_name}")
+        
         logger.info("\n" + "=" * 80)
-        logger.info("✅ 应用启动完成，准备接受请求")
+        logger.info("📦 步骤 3/3: 应用启动完成 ✅")
         logger.info("=" * 80)
         logger.info("📍 API 地址: http://localhost:8000")
         logger.info("📖 API 文档: http://localhost:8000/docs")
@@ -175,10 +176,8 @@ app.middleware("http")(timing_middleware)  # 性能计时
 # ============================================================================
 # 全局异常处理
 # ============================================================================
-@app.exception_handler(Exception)
-async def handle_exception(request: Request, exc: Exception):
-    """全局异常处理器"""
-    return await global_exception_handler(request, exc)
+# 注册框架的全局异常处理器（自动从 IoC 容器获取，支持用户自定义）
+GlobalExceptionHandler.register_exception_handlers(app)
 
 
 # ============================================================================

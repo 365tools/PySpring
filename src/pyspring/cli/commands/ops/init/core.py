@@ -10,10 +10,6 @@ from typing import Optional
 
 from pyspring.cli.core.ui.console import Colors, print_header, print_success, print_info, print_warning, print_error, print_title
 from pyspring.cli.core.ui.help import print_standard_command_help
-from pyspring.security.orm.tables import (
-    UserTable, RoleTable, PermissionTable, UserRoleTable,
-    RolePermissionTable, RefreshTokenTable, TokenBlacklistTable
-)
 from sqlalchemy import create_engine
 from sqlalchemy.schema import CreateTable
 
@@ -147,6 +143,12 @@ def create_database_scripts(target_dir: Path):
 
     try:
         print_info("Generating database scripts from ORM models...")
+
+        # 延迟导入 ORM 表，避免在 CLI 加载时触发表注册
+        from pyspring.security.orm.tables import (
+            UserTable, RoleTable, PermissionTable, UserRoleTable,
+            RolePermissionTable, RefreshTokenTable, TokenBlacklistTable
+        )
 
         # PostgreSQL script generation
         pg_engine = create_engine('postgresql://localhost/dummy', strategy='mock', executor=lambda sql, *_: None)

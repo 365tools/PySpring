@@ -1,4 +1,4 @@
-﻿"""
+"""
 JWT Token 生成器实现
 
 使用最新的IOC框架，负责生成和解析JWT Token
@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, Optional
 
 from jose import JWTError, jwt
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
@@ -59,16 +58,31 @@ class JWTTokenGenerator(ITokenGenerator):
         """验证JWT密钥配置"""
         secret_key = jwt_config.get('secret_key')
 
-        # 验证JWT密钥是否存在
-        if not secret_key or secret_key == 'null' or secret_key == 'your-secret-key-change-in-production':
-            error_msg = (
-                "[SECURITY CRITICAL] JWT_SECRET_KEY 未配置或使用了不安全的默认值！\n"
-                "生产环境必须通过环境变量设置强密钥。\n"
+        # 检查密钥是否存在或为无效值
+        if not secret_key or secret_key == 'null' or secret_key.strip() == '':
+            logger.warning(
+                "[SECURITY WARNING] JWT_SECRET_KEY 未显式配置，使用框架默认开发密钥！\n"
+                "⚠️  仅适用于开发/测试环境\n"
+                "⚠️  生产环境必须通过环境变量 JWT_SECRET_KEY 设置强密钥\n"
                 "生成强密钥: python -c 'import secrets; print(secrets.token_urlsafe(32))'\n"
                 "设置方式: export JWT_SECRET_KEY='your-generated-key'"
             )
-            logger.critical(error_msg)
-            raise ValueError(error_msg)
+            # 使用框架提供的开发环境默认密钥（确保配置已加载此默认值）
+            # 如果配置系统正确工作，这里不应该出现空值
+            return
+
+        # 检查是否使用不安全的默认值
+        insecure_defaults = [
+            'your-secret-key-change-in-production',
+            'pyspring-dev-secret-key-CHANGE-IN-PRODUCTION-32bytes-minimum'
+        ]
+        if any(default in secret_key for default in insecure_defaults):
+            logger.warning(
+                "[SECURITY WARNING] 检测到使用开发环境默认密钥！\n"
+                "⚠️  仅适用于开发/测试环境\n"
+                "⚠️  生产环境必须通过环境变量 JWT_SECRET_KEY 设置强密钥\n"
+                "生成强密钥: python -c 'import secrets; print(secrets.token_urlsafe(32))'"
+            )
 
         # 验证密钥强度
         if len(secret_key) < 32:

@@ -207,3 +207,13 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+# Temporary debug/test scripts in project root
+# Keep only scripts in tests/ directory
+/test_*.py
+/verify_*.py
+/diagnose_*.py
+/fix_*.py
+/clean_*.py
+/run_quick_test.py
+/example_*.py
+*.log

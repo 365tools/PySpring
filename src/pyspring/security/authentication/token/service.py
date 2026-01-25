@@ -126,7 +126,8 @@ class TokenService(ITokenService):
             async with await self.db.session() as session:
                 refresh_record = RefreshTokenTable(
                     user_id=int(user_id) if user_id else 0,
-                    refresh_token=refresh_token,
+                    user_email=payload.get("email", ""),
+                    token=refresh_token,
                     expires_at=expires_at,
                     is_revoked=False
                 )
