@@ -105,17 +105,9 @@ class Container:
             # 已在 scan() 方法中统一输出，这里直接跳过
             return
 
-        # 检查条件注册：@ConditionalOnMissingBean（保留原有的接口检查逻辑）
+        # 获取条件类型（用于判断是否是条件组件）
         conditional_type = getattr(cls, "__pyspring_conditional_on_missing_bean__", None)
         is_conditional = conditional_type is not None
-
-        if is_conditional:
-            # 如果指定了接口类型，检查该接口是否已有实现
-            # 注意：这里主要用于接口类型检查，继承替换已在扫描阶段处理
-            if conditional_type != cls and conditional_type != object:
-                if self.registry.has_type(conditional_type):
-                    logger.debug(f"⏩ 跳过组件 {metadata.name}：{conditional_type.__name__} 已存在")
-                    return
 
         # 如果当前组件替换了其他组件，输出替换日志（紧接着注册日志）
         if metadata.replaces:
