@@ -59,11 +59,44 @@ class UserRepository:
             )
             return result.scalar_one_or_none()
     
+    async def find_by_user_id(self, user_id: str) -> Optional[User]:
+        """根据系统用户ID（UUID）查找用户"""
+        async with await self.db.session() as session:
+            result = await session.execute(
+                select(User).where(User.user_id == user_id)
+            )
+            return result.scalar_one_or_none()
+    
     async def find_by_email(self, email: str) -> Optional[User]:
         """根据邮箱查找用户"""
         async with await self.db.session() as session:
             result = await session.execute(
                 select(User).where(User.email == email)
+            )
+            return result.scalar_one_or_none()
+    
+    async def find_by_login_identifier(self, identifier: str) -> Optional[User]:
+        """
+        根据登录标识符查找用户
+        
+        支持：
+        - 用户名 (username)
+        - 邮箱 (email)
+        - 手机号 (phone)
+        
+        Args:
+            identifier: 登录标识符（用户名/邮箱/手机号）
+        
+        Returns:
+            用户对象或 None
+        """
+        async with await self.db.session() as session:
+            result = await session.execute(
+                select(User).where(
+                    (User.username == identifier) |
+                    (User.email == identifier) |
+                    (User.phone == identifier)
+                )
             )
             return result.scalar_one_or_none()
     

@@ -79,10 +79,8 @@ class LoguruService(IManaged, ILoggerService):
     _configured = False
 
     def __init__(self):
-        """初始化日志服务并配置日志"""
-        if not self._configured:
-            self._setup_logging()
-            self.__class__._configured = True
+        """初始化日志服务"""
+        self._setup_logging()
 
     @staticmethod
     def _detect_project_root() -> Path:
@@ -108,6 +106,10 @@ class LoguruService(IManaged, ILoggerService):
         """
         为日志记录添加相对路径字段，并将 extra 包装为 SafeDict
         
+        智能路径处理：
+        - 框架代码：显示简化路径，如 [fw] db.factory:123
+        - 用户代码：显示完整相对路径，如 app.services.auth_service:45
+        
         使用 _SafeExtraDict 包装 extra 字典，这样在日志格式中使用任何
         不存在的字段时都不会抛出 KeyError，而是返回空字符串。
         
@@ -126,10 +128,43 @@ class LoguruService(IManaged, ILoggerService):
         # 只在字段不存在时添加 file_relative
         if "file_relative" not in record["extra"]:
             try:
-                project_root = LoguruService._detect_project_root()
                 file_path = Path(record["file"].path)
-                relative_path = file_path.relative_to(project_root)
-                record["extra"]["file_relative"] = str(relative_path)
+                path_parts = file_path.parts
+
+                # 检测是否是 PySpring 框架代码
+                is_framework = "pyspring" in path_parts
+
+                if is_framework:
+                    # 框架代码：简化显示
+                    # 找到 pyspring 之后的路径部分
+                    pyspring_idx = path_parts.index("pyspring")
+                    relevant_parts = path_parts[pyspring_idx + 1:]  # pyspring 之后的部分
+
+                    # 转换为模块路径格式：repositories/db/factory.py → db.factory
+                    if len(relevant_parts) > 0:
+                        # 移除文件扩展名
+                        module_parts = list(relevant_parts[:-1]) + [relevant_parts[-1].replace('.py', '')]
+                        # 只保留最后2-3级，使其简洁
+                        if len(module_parts) > 3:
+                            module_parts = module_parts[-3:]
+                        module_path = ".".join(module_parts)
+                        record["extra"]["file_relative"] = f"[fw] {module_path}"
+                    else:
+                        record["extra"]["file_relative"] = "[fw] pyspring"
+                else:
+                    # 用户代码：显示详细路径
+                    project_root = LoguruService._detect_project_root()
+                    try:
+                        relative_path = file_path.relative_to(project_root)
+                        # 转换为模块路径格式：app/services/auth.py → app.services.auth
+                        path_str = str(relative_path).replace('\\', '/')
+                        module_path = path_str.replace('.py', '').replace('/', '.')
+                        record["extra"]["file_relative"] = module_path
+                    except ValueError:
+                        # 如果无法计算相对路径，使用文件名
+                        module_name = file_path.stem
+                        record["extra"]["file_relative"] = f"app.{module_name}"
+                        
             except (ValueError, AttributeError, KeyError):
                 # 安全回退：使用文件名
                 try:
@@ -141,10 +176,21 @@ class LoguruService(IManaged, ILoggerService):
 
     def _setup_logging(self):
         """从配置文件设置日志"""
+        # 先移除默认处理器并应用临时配置（带 filter），避免配置加载期间的日志使用默认格式
+        _loguru.remove()
+        _loguru.add(
+            sys.stdout,
+            format='<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}',
+            level='DEBUG',
+            colorize=True,
+            filter=self._add_relative_path
+        )
+
+        # 现在可以安全地加载配置（日志已应用 filter）
         config_manager = LoggingConfigManager()
         logging_config = config_manager.get('logging', {})
 
-        # 移除默认处理器
+        # 移除临时处理器，应用最终配置
         _loguru.remove()
 
         # 控制台配置

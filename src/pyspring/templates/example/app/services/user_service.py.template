@@ -79,18 +79,18 @@ class UserService:
                 cache_key,
                 {
                     "id": user.id,
-                    "username": user.username,
+                    "user_id": user.user_id,
                     "email": user.email,
-                    "is_active": user.is_active
+                    "active": user.active
                 },
                 ttl=300  # 5分钟过期
             )
         
         return user
     
-    async def get_user_by_username(self, username: str) -> Optional[User]:
-        """根据用户名获取用户"""
-        return await self.user_repository.find_by_username(username)
+    async def get_user_by_user_id(self, user_id: str) -> Optional[User]:
+        """根据用户ID获取用户"""
+        return await self.user_repository.find_by_user_id(user_id)
     
     async def get_users(self, skip: int = 0, limit: int = 10) -> List[User]:
         """
@@ -120,7 +120,7 @@ class UserService:
         # 清除相关缓存
         await self.cache_service.delete(f"{self._cache_prefix}list:*")
         
-        logger.info(f"✅ 创建用户: {user.username} (ID: {user.id})")
+        logger.info(f"✅ 创建用户: {user.user_id} (ID: {user.id})")
         return user
     
     async def update_user(self, user_id: int, update_data: Dict) -> Optional[User]:
@@ -141,7 +141,7 @@ class UserService:
             cache_key = f"{self._cache_prefix}{user_id}"
             await self.cache_service.delete(cache_key)
             
-            logger.info(f"✅ 更新用户: {user.username} (ID: {user.id})")
+            logger.info(f"✅ 更新用户: {user.user_id} (ID: {user.id})")
         
         return user
     

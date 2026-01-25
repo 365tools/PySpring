@@ -89,11 +89,13 @@ class DatabaseInitializer(IStartupInitializer):
             logger.info("📝 填充初始用户数据...")
             
             # 创建管理员用户（使用 argon2 哈希算法，与 SecurityConfig 一致）
+            import uuid
             from passlib.context import CryptContext
             pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
             
             admin = User(
-                user_id="admin",
+                user_id=str(uuid.uuid4()),  # 系统内部UUID
+                username="admin",  # 用户名（用于登录）
                 email="admin@example.com",
                 password=pwd_context.hash("admin123"),
                 first_name="Admin",
@@ -104,4 +106,4 @@ class DatabaseInitializer(IStartupInitializer):
             session.add(admin)
             await session.commit()
             
-            logger.info("✅ 初始用户创建完成: admin@example.com / admin123")
+            logger.info("✅ 初始用户创建完成: admin / admin@example.com / admin123")

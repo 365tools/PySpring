@@ -48,7 +48,7 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    if not user.is_active:
+    if not user.active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="用户已被禁用"
@@ -72,4 +72,4 @@ async def get_current_user_optional(
     token = credentials.credentials
     user = await auth_service.get_current_user(token)
     
-    return user if user and user.is_active else None
+    return user if user and user.active else None

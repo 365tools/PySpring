@@ -99,49 +99,50 @@ class AuthService:
     # 认证业务
     # ========================================================================
     
-    async def authenticate(self, username: str, password: str) -> Optional[str]:
+    async def authenticate(self, login_identifier: str, password: str) -> Optional[str]:
         """
         用户认证
         
         Args:
-            username: 用户名
+            login_identifier: 登录标识符（用户名/邮箱/手机号）
             password: 密码
         
         Returns:
             成功返回访问令牌，失败返回 None
         """
-        # 查找用户
-        user = await self.user_repository.find_by_username(username)
+        # 查找用户（支持用户名/邮箱/手机号）
+        user = await self.user_repository.find_by_login_identifier(login_identifier)
         
         if not user:
-            logger.warning(f"用户不存在: {username}")
+            logger.warning(f"用户不存在: {login_identifier}")
             return None
         
-        if not user.is_active:
-            logger.warning(f"用户已禁用: {username}")
+        if not user.active:
+            logger.warning(f"用户已禁用: {login_identifier}")
             return None
         
         # 验证密码
-        if not self.verify_password(password, user.password_hash):
-            logger.warning(f"密码错误: {username}")
+        if not self.verify_password(password, user.password):
+            logger.warning(f"密码错误: {login_identifier}")
             return None
         
         # 创建令牌
         access_token = self.create_access_token(
-            data={"sub": username, "user_id": user.id}
+            data={"sub": user.username, "id": user.id, "user_id": user.user_id}
         )
         
-        logger.info(f"✅ 用户认证成功: {username}")
+        logger.info(f"✅ 用户认证成功: {user.username} ({login_identifier})")
         return access_token
     
-    async def register(self, username: str, email: str, password: str) -> User:
+    async def register(self, username: str, email: str, password: str, phone: str = None) -> User:
         """
         用户注册
         
         Args:
-            username: 用户名
+            username: 用户名/昵称
             email: 邮箱
             password: 密码
+            phone: 手机号（可选）
         
         Returns:
             创建的用户对象
@@ -160,15 +161,18 @@ class AuthService:
             raise ValueError(f"邮箱已存在: {email}")
         
         # 创建用户
+        import uuid
         user_data = {
+            "user_id": str(uuid.uuid4()),  # 系统内部UUID
             "username": username,
             "email": email,
-            "password_hash": self.hash_password(password),
-            "is_active": True
+            "password": self.hash_password(password),
+            "phone": phone,
+            "active": True
         }
         
         user = await self.user_repository.create(user_data)
-        logger.info(f"✅ 用户注册成功: {username}")
+        logger.info(f"✅ 用户注册成功: {username} (UUID: {user.user_id})")
         
         return user
     
