@@ -69,7 +69,20 @@ class Container:
         # 1. 扫描组件
         components = self.scanner.scan(base_packages)
 
-        # 2. 注册组件
+        # 2. 输出所有被替换的组件（统一显示）
+        skipped_count = 0
+        for cls, metadata in components.items():
+            if metadata.replaced_by:
+                logger.info(
+                    f"⏩ 跳过条件组件 {metadata.name} ({cls.__name__}): "
+                    f"已被 {metadata.replaced_by} 替换"
+                )
+                skipped_count += 1
+
+        if skipped_count > 0:
+            logger.debug(f"已跳过 {skipped_count} 个被替换的条件组件\n")
+
+        # 3. 注册组件
         logger.debug(f"📝 注册组件...")
         for cls, metadata in components.items():
             self._register_component(metadata)
@@ -87,15 +100,29 @@ class Container:
         cls = metadata.cls
         scope = get_scope(cls)
 
-        # 检查条件注册：@ConditionalOnMissingBean
+        # 检查是否被其他组件替换（基于继承的替换）
+        if metadata.replaced_by:
+            # 已在 scan() 方法中统一输出，这里直接跳过
+            return
+
+        # 检查条件注册：@ConditionalOnMissingBean（保留原有的接口检查逻辑）
         conditional_type = getattr(cls, "__pyspring_conditional_on_missing_bean__", None)
         is_conditional = conditional_type is not None
 
         if is_conditional:
-            # 如果指定了条件类型，检查该类型是否已存在
-            if self.registry.has_type(conditional_type):
-                logger.debug(f"⏩ 跳过组件 {metadata.name}：{conditional_type.__name__} 已存在")
-                return
+            # 如果指定了接口类型，检查该接口是否已有实现
+            # 注意：这里主要用于接口类型检查，继承替换已在扫描阶段处理
+            if conditional_type != cls and conditional_type != object:
+                if self.registry.has_type(conditional_type):
+                    logger.debug(f"⏩ 跳过组件 {metadata.name}：{conditional_type.__name__} 已存在")
+                    return
+
+        # 如果当前组件替换了其他组件，输出替换日志（紧接着注册日志）
+        if metadata.replaces:
+            logger.info(
+                f"  🔄 组件替换: {metadata.name} ({cls.__name__}) "
+                f"替换 {metadata.replaces}"
+            )
 
         # 创建工厂函数
         def factory():
@@ -110,11 +137,14 @@ class Container:
             is_lazy=metadata.is_lazy,
             is_primary=metadata.is_primary,
             is_conditional=is_conditional,
+            replaces=metadata.replaces,  # 🆕 传递替换信息
             module=metadata.module
         )
 
         # 注册
         self.registry.register(definition)
+
+        # 注册成功日志（紧跟在替换日志后面）
         logger.debug(f"  ✅ {metadata.name} ({scope.value}){' [conditional]' if is_conditional else ''}")
 
     def _register_beans(self, config_metadata: ComponentMetadata):

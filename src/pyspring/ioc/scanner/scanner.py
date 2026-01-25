@@ -27,6 +27,10 @@ class ComponentMetadata:
     is_lazy: bool = False  # 是否懒加载
     bean_methods: List[str] = None  # Bean方法列表（仅Configuration）
 
+    # 替换机制相关字段
+    replaces: Optional[str] = None  # 替换的组件名称（子类替换父类）
+    replaced_by: Optional[str] = None  # 被哪个组件替换（条件组件被替换）
+
     def __post_init__(self):
         if self.bean_methods is None:
             self.bean_methods = []
@@ -48,9 +52,17 @@ class ComponentScanner:
         self.scanned_components: Dict[type, ComponentMetadata] = {}
         self.scanned_modules: Set[str] = set()
 
+        # 类型映射表（用于替换检测）
+        self.type_to_components: Dict[type, List[ComponentMetadata]] = {}  # 类型 -> 组件列表
+        self.conditional_components: Dict[type, ComponentMetadata] = {}  # 条件类型 -> 条件组件
+
     def scan(self, base_packages: List[str]) -> Dict[type, ComponentMetadata]:
         """
-        扫描指定的包路径
+        扫描指定的包路径（两阶段扫描）
+        
+        阶段1: 扫描所有组件
+        阶段2: 构建类型映射表
+        阶段3: 检测替换关系
         
         Args:
             base_packages: 要扫描的包路径列表
@@ -60,10 +72,20 @@ class ComponentScanner:
         """
         logger.debug(f"🔍 开始扫描组件，包路径: {base_packages}")
 
+        # 阶段 1: 扫描所有组件
         for package_name in base_packages:
             self._scan_package(package_name)
 
         logger.debug(f"✅ 组件扫描完成，发现 {len(self.scanned_components)} 个组件")
+
+        # 阶段 2: 构建类型映射表
+        logger.debug(f"🔍 构建类型映射表...")
+        self._build_type_mappings()
+
+        # 阶段 3: 检测替换关系
+        logger.debug(f"🔍 检测组件替换关系...")
+        self._detect_replacements()
+        
         return self.scanned_components
 
     def _scan_package(self, package_name: str):
@@ -239,6 +261,63 @@ class ComponentScanner:
             raise
         return bean_methods
 
+    def _build_type_mappings(self):
+        """构建类型映射表"""
+        for comp_type, metadata in self.scanned_components.items():
+            # 为每个类型（包括所有基类）添加映射
+            for base_class in comp_type.__mro__:
+                if base_class is object:
+                    continue
+                self.type_to_components.setdefault(base_class, []).append(metadata)
+
+            # 记录条件组件
+            conditional_type = getattr(comp_type, "__pyspring_conditional_on_missing_bean__", None)
+            if conditional_type is not None:
+                # 如果未指定类型或指定为 object，使用组件自身类型
+                if conditional_type is None or conditional_type == object:
+                    conditional_type = comp_type
+
+                # 记录条件组件映射
+                if conditional_type not in self.conditional_components:
+                    self.conditional_components[conditional_type] = metadata
+                    logger.debug(f"  📌 条件组件: {metadata.name} (检查类型: {conditional_type.__name__})")
+
+    def _detect_replacements(self):
+        """检测组件替换关系（基于继承）"""
+        replacement_count = 0
+
+        for comp_type, metadata in self.scanned_components.items():
+            # 跳过已被标记为替换其他组件的
+            if metadata.replaces:
+                continue
+
+            # 检查所有基类（跳过自己和 object）
+            for base_class in comp_type.__mro__[1:]:
+                if base_class is object:
+                    continue
+
+                # 如果基类是条件组件
+                if base_class in self.conditional_components:
+                    conditional_meta = self.conditional_components[base_class]
+
+                    # 避免自己替换自己
+                    if conditional_meta.cls == comp_type:
+                        continue
+
+                    # 标记替换关系
+                    metadata.replaces = conditional_meta.name
+                    conditional_meta.replaced_by = metadata.name
+                    replacement_count += 1
+
+                    logger.info(
+                        f"🔄 检测到替换: {metadata.name} ({comp_type.__name__}) "
+                        f"替换 {conditional_meta.name} ({base_class.__name__})"
+                    )
+                    break  # 只替换最近的条件基类
+
+        if replacement_count > 0:
+            logger.debug(f"✅ 检测到 {replacement_count} 个组件替换")
+    
     @staticmethod
     def _generate_name(cls: type) -> str:
         """生成组件名称（类名转snake_case）"""

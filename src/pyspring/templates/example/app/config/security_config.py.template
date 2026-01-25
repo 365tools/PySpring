@@ -17,16 +17,32 @@ PySpring 安全模块自定义配置示例
 - 此文件为可选配置，如不需要自定义，可删除
 - 框架提供的默认配置（DefaultRegisterService, DefaultLoginService）已满足大多数需求
 
-最佳实践（v1.1.0b26+）：
-- ✅ 推荐：直接继承父类，无需任何装饰器
+最佳实践（v1.1.0b27+）：
+- ✅ 推荐：直接继承父类 + @Component
 - ✅ 优点：只需重写需要修改的部分，其他字段自动继承
-- ✅ 机制：父类有 @ConditionalOnMissingBean，子类自动替换
+- ✅ 机制：框架自动检测继承关系并替换父类
 
-工作原理（替换机制）：
-- 框架包先扫描 → 注册 SecurityEntityConfiguration（带 @ConditionalOnMissingBean）
-- 用户包后扫描 → 发现 CustomSecurityEntityConfiguration（带 @Component）
-- IoC容器检测：已注册的是条件组件 → 用户实现优先
-- 结果：容器里使用子类实例，父类被替换
+工作原理（继承替换机制）：
+1. 扫描阶段：
+   - 扫描框架包 → 发现 SecurityEntityConfiguration (@ConditionalOnMissingBean)
+   - 扫描用户包 → 发现 CustomSecurityEntityConfiguration (@Component)
+   - 构建类型映射 → 检测到 CustomSecurityEntityConfiguration 继承 SecurityEntityConfiguration
+   - 标记替换关系 → metadata.replaces = 'security_entity_configuration'
+   
+2. 注册阶段：
+   - 注册父类时 → 检查 replaced_by → 跳过注册
+   - 注册子类时 → 正常注册 → 记录 replaces
+   
+3. 查询阶段：
+   - 调用 get_bean(SecurityEntityConfiguration)
+   - 精确查找失败（父类未注册）
+   - 子类查找成功 → 返回 CustomSecurityEntityConfiguration 实例
+   
+优势：
+- ✅ 无需手动指定 Bean 名称
+- ✅ 符合 Spring Boot 最佳实践
+- ✅ 支持多层继承
+- ✅ 框架透明处理替换逻辑
 """
 from pyspring.ioc.annotations import Component
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
@@ -39,7 +55,7 @@ from app.models.user import User
 # 方式1：自定义 SecurityEntityConfiguration（推荐）
 # ============================================================
 
-@Component()
+@Component()  # ✅ 使用默认的 @Component，框架自动处理替换
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     """
     自定义安全实体配置 - 最简洁的方式
@@ -48,23 +64,34 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     - 告诉框架使用我们自定义的 User 模型
     - 只需重写 user_orm_model，其他字段自动继承默认值
     
-    工作原理（替换机制 v1.1.0b26+）：
+    工作原理（继承替换机制 v1.1.0b27+）：
     1. 继承 SecurityEntityConfiguration 并重写 __init__
-    2. 使用 @Component() 装饰器让扫描器识别
-    3. 框架先扫描 → 注册父类（条件组件，@ConditionalOnMissingBean）
-    4. 用户包后扫描 → 发现子类（带 @Component）
-    5. IoC容器：检测到已注册的同名是条件组件 → 用户实现替换
-    6. 结果：容器里使用子类实例，真正的替换
+    2. 使用 @Component() - 无需指定 Bean 名称！
+    3. 扫描阶段：
+       - 框架扫描所有组件
+       - 构建类型映射表
+       - 检测继承关系：CustomSecurityEntityConfiguration 继承 SecurityEntityConfiguration
+       - 标记替换：custom_security_entity_configuration 替换 security_entity_configuration
+    4. 注册阶段：
+       - 跳过父类注册（已被标记为 replaced_by）
+       - 正常注册子类（记录 replaces）
+    5. 查询阶段：
+       - get_bean(SecurityEntityConfiguration)
+       - 查找失败（父类未注册）→ 查找子类（issubclass 检查）
+       - 返回子类实例
     
     优点：
     - ✅ 简洁：继承 + @Component，只写需要改的代码
     - ✅ 清晰：明确标记这是一个组件
+    - ✅ 智能：框架自动检测继承关系并处理替换
     - ✅ 高效：容器里只有一个实例（真正的替换）
     - ✅ 可维护：框架新增字段自动继承
+    - ✅ 无需手动维护 Bean 名称
     
-    注意：需要 @Component() 装饰器！
-    - 让扫描器能够识别这个类
-    - 父类有 @ConditionalOnMissingBean，子类会替换父类
+    注意：
+    - 无需指定 Bean 名称！框架会自动检测继承关系
+    - 父类必须有 @ConditionalOnMissingBean（框架默认配置已提供）
+    - 子类只需要普通的 @Component() 即可
     """
     
     def __init__(self):

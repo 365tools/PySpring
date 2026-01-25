@@ -149,10 +149,32 @@ class ServiceRegistry:
         return self._services.get(name)
 
     def get_by_type(self, service_type: type) -> Optional[ServiceDefinition]:
-        """根据类型获取服务定义"""
+        """
+        根据类型获取服务定义
+        
+        支持继承查询：
+        - 精确类型匹配：直接返回
+        - 未找到：查找是否有子类被注册（父类被子类替换的场景）
+        """
+        # 1. 精确类型匹配
         name = self._type_to_name.get(service_type)
         if name:
             return self._services.get(name)
+
+        # 2. 查找子类（替换场景）
+        # 遍历所有已注册的服务，找到继承自 service_type 的子类
+        for definition in self._services.values():
+            # 检查是否是子类（且不是自己）
+            try:
+                if (definition.service_type != service_type and
+                        issubclass(definition.service_type, service_type)):
+                    # 找到了一个子类，返回它
+                    # 注意：如果有多个子类，返回第一个（一般场景下应该只有一个）
+                    return definition
+            except TypeError:
+                # issubclass 可能抛异常（如果类型不是类）
+                continue
+        
         return None
 
     def get_implementations(self, interface_type: type) -> List[ServiceDefinition]:
