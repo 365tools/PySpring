@@ -50,7 +50,7 @@ class AuthenticationConfiguration:
     @ConditionalOnMissingBean(ILoginProvider)
     def default_login_providers(self, default_password_login_provider: DefaultPasswordLoginProvider) -> List[ILoginProvider]:
         """
-        组装默认的认证提供者列表
+        组装默认的登录认证提供者列表
         
         为什么需要 @Bean？
         - 返回类型是 List，无法用单个类表示

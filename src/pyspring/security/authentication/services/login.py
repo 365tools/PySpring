@@ -25,7 +25,7 @@ class DefaultLoginService(ILoginService):
     def __init__(
             self,
             user_provider: IUserProvider,
-            auth_providers: List[ILoginProvider],
+            login_providers: List[ILoginProvider],
             response_builder: IResponseBuilder,
             payload_builder: ITokenPayloadBuilder,
             context_manager: SecurityContextManagerService,
@@ -36,31 +36,31 @@ class DefaultLoginService(ILoginService):
         
         Args:
             user_provider: 用户提供者
-            auth_providers: 认证提供者列表（支持多种认证方式）
+            login_providers: 登录提供者列表（支持多种登录方式）
             response_builder: 响应构建器
             payload_builder: Token Payload 构建器
             context_manager: 安全上下文管理器
             token_manager: Token管理服务（通过IOC注入）
         """
         self.user_provider = user_provider
-        self.auth_providers = auth_providers
+        self.login_providers = login_providers
         self.response_builder = response_builder
         self.payload_builder = payload_builder
         self.context_manager = context_manager
         self.token_manager = token_manager
 
-        logger.info(f"[Auth] DefaultLoginService 初始化完成，注册了 {len(auth_providers)} 个认证提供者")
+        logger.info(f"[Auth] DefaultLoginService 初始化完成，注册了 {len(login_providers)} 个登录提供者")
 
     async def login(self, request: object) -> object:
         """
         用户登录流程编排
         
-        支持多个认证提供者，按顺序尝试直到找到支持的提供者
+        支持多个登录提供者，按顺序尝试直到找到支持的提供者
         """
         try:
-            # 1. 查找支持的认证提供者并执行认证
+            # 1. 查找支持的登录提供者并执行认证
             user = None
-            for provider in self.auth_providers:
+            for provider in self.login_providers:
                 if provider.supports(request):
                     user = await provider.authenticate(request)
                     break

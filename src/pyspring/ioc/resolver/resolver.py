@@ -184,8 +184,20 @@ class DependencyResolver:
         # 处理泛型（如 List[T]）
         origin = get_origin(param_type)
         if origin is list or origin is List:
-            # List注入暂不支持，返回None
-            # TODO: 未来可以支持注入服务列表
+            # 对于 List[T] 类型，尝试通过参数名匹配Bean
+            # 例如：auth_providers: List[ILoginProvider] -> 查找名为 "auth_providers" 的Bean
+            if self.registry.has(param_name):
+                return param_name
+
+            # 如果没有找到精确匹配的Bean，尝试获取List的元素类型
+            # 然后查找所有该类型的实例并返回列表
+            # 注意：这里返回参数名是为了后续在 _resolve_dependency 中特殊处理
+            type_args = get_args(param_type)
+            if type_args:
+                # 标记这是一个需要收集的List类型
+                # 使用特殊前缀标识
+                return f"__list_collection__:{param_name}"
+            
             return None
 
         # 展开Annotated等类型
@@ -228,6 +240,26 @@ class DependencyResolver:
             依赖实例或代理
         """
         service_name = dep_info.service_name
+
+        # 检查是否是List类型的集合注入
+        if service_name.startswith("__list_collection__:"):
+            # 提取原始参数名
+            param_name = service_name.split(":", 1)[1]
+
+            # 获取List的元素类型
+            origin = get_origin(dep_info.param_type)
+            type_args = get_args(dep_info.param_type)
+
+            if type_args:
+                element_type = type_args[0]
+                # 获取所有该类型的实例
+                instances = container.get_all_of_type(element_type)
+                logger.debug(f"📦 为参数 '{param_name}' 收集了 {len(instances)} 个 {element_type.__name__} 实例")
+                return instances
+
+            # 如果无法获取元素类型，返回空列表
+            logger.warning(f"⚠️ 无法解析 List 参数 '{param_name}' 的元素类型")
+            return []
 
         # 检查是否会造成循环依赖
         if service_name in self._instantiation_stack:
