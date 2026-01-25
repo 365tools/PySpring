@@ -12,7 +12,7 @@
 2. CustomRegisterService（app/services/custom_register_service.py）
    - 自定义注册逻辑、字段验证、后置处理
    
-3. CustomUser 模型（app/config/security_config.py）
+3. User 模型（app/models/user.py）
    - 扩展用户表字段（username、phone 等）
    
 4. 其他可选扩展：

@@ -28,7 +28,7 @@ PySpring 安全模块自定义配置示例
 - IoC容器检测：已注册的是条件组件 → 用户实现优先
 - 结果：容器里使用子类实例，父类被替换
 """
-from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations import Component
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 
 # 导入自定义的用户模型
@@ -84,7 +84,7 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
 # 示例2：自定义密码加密器（推荐方式）
 """
 from passlib.context import CryptContext
-from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+from pyspring.ioc.annotations import ConditionalOnMissingBean
 
 @ConditionalOnMissingBean(IPasswordEncoder)
 class CustomPasswordEncoder(IPasswordEncoder):
@@ -108,7 +108,7 @@ class CustomPasswordEncoder(IPasswordEncoder):
 """
 from pyspring.security.authentication.contracts.login import ILoginProvider
 from pyspring.security.authentication.contracts.request import LoginRequest
-from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations import Component
 
 @Component()  # 不需要 @ConditionalOnMissingBean，因为可以有多个 ILoginProvider
 class SmsLoginProvider(ILoginProvider):

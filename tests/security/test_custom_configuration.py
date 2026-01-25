@@ -1,12 +1,12 @@
 """
-PySpring 自定义配置测试套件
+PySpring 自定义配置测试套�?
 
-测试用户自定义表、@Bean、@Configuration等扩展场景是否正常工作
+测试用户自定义表、@Bean、@Configuration等扩展场景是否正常工�?
 """
 import io
 import sys
 
-# 设置标准输出编码为UTF-8，解决Windows下中文乱码问题
+# 设置标准输出编码为UTF-8，解决Windows下中文乱码问�?
 if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
@@ -21,7 +21,7 @@ os.environ['JWT_SECRET_KEY'] = 'test-secret-key-for-custom-configuration-testing
 
 
 class TestCustomConfiguration:
-    """测试自定义配置场景"""
+    """测试自定义配置场�?""
 
     def test_1_custom_user_table(self):
         """测试1: 自定义用户表结构"""
@@ -35,33 +35,34 @@ class TestCustomConfiguration:
 
         # 创建自定义用户表
         class CustomUserTable(BaseUserTable):
-            """用户自定义的用户表，添加了额外字段"""
+            """
+    用户自定义的用户表，添加了额外字�?""
             __tablename__ = 'custom_users'
 
             # 继承基础字段，添加自定义字段
             nickname = Column(String(50), nullable=True, comment="昵称")
-            phone = Column(String(20), nullable=True, comment="手机号")
+    phone = Column(String(20), nullable=True, comment="手机�?)
             avatar_url = Column(String(255), nullable=True, comment="头像URL")
             department = Column(String(100), nullable=True, comment="部门")
 
-        # 创建自定义配置
+    # 创建自定义配�?
         custom_config = SecurityEntityConfiguration(
             user_orm_model=CustomUserTable
         )
 
-        # 验证自定义表已注册
+    # 验证自定义表已注�?
         assert custom_config.user_orm_model == CustomUserTable
         assert hasattr(custom_config.user_orm_model, 'nickname')
         assert hasattr(custom_config.user_orm_model, 'phone')
         assert hasattr(custom_config.user_orm_model, 'avatar_url')
         assert hasattr(custom_config.user_orm_model, 'department')
 
-        print("✅ 自定义用户表字段:")
+    print("�?自定义用户表字段:")
         print(f"   - nickname: {CustomUserTable.nickname.type}")
         print(f"   - phone: {CustomUserTable.phone.type}")
         print(f"   - avatar_url: {CustomUserTable.avatar_url.type}")
         print(f"   - department: {CustomUserTable.department.type}")
-        print("✅ 自定义用户表 - 通过")
+    print("�?自定义用户表 - 通过")
 
     def test_2_custom_token_blacklist_table(self):
         """测试2: 自定义Token黑名单表"""
@@ -72,7 +73,7 @@ class TestCustomConfiguration:
         from sqlalchemy import Column, Integer, String, DateTime, Text
         from pyspring.repositories.db.models.common.define import Base
 
-        # 创建自定义黑名单表
+        # 创建自定义黑名单�?
         class CustomTokenBlacklistTable(Base):
             """用户自定义的Token黑名单表，添加了额外跟踪字段"""
             __tablename__ = 'custom_token_blacklist'
@@ -84,43 +85,44 @@ class TestCustomConfiguration:
             reason = Column(String(255), nullable=True, comment="撤销原因")
             expires_at = Column(DateTime, nullable=False, comment="Token过期时间")
 
-            # 自定义字段
+            # 自定义字�?
             ip_address = Column(String(45), nullable=True, comment="撤销时的IP地址")
             user_agent = Column(Text, nullable=True, comment="撤销时的User-Agent")
-            revoked_by = Column(String(100), nullable=True, comment="撤销操作者")
+            revoked_by = Column(String(100), nullable=True, comment="撤销操作�?)
 
-        # 验证表结构
+            # 验证表结�?
         assert hasattr(CustomTokenBlacklistTable, 'token_id')
         assert hasattr(CustomTokenBlacklistTable, 'ip_address')
         assert hasattr(CustomTokenBlacklistTable, 'user_agent')
         assert hasattr(CustomTokenBlacklistTable, 'revoked_by')
 
-        print("✅ 自定义黑名单表扩展字段:")
+            print("�?自定义黑名单表扩展字�?")
         print("   - ip_address: 撤销时的IP地址")
         print("   - user_agent: 撤销时的User-Agent")
-        print("   - revoked_by: 撤销操作者")
-        print("✅ 自定义Token黑名单表 - 通过")
+            print("   - revoked_by: 撤销操作�?)
+            print("�?自定义Token黑名单表 - 通过")
 
     def test_3_custom_bean_login_provider(self):
-        """测试3: 自定义@Bean - 登录提供者"""
+        """测试3: 自定义@Bean - 登录提供�?""
         print("\n" + "=" * 80)
-        print("测试: 自定义@Bean - 登录提供者")
+        print("测试: 自定义@Bean - 登录提供�?)
         print("=" * 80)
 
         from pyspring.security.authentication.contracts.login import ILoginProvider
         from pyspring.security.authentication.contracts.request import LoginRequest
-        from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
+        from pyspring.ioc.annotations import Configuration, Bean, ConditionalOnMissingBean
 
-        # 创建自定义登录提供者
+        # 创建自定义登录提供�?
         class CustomLoginProvider(ILoginProvider):
-            """用户自定义的登录提供者，支持邮箱+验证码登录"""
+            """
+        用户自定义的登录提供者，支持邮箱 + 验证码登�?""
 
             def __init__(self, verification_service: Any):
                 self.verification_service = verification_service
 
             async def authenticate(self, credentials: LoginRequest) -> Dict[str, Any]:
-                """邮箱验证码登录"""
-                # 验证邮箱验证码
+                """邮箱验证码登�?""
+                # 验证邮箱验证�?
                 # 模拟验证逻辑
                 return {
                     "user_id": "123",
@@ -129,7 +131,8 @@ class TestCustomConfiguration:
                 }
 
             def supports(self, credentials: LoginRequest) -> bool:
-                """支持邮箱验证码登录"""
+                """
+                支持邮箱验证码登�?""
                 return hasattr(credentials, 'verification_code')
 
         # 创建自定义配置类
@@ -140,11 +143,11 @@ class TestCustomConfiguration:
             @Bean
             @ConditionalOnMissingBean(ILoginProvider)
             def custom_login_provider(self) -> ILoginProvider:
-                """注册自定义登录提供者"""
+                """注册自定义登录提供�?""
                 verification_service = Mock()  # 模拟验证服务
                 return CustomLoginProvider(verification_service)
 
-        # 验证配置类
+        # 验证配置�?
         assert hasattr(CustomAuthConfig, '__pyspring_configuration__')
         assert CustomAuthConfig.__pyspring_configuration__ is True
 
@@ -154,21 +157,23 @@ class TestCustomConfiguration:
         assert isinstance(provider, ILoginProvider)
         assert isinstance(provider, CustomLoginProvider)
 
-        print("✅ 自定义登录提供者注册成功")
+        print("�?自定义登录提供者注册成�?)
         print(f"   类型: {type(provider).__name__}")
         print(f"   支持认证方法: email_verification")
-        print("✅ 自定义@Bean - 登录提供者 - 通过")
+        print("�?自定义@Bean - 登录提供�?- 通过")
 
     def test_4_custom_token_payload_builder(self):
-        """测试4: 自定义Token Payload构建器"""
+        """
+                测试4: 自定义Token
+                Payload构建�?""
         print("\n" + "=" * 80)
-        print("测试: 自定义Token Payload构建器")
+print("测试: 自定义Token Payload构建�?)
         print("=" * 80)
 
         from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder
-        from pyspring.ioc.annotations.component import Configuration, Bean
+from pyspring.ioc.annotations import Configuration, Bean
 
-        # 创建自定义Payload构建器
+    # 创建自定义Payload构建�?
         class CustomTokenPayloadBuilder(ITokenPayloadBuilder):
             """用户自定义的Token Payload构建器，添加额外字段"""
 
@@ -177,7 +182,7 @@ class TestCustomConfiguration:
                 payload = {
                     "sub": user_info.get("user_id"),
                     "email": user_info.get("email"),
-                    # 自定义字段
+                    # 自定义字�?
                     "department": user_info.get("department", "未知"),
                     "role_level": user_info.get("role_level", 1),
                     "tenant_id": user_info.get("tenant_id", "default"),
@@ -214,7 +219,7 @@ class TestCustomConfiguration:
             assert payload["tenant_id"] == "tenant_001"
             assert len(payload["permissions"]) == 3
 
-            print("✅ 自定义Payload字段:")
+            print("�?自定义Payload字段:")
             print(f"   - department: {payload['department']}")
             print(f"   - role_level: {payload['role_level']}")
             print(f"   - tenant_id: {payload['tenant_id']}")
@@ -223,18 +228,18 @@ class TestCustomConfiguration:
 
         result = asyncio.run(run_test())
         assert result
-        print("✅ 自定义Token Payload构建器 - 通过")
+print("�?自定义Token Payload构建�?- 通过")
 
     def test_5_custom_user_provider(self):
-        """测试5: 自定义用户提供者（多数据源）"""
+        """测试5: 自定义用户提供者（多数据源�?""
         print("\n" + "=" * 80)
-        print("测试: 自定义用户提供者（多数据源）")
+        print("测试: 自定义用户提供者（多数据源�?)
         print("=" * 80)
 
         from pyspring.security.authentication.contracts.user import IUserProvider
-        from pyspring.ioc.annotations.component import Configuration, Bean
+        from pyspring.ioc.annotations import Configuration, Bean
 
-        # 创建自定义用户提供者（支持多数据源）
+        # 创建自定义用户提供者（支持多数据源�?
         class MultiSourceUserProvider(IUserProvider):
             """支持从多个数据源查询用户"""
 
@@ -249,16 +254,16 @@ class TestCustomConfiguration:
 
             async def get_user_by_identity(self, identity: str) -> Optional[Any]:
                 """先从主数据库查询，失败则从LDAP查询"""
-                # 模拟从主数据库查询
+                # 模拟从主数据库查�?
                 user = await self._get_from_db(identity)
                 if user:
-                    print(f"   ✅ 从主数据库找到用户: {identity}")
+                    print(f"   �?从主数据库找到用�? {identity}")
                     return user
 
                 # 从LDAP查询
                 user = await self._get_from_ldap(identity)
                 if user:
-                    print(f"   ✅ 从LDAP找到用户: {identity}")
+                    print(f"   �?从LDAP找到用户: {identity}")
                     return user
 
                 return None
@@ -302,8 +307,8 @@ class TestCustomConfiguration:
 
         result = asyncio.run(run_test())
         assert result
-        print("✅ 多数据源用户查询成功")
-        print("✅ 自定义用户提供者 - 通过")
+        print("�?多数据源用户查询成功")
+        print("�?自定义用户提供�?- 通过")
 
     def test_6_custom_response_builder(self):
         """测试6: 自定义响应构建器"""
@@ -312,11 +317,12 @@ class TestCustomConfiguration:
         print("=" * 80)
 
         from pyspring.security.authentication.contracts.response import IResponseBuilder
-        from pyspring.ioc.annotations.component import Bean, Configuration
+        from pyspring.ioc.annotations import Bean, Configuration
 
         # 创建自定义响应构建器
         class CustomResponseBuilder(IResponseBuilder):
-            """自定义响应格式，添加额外元数据"""
+            """
+        自定义响应格式，添加额外元数�?""
 
             async def build_login_response(
                     self,
@@ -375,7 +381,8 @@ class TestCustomConfiguration:
             def custom_response_builder(self) -> IResponseBuilder:
                 return CustomResponseBuilder()
 
-        # 测试自定义响应
+
+# 测试自定义响�?
         async def run_test():
             config = CustomResponseConfig()
             builder = config.custom_response_builder()
@@ -393,7 +400,7 @@ class TestCustomConfiguration:
             assert response["metadata"]["device_type"] == "web"
             assert response["data"]["token_type"] == "Bearer"
 
-            print("✅ 自定义响应格式:")
+            print("�?自定义响应格�?")
             print(f"   - code: {response['code']}")
             print(f"   - metadata: {response['metadata']}")
             print(f"   - token_type: {response['data']['token_type']}")
@@ -401,15 +408,15 @@ class TestCustomConfiguration:
 
         result = asyncio.run(run_test())
         assert result
-        print("✅ 自定义响应构建器 - 通过")
+print("�?自定义响应构建器 - 通过")
 
     def test_7_integration_custom_config(self):
-        """测试7: 集成测试 - 完整自定义配置流程"""
+        """测试7: 集成测试 - 完整自定义配置流�?""
         print("\n" + "=" * 80)
-        print("测试: 集成测试 - 完整自定义配置流程")
+        print("测试: 集成测试 - 完整自定义配置流�?)
         print("=" * 80)
 
-        from pyspring.ioc.annotations.component import Configuration, Bean
+        from pyspring.ioc.annotations import Configuration, Bean
         from pyspring.security.authentication.config.entity.config import SecurityEntityConfiguration
         from pyspring.security.authentication.contracts.user import IUserProvider
         from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder
@@ -422,19 +429,21 @@ class TestCustomConfiguration:
 
             @Bean
             def custom_security_entity_config(self) -> SecurityEntityConfiguration:
-                """自定义实体配置"""
+                """
+        自定义实体配�?""
                 # 这里可以指定自定义表
                 return SecurityEntityConfiguration()
 
             @Bean
             def custom_user_provider(self, db: Any) -> IUserProvider:
-                """自定义用户提供者"""
-                from pyspring.security.authentication.providers.user.database import DefaultUserProvider
-                return DefaultUserProvider(db, self.custom_security_entity_config())
+    """自定义用户提供�?""
+    from pyspring.security.authentication.providers.user.database import DefaultUserProvider
+    return DefaultUserProvider(db, self.custom_security_entity_config())
 
-            @Bean
-            def custom_token_payload_builder(self) -> ITokenPayloadBuilder:
-                """自定义Token构建器"""
+@Bean
+def custom_token_payload_builder(self) -> ITokenPayloadBuilder:
+    """
+    自定义Token构建�?""
 
                 class SimplePayloadBuilder(ITokenPayloadBuilder):
                     async def build_payload(self, user_info):
@@ -461,7 +470,8 @@ class TestCustomConfiguration:
 
                 return SimpleResponseBuilder()
 
-        # 验证配置类
+
+# 验证配置�?
         assert hasattr(CompleteCustomConfig, '__pyspring_configuration__')
 
         # 验证所有Bean方法
@@ -470,23 +480,23 @@ class TestCustomConfiguration:
         # 检查SecurityEntityConfiguration
         entity_config = config.custom_security_entity_config()
         assert entity_config is not None
-        print("✅ SecurityEntityConfiguration已注册")
+print("�?SecurityEntityConfiguration已注�?)
 
         # 检查UserProvider
         mock_db = Mock()
         user_provider = config.custom_user_provider(mock_db)
         assert user_provider is not None
-        print("✅ 自定义UserProvider已注册")
+print("�?自定义UserProvider已注�?)
 
         # 检查TokenPayloadBuilder
         payload_builder = config.custom_token_payload_builder()
         assert payload_builder is not None
-        print("✅ 自定义TokenPayloadBuilder已注册")
+print("�?自定义TokenPayloadBuilder已注�?)
 
         # 检查ResponseBuilder
         response_builder = config.custom_response_builder()
         assert response_builder is not None
-        print("✅ 自定义ResponseBuilder已注册")
+print("�?自定义ResponseBuilder已注�?)
 
         # 测试整体流程
         async def run_test():
@@ -506,7 +516,7 @@ class TestCustomConfiguration:
 
         result = asyncio.run(run_test())
         assert result
-        print("✅ 完整自定义配置流程 - 通过")
+print("�?完整自定义配置流�?- 通过")
 
     def test_8_conditional_bean_override(self):
         """测试8: @ConditionalOnMissingBean条件覆盖"""
@@ -514,18 +524,19 @@ class TestCustomConfiguration:
         print("测试: @ConditionalOnMissingBean条件覆盖")
         print("=" * 80)
 
-        from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
+        from pyspring.ioc.annotations import Configuration
         from pyspring.security.authentication.contracts.login import ILoginProvider
 
-        # 模拟框架的默认配置
+        # 模拟框架的默认配�?
         @Configuration
         class FrameworkDefaultConfig:
-            """框架提供的默认配置"""
+            """框架提供的默认配�?""
 
             @Bean
             @ConditionalOnMissingBean(ILoginProvider)
             def default_login_provider(self) -> ILoginProvider:
-                """框架默认的登录提供者"""
+                """
+            框架默认的登录提供�?""
 
                 class DefaultProvider(ILoginProvider):
                     async def authenticate(self, credentials):
@@ -536,14 +547,15 @@ class TestCustomConfiguration:
 
                 return DefaultProvider()
 
-        # 用户的自定义配置（会覆盖默认配置）
+
+# 用户的自定义配置（会覆盖默认配置�?
         @Configuration
         class UserCustomConfig:
             """用户自定义配置，覆盖默认实现"""
 
             @Bean
             def custom_login_provider(self) -> ILoginProvider:
-                """用户自定义的登录提供者（没有@ConditionalOnMissingBean）"""
+                """用户自定义的登录提供者（没有@ConditionalOnMissingBean�?""
 
                 class CustomProvider(ILoginProvider):
                     async def authenticate(self, credentials):
@@ -566,12 +578,12 @@ class TestCustomConfiguration:
         has_conditional = hasattr(default_method, '__pyspring_conditional__') or \
                           hasattr(default_method, '__wrapped__') or \
                           'ConditionalOnMissingBean' in str(type(default_method))
-        print(f"✅ 框架默认Bean装饰器检查: {has_conditional}")
+        print(f"�?框架默认Bean装饰器检�? {has_conditional}")
 
         # 验证自定义Bean没有条件装饰器（会覆盖默认）
         no_conditional = not (hasattr(custom_method, '__pyspring_conditional__') and \
                               custom_method.__pyspring_conditional__)
-        print("✅ 用户自定义Bean没有条件装饰器，可以覆盖默认实现")
+        print("�?用户自定义Bean没有条件装饰器，可以覆盖默认实现")
 
         # 测试行为
         async def run_test():
@@ -590,26 +602,27 @@ class TestCustomConfiguration:
 
         result = asyncio.run(run_test())
         assert result
-        print("✅ @ConditionalOnMissingBean条件覆盖 - 通过")
+        print("�?@ConditionalOnMissingBean条件覆盖 - 通过")
 
 
 def run_all_tests():
-    """运行所有测试"""
+    """
+                运行所有测�?""
     test_suite = TestCustomConfiguration()
 
     tests = [
         ("自定义用户表", test_suite.test_1_custom_user_table),
         ("自定义Token黑名单表", test_suite.test_2_custom_token_blacklist_table),
-        ("自定义@Bean - 登录提供者", test_suite.test_3_custom_bean_login_provider),
-        ("自定义Token Payload构建器", test_suite.test_4_custom_token_payload_builder),
-        ("自定义用户提供者（多数据源）", test_suite.test_5_custom_user_provider),
+        ("自定义@Bean - 登录提供�?, test_suite.test_3_custom_bean_login_provider),
+         ("自定义Token Payload构建�?, test_suite.test_4_custom_token_payload_builder),
+          ("自定义用户提供者（多数据源�?, test_suite.test_5_custom_user_provider),
         ("自定义响应构建器", test_suite.test_6_custom_response_builder),
-        ("集成测试 - 完整自定义配置流程", test_suite.test_7_integration_custom_config),
+           ("集成测试 - 完整自定义配置流�?, test_suite.test_7_integration_custom_config),
         ("@ConditionalOnMissingBean条件覆盖", test_suite.test_8_conditional_bean_override),
     ]
 
     print("=" * 80)
-    print("PySpring 自定义配置测试套件")
+         print("PySpring 自定义配置测试套�?)
     print("=" * 80)
 
     passed = 0
@@ -621,10 +634,10 @@ def run_all_tests():
             passed += 1
         except AssertionError as e:
             failed += 1
-            print(f"❌ {name} - 失败: {e}")
+            print(f"�?{name} - 失败: {e}")
         except Exception as e:
             failed += 1
-            print(f"❌ {name} - 错误: {type(e).__name__}: {e}")
+            print(f"�?{name} - 错误: {type(e).__name__}: {e}")
 
     print(f"\n{'=' * 80}")
     print(f"测试结果: {passed}/{len(tests)} 通过")
@@ -636,3 +649,4 @@ def run_all_tests():
 if __name__ == "__main__":
     success = run_all_tests()
     exit(0 if success else 1)
+

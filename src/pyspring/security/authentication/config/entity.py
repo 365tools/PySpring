@@ -1,6 +1,6 @@
 from typing import Type
 
-from pyspring.ioc.annotations.component import Component, ConditionalOnMissingBean
+from pyspring.ioc.annotations import Component, ConditionalOnMissingBean
 # ORM Models
 from pyspring.repositories.db.models.common.define import (
     BaseUserTable, BaseRoleTable, BasePermissionTable,

@@ -25,7 +25,7 @@ from typing import Any
 
 from fastapi import HTTPException, status
 
-from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations import Component
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
@@ -33,7 +33,7 @@ from pyspring.security.authentication.contracts.user import IUserProvider
 from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
 from sqlalchemy import select, or_
 
-from app.config.security_config import CustomUser
+from app.models.user import User
 
 
 # ============================================================================
@@ -60,7 +60,7 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     
     扩展点（本类实现）：
     - 🔧 支持多种登录标识符（user_id 可以是用户名、邮箱、手机号）
-    - 🔧 使用 CustomUser 模型（包含自定义字段）
+    - 🔧 使用 User 模型（包含自定义字段）
     
     使用 @Component() 装饰器：
     - 让扫描器能够识别这个类
@@ -89,7 +89,7 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
             request: LoginRequest 对象
             
         Returns:
-            CustomUser: 认证成功的用户对象
+            User: 认证成功的用户对象
             
         Raises:
             HTTPException: 认证失败时抛出
@@ -164,16 +164,16 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
             identifier: 登录标识符（可以是用户名、邮箱、手机号）
             
         Returns:
-            CustomUser 或 None
+            User 或 None
         """
         async with await self.db.session() as session:
             result = await session.execute(
-                select(CustomUser).where(
+                select(User).where(
                     or_(
-                        CustomUser.user_id == identifier,    # 框架标准字段
-                        CustomUser.username == identifier,   # 自定义字段
-                        CustomUser.email == identifier,      # 框架标准字段
-                        CustomUser.phone == identifier,      # 自定义字段
+                        User.user_id == identifier,    # 框架标准字段
+                        User.username == identifier,   # 自定义字段
+                        User.email == identifier,      # 框架标准字段
+                        User.phone == identifier,      # 自定义字段
                     )
                 )
             )

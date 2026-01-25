@@ -1,7 +1,7 @@
 """
 测试 @ConditionalOnMissingBean 装饰器对类的支持
 """
-from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+from pyspring.ioc.annotations import ConditionalOnMissingBean
 
 
 class TestConditionalOnMissingBeanForClass:
@@ -40,7 +40,7 @@ class TestConditionalOnMissingBeanForClass:
 
     def test_conditional_on_bean_method_still_works(self):
         """测试 @ConditionalOnMissingBean 装饰方法仍然正常工作"""
-        from pyspring.ioc.annotations.component import Configuration, Bean
+        from pyspring.ioc.annotations import Configuration, Bean
 
         @Configuration
         class TestConfig:

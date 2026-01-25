@@ -5,7 +5,7 @@
 """
 from typing import List
 
-from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
+from pyspring.ioc.annotations import Configuration, Bean, ConditionalOnMissingBean
 from pyspring.log.instance import logger
 # 导入配置和工厂
 # 导入接口

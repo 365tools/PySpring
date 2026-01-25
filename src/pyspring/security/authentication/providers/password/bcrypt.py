@@ -3,7 +3,7 @@ BCrypt密码编码器（默认实现）
 """
 import bcrypt
 
-from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+from pyspring.ioc.annotations import ConditionalOnMissingBean
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 
 

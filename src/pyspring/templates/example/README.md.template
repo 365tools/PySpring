@@ -193,7 +193,7 @@ curl http://localhost:8000/api/users/me \
    - 位置：`app/services/custom_register_service.py`
    - 扩展：自定义字段处理、验证规则、注册后置操作
 
-2. **CustomUser 模型** - 扩展用户表
+2. **User 模型** - 扩展用户表
    - 位置：`app/config/security_config.py`
    - 扩展：添加 username、phone 等自定义字段
 

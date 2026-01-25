@@ -3,7 +3,7 @@
 
 参考authentication模块的结构，使用IOC框架配置授权组件
 """
-from pyspring.ioc.annotations.component import Configuration, Bean, ConditionalOnMissingBean
+from pyspring.ioc.annotations import Configuration, Bean, ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration

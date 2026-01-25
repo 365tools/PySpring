@@ -1,7 +1,7 @@
 ﻿from typing import Optional, List
 
 from fastapi import HTTPException, status
-from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+from pyspring.ioc.annotations import ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.security.authentication.contracts.constant import RevokeTokenReason
 from pyspring.security.authentication.contracts.flow import ILoginService

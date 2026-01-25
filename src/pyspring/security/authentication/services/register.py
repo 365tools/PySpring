@@ -1,7 +1,7 @@
 from typing import Any
 
 from fastapi import HTTPException, status
-from pyspring.ioc.annotations.component import ConditionalOnMissingBean
+from pyspring.ioc.annotations import ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration

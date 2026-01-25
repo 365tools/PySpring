@@ -24,7 +24,7 @@
 """
 from typing import Any
 
-from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations import Component
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.services.register import DefaultRegisterService
@@ -35,8 +35,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# 导入自定义用户模型（需要在 app.config.security_config 中定义）
-from app.config.security_config import CustomUser
+# 导入自定义用户模型
+from app.models.user import User
 
 
 @Component()
@@ -136,7 +136,7 @@ class CustomRegisterService(DefaultRegisterService):
         
         # 检查邮箱是否已存在
         result = await session.execute(
-            select(CustomUser).where(CustomUser.email == user.email)
+            select(User).where(User.email == user.email)
         )
         if result.scalar_one_or_none():
             raise ValueError(f"邮箱已被注册: {user.email}")
@@ -144,7 +144,7 @@ class CustomRegisterService(DefaultRegisterService):
         # 检查 username 是否已存在（自定义字段）
         if hasattr(user, 'username') and user.username:
             result = await session.execute(
-                select(CustomUser).where(CustomUser.username == user.username)
+                select(User).where(User.username == user.username)
             )
             if result.scalar_one_or_none():
                 raise ValueError(f"用户名已被占用: {user.username}")
@@ -155,7 +155,7 @@ class CustomRegisterService(DefaultRegisterService):
         
         logger.info(f"✅ 用户验证通过: {user.email}")
     
-    async def _create_user(self, session: Any, user: User) -> CustomUser:
+    async def _create_user(self, session: Any, user: User) -> User:
         """
         创建用户记录
         
@@ -168,7 +168,7 @@ class CustomRegisterService(DefaultRegisterService):
         hashed_password = self.password_encoder.encode(user.password)
         
         # 创建用户实例（映射自定义字段）
-        db_user = CustomUser(
+        db_user = User(
             user_id=user.user_id or user.email,  # 框架字段
             email=user.email,                     # 框架字段
             password=hashed_password,             # 框架字段
@@ -231,7 +231,7 @@ class CustomRegisterService(DefaultRegisterService):
         
         logger.info(f"✅ 角色分配完成: {[r.code for r in roles]}")
     
-    async def _after_register(self, user: CustomUser) -> None:
+    async def _after_register(self, user: User) -> None:
         """
         注册后置操作
         
@@ -250,7 +250,7 @@ class CustomRegisterService(DefaultRegisterService):
         # TODO: 记录到审计日志
         # await audit_service.log_register(user.id)
     
-    async def _build_user_info(self, session: Any, user: CustomUser) -> UserInfo:
+    async def _build_user_info(self, session: Any, user: User) -> UserInfo:
         """
         构建返回的用户信息
         
