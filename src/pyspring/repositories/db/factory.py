@@ -74,9 +74,9 @@ class DBServiceFactory:
         
         策略：
         1. 检查 PostgreSQL 配置完整性
-        2. 创建 PostgreSQL 服务并测试连接（同步 ping）
+        2. 创建 PostgreSQL 服务并测试连接（ping）
         3. 连接成功：使用 PostgreSQL
-        4. 连接失败：降级到 SQLite
+        4. 连接失败或有事件循环冲突：降级到 SQLite
         
         Returns:
             IDBService: PostgreSQL 或 SQLite 服务

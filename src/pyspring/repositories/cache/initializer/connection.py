@@ -1,50 +1,62 @@
 """
 缓存连接初始化器
 
-在应用启动时初始化缓存连接（服务已由 IOC 创建）
+在应用启动时测试缓存连接（服务已由 Factory 创建和配置）
 """
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.lifecycle.initializer import IStartupInitializer
 from pyspring.log.instance import logger
-from ..config import CacheConfig
+
 from ..manager import CacheManagerService
 
 
 @Component()
 class CacheConnectionInitializer(IStartupInitializer):
-    """缓存连接初始化器（仅负责连接建立）"""
+    """
+    缓存连接初始化器
+    
+    职责：
+    - 从 CacheManagerService 获取 provider（已由 CacheServiceFactory 配置）
+    - 建立连接（如果 provider 支持 connect 方法）
+    - 测试缓存连接是否正常
+    - 不需要关心具体是什么缓存（Redis/Memory）
+    """
 
-    def __init__(self, cache_config: CacheConfig, cache_manager: CacheManagerService):
+    def __init__(self, cache_manager: CacheManagerService):
+        """
+        Args:
+            cache_manager: 缓存管理服务（自动注入，已包含配置好的 provider）
+        """
         super().__init__(enabled=True)
-        self.cache_config = cache_config
         self.cache_manager = cache_manager
 
     async def startup(self) -> bool:
-        """初始化缓存连接"""
+        """
+        触发缓存服务创建
+        
+        从 Manager 获取 provider，触发 Factory 的检测和创建流程。
+        Factory 已完成 ping 测试和自动降级，这里获取到的是可用实例。
+        
+        Returns:
+            bool: 是否成功获取实例
+        """
         try:
-            cache_type = self.cache_config.type.lower()
-
-            # 从管理器获取服务（由工厂自动选择）
+            # 触发调用链：Initializer → Manager → Factory
+            # Factory 会进行 ping 检测和自动降级
             provider = self.cache_manager.provider
 
-            # 如果是 Redis，需要建立连接
-            if cache_type == "redis":
-                if hasattr(provider, 'connect'):
-                    await provider.connect()
-                    logger.info(f"Redis connection established: {self.cache_config.redis.host}:{self.cache_config.redis.port}")
-            elif cache_type == "memory":
-                logger.info(f"Memory cache ready (max_size={self.cache_config.memory.max_size}, ttl={self.cache_config.memory.ttl}s)")
+            # 如果 provider 支持 connect 方法，建立连接
+            if hasattr(provider, 'connect'):
+                await provider.connect()
+                logger.info("🔗 缓存连接已建立")
 
-            # 测试连接
-            if await provider.ping():
-                logger.info(f"{cache_type.capitalize()} cache ready")
-                return True
-            else:
-                logger.error(f"{cache_type.capitalize()} ping failed")
-                return False
+            logger.info("✅ 缓存服务已就绪")
+            return True
 
         except Exception as e:
-            logger.error(f"Cache initialization failed: {e}")
+            logger.error(f"❌ 缓存服务获取失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
 
     def get_name(self) -> str:
