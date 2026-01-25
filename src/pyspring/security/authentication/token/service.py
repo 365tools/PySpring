@@ -118,14 +118,16 @@ class TokenService(ITokenService):
 
         # 4. 持久化到存储（两级架构）
         try:
-            user_id = payload.get("sub")
+            # 从 payload 获取用户标识符
+            user_id = payload.get("sub")  # JWT 标准字段：user_id (UUID)
+            
             exp_timestamp = decoded.get("exp")
             expires_at = datetime.fromtimestamp(int(exp_timestamp), UTC) if exp_timestamp else datetime.now(UTC)
 
             # 4.1 写入数据库
             async with await self.db.session() as session:
                 refresh_record = RefreshTokenTable(
-                    user_id=int(user_id) if user_id else 0,
+                    user_id=user_id,  # UUID 字符串
                     user_email=payload.get("email", ""),
                     token=refresh_token,
                     expires_at=expires_at,
@@ -258,7 +260,10 @@ class TokenService(ITokenService):
             if not token_id:
                 logger.error("[Security] Token缺JTI字段，无法精确撤销")
                 raise ValueError("Token payload缺少jti字段，无法撤销")
-            user_id = payload.get("sub")
+
+            # 获取用户标识符
+            user_id = payload.get("sub")  # JWT 标准：user_id (UUID)
+            
             exp_timestamp = payload.get("exp")
             expires_at = datetime.fromtimestamp(float(exp_timestamp), UTC) if exp_timestamp else datetime.now(UTC)
 
@@ -267,7 +272,7 @@ class TokenService(ITokenService):
             async with await self.db.session() as session:
                 blacklist_record = TokenBlacklistTable(
                     token_id=token_id,
-                    user_id=int(user_id) if user_id else None,
+                    user_id=user_id,  # UUID 字符串
                     token_type="access",
                     reason=reason or RevokeTokenReason.USER_LOGOUT,
                     expires_at=expires_at
@@ -303,7 +308,7 @@ class TokenService(ITokenService):
         
         Args:
             session: 数据库会话（暂未使用）
-            user_id: 用户ID
+            user_id: 用户UUID
             reason: 撤销原因
         """
         try:
@@ -311,7 +316,7 @@ class TokenService(ITokenService):
             async with await self.db.session() as db_session:
                 query = select(RefreshTokenTable).where(
                     and_(
-                        RefreshTokenTable.user_id == int(user_id),
+                        RefreshTokenTable.user_id == user_id,  # UUID 字符串
                         RefreshTokenTable.is_revoked == False
                     )
                 )
@@ -347,7 +352,7 @@ class TokenService(ITokenService):
                         # 写入黑名单表
                         blacklist_record = TokenBlacklistTable(
                             token_id=token_jti,
-                            user_id=int(user_id),
+                            user_id=user_id,  # UUID 字符串
                             token_type="refresh",
                             reason=reason or RevokeTokenReason.USER_LOGIN,
                             expires_at=record.expires_at

@@ -64,8 +64,8 @@ class BaseUserRoleTable(Base):
     __abstract__ = True
 
     id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(INT, nullable=False)
-    role_id: Mapped[int] = mapped_column(INT, nullable=False)
+    user_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    role_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
 
 
 class BaseRolePermissionTable(Base):
@@ -75,5 +75,5 @@ class BaseRolePermissionTable(Base):
     __abstract__ = True
 
     id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
-    role_code: Mapped[str] = mapped_column(String, nullable=False)
-    permission_code: Mapped[str] = mapped_column(String, nullable=False)
+    role_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    permission_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)

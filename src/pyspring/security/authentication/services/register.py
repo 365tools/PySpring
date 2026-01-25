@@ -56,13 +56,13 @@ class DefaultRegisterService(IRegisterService):
 
                 # 3. 分配角色（如果有）
                 if request.roles:
-                    await self._assign_roles(session, db_user.id, request.roles)
+                    await self._assign_roles(session, db_user, request.roles)
 
                 # 4. 提交事务
                 await session.commit()
                 await session.refresh(db_user)
 
-                logger.info(f"[Success] 用户注册成功: {db_user.email} (ID: {db_user.id})")
+                logger.info(f"[Success] 用户注册成功: {db_user.email} (UUID: {db_user.user_id})")
 
                 # 6. 构造返回结果
                 return await self._build_user_info(session, db_user)
@@ -138,13 +138,13 @@ class DefaultRegisterService(IRegisterService):
 
         return db_user
 
-    async def _assign_roles(self, session: AsyncSession, user_db_id: int, roles: list[Role]) -> None:
+    async def _assign_roles(self, session: AsyncSession, user: Any, roles: list[Role]) -> None:
         """
         为用户分配角色
         
         Args:
             session: 数据库会话
-            user_db_id: 用户数据库ID
+            user: 用户对象（使用 user.user_id UUID）
             roles: 角色列表
         """
         for role in roles:
@@ -159,8 +159,8 @@ class DefaultRegisterService(IRegisterService):
 
             # 检查是否已分配
             stmt = select(self.component.user_role_orm_model).where(
-                self.component.user_role_orm_model.user_id == user_db_id,
-                self.component.user_role_orm_model.role_id == db_role.id
+                self.component.user_role_orm_model.user_id == user.user_id,
+                self.component.user_role_orm_model.role_code == role.code
             )
             result = await session.execute(stmt)
             if result.scalar_one_or_none():
@@ -169,8 +169,8 @@ class DefaultRegisterService(IRegisterService):
 
             # 创建用户角色关联
             user_role = self.component.user_role_orm_model(
-                user_id=user_db_id,
-                role_id=db_role.id
+                user_id=user.user_id,  # UUID
+                role_code=role.code  # 角色代码
             )
             session.add(user_role)
             logger.info(f"[Success] 为用户分配角色: {role.code}")
@@ -197,8 +197,8 @@ class DefaultRegisterService(IRegisterService):
 
         # 查询用户角色
         stmt = select(self.component.role_orm_model).join(
-            self.component.user_role_orm_model, self.component.user_role_orm_model.role_id == self.component.role_orm_model.id
-        ).where(self.component.user_role_orm_model.user_id == db_user.id)
+            self.component.user_role_orm_model, self.component.user_role_orm_model.role_code == self.component.role_orm_model.code
+        ).where(self.component.user_role_orm_model.user_id == db_user.user_id)
         result = await session.execute(stmt)
         roles = [Role.model_validate(role) for role in result.scalars().all()]
 

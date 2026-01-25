@@ -41,22 +41,46 @@ class GlobalExceptionHandler(IExceptionHandler):
     @staticmethod
     def _project_root() -> Path:
         """
-        更稳健地解析项目根(以src上方为界)
+        智能解析项目根目录
+        
+        策略：
+        1. 尝试从当前工作目录向上查找（优先）
+        2. 回退到框架安装路径
+        
+        这确保在用户项目中运行时，使用用户项目的根目录，
+        而不是框架的安装路径
         """
-        p = Path(__file__).resolve()
-        if "src" in p.parts:
-            return Path(*p.parts[: p.parts.index("src")])
-        return p.parents[3] if len(p.parents) >= 4 else p.parent
+        # 策略 1: 从当前工作目录查找项目根（包含 pyproject.toml 或 setup.py）
+        cwd = Path.cwd()
+        current = cwd
+        for _ in range(10):  # 最多向上查找 10 层
+            # 检查项目标识文件
+            if (current / "pyproject.toml").exists() or (current / "setup.py").exists():
+                return current
+            # 检查是否到达文件系统根
+            if current.parent == current:
+                break
+            current = current.parent
+
+        # 策略 2: 回退到当前工作目录
+        return cwd
 
     @staticmethod
     def _relpath(file_path: str) -> str:
-        """相对路径(相对于项目根)"""
+        """
+        转换为相对路径
+        
+        策略：
+        1. 尝试相对于项目根
+        2. 失败时返回绝对路径（不打印错误日志）
+        """
         try:
             root = GlobalExceptionHandler._project_root()
             return str(Path(file_path).resolve().relative_to(root)).replace("\\", "/")
-        except Exception as e:
-            logger.error(f"🚨 {e}")
-            return file_path.replace("\\", "/")
+        except ValueError:
+            # 文件不在项目根的子路径中（如虚拟环境、系统库）
+            # 返回绝对路径，便于调试
+            return str(Path(file_path).resolve()).replace("\\", "/")
 
     def format_exception_info(self, e: Exception, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """格式化异常信息，包含调用栈(仅保留项目相关的关键调用链，便于 IDE 点击)"""
@@ -94,20 +118,32 @@ class GlobalExceptionHandler(IExceptionHandler):
                     "function_name": frame.f_code.co_name,
                 })
 
-        # 生成简化调用链(仅保留 src/ 下的帧，末尾最多3层)
+        # 生成简化调用链（仅保留项目文件，末尾最多3层）
         project_frames = []
+        project_root = GlobalExceptionHandler._project_root()
         try:
             tb_iter = exc_traceback
             while tb_iter:
                 f = tb_iter.tb_frame
-                filename = GlobalExceptionHandler._relpath(f.f_code.co_filename)
-                if "/src/" in ("/" + filename):
-                    project_frames.append(f"{filename}:{tb_iter.tb_lineno} in {f.f_code.co_name}()")
+                file_path = Path(f.f_code.co_filename).resolve()
+
+                # 判断是否为项目文件（在项目根目录下，且不在虚拟环境中）
+                try:
+                    rel_path = file_path.relative_to(project_root)
+                    # 排除虚拟环境和第三方库
+                    if not any(part in rel_path.parts for part in ['.venv', 'venv', 'site-packages', 'dist-packages']):
+                        filename = str(rel_path).replace("\\", "/")
+                        project_frames.append(f"{filename}:{tb_iter.tb_lineno} in {f.f_code.co_name}()")
+                except ValueError:
+                    # 不在项目根路径下，跳过
+                    pass
+                
                 tb_iter = tb_iter.tb_next
+
             if project_frames:
                 error_info["traceback_summary"] = " -> ".join(project_frames[-3:])
         except Exception as e3:
-            logger.error(str(e3))
+            logger.error(f"生成调用链摘要失败: {e3}")
             pass
 
         # 添加上下文信息

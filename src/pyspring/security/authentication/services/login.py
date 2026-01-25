@@ -95,16 +95,16 @@ class DefaultLoginService(ILoginService):
             # 撤销用户的 Refresh Token
             await self.token_manager.revoke_user_refresh_tokens(
                 None,  # session 后续直接传递，TokenManager 库自己处理，目前不需要
-                user.id,
+                user.user_id,  # UUID
                 reason=RevokeTokenReason.USER_LOGIN
             )
 
             # 3. 构建 Token Payload (委托给 PayloadBuilder)
             access_payload = await self.payload_builder.build_payload(user, evaluation)
 
-            # Refresh Token Payload 通常比较简单，只包含 sub
+            # Refresh Token Payload（使用 user_id 作为 sub，符合 JWT 标准）
             refresh_payload = {
-                "sub": str(user.id),
+                "sub": user.user_id,  # 使用 user_id (UUID) 作为唯一标识符
             }
             if evaluation and evaluation.claims:
                 refresh_payload.update(evaluation.claims)
@@ -206,11 +206,17 @@ class DefaultLoginService(ILoginService):
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
-            user_id = int(str(payload.get("sub") or 0))
+            # 2. 从 Token 获取 user_id (UUID)
+            user_id = payload.get("sub")  # UUID 字符串
+            if not user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Token payload 缺少 sub 字段",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
 
-            # 2. 查找用户 (委托给UserProvider)
+            # 3. 获取用户信息
             user = await self.user_provider.get_user_by_id(user_id)
-
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -218,7 +224,7 @@ class DefaultLoginService(ILoginService):
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
-            # 3. 构造 UserInfo
+            # 4. 构造 UserInfo
             # 这里暂时直接返回 user 对象
             # 理想情况下：return self.response_builder.build_user_info(user)
             return user

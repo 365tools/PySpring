@@ -1,10 +1,9 @@
 from typing import Any, Dict
 
-from sqlalchemy import select
-
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder
+from sqlalchemy import select
 
 
 class DefaultTokenPayloadBuilder(ITokenPayloadBuilder):
@@ -21,8 +20,8 @@ class DefaultTokenPayloadBuilder(ITokenPayloadBuilder):
         async with await self.db.session() as session:
             stmt = select(self.component.role_orm_model).join(
                 self.component.user_role_orm_model,
-                self.component.user_role_orm_model.role_id == self.component.role_orm_model.id
-            ).where(self.component.user_role_orm_model.user_id == user.id)
+                self.component.user_role_orm_model.role_code == self.component.role_orm_model.code
+            ).where(self.component.user_role_orm_model.user_id == user.user_id)
             result = await session.execute(stmt)
             roles = result.scalars().all()
             role_codes = [role.code for role in roles]
@@ -36,11 +35,12 @@ class DefaultTokenPayloadBuilder(ITokenPayloadBuilder):
                 result_perms = await session.execute(stmt_perms)
                 permissions = list(set(result_perms.scalars().all()))
 
-        # 2. 构造基础 Payload
+        # 2. 构造基础 Payload（符合 JWT RFC 7519 标准）
+        # sub: 用户唯一标识符（使用 user_id UUID，不可变）
+        # 避免使用数据库自增 ID（可枚举、不安全）或 email（可变）
         payload = {
-            "sub": str(user.id),
-            "email": user.email,
-            "user_id": user.user_id,
+            "sub": user.user_id,  # Subject: 用户唯一标识符（UUID，不可变）
+            "email": user.email,  # 可选：便于调试和显示
             "roles": role_codes,
             "permissions": permissions,
         }

@@ -222,7 +222,7 @@ class CustomRegisterService(DefaultRegisterService):
             # 分配角色
             user_role = UserRoleTable(
                 user_id=user_id,
-                role_id=db_role.id,
+                role_code=db_role.code,
                 active=True,
                 deleted=False,
                 creator="system"
@@ -265,8 +265,8 @@ class CustomRegisterService(DefaultRegisterService):
         # 查询用户角色
         result = await session.execute(
             select(RoleTable)
-            .join(UserRoleTable, UserRoleTable.role_id == RoleTable.id)
-            .where(UserRoleTable.user_id == user.id)
+            .join(UserRoleTable, UserRoleTable.role_code == RoleTable.code)
+            .where(UserRoleTable.user_id == user.user_id)
         )
         db_roles = result.scalars().all()
         

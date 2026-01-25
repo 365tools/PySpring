@@ -44,18 +44,18 @@ CREATE TABLE IF NOT EXISTS permissions (
 
 -- 用户角色关联表
 CREATE TABLE IF NOT EXISTS user_roles (
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+    user_id VARCHAR(36) NOT NULL,
+    role_code VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, role_id)
+    PRIMARY KEY (user_id, role_code)
 );
 
 -- 角色权限关联表
 CREATE TABLE IF NOT EXISTS role_permissions (
-    role_id INTEGER NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
-    permission_id INTEGER NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+    role_code VARCHAR(50) NOT NULL,
+    permission_code VARCHAR(100) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (role_id, permission_id)
+    PRIMARY KEY (role_code, permission_code)
 );
 
 -- ============================================================================
@@ -135,24 +135,24 @@ INSERT INTO permissions (name, resource, action, description) VALUES
 ON CONFLICT (name) DO NOTHING;
 
 -- 为 admin 角色分配所有权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
+INSERT INTO role_permissions (role_code, permission_code)
+SELECT r.code, p.code
 FROM roles r, permissions p
 WHERE r.name = 'admin'
 ON CONFLICT DO NOTHING;
 
 -- 为 editor 角色分配文章管理权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
+INSERT INTO role_permissions (role_code, permission_code)
+SELECT r.code, p.code
 FROM roles r, permissions p
 WHERE r.name = 'editor' AND p.resource IN ('articles', 'comments')
 ON CONFLICT DO NOTHING;
 
 -- 为 user 角色分配基本权限
-INSERT INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
+INSERT INTO role_permissions (role_code, permission_code)
+SELECT r.code, p.code
 FROM roles r, permissions p
-WHERE r.name = 'user' AND p.name IN ('users:read', 'articles:read', 'comments:read', 'comments:write')
+WHERE r.name = 'user' AND p.code IN ('users:read', 'articles:read', 'comments:read', 'comments:write')
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================

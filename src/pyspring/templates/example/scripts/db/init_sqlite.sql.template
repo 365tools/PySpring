@@ -44,22 +44,18 @@ CREATE TABLE IF NOT EXISTS permissions (
 
 -- 用户角色关联表
 CREATE TABLE IF NOT EXISTS user_roles (
-    user_id INTEGER NOT NULL,
-    role_id INTEGER NOT NULL,
+    user_id VARCHAR(36) NOT NULL COMMENT '用户UUID',
+    role_code VARCHAR(50) NOT NULL COMMENT '角色代码',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+    PRIMARY KEY (user_id, role_code)
 );
 
 -- 角色权限关联表
 CREATE TABLE IF NOT EXISTS role_permissions (
-    role_id INTEGER NOT NULL,
-    permission_id INTEGER NOT NULL,
+    role_code VARCHAR(50) NOT NULL COMMENT '角色代码',
+    permission_code VARCHAR(100) NOT NULL COMMENT '权限代码',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (role_id, permission_id),
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE,
-    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+    PRIMARY KEY (role_code, permission_code)
 );
 
 -- ============================================================================
@@ -140,22 +136,22 @@ INSERT OR IGNORE INTO permissions (name, resource, action, description) VALUES
     ('comments:delete', 'comments', 'delete', '删除评论');
 
 -- 为 admin 角色分配所有权限
-INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
+INSERT OR IGNORE INTO role_permissions (role_code, permission_code)
+SELECT r.code, p.code
 FROM roles r, permissions p
 WHERE r.name = 'admin';
 
 -- 为 editor 角色分配文章管理权限
-INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
+INSERT OR IGNORE INTO role_permissions (role_code, permission_code)
+SELECT r.code, p.code
 FROM roles r, permissions p
 WHERE r.name = 'editor' AND p.resource IN ('articles', 'comments');
 
 -- 为 user 角色分配基本权限
-INSERT OR IGNORE INTO role_permissions (role_id, permission_id)
-SELECT r.id, p.id
+INSERT OR IGNORE INTO role_permissions (role_code, permission_code)
+SELECT r.code, p.code
 FROM roles r, permissions p
-WHERE r.name = 'user' AND p.name IN ('users:read', 'articles:read', 'comments:read', 'comments:write');
+WHERE r.name = 'user' AND p.code IN ('users:read', 'articles:read', 'comments:read', 'comments:write');
 
 -- ============================================================================
 -- 触发器

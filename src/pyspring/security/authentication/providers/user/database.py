@@ -18,8 +18,9 @@ class DefaultUserProvider(IUserProvider):
         self.component = component
 
     async def get_user_by_id(self, user_id: Any) -> Optional[Any]:
+        """\u6839\u636e user_id (UUID) \u83b7\u53d6\u7528\u6237"""
         async with await self.db.session() as session:
-            stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
+            stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == str(user_id))
             result = await session.execute(stmt)
             return result.scalar_one_or_none()
 

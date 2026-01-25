@@ -8,12 +8,11 @@
 """
 from typing import List, Any, Dict
 
-from sqlalchemy import select
-
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authorization.contracts.role import IRoleProvider
+from sqlalchemy import select
 
 
 class DefaultRoleProvider(IRoleProvider):
@@ -45,11 +44,12 @@ class DefaultRoleProvider(IRoleProvider):
         """
         从数据库查询用户的角色代码列表
         
-        查询逻辑：
-        User -> UserRole -> Role
+        查询逻辑（新）：
+        UserRole -> Role
+        通过 user_id (UUID) 直接关联，使用业务代码关联
         
         Args:
-            user_id: 用户业务ID（user_id字段，非主键id）
+            user_id: 用户UUID（user_id字段）
             
         Returns:
             List[str]: 角色代码列表（如 ['admin', 'user']）
@@ -58,19 +58,17 @@ class DefaultRoleProvider(IRoleProvider):
 
         # 获取表模型
         RoleTable = self.component.role_orm_model
-        UserTable = self.component.user_orm_model
         UserRoleTable = self.component.user_role_orm_model
 
         try:
             async with session:
-                # Join查询: UserRole -> Role -> User
-                # UserRoleTable.user_id -> UserTable.id (主键)
-                # UserRoleTable.role_id -> RoleTable.id (主键)
+                # 简化查询：UserRole -> Role
+                # UserRoleTable.user_id = user_id (UUID)
+                # UserRoleTable.role_code = RoleTable.code
                 stmt = (
                     select(RoleTable.code)
-                    .join(UserRoleTable, RoleTable.id == UserRoleTable.role_id)
-                    .join(UserTable, UserTable.id == UserRoleTable.user_id)
-                    .where(UserTable.user_id == str(user_id))  # user_id是业务ID
+                    .join(UserRoleTable, RoleTable.code == UserRoleTable.role_code)
+                    .where(UserRoleTable.user_id == str(user_id))  # UUID 字符串
                 )
 
                 result = await session.execute(stmt)

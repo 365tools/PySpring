@@ -2,7 +2,6 @@ from typing import Optional, List, Dict
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
-
 from pyspring.log.instance import logger
 from pyspring.security.authentication.infrastructure.context import AuthContext
 from pyspring.security.authorization.contracts.permission import IPermissionService
@@ -39,9 +38,9 @@ class RoleCheckMiddleware:
             has_permission = False
 
             if user_ctx and user_ctx.user:
-                # Async check using service (Prefer ID)
+                # Async check using service (Prefer user_id UUID)
                 for role_code in required_roles:
-                    if await self.permission_service.has_role(user_ctx.user.id, role_code):
+                    if await self.permission_service.has_role(user_ctx.user.user_id, role_code):
                         has_permission = True
                         break
             else:

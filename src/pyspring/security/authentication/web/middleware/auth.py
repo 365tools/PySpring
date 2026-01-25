@@ -7,9 +7,6 @@
 from typing import Callable, Optional
 
 from fastapi import Request, Response, status, HTTPException
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import JSONResponse
-
 from pyspring.ioc.context import ApplicationContext
 from pyspring.log.instance import logger
 from pyspring.security.authentication.infrastructure.chain import AuthenticationChain
@@ -18,6 +15,8 @@ from pyspring.security.authorization.contracts.permission import IPermissionServ
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider
 from pyspring.security.authorization.web.middleware.role import RoleCheckMiddleware
 from pyspring.security.core.config.loader import SecurityConfigManager
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 
 class AuthenticationMiddleware(BaseHTTPMiddleware):
@@ -113,7 +112,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                     from pyspring.security.authorization.contracts.role import IRoleProvider
 
                     role_provider = ApplicationContext.get_instance().get_by_type(IRoleProvider)
-                    user_roles = await role_provider.get_user_roles(user.id)
+                    user_roles = await role_provider.get_user_roles(user.user_id)
 
                     user_permissions = set()
                     for role in user_roles:

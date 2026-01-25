@@ -6,7 +6,7 @@
 2. 建立与用户的外键关系
 3. 表名会自动应用项目前缀
 """
-from sqlalchemy import Column, String, Text, Integer, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, Integer, DateTime
 from datetime import datetime, UTC
 
 from pyspring.repositories.db.models.common.define import Base
@@ -34,6 +34,6 @@ class Article(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(200), nullable=False, comment="标题")
     content = Column(Text, nullable=True, comment="内容")
-    author_id = Column(Integer, ForeignKey('users.id'), nullable=False, comment="作者ID")
+    author_id = Column(String(36), nullable=False, comment="作者UUID")
     status = Column(String(20), default='draft', comment="状态: draft/published/archived")
     published_at = Column(DateTime, nullable=True, comment="发布时间")

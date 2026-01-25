@@ -8,9 +8,6 @@ from datetime import datetime, UTC
 from typing import Optional, List, Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
@@ -19,6 +16,8 @@ from pyspring.security.authentication.contracts.response import UserInfo, User, 
 from pyspring.security.authentication.contracts.token import ITokenService
 from pyspring.security.authentication.contracts.user import IUserManagerService
 from pyspring.security.authentication.infrastructure.context import AuthContext
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class DefaultUserManagerService(IUserManagerService):
@@ -50,19 +49,19 @@ class DefaultUserManagerService(IUserManagerService):
         self.token_manager = token_manager
         self.password_encoder = password_encoder
 
-    async def get_user_by_id(self, user_id: int) -> Optional[UserInfo]:
+    async def get_user_by_id(self, user_id: str) -> Optional[UserInfo]:
         """
-        根据ID获取完整用户信息
+        根据用户UUID获取完整用户信息
 
         Args:
-            user_id: 用户数据库ID
+            user_id: 用户UUID
 
         Returns:
             完整用户信息，不存在则返回None
         """
         try:
             async with await self.db.session() as session:
-                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -209,12 +208,12 @@ class DefaultUserManagerService(IUserManagerService):
             logger.error(f"[Error] 获取用户列表失败: {e}")
             return []
 
-    async def update_user_info(self, user_id: int, user_info: UserInfo) -> UserInfo:
+    async def update_user_info(self, user_id: str, user_info: UserInfo) -> UserInfo:
         """
         完整更新用户信息（包括基本信息和角色）
 
         Args:
-            user_id: 用户数据库ID
+            user_id: 用户UUID
             user_info: 完整的用户信息（包含用户、角色）
 
         Returns:
@@ -226,7 +225,7 @@ class DefaultUserManagerService(IUserManagerService):
         try:
             async with await self.db.session() as session:
                 # 检查用户是否存在
-                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -261,24 +260,24 @@ class DefaultUserManagerService(IUserManagerService):
                 detail=f"更新失败: {str(e)}"
             )
 
-    async def update_user_field(self, user_id: int, field_name: str, field_value: Any) -> UserInfo:
+    async def update_user_field(self, user_id: str, field_name: str, field_value: Any) -> UserInfo:
         """
         更新用户的单个字段
 
         Args:
-            user_id: 用户数据库ID
-            field_name: 字段名（如'first_name', 'email', 'password'等）
-            field_value: 字段值
+            user_id: 用户UUID
+            field_name: 要更新的字段名
+            field_value: 新的字段值
 
         Returns:
             更新后的完整用户信息
 
         Raises:
-            HTTPException: 用户不存在或字段不存在或更新失败
+            HTTPException: 用户不存在或字段不存在
         """
         try:
             async with await self.db.session() as session:
-                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -315,12 +314,12 @@ class DefaultUserManagerService(IUserManagerService):
                 detail=f"更新字段失败: {str(e)}"
             )
 
-    async def update_user_roles(self, user_id: int, roles: List[Role]) -> UserInfo:
+    async def update_user_roles(self, user_id: str, roles: List[Role]) -> UserInfo:
         """
         更新用户的角色（替换所有角色）
 
         Args:
-            user_id: 用户数据库ID
+            user_id: 用户UUID
             roles: 新的角色列表
 
         Returns:
@@ -331,7 +330,7 @@ class DefaultUserManagerService(IUserManagerService):
         """
         try:
             async with await self.db.session() as session:
-                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -341,7 +340,7 @@ class DefaultUserManagerService(IUserManagerService):
                         detail=f"用户ID {user_id} 不存在"
                     )
 
-                await self._update_user_roles(session, user_id, roles)
+                await self._update_user_roles(session, db_user.user_id, roles)  # 使用 UUID
                 await session.commit()
 
                 logger.info(f"[Success] 用户角色更新成功: {db_user.email}")
@@ -357,22 +356,22 @@ class DefaultUserManagerService(IUserManagerService):
                 detail=f"更新角色失败: {str(e)}"
             )
 
-    async def delete_user(self, user_id: int) -> bool:
+    async def delete_user(self, user_id: str) -> bool:
         """
-        删除用户（级联删除角色关联）
+        删除用户（软删除）
 
         Args:
-            user_id: 用户数据库ID
+            user_id: 用户UUID
 
         Returns:
-            是否成功删除
+            是否删除成功
 
         Raises:
-            HTTPException: 用户不存在或删除失败
+            HTTPException: 用户不存在
         """
         try:
             async with await self.db.session() as session:
-                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.id == user_id)
+                stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == user_id)
                 result = await session.execute(stmt)
                 db_user = result.scalar_one_or_none()
 
@@ -430,8 +429,8 @@ class DefaultUserManagerService(IUserManagerService):
         # 查询用户角色
         stmt = select(self.component.role_orm_model).join(
             self.component.user_role_orm_model,
-            self.component.user_role_orm_model.role_id == self.component.role_orm_model.id
-        ).where(self.component.user_role_orm_model.user_id == db_user.id)
+            self.component.user_role_orm_model.role_code == self.component.role_orm_model.code
+        ).where(self.component.user_role_orm_model.user_id == db_user.user_id)
         result = await session.execute(stmt)
         roles = [Role.model_validate(role) for role in result.scalars().all()]
 
@@ -494,18 +493,18 @@ class DefaultUserManagerService(IUserManagerService):
         db_user.modifier = "system"
         db_user.modified_time = datetime.now(UTC)
 
-    async def _update_user_roles(self, session: AsyncSession, user_id: int, roles: List[Role]) -> None:
+    async def _update_user_roles(self, session: AsyncSession, user_id: str, roles: List[Role]) -> None:
         """
         更新用户角色（替换所有角色）
         
         Args:
             session: 数据库会话
-            user_id: 用户数据库ID
+            user_id: 用户UUID
             roles: 新的角色列表
         """
         # 删除现有角色关联
         stmt = delete(self.component.user_role_orm_model).where(
-            self.component.user_role_orm_model.user_id == user_id
+            self.component.user_role_orm_model.user_id == user_id  # UUID 字符串
         )
         await session.execute(stmt)
 
@@ -520,5 +519,8 @@ class DefaultUserManagerService(IUserManagerService):
                 continue
 
             # 创建关联
-            user_role = self.component.user_role_orm_model(user_id=user_id, role_id=db_role.id)
+            user_role = self.component.user_role_orm_model(
+                user_id=user_id,  # UUID 字符串
+                role_code=db_role.code  # 角色代码
+            )
             session.add(user_role)

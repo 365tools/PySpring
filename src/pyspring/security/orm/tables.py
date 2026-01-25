@@ -22,8 +22,7 @@ from pyspring.repositories.db.models.common.define import (
     BaseUserRoleTable,
     BaseRolePermissionTable
 )
-from sqlalchemy import Column, String, INT, Integer, DateTime, Text, Boolean
-from sqlalchemy.sql.schema import ForeignKey
+from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean
 
 
 # ============================================================
@@ -64,11 +63,12 @@ class UserRoleTable(BaseUserRoleTable):
     用户角色关联表模型（数据库）
     
     继承自 BaseUserRoleTable，建立用户和角色的多对多关系
+    使用业务标识符关联，无外键约束
     """
     __tablename__ = "pyspring_user_role"
 
-    user_id = Column(INT, ForeignKey('pyspring_user.id'), nullable=False)
-    role_id = Column(INT, ForeignKey('pyspring_role.id'), nullable=False)
+    user_id = Column(String(36), nullable=False, index=True, comment="用户UUID")
+    role_code = Column(String(50), nullable=False, index=True, comment="角色代码")
 
 
 class RolePermissionTable(BaseRolePermissionTable):
@@ -76,11 +76,12 @@ class RolePermissionTable(BaseRolePermissionTable):
     角色权限关联表模型（数据库）
     
     继承自 BaseRolePermissionTable，建立角色和权限的多对多关系
+    使用业务代码关联，无外键约束
     """
     __tablename__ = "pyspring_role_permission"
 
-    role_code = Column(String, ForeignKey('pyspring_role.code'), nullable=False)
-    permission_code = Column(String, ForeignKey('pyspring_permission.code'), nullable=False)
+    role_code = Column(String(50), nullable=False, index=True, comment="角色代码")
+    permission_code = Column(String(100), nullable=False, index=True, comment="权限代码")
 
 
 # ============================================================
@@ -96,8 +97,9 @@ class TokenBlacklistTable(Base):
     __tablename__ = "token_blacklist"
 
     id = Column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    token = Column(String(500), unique=True, nullable=False, index=True, comment="Token字符串")
-    user_id = Column(Integer, nullable=False, index=True, comment="用户ID")
+    token_id = Column(String(36), nullable=False, unique=True, index=True, comment="Token ID (JTI)")
+    token_type = Column(String(20), nullable=False, comment="Token类型")
+    user_id = Column(String(36), nullable=False, index=True, comment="用户UUID")
     expires_at = Column(DateTime, nullable=False, comment="Token过期时间")
     reason = Column(String(200), nullable=True, comment="撤销原因")
 
@@ -115,7 +117,7 @@ class RefreshTokenTable(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
     token = Column(String(500), unique=True, nullable=False, index=True, comment="Refresh Token字符串")
-    user_id = Column(Integer, nullable=False, index=True, comment="用户ID")
+    user_id = Column(String(36), nullable=False, index=True, comment="用户UUID")
     user_email = Column(String(100), nullable=False, comment="用户邮箱")
     roles = Column(Text, nullable=True, comment="用户角色(JSON数组)")
     issued_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC), comment="签发时间")
