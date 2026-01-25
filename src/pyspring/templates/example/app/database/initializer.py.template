@@ -88,16 +88,15 @@ class DatabaseInitializer(IStartupInitializer):
             
             logger.info("📝 填充初始用户数据...")
             
-            # 创建管理员用户（使用 argon2 哈希算法，与 SecurityConfig 一致）
+            # 创建管理员用户（使用 BCrypt 哈希算法，与框架默认一致）
             import uuid
-            from passlib.context import CryptContext
-            pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+            import bcrypt
             
             admin = User(
                 user_id=str(uuid.uuid4()),  # 系统内部UUID
                 username="admin",  # 用户名（用于登录）
                 email="admin@example.com",
-                password=pwd_context.hash("admin123"),
+                password=bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
                 first_name="Admin",
                 last_name="User",
                 phone="13800138000"

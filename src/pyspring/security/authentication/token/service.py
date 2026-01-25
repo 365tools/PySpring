@@ -7,8 +7,6 @@
 from datetime import datetime, UTC
 from typing import Optional, Dict, Any
 
-from sqlalchemy import select, and_
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.context import ApplicationContext
@@ -19,6 +17,7 @@ from pyspring.security.authentication.contracts.constant import RevokeTokenReaso
 from pyspring.security.authentication.contracts.token import ITokenService, ITokenGenerator
 from pyspring.security.authentication.factories.token_generator.factory import TokenGeneratorFactory
 from pyspring.security.orm.tables import TokenBlacklistTable, RefreshTokenTable
+from sqlalchemy import select, and_
 
 
 @Component()
@@ -58,14 +57,14 @@ class TokenService(ITokenService):
     def cache(self) -> CacheManagerService:
         """懒加载缓存服务"""
         if self._cache is None:
-            self._cache = ApplicationContext.get_instance().get(CacheManagerService)
+            self._cache = ApplicationContext.get_instance().get_by_type(CacheManagerService)
         return self._cache
 
     @property
     def db(self) -> DBManagerService:
         """懒加载数据库服务"""
         if self._db is None:
-            self._db = ApplicationContext.get_instance().get(DBManagerService)
+            self._db = ApplicationContext.get_instance().get_by_type(DBManagerService)
         return self._db
 
     def create_access_token(self, data: Dict[str, Any], expires_delta: Optional[Any] = None) -> str:

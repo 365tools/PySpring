@@ -71,7 +71,7 @@ class AuthProviderFactory:
         if provider_type == "JWTAuthProvider":
             if token_manager is None:
                 # 懒加载 TokenManagerService，避免在 Bean 注册阶段触发依赖
-                token_manager = ApplicationContext.get_instance().get(ITokenService)
+                token_manager = ApplicationContext.get_instance().get_by_type(ITokenService)
             return provider_class(str(provider_name), provider_config, token_manager)
 
         # 其他提供者类型的创建逻辑
@@ -102,7 +102,7 @@ class AuthProviderFactory:
         # 如果没有传入config_manager，则从容器获取
         if config_manager is None:
             try:
-                config_manager = ApplicationContext.get_instance().get(SecurityConfigManager)
+                config_manager = ApplicationContext.get_instance().get_by_type(SecurityConfigManager)
             except Exception as e:
                 logger.error(f"[Factory] 无法获取SecurityConfigManager: {e}")
                 return []
@@ -213,7 +213,7 @@ class AuthProviderFactoryHelper:
 
         # 2. 注册到认证链（通过 IoC 容器获取）
         container = ApplicationContext.get_instance()
-        chain = container.get(AuthenticationChain)
+        chain = container.get_by_type(AuthenticationChain)
         chain.register_providers(providers)
 
         logger.info(f"[Success] 认证系统初始化完成，共 {len(providers)} 个提供者")

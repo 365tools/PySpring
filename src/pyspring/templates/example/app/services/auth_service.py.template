@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import jwt
-from passlib.context import CryptContext
+import bcrypt
 
 from pyspring.ioc import Component
 from pyspring.log.instance import logger
@@ -18,9 +18,6 @@ from pyspring.log.instance import logger
 from app.repositories.user_repository import UserRepository
 from app.models.user import User
 
-
-# 密码加密上下文（使用 argon2 算法，更安全且无长度限制）
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 # JWT 配置（生产环境应从配置文件读取）
 SECRET_KEY = "your-secret-key-change-in-production"
@@ -42,11 +39,11 @@ class AuthService:
     
     def hash_password(self, password: str) -> str:
         """哈希密码"""
-        return pwd_context.hash(password)
+        return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         """验证密码"""
-        return pwd_context.verify(plain_password, hashed_password)
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
     
     # ========================================================================
     # JWT 令牌

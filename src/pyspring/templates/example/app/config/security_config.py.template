@@ -110,21 +110,18 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
 
 # 示例2：自定义密码加密器（推荐方式）
 """
-from passlib.context import CryptContext
+import bcrypt
 from pyspring.ioc.annotations import ConditionalOnMissingBean
 
 @ConditionalOnMissingBean(IPasswordEncoder)
 class CustomPasswordEncoder(IPasswordEncoder):
-    '''自定义密码加密器（使用 Argon2） - 推荐方式'''
-    
-    def __init__(self):
-        self.pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+    '''自定义密码加密器（使用 BCrypt） - 推荐方式'''
     
     def encode(self, raw_password: str) -> str:
-        return self.pwd_context.hash(raw_password)
+        return bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     
     def verify(self, raw_password: str, hashed_password: str) -> bool:
-        return self.pwd_context.verify(raw_password, hashed_password)
+        return bcrypt.checkpw(raw_password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # 无需 @Configuration + @Bean()！
 # 框架会自动扫描并注册此实现
