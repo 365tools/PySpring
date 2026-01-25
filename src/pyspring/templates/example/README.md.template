@@ -121,9 +121,20 @@ python -m app.main
 curl http://localhost:8000/health
 ```
 
-### 用户认证（框架服务 + 自定义扩展）
+### 用户认证（框架配置化认证）
 
-示例项目使用框架的完整认证服务（`ILoginService`、`IRegisterService`），并通过自定义实现扩展功能。
+示例项目使用框架的完整认证服务（`ILoginService`、`IRegisterService`）。
+
+从 v1.1.0 开始，框架支持配置化登录字段，无需编写自定义代码！
+
+**配置示例**（`config/security.yaml`）：
+```yaml
+authentication:
+  identifier_fields:
+    - "username"   # 用户名
+    - "email"      # 邮箱
+    - "phone"      # 手机号（可选）
+```
 
 **用户注册**
 ```bash
@@ -135,9 +146,6 @@ curl -X POST http://localhost:8000/api/auth/register \
     "password": "password123",
     "phone": "13800138000"
   }'
-
-# 框架自动使用你的 CustomRegisterService（如果配置了）
-# 支持自定义字段（username、phone）、自定义验证、注册后置处理
 ```
 
 **用户登录**
@@ -145,15 +153,15 @@ curl -X POST http://localhost:8000/api/auth/register \
 curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
-    "user_id": "admin",
+    "identifier": "admin",
     "password": "admin123"
   }'
 
-# 或使用邮箱登录：
-# {
-#   "email": "admin@example.com",
-#   "password": "admin123"
-# }
+# identifier 可以是（框架自动匹配配置的字段）：
+# - 用户名：  "admin"
+# - 邮箱：    "admin@example.com"
+# - 手机号：  "13800138000"
+# - 用户ID：  "550e8400-e29b-41d4-a716-446655440000"
 
 # 响应包含完整的令牌信息：
 # {

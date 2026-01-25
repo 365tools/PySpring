@@ -3,27 +3,25 @@
 
 包含登录请求等Pydantic模型定义
 """
-from typing import Optional
 
-from pydantic import BaseModel, Field, EmailStr, model_validator
+from pydantic import BaseModel, Field
 
 
 class LoginRequest(BaseModel):
     """
     登录请求模型
     
-    user_id 和 email 二选一作为登录凭证
+    使用统一的 identifier 字段作为登录凭证，可以是：
+    - 用户名（username）
+    - 邮箱（email）
+    - 用户ID（user_id）
+    - 手机号（phone）
+    - 其他配置的字段
+    
+    框架会根据 config/security.yaml 中的 identifier_fields 配置自动匹配
     """
-    user_id: Optional[str] = Field(default=None, description="用户唯一标识")
-    email: Optional[EmailStr] = Field(default=None, description="用户邮箱")
+    identifier: str = Field(..., description="登录标识符（用户名/邮箱/手机号等）")
     password: str = Field(..., min_length=6, description="用户密码")
-
-    @model_validator(mode='after')
-    def check_user_id_or_email(self):
-        """验证 user_id 和 email 至少提供一个"""
-        if not self.user_id and not self.email:
-            raise ValueError("必须提供 user_id 或 email 其中之一")
-        return self
 
 
 __all__ = ['LoginRequest']

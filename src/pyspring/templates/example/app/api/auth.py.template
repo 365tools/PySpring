@@ -1,25 +1,37 @@
 """认证相关API端点
 
 展示如何使用框架的认证服务（ILoginService、IRegisterService）
-并通过自定义实现扩展功能：
 
-可自定义的部分：
-1. CustomPasswordLoginProvider（app/services/custom_login_provider.py）
-   - 继承 DefaultPasswordLoginProvider
-   - 扩展支持多种登录标识符（用户名/邮箱/手机号）
-   - 保持框架的安全特性（防时序攻击、密码验证）
-   
-2. CustomRegisterService（app/services/custom_register_service.py）
-   - 自定义注册逻辑、字段验证、后置处理
-   
-3. User 模型（app/models/user.py）
-   - 扩展用户表字段（username、phone 等）
-   
-4. 其他可选扩展：
-   - ILoginProvider：支持其他认证方式（OAuth2、LDAP、短信验证码）
-   - IResponseBuilder：自定义响应格式
+框架特性（v1.1.0+）：
+1. 配置化登录字段
+   - 在 config/security.yaml 中配置 identifier_fields
+   - 支持任意自定义字段（username、email、phone、employee_id 等）
+   - 无需编写自定义代码
 
-框架自动集成你的自定义实现，无需额外配置！
+2. 自动安全特性
+   - 防时序攻击
+   - 统一错误消息
+   - 密码加密验证（Argon2/BCrypt）
+
+推荐做法：
+- ✅ 使用配置文件定义登录字段
+- ✅ 使用框架的 ILoginService
+- ❌ 不需要自定义 LoginProvider（除非有特殊需求）
+
+配置示例：
+```yaml
+# config/security.yaml
+authentication:
+  identifier_fields:
+    - "username"   # 用户名
+    - "email"      # 邮箱
+    - "phone"      # 手机号（可选）
+```
+
+仅在以下情况需要自定义：
+- 需要特殊的登录逻辑（短信验证码、OAuth2）
+- 需要在登录前后添加额外的业务逻辑
+- 需要自定义密码验证规则
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
@@ -59,34 +71,38 @@ async def login(
     """
     用户登录（使用框架认证服务）
     
-    框架特性：
+    框架特性（v1.1.0+）：
+    - ✅ 配置化登录字段（config/security.yaml）
     - ✅ 自动返回 access_token 和 refresh_token
-    - ✅ 支持多种登录策略（密码、OAuth2、LDAP 等）
-    - ✅ 支持角色和权限验证
-    - ✅ Token 过期时间配置（access_token_expire、refresh_token_expire）
+    - ✅ 防时序攻击、统一错误消息
+    - ✅ 支持多种登录策略
     
-    可自定义：
-    - ILoginProvider：自定义登录方式
-    - IResponseBuilder：自定义响应格式
+    配置示例：
+    ```yaml
+    # config/security.yaml
+    authentication:
+      identifier_fields:
+        - "username"   # 用户名
+        - "email"      # 邮箱
+        - "phone"      # 手机号（可选）
+    ```
     
-    请求示例（支持多种登录方式）：
+    请求示例：
+    ```json
     {
-        "user_id": "admin",  # 可以是用户名、邮箱、手机号
+        "identifier": "admin",  # 可以是用户名、邮箱、手机号等
         "password": "admin123"
     }
+    ```
     
-    或直接使用邮箱：
-    {
-        "email": "admin@example.com",
-        "password": "admin123"
-    }
-    
-    扩展说明：
-    - CustomPasswordLoginProvider 扩展了查询逻辑
-    - user_id 支持：用户名、邮箱、手机号（自动匹配）
-    - 保持框架的安全特性（防时序攻击、密码验证）
+    identifier 支持的格式（根据配置）：
+    - "admin"                 # 用户名
+    - "admin@example.com"     # 邮箱
+    - "13800138000"           # 手机号
+    - "550e8400-e29b-41d4-..." # 用户ID
     
     响应示例：
+    ```json
     {
         "success": true,
         "data": {
@@ -98,6 +114,7 @@ async def login(
             "message": "登录成功"
         }
     }
+    ```
     """
     try:
         login_response = await login_service.login(request)

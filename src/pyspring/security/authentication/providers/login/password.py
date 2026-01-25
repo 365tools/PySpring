@@ -28,13 +28,8 @@ class DefaultPasswordLoginProvider(ILoginProvider):
         if not isinstance(request, LoginRequest):
             raise TypeError(f"DefaultPasswordLoginProvider only supports LoginRequest, got {type(request)}")
 
-        # 1. 查找用户
-        identity = request.user_id if request.user_id else request.email
-        if not identity:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须提供 user_id 或 email"
-            )
+        # 1. 查找用户（使用 identifier 字段）
+        identity = request.identifier
 
         user = await self.user_provider.get_user_by_identity(identity)
 

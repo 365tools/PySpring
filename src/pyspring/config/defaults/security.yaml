@@ -8,6 +8,18 @@ authentication:
   # 是否启用认证
   enabled: true
   
+  # 登录标识符字段配置
+  # 定义可用于登录的用户模型字段（按优先级排序）
+  identifier_fields:
+    - "username"   # 用户名（最常用）
+    - "email"      # 邮箱（框架标准字段）
+    - "user_id"    # 用户UUID（框架标准字段，向后兼容）
+  # 说明：
+  # 1. 框架会按列表顺序尝试匹配字段
+  # 2. 如果用户模型没有某个字段，会自动跳过
+  # 3. 保留 user_id 和 email 确保向后兼容（BaseUserTable 的标准字段）
+  # 4. 可以添加自定义字段（如 phone, employee_id 等）
+  
   # JWT 配置
   jwt:
     # 密钥（生产环境务必通过环境变量设置）

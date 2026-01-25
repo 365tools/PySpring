@@ -1,5 +1,6 @@
-from typing import Type
+from typing import Type, List, Optional
 
+from pyspring.config_manager import ConfigManager
 from pyspring.ioc.annotations import Component, ConditionalOnMissingBean
 # ORM Models
 from pyspring.repositories.db.models.common.define import (
@@ -51,7 +52,9 @@ class SecurityEntityConfiguration:
             user_info_schema: Type[UserInfo] = UserInfo,
             user_schema: Type[User] = User,
             role_schema: Type[Role] = Role,
-            permission_schema: Type[Permission] = Permission
+            permission_schema: Type[Permission] = Permission,
+            # ==================== 登录标识符字段配置 ====================
+            identifier_fields: Optional[List[str]] = None
     ):
         self.user_orm_model = user_orm_model
         self.role_orm_model = role_orm_model
@@ -69,3 +72,17 @@ class SecurityEntityConfiguration:
         self.user_schema = user_schema
         self.role_schema = role_schema
         self.permission_schema = permission_schema
+
+        # 登录标识符字段配置（从配置文件加载或使用默认值）
+        if identifier_fields is None:
+            # 从配置文件加载
+            try:
+                config = ConfigManager.load_config('security')
+                identifier_fields = config.get('authentication', {}).get(
+                    'identifier_fields',
+                    ['username', 'email', 'user_id']  # 默认值（包含框架标准字段）
+                )
+            except Exception:
+                # 如果加载失败，使用默认值
+                identifier_fields = ['username', 'email', 'user_id']
+        self.identifier_fields = identifier_fields

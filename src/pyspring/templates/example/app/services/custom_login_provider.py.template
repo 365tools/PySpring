@@ -1,25 +1,29 @@
 """
-自定义登录提供者
+自定义登录提供者示例
 
-展示：
-1. 如何继承框架的 DefaultPasswordLoginProvider
-2. 扩展支持多种登录标识符（用户名/邮箱/手机号）
-3. 保持框架的其他功能不变（防时序攻击、密码验证等）
+⚠️ 注意：从 v1.1.0 开始，框架已支持配置化登录字段，大多数情况下无需自定义！
 
-关键设计（v1.1.0b26+ 最佳实践）：
-- ✅ 推荐：继承 DefaultPasswordLoginProvider + @Component 装饰器
-- ✅ 机制：父类有 @ConditionalOnMissingBean，子类自动替换父类
-- ✅ 优点：只需重写需要修改的方法，复用框架其他逻辑
+推荐做法：
+1. 在 config/security.yaml 中配置 identifier_fields
+2. 框架会自动支持配置的字段进行登录
 
-工作原理（替换机制）：
-1. 框架默认实现：DefaultPasswordLoginProvider + @ConditionalOnMissingBean(IPasswordLoginProvider)
-2. 用户继承实现：CustomPasswordLoginProvider extends DefaultPasswordLoginProvider
-3. 框架先扫描 → 注册 DefaultPasswordLoginProvider（条件组件）
-4. 用户后扫描 → 发现 CustomPasswordLoginProvider（带 @Component 装饰器）
-5. IoC容器：检测到已注册的是条件组件 → 用户实现优先
-6. 结果：容器中使用 CustomPasswordLoginProvider，实现真正的替换
+仅在以下情况需要自定义：
+- 需要特殊的登录逻辑（如短信验证码、OAuth2）
+- 需要在登录前后添加额外的业务逻辑
+- 需要自定义密码验证规则
 
-这就是 Spring Boot "约定优于配置" 的核心理念！
+配置示例（推荐）：
+```yaml
+# config/security.yaml
+authentication:
+  identifier_fields:
+    - "username"   # 用户名
+    - "email"      # 邮箱
+    - "phone"      # 手机号（如果用户模型有此字段）
+    - "employee_id" # 员工工号（自定义字段）
+```
+
+如果确实需要自定义，参考以下示例：
 """
 from typing import Any
 
@@ -31,153 +35,70 @@ from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from pyspring.security.authentication.contracts.user import IUserProvider
 from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
-from sqlalchemy import select, or_
 
 from app.models.user import User
 
 
 # ============================================================================
-# 自定义密码登录提供者（继承框架默认实现，扩展多种登录标识符）
+# 示例：自定义登录提供者（仅作参考，大多数情况下不需要）
 # ============================================================================
 
-@Component()
+# 取消注释以启用自定义登录提供者
+# @Component()
 class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     """
-    自定义密码登录提供者 - 扩展支持多种登录标识符
+    自定义密码登录提供者 - 示例
     
-    继承 DefaultPasswordLoginProvider，仅重写查询用户的逻辑：
-    - ✅ 支持用户名登录（username）
-    - ✅ 支持邮箱登录（email）
-    - ✅ 支持手机号登录（phone）
-    - ✅ 自动识别登录标识符类型
-    - ✅ 保持框架的防时序攻击、密码验证等安全特性
+    ⚠️ 从 v1.1.0 开始，推荐使用配置文件而不是自定义代码！
     
-    框架特性（继承自父类）：
-    - ✅ 防时序攻击（用户不存在时执行 dummy hash）
-    - ✅ 统一错误消息（不泄露用户是否存在）
-    - ✅ 密码加密验证（BCrypt）
-    - ✅ 支持 LoginRequest（user_id/email + password）
+    使用配置文件（config/security.yaml）：
+    ```yaml
+    authentication:
+      identifier_fields:
+        - "username"
+        - "email"
+        - "phone"
+    ```
     
-    扩展点（本类实现）：
-    - 🔧 支持多种登录标识符（user_id 可以是用户名、邮箱、手机号）
-    - 🔧 使用 User 模型（包含自定义字段）
+    仅在需要特殊逻辑时才继承此类：
+    - ✅ 添加登录前后的业务逻辑
+    - ✅ 自定义密码验证规则
+    - ✅ 集成第三方认证服务
     
-    使用 @Component() 装饰器：
-    - 让扫描器能够识别这个类
-    - 父类有 @ConditionalOnMissingBean，子类会自动替换父类实现
+    父类已提供的特性：
+    - ✅ 防时序攻击
+    - ✅ 统一错误消息
+    - ✅ 密码加密验证
+    - ✅ 配置化字段匹配
     """
 
     def __init__(self, user_provider: IUserProvider, db: DBManagerService, password_encoder: IPasswordEncoder):
-        """
-        构造函数（框架自动注入依赖）
-        
-        继承父类的构造函数，保持依赖注入不变
-        """
         super().__init__(user_provider, db, password_encoder)
-        logger.info("📦 创建自定义 CustomPasswordLoginProvider 实例（替换框架默认实现）")
+        logger.info("📦 使用自定义 CustomPasswordLoginProvider")
 
     async def authenticate(self, request: Any) -> Any:
         """
-        执行认证逻辑（重写以支持多种登录标识符）
-        
-        改进：
-        1. 框架的 LoginRequest.user_id 可以是用户名、邮箱、手机号
-        2. 使用 OR 查询匹配多个字段
-        3. 其他逻辑保持与父类一致（防时序攻击、密码验证）
-        
-        Args:
-            request: LoginRequest 对象
-            
-        Returns:
-            User: 认证成功的用户对象
-            
-        Raises:
-            HTTPException: 认证失败时抛出
+        示例：在认证前后添加自定义逻辑
         """
         from pyspring.security.authentication.contracts.request import LoginRequest
         
-        # 0. 类型检查（保持与父类一致）
         if not isinstance(request, LoginRequest):
             raise TypeError(f"CustomPasswordLoginProvider only supports LoginRequest, got {type(request)}")
 
-        # 1. 获取登录标识符（user_id 或 email）
-        identity = request.user_id if request.user_id else request.email
-        if not identity:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="必须提供 user_id 或 email"
-            )
-
-        logger.info(f"🔐 尝试登录: {identity}")
-
-        # 2. 查找用户（支持多种登录标识符）
-        user = await self._find_user_by_flexible_identifier(identity)
-
-        # 3. 验证密码（复用父类逻辑：防时序攻击）
-        verified = False
-
-        if user:
-            # 用户存在：验证真实密码
-            verified = self.password_encoder.verify(request.password, user.password)
-        else:
-            # 用户不存在：执行 dummy hash 以保持恒定时间（防时序攻击）
-            dummy_hash = "$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyYNd.OwVgKi"
-            try:
-                self.password_encoder.verify(request.password, dummy_hash)
-            except Exception:
-                pass  # 忽略 dummy 验证的异常
-            # verified 保持 False
-
-        # 4. 统一的认证失败响应（不泄露用户是否存在）
-        if not verified or not user:
-            logger.warning(f"❌ 登录失败: {identity}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="用户名或密码错误",  # 统一的错误消息
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        # 5. 检查用户状态
-        if not user.active:
-            logger.warning(f"❌ 用户已禁用: {identity}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="账户已被禁用",
-            )
-
-        logger.info(f"✅ 登录成功: {user.username} ({identity})")
+        # ===== 自定义逻辑：登录前 =====
+        # 例如：记录登录尝试
+        logger.info(f"🔐 登录尝试: {request.identifier}")
+        
+        # ===== 调用父类标准认证逻辑 =====
+        # 父类会自动从配置读取 identifier_fields 并匹配字段
+        user = await super().authenticate(request)
+        
+        # ===== 自定义逻辑：登录后 =====
+        # 例如：更新最后登录时间
+        # await self.update_last_login(user.id)
+        
+        logger.info(f"✅ 登录成功: {user.username}")
         return user
-
-    async def _find_user_by_flexible_identifier(self, identifier: str) -> Any:
-        """
-        根据灵活的登录标识符查找用户（核心扩展逻辑）
-        
-        支持多种字段匹配：
-        - user_id（框架标准字段）
-        - username（自定义字段）
-        - email（框架标准字段）
-        - phone（自定义字段）
-        
-        使用 OR 条件一次性查询，提高效率
-        
-        Args:
-            identifier: 登录标识符（可以是用户名、邮箱、手机号）
-            
-        Returns:
-            User 或 None
-        """
-        async with await self.db.session() as session:
-            result = await session.execute(
-                select(User).where(
-                    or_(
-                        User.user_id == identifier,    # 框架标准字段
-                        User.username == identifier,   # 自定义字段
-                        User.email == identifier,      # 框架标准字段
-                        User.phone == identifier,      # 自定义字段
-                    )
-                )
-            )
-            return result.scalar_one_or_none()
 
 
 __all__ = ["CustomPasswordLoginProvider"]
