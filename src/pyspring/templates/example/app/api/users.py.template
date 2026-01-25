@@ -3,7 +3,7 @@ from typing import List, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from pyspring.ioc import Inject
 from pyspring.web.core.response import Response
@@ -18,9 +18,10 @@ router = APIRouter()
 class UserResponse(BaseModel):
     """用户响应模型"""
     id: int
+    user_id: str
     username: str
     email: str
-    is_active: bool
+    active: bool
     
     class Config:
         from_attributes = True
@@ -29,7 +30,7 @@ class UserResponse(BaseModel):
 class UserUpdateRequest(BaseModel):
     """用户更新请求"""
     email: EmailStr | None = None
-    is_active: bool | None = None
+    active: bool | None = None
 
 
 @router.get("/me")
@@ -113,8 +114,8 @@ async def update_user(
     update_data = {}
     if request.email is not None:
         update_data['email'] = request.email
-    if request.is_active is not None:
-        update_data['is_active'] = request.is_active
+    if request.active is not None:
+        update_data['active'] = request.active
     
     if not update_data:
         return Response.success(UserResponse.from_orm(current_user))

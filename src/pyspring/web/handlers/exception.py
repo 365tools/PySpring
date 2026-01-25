@@ -214,11 +214,27 @@ class GlobalExceptionHandler(IExceptionHandler):
         try:
             if isinstance(exc, ValidationError):
                 for error in exc.errors():
+                    # 过滤敏感信息：不返回完整的 input 数据
+                    error_input = error.get("input")
+                    safe_input = None
+
+                    # 如果是字典类型，只返回字段名，不返回值
+                    if isinstance(error_input, dict):
+                        safe_input = f"<object with {len(error_input)} fields>"
+                    # 如果是对象，只返回类型
+                    elif hasattr(error_input, "__class__"):
+                        safe_input = f"<{error_input.__class__.__name__} object>"
+                    # 简单类型可以返回（字符串、数字等）
+                    elif isinstance(error_input, (str, int, float, bool, type(None))):
+                        safe_input = error_input
+                    else:
+                        safe_input = "<complex object>"
+                    
                     validation_errors.append({
                         "field": ".".join(str(loc) for loc in error.get("loc", [])),
                         "message": error.get("msg"),
                         "type": error.get("type"),
-                        "input": error.get("input"),
+                        "input": safe_input,
                     })
         except Exception as ee:
             logger.error(f"🚨 格式化验证错误失败: {ee}")
