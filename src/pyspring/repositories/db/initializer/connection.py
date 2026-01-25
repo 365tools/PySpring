@@ -40,9 +40,9 @@ class DBConnectionInitializer(IStartupInitializer):
             bool: 是否成功获取实例
         """
         try:
-            # 触发调用链：Initializer → Manager → Factory
+            # 触发调用链：Initializer → Manager → Factory（全异步）
             # Factory 会进行 ping 检测和自动降级
-            provider = self.db_manager.provider
+            provider = await self.db_manager.provider()
 
             logger.info("✅ 数据库服务已就绪")
             return True

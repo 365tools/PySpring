@@ -8,8 +8,6 @@ from sqlalchemy import inspect, text
 
 注意: 数据库引擎和会话管理统一由 DBManagerService 负责
 """
-from sqlalchemy import inspect, text
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
@@ -17,6 +15,7 @@ from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.repositories.db.models.common.define import Base
 from pyspring.security.core.config.loader import SecurityConfigManager
+from sqlalchemy import inspect, text
 
 
 # 静态导入默认表
@@ -49,7 +48,8 @@ class AuthConfigService(IManaged):
         try:
             # 确保数据库服务已经初始化
             db_service = await self.db_manager.service()
-            if db_service is None or self.db_manager.provider is None:
+            provider_instance = await self.db_manager.provider()
+            if db_service is None or provider_instance is None:
                 logger.error("[Error] 数据库服务未正确初始化")
                 raise RuntimeError("数据库服务未正确初始化")
 

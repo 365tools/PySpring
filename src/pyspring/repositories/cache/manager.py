@@ -31,8 +31,7 @@ class CacheManagerService(IManaged):
         super().__init__()
         self.factory: CacheServiceFactory = cache_service_factory
 
-    @property
-    def provider(self) -> ICacheService:
+    async def provider(self) -> ICacheService:
         """
         获取缓存服务（Factory 内部已实现单例）
         
@@ -41,30 +40,35 @@ class CacheManagerService(IManaged):
         Returns:
             ICacheService: Redis 或 Memory 实现
         """
-        return self.factory.get_service()
+        return await self.factory.get_service()
 
     # Proxy methods to provider
     async def get(self, *args, **kwargs):
         """获取缓存"""
-        return await self.provider.get(*args, **kwargs)
+        provider = await self.provider()
+        return await provider.get(*args, **kwargs)
 
     async def set(self, *args, **kwargs):
         """设置缓存"""
-        return await self.provider.set(*args, **kwargs)
+        provider = await self.provider()
+        return await provider.set(*args, **kwargs)
 
     async def exists(self, *args, **kwargs):
         """检查键是否存在"""
-        return await self.provider.exists(*args, **kwargs)
+        provider = await self.provider()
+        return await provider.exists(*args, **kwargs)
 
     async def delete(self, *args, **kwargs):
         """删除缓存"""
-        return await self.provider.delete(*args, **kwargs)
+        provider = await self.provider()
+        return await provider.delete(*args, **kwargs)
 
     async def scan(self, *args, **kwargs):
         """扫描缓存键（如果支持）"""
-        if hasattr(self.provider, 'scan'):
-            return await self.provider.scan(*args, **kwargs)
-        raise NotImplementedError(f"{self.provider.__class__.__name__} does not support scan operation")
+        provider = await self.provider()
+        if hasattr(provider, 'scan'):
+            return await provider.scan(*args, **kwargs)
+        raise NotImplementedError(f"{provider.__class__.__name__} does not support scan operation")
 
     @staticmethod
     def key(*args, **kwargs) -> str:
@@ -77,18 +81,17 @@ class CacheManagerService(IManaged):
 
     async def close(self) -> None:
         """关闭缓存连接"""
-        if self.provider:
-            if hasattr(self.provider, 'close'):
+        provider_instance = await self.provider()
+        if provider_instance:
+            if hasattr(provider_instance, 'close'):
                 try:
-                    await self.provider.close()
-                    logger.debug(f"CacheManager: {self.provider.__class__.__name__} closed")
+                    await provider_instance.close()
+                    logger.debug(f"CacheManager: {provider_instance.__class__.__name__} closed")
                 except Exception as e:
-                    logger.error(f"Failed to close {self.provider.__class__.__name__}: {e}")
-            elif hasattr(self.provider, 'clear'):
+                    logger.error(f"Failed to close {provider_instance.__class__.__name__}: {e}")
+            elif hasattr(provider_instance, 'clear'):
                 try:
-                    await self.provider.clear()
-                    logger.debug(f"CacheManager: {self.provider.__class__.__name__} cleared")
+                    await provider_instance.clear()
+                    logger.debug(f"CacheManager: {provider_instance.__class__.__name__} cleared")
                 except Exception as e:
-                    logger.error(f"Failed to clear {self.provider.__class__.__name__}: {e}")
-
-        self._provider = None
+                    logger.error(f"Failed to clear {provider_instance.__class__.__name__}: {e}")

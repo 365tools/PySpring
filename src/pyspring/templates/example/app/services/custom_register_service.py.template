@@ -38,6 +38,9 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+# 导入自定义用户模型（需要在 app.config.security_config 中定义）
+from app.config.security_config import CustomUser
+
 
 # ⚠️ 注意：@ConditionalOnMissingBean(IRegisterService) 会导致被跳过！见下方说明
 class CustomRegisterService(IRegisterService):

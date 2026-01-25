@@ -32,7 +32,7 @@ async def test_db_ioc_injection():
     print("✅ DBManager 成功注入")
 
     # 3. 测试延迟初始化（首次访问 provider）
-    provider = db_manager.provider
+    provider = await db_manager.provider()
     assert provider is not None, "❌ Provider 未初始化"
     print(f"✅ Provider 延迟初始化成功: {provider.__class__.__name__}")
 

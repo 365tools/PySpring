@@ -41,9 +41,9 @@ class CacheConnectionInitializer(IStartupInitializer):
             bool: 是否成功获取实例
         """
         try:
-            # 触发调用链：Initializer → Manager → Factory
+            # 触发调用链：Initializer → Manager → Factory（全异步）
             # Factory 会进行 ping 检测和自动降级
-            provider = self.cache_manager.provider
+            provider = await self.cache_manager.provider()
 
             # 如果 provider 支持 connect 方法，建立连接
             if hasattr(provider, 'connect'):

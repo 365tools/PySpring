@@ -39,14 +39,14 @@ async def test_repositories_full_integration():
     print("✅ DBManager 成功注入")
 
     # 3. 测试 Cache 功能
-    cache_provider = cache_manager.provider
+    cache_provider = await cache_manager.provider()
     await cache_provider.save("test_key", "test_value", ttl=60)
     cached_value = await cache_provider.get("test_key")
     assert cached_value == "test_value", "❌ 缓存读写失败"
     print("✅ Cache 功能正常")
 
     # 4. 测试 DB 功能
-    db_provider = db_manager.provider
+    db_provider = await db_manager.provider()
     async with await db_manager.session() as session:
         assert session is not None, "❌ Session 创建失败"
         print("✅ DB 功能正常")

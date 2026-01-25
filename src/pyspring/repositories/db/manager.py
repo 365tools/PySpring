@@ -26,8 +26,7 @@ class DBManagerService(IManaged):
         super().__init__()
         self.factory: DBServiceFactory = db_service_factory
 
-    @property
-    def provider(self) -> IDBService:
+    async def provider(self) -> IDBService:
         """
         获取数据库服务（Factory 内部已实现单例）
         
@@ -36,7 +35,7 @@ class DBManagerService(IManaged):
         Returns:
             IDBService: SQLite 或 PostgreSQL 实现
         """
-        return self.factory.get_service()
+        return await self.factory.get_service()
 
     async def service(self) -> IDBService:
         """
@@ -45,7 +44,7 @@ class DBManagerService(IManaged):
         Returns:
             数据库服务实例
         """
-        return self.provider
+        return await self.provider()
 
     async def session(self):
         """
@@ -83,11 +82,10 @@ class DBManagerService(IManaged):
         """
         关闭所有数据库连接, 释放资源
         """
-        if self.provider:
+        provider_instance = await self.provider()
+        if provider_instance:
             try:
-                await self.provider.close()
-                logger.debug(f"DBManager: {self.provider.__class__.__name__} connection closed")
+                await provider_instance.close()
+                logger.debug(f"DBManager: {provider_instance.__class__.__name__} connection closed")
             except Exception as e:
                 logger.error(f"Failed to close database connection: {e}")
-            finally:
-                self._provider = None

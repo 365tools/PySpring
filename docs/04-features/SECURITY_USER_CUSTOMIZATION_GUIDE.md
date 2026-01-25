@@ -92,6 +92,13 @@ from pyspring.ioc.annotations.component import Configuration, Bean
 from pyspring.security.authentication.contracts.flow import IRegisterService
 from pyspring.security.authentication.contracts.response import UserInfo, User, Role
 from pyspring.repositories.db.manager import DBManagerService
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
+from pyspring.security.authentication.contracts.password import IPasswordEncoder
+from pyspring.log.instance import logger
+from sqlalchemy import select
+
+# 导入自定义用户模型
+from app.config.security_config import CustomUser
 
 class CustomRegisterService(IRegisterService):
     """

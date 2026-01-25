@@ -32,18 +32,20 @@ async def test_cache_ioc_injection():
     print("✅ CacheManager 成功注入")
 
     # 3. 测试延迟初始化（首次访问 provider）
-    provider = cache_manager.provider
+    provider = await cache_manager.provider()
     assert provider is not None, "❌ Provider 未初始化"
     print(f"✅ Provider 延迟初始化成功: {provider.__class__.__name__}")
 
     # 4. 测试缓存是否正常工作
-    await cache_manager.provider.save("test_key", "test_value", ttl=60)
-    value = await cache_manager.provider.get("test_key")
+    provider = await cache_manager.provider()
+    await provider.save("test_key", "test_value", ttl=60)
+    value = await provider.get("test_key")
     assert value == "test_value", "❌ 缓存读写失败"
     print("✅ 缓存读写测试通过")
 
     # 5. 测试 ping
-    ping_result = await cache_manager.provider.ping()
+    provider = await cache_manager.provider()
+    ping_result = await provider.ping()
     assert ping_result, "❌ Ping 失败"
     print("✅ Ping 测试通过")
 

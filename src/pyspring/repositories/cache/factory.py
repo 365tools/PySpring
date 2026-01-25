@@ -1,7 +1,6 @@
 """
 缓存服务工厂（根据配置选择实现）
 """
-import asyncio
 from typing import Optional
 
 from pyspring.ioc.annotations.component import Component
@@ -30,7 +29,7 @@ class CacheServiceFactory:
         self._service: Optional[ICacheService] = None
         self._service_type: Optional[str] = None
 
-    def get_service(self) -> ICacheService:
+    async def get_service(self) -> ICacheService:
         """
         根据配置返回正确的缓存服务（单例模式）
         
@@ -52,7 +51,7 @@ class CacheServiceFactory:
         elif cache_type == "auto":
             # auto 模式：默认 Redis，失败降级到 Memory
             logger.debug("CacheServiceFactory: Auto mode - trying Redis first...")
-            self._service = self._try_redis_or_fallback()
+            self._service = await self._try_redis_or_fallback()
         else:
             raise ValueError(f"Unsupported cache type: {cache_type}. Use 'redis', 'memory', or 'auto'.")
 
@@ -68,18 +67,18 @@ class CacheServiceFactory:
         logger.info("✅ 使用内存缓存")
         return MemoryService(self.config)
 
-    def _try_redis_or_fallback(self) -> ICacheService:
+    async def _try_redis_or_fallback(self) -> ICacheService:
         """
         尝试连接 Redis，失败则降级到内存缓存
         
         策略：
         1. 检查 Redis 配置完整性
-        2. 创建 Redis 服务并测试连接（同步 ping）
-        3. 连接成功：使用 Redis
-        4. 连接失败：降级到 Memory
+        2. 创建 Redis 服务并执行 ping 测试
+        3. 测试成功：返回 Redis
+        4. 测试失败或配置不完整：降级到内存缓存
         
         Returns:
-            ICacheService: Redis 或 Memory 服务
+            ICacheService: Redis 或 Memory 服务（已测试可用）
         """
         redis_config = self.config.redis
 
@@ -89,34 +88,22 @@ class CacheServiceFactory:
             self._service_type = "memory"
             return self._create_memory_service()
 
-        # 2. 创建并测试 Redis 连接
+        # 2. 创建并测试 Redis 服务
         try:
+            logger.info("🔍 Auto 模式：测试 Redis 连接...")
             service = RedisService(self.config)
 
-            # 检测是否有运行中的事件循环
-            try:
-                asyncio.get_running_loop()
-                # 已有运行中的循环，无法同步测试连接
-                logger.warning("⚠️ 检测到运行中的事件循环，跳过 Redis 连接测试，降级到内存缓存")
+            # 执行异步 ping 测试
+            is_connected = await service.ping()
+
+            if is_connected:
+                logger.info("✅ Redis 连接成功，使用 Redis 缓存")
+                self._service_type = "redis"
+                return service
+            else:
+                logger.warning("⚠️ Redis 连接失败，降级到内存缓存")
                 self._service_type = "memory"
                 return self._create_memory_service()
-            except RuntimeError:
-                # 没有运行中的循环，可以安全执行同步测试
-                logger.info("🔍 Auto 模式：测试 Redis 连接...")
-                loop = asyncio.new_event_loop()
-                try:
-                    is_connected = loop.run_until_complete(service.ping())
-                finally:
-                    loop.close()
-
-                if is_connected:
-                    logger.info("✅ Redis 连接成功，使用 Redis 缓存")
-                    self._service_type = "redis"
-                    return service
-                else:
-                    logger.warning("⚠️ Redis 连接失败，降级到内存缓存")
-                    self._service_type = "memory"
-                    return self._create_memory_service()
 
         except Exception as e:
             logger.warning(f"⚠️ Redis 初始化失败，降级到内存缓存: {e}")
