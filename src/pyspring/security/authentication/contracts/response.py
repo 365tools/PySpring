@@ -20,7 +20,7 @@ class User(BaseModel):
     last_name: Optional[str] = Field(default=None, description="用户姓")
     email: Optional[EmailStr] = Field(default=None, description="用户邮箱")
     password: Optional[str] = Field(default=None, min_length=6, description="用户密码")
-    is_active: bool = Field(default=True, description="用户是否激活")
+    active: bool = Field(default=True, description="用户是否激活")
 
     @model_validator(mode='after')
     def check_user_id_or_email(self):

@@ -35,13 +35,16 @@ authentication:
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 
 from pyspring.ioc import Inject
 from pyspring.web.core.response import Response
 from pyspring.security.authentication.contracts.flow import ILoginService, IRegisterService
 from pyspring.security.authentication.contracts.request import LoginRequest
-from pyspring.security.authentication.contracts.response import UserInfo, User
+from pyspring.security.authentication.contracts.response import UserInfo
+
+# 导入自定义 Pydantic 模型
+from app.schemas.user import CustomUser
 
 
 router = APIRouter()
@@ -52,11 +55,34 @@ router = APIRouter()
 # ============================================================================
 
 class RegisterRequest(BaseModel):
-    """注册请求（包含自定义字段）"""
-    username: str  # 自定义字段
-    email: str
-    password: str
-    phone: str | None = None  # 自定义字段
+    """
+    用户注册请求
+    
+    设计原则：
+    - 注册需要明确的字段，不使用 identifier 模式
+    - 所有必填字段都要明确指定，便于数据验证
+    - 登录可以灵活（identifier），注册必须规范
+    
+    字段说明：
+    - username: 用户名（必填，用于显示和登录）
+    - email: 邮箱（必填，用于登录、找回密码、通知）
+    - password: 密码（必填，至少6位）
+    - phone: 手机号（可选，用于登录、双因素认证）
+    """
+    username: str = Field(..., min_length=3, max_length=50, description="用户名（3-50字符）")
+    email: EmailStr = Field(..., description="邮箱地址")
+    password: str = Field(..., min_length=6, max_length=128, description="密码（至少6位）")
+    phone: str | None = Field(None, pattern=r"^1[3-9]\d{9}$", description="手机号（可选，11位数字）")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "johndoe",
+                "email": "john@example.com",
+                "password": "password123",
+                "phone": "13800138000"
+            }
+        }
 
 
 # ============================================================================
@@ -163,14 +189,25 @@ async def register(
     }
     """
     try:
-        # 构建用户信息（包含自定义字段）
-        user_info = UserInfo(
-            user=User(
-                email=request.email,
-                password=request.password,
-                **{"username": request.username, "phone": request.phone}  # 自定义字段
-            )
-        )
+        # 生成 UUID
+        import uuid
+        user_uuid = str(uuid.uuid4())
+        
+        # 创建一个类似 User 的对象，包含自定义字段
+        class UserWithCustomFields:
+            def __init__(self):
+                self.user_id = user_uuid
+                self.email = request.email
+                self.password = request.password
+                self.username = request.username  # 自定义字段
+                self.phone = request.phone  # 自定义字段
+        
+        # 使用自定义对象
+        custom_user = UserWithCustomFields()
+        
+        # 构建 UserInfo（使用自定义 Pydantic 模型）
+        user = CustomUser.model_validate(custom_user)
+        user_info = UserInfo(user=user)
         
         # 调用框架注册服务（会自动使用你的 CustomRegisterService）
         result = await register_service.register(user_info)
@@ -179,7 +216,8 @@ async def register(
             {
                 "user_id": result.user.user_id,
                 "email": result.user.email,
-                "username": getattr(result.user, "username", None),  # 自定义字段
+                "username": result.user.username,  # 现在可以安全访问自定义字段
+                "phone": result.user.phone,        # 现在可以安全访问自定义字段
             },
             message="注册成功"
         )

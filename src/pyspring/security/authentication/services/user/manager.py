@@ -423,7 +423,7 @@ class DefaultUserManagerService(IUserManagerService):
             first_name=db_user.first_name,
             last_name=db_user.last_name,
             email=db_user.email,
-            is_active=db_user.is_active,
+            active=db_user.active,
         )
 
         # 查询用户角色

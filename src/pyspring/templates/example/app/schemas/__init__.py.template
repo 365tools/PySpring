@@ -1,0 +1,6 @@
+"""
+自定义响应模型
+"""
+from .user import CustomUser
+
+__all__ = ["CustomUser"]

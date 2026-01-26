@@ -30,13 +30,15 @@ from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.services.register import DefaultRegisterService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
-from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
+from pyspring.security.authentication.contracts.response import UserInfo, Role, Permission
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-# 导入自定义用户模型
-from app.models.user import User
+# 导入自定义用户模型（ORM）
+from app.models.user import User as UserModel
+# 导入自定义 Pydantic 模型
+from app.schemas.user import CustomUser
 
 
 @Component()
@@ -109,7 +111,7 @@ class CustomRegisterService(DefaultRegisterService):
             
             # 3. 分配角色
             if request.roles:
-                await self._assign_roles(session, db_user.id, request.roles)
+                await self._assign_roles(session, db_user.user_id, request.roles)
             
             # 4. 提交事务
             await session.commit()
@@ -161,18 +163,24 @@ class CustomRegisterService(DefaultRegisterService):
         
         处理：
         - 密码加密
+        - UUID生成
         - 自定义字段映射（username, phone 等）
         - 默认值设置
         """
+        import uuid
+        
         # 加密密码
         hashed_password = self.password_encoder.encode(user.password)
         
+        # 生成 UUID（如果没有提供）
+        user_uuid = user.user_id if user.user_id else str(uuid.uuid4())
+        
         # 创建用户实例（映射自定义字段）
-        db_user = User(
-            user_id=user.user_id or user.email,  # 框架字段
+        db_user = UserModel(
+            user_id=user_uuid,                    # 框架字段（UUID）
             email=user.email,                     # 框架字段
             password=hashed_password,             # 框架字段
-            username=getattr(user, 'username', user.user_id),  # 自定义字段
+            username=getattr(user, 'username', user.email.split('@')[0]),  # 自定义字段（默认使用邮箱前缀）
             phone=getattr(user, 'phone', None),   # 自定义字段
             active=True,                          # 框架字段（激活状态）
             deleted=False,                        # 框架字段（软删除）
@@ -185,7 +193,7 @@ class CustomRegisterService(DefaultRegisterService):
         logger.info(f"✅ 用户创建成功: {db_user.email} (ID: {db_user.id})")
         return db_user
     
-    async def _assign_roles(self, session: Any, user_id: int, roles: list[Role]) -> None:
+    async def _assign_roles(self, session: Any, user_id: str, roles: list[Role]) -> None:
         """
         分配角色
         
@@ -193,6 +201,10 @@ class CustomRegisterService(DefaultRegisterService):
         - 自动创建不存在的角色
         - 角色权限验证
         - 默认角色分配
+        
+        Args:
+            user_id: 用户UUID
+            roles: 角色列表
         """
         from pyspring.security.orm.tables import RoleTable, UserRoleTable
         from sqlalchemy import select
@@ -270,17 +282,16 @@ class CustomRegisterService(DefaultRegisterService):
         )
         db_roles = result.scalars().all()
         
-        # 构建返回对象
+        # 构建返回对象（使用自定义 Pydantic 模型）
         logger.info(f"✅ 用户信息构建完成")
         return UserInfo(
-            user=User(
+            user=CustomUser(
                 id=user.id,
                 user_id=user.user_id,
                 email=user.email,
-                username=user.username,  # 自定义字段
-                phone=user.phone,        # 自定义字段
-                active=user.active,
-                deleted=user.deleted,
+                username=user.username,    # 自定义字段
+                phone=user.phone,          # 自定义字段
+                active=user.active,        # 框架字段（已统一为 active）
             ),
             roles=[
                 Role(
