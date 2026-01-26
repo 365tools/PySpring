@@ -38,6 +38,15 @@ server:
   # 最大请求体大小（字节）
   max_request_size: 10485760  # 10MB
 
+# Web 错误响应配置
+web:
+  error:
+    # 是否在 API 响应中包含错误堆栈（traceback）
+    # 开发环境建议: true（便于调试）
+    # 生产环境建议: false（避免泄露敏感信息）
+    # 注意：无论此配置如何，错误堆栈始终会记录到日志文件中
+    include_trace: false  # 默认不返回，开发时可改为 true
+
 # API 配置
 api:
   # API 前缀

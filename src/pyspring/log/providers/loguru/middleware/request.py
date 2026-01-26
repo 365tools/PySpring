@@ -8,12 +8,14 @@ import uuid
 from contextvars import ContextVar
 
 from fastapi import Request, Response
+from pyspring.config_manager import ConfigManager
+from pyspring.core.abstracts.exceptions import AppError
+from pyspring.ioc import ApplicationContext
+from pyspring.log.instance import logger
+from pyspring.web.handlers.exception import GlobalExceptionHandler
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from pyspring.core.abstracts.exceptions import AppError
-from pyspring.log.instance import logger
-from pyspring.web.handlers.exception import GlobalExceptionHandler
 from ..utils.trace_context import set_trace_id
 
 REQUEST_ID_CTX: ContextVar[str | None] = ContextVar("request_id", default=None)
@@ -27,6 +29,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp):
         super().__init__(app)
+        # 读取是否在响应中包含 traceback 的配置（默认 False）
+        app_config = ConfigManager.load_config('application', use_cache=True)
+        self._include_trace_in_response = app_config.get('web', {}).get('error', {}).get('include_trace', False)
 
     async def dispatch(self, request: Request, call_next):
         """
@@ -88,9 +93,20 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         except Exception as e:
             # 请求异常日志
             process_time = time.time() - start_time
-            logger.error(f"🚨 {client_ip} - \"{method} {url}\" - 异常: {str(e)} - 耗时: {process_time:.3f}s")
 
-            # 使用全局异常处理器格式化响应
+            # 从 IoC 容器获取全局异常处理器单例
+            handler = ApplicationContext.get_instance().get_by_type(GlobalExceptionHandler)
+
+            # 使用全局异常处理器记录详细日志（包含完整堆栈）
+            handler.log_exception(e, context={
+                "path": str(request.url.path),
+                "method": request.method,
+                "url": str(request.url),
+                "client_ip": client_ip,
+                "process_time": f"{process_time:.3f}s"
+            })
+
+            # 格式化错误响应
             status_code = getattr(e, "code", 500) if isinstance(e, AppError) else 500
             message = getattr(e, "message", str(e)) if isinstance(e, AppError) else str(e)
 
@@ -99,7 +115,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 message=message,
                 status_code=status_code,
                 details={"path": str(request.url.path), "method": request.method},
-                include_trace=True
+                include_trace=self._include_trace_in_response  # 根据配置决定
             )
 
             # 设置响应头

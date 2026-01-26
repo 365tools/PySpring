@@ -30,7 +30,7 @@ from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.services.register import DefaultRegisterService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
-from pyspring.security.authentication.contracts.response import UserInfo, Role, Permission
+from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -138,7 +138,7 @@ class CustomRegisterService(DefaultRegisterService):
         
         # 检查邮箱是否已存在
         result = await session.execute(
-            select(User).where(User.email == user.email)
+            select(UserModel).where(UserModel.email == user.email)
         )
         if result.scalar_one_or_none():
             raise ValueError(f"邮箱已被注册: {user.email}")
@@ -146,7 +146,7 @@ class CustomRegisterService(DefaultRegisterService):
         # 检查 username 是否已存在（自定义字段）
         if hasattr(user, 'username') and user.username:
             result = await session.execute(
-                select(User).where(User.username == user.username)
+                select(UserModel).where(UserModel.username == user.username)
             )
             if result.scalar_one_or_none():
                 raise ValueError(f"用户名已被占用: {user.username}")
@@ -157,7 +157,7 @@ class CustomRegisterService(DefaultRegisterService):
         
         logger.info(f"✅ 用户验证通过: {user.email}")
     
-    async def _create_user(self, session: Any, user: User) -> User:
+    async def _create_user(self, session: Any, user: User) -> UserModel:
         """
         创建用户记录
         

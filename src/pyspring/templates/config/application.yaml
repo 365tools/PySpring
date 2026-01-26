@@ -38,6 +38,15 @@ server:
   # 最大请求体大小（字节）
   max_request_size: 10485760  # 10MB
 
+# Web 错误响应配置
+web:
+  error:
+    # 是否在 API 响应中包含错误堆栈（traceback）
+    # 开发环境建议: true（便于调试）
+    # 生产环境建议: false（避免泄露敏感信息）
+    # 注意：无论此配置如何，错误堆栈始终会记录到日志文件中
+    include_trace: false  # 默认不返回，开发时可改为 true
+
 # API 配置
 api:
   # API 前缀
@@ -125,12 +134,17 @@ production:
   server:
     workers: 4
     reload: false
+  web:
+    error:
+      include_trace: false  # 生产环境不返回堆栈，避免泄露敏感信息
   cors:
     allow_origins: [ ]  # 请配置具体域名
 
 # 注意事项：
 # 1. 开发环境和生产环境应使用不同的配置
 # 2. 敏感信息（如密钥）应使用环境变量，不要写在配置文件中
-# 3. 生产环境建议禁用 debug、reload 等开发特性
+# 3. 生产环境建议：
+#    - 禁用 debug、reload 等开发特性
+#    - 设置 web.error.include_trace: false（避免泄露错误堆栈）
 # 4. CORS 配置在生产环境必须限制具体域名
 # 5. 建议使用 Nginx/Caddy 等反向代理处理 HTTPS

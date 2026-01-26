@@ -11,6 +11,7 @@ from typing import Any, Dict, Optional, Callable
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from pyspring.config_manager import ConfigManager
 from pyspring.core.abstracts.exceptions import AppError
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.conditional import ConditionalOnMissingBean
@@ -34,9 +35,19 @@ class GlobalExceptionHandler(IExceptionHandler):
     - 区分 HTTPException、ValidationError、通用异常
     - 结构化日志记录
     - 统一的错误响应格式
+    - 支持配置是否在响应中返回 traceback（web.error.include_trace）
     
     用户可以继承此类或实现 IExceptionHandler 接口来自定义异常处理逻辑
     """
+
+    def __init__(self):
+        """初始化全局异常处理器，读取配置"""
+        # 读取是否在响应中包含 traceback 的配置（默认 False）
+        app_config = ConfigManager.load_config('application', use_cache=True)
+        self._include_trace_in_response = app_config.get('web', {}).get('error', {}).get('include_trace', False)
+
+        # 输出配置信息（便于调试）
+        logger.debug(f"🔧 GlobalExceptionHandler 配置: include_trace_in_response={self._include_trace_in_response}")
 
     @staticmethod
     def _project_root() -> Path:
@@ -82,7 +93,8 @@ class GlobalExceptionHandler(IExceptionHandler):
             # 返回绝对路径，便于调试
             return str(Path(file_path).resolve()).replace("\\", "/")
 
-    def format_exception_info(self, e: Exception, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    @staticmethod
+    def format_exception_info(e: Exception, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """格式化异常信息，包含调用栈(仅保留项目相关的关键调用链，便于 IDE 点击)"""
         exc_type, exc_value, exc_traceback = sys.exc_info()
 
@@ -155,8 +167,9 @@ class GlobalExceptionHandler(IExceptionHandler):
     def log_exception(self, e: Exception, context: Optional[Dict[str, Any]] = None, level: str = "error"):
         """
         统一记录异常日志(结构化绑定)
+        注意：始终记录完整堆栈到日志，与 API 响应配置无关
         """
-        info = self.format_exception_info(e, context)
+        info = GlobalExceptionHandler.format_exception_info(e, context)
         log_msg = f"❌ {info['error_type']}: {info['error_message']}"
         if info.get("traceback_summary"):
             log_msg += f" | 调用链: {info['traceback_summary']}"
@@ -172,9 +185,15 @@ class GlobalExceptionHandler(IExceptionHandler):
         if context:
             bound = bound.bind(**context)
 
+        # 输出简要日志
         getattr(bound, level if level in {"error", "warning", "critical"} else "error")(log_msg)
 
-    def _build_http_response_payload(self, e: Exception, info: Dict[str, Any], details: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        # 始终输出完整堆栈（ERROR 级别，确保能看到）
+        if info.get("full_traceback"):
+            logger.error(f"📜 完整堆栈信息：\n{info['full_traceback']}")
+
+    @staticmethod
+    def _build_http_response_payload(e: Exception, info: Dict[str, Any], details: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         payload = {"path": info.get("file_location"), "traceback_summary": info.get("traceback_summary")}
         if details:
             payload.update(details)
@@ -185,12 +204,13 @@ class GlobalExceptionHandler(IExceptionHandler):
             })
         return payload
 
-    def to_http_error_response(self, e: Exception, *, message: Optional[str] = None, status_code: int = 500,
+    @staticmethod
+    def to_http_error_response(e: Exception, *, message: Optional[str] = None, status_code: int = 500,
                                details: Optional[Dict[str, Any]] = None, include_trace: Optional[bool] = None) -> JSONResponse:
         """将异常转为统一 HTTP 错误响应(使用Response.error)"""
         include = include_trace if include_trace is not None else False
-        info = self.format_exception_info(e, details)
-        payload = self._build_http_response_payload(e, info, details)
+        info = GlobalExceptionHandler.format_exception_info(e, details)
+        payload = GlobalExceptionHandler._build_http_response_payload(e, info, details)
         base = HttpResponse(code=status_code, message=(message or info.get("error_message")), data=payload)
         return Response.error(base, exc=e, include_trace=include, default_status_code=status_code)
 
@@ -257,7 +277,7 @@ class GlobalExceptionHandler(IExceptionHandler):
 
     async def handle_general_exception(self, request: Request, exc: Exception) -> JSONResponse:
         """处理通用异常（所有未被捕获的异常）"""
-        # 记录详细日志
+        # 记录详细日志（始终记录到日志文件，无论配置如何）
         self.log_exception(exc, context={
             "path": str(request.url.path),
             "method": request.method,
@@ -273,7 +293,7 @@ class GlobalExceptionHandler(IExceptionHandler):
             message=message,
             status_code=status_code,
             details={"path": str(request.url.path), "method": request.method},
-            include_trace=True  # 通用异常显示完整堆栈
+            include_trace=self._include_trace_in_response  # 根据配置决定是否返回堆栈
         )
 
     def handle_and_return_error(self, e: Exception, context: Optional[Dict[str, Any]] = None,
@@ -282,7 +302,7 @@ class GlobalExceptionHandler(IExceptionHandler):
         处理异常并返回标准错误对象(通用场景，非HTTP路径)
         """
         self.log_exception(e, context)
-        info = self.format_exception_info(e, context)
+        info = GlobalExceptionHandler.format_exception_info(e, context)
         body = {
             "success": False,
             "error": default_message,

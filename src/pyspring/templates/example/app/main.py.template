@@ -32,12 +32,14 @@ from fastapi.responses import JSONResponse
 # PySpring 导入
 from pyspring.ioc import ApplicationContext
 from pyspring.log.instance import logger
+from pyspring.log.providers.loguru.middleware.request import RequestLoggingMiddleware
 from pyspring.web.handlers.exception import GlobalExceptionHandler
 
 # 应用模块导入
 from app.api import health, auth, users
-from app.middleware.request_logger import request_logging_middleware
-from app.middleware.timing import timing_middleware
+
+# 注意：app.middleware 目录下有自定义中间件的教学示例（request_logger.py、timing.py）
+# 这些文件仅供学习参考，实际使用的是框架提供的 RequestLoggingMiddleware
 
 
 # ============================================================================
@@ -167,10 +169,23 @@ app.add_middleware(
 
 
 # ============================================================================
-# 自定义中间件
+# 请求日志中间件（使用框架版本）
 # ============================================================================
-app.middleware("http")(request_logging_middleware)  # 请求日志
-app.middleware("http")(timing_middleware)  # 性能计时
+# 使用框架提供的 RequestLoggingMiddleware
+#
+# 功能特性：
+# ✅ 自动生成/提取 Trace ID（分布式追踪，支持 X-Trace-ID、X-Request-ID）
+# ✅ 请求生命周期完整记录（🎢 开始、✅ 完成、❌ 异常）
+# ✅ 自动异常捕获和格式化（集成 GlobalExceptionHandler）
+# ✅ 根据状态码自动选择日志级别（2xx=INFO, 4xx=WARNING, 5xx=ERROR）
+# ✅ 请求耗时统计（精确到毫秒）
+# ✅ ContextVar 隔离（多线程安全，避免 Trace ID 泄漏）
+# ✅ 响应头自动注入（X-Trace-ID、X-Request-ID）
+#
+# 📁 自定义中间件教学示例：
+#    app/middleware/request_logger.py - 简化版请求日志（仅供学习）
+#    app/middleware/timing.py - 性能计时示例（仅供学习）
+app.add_middleware(RequestLoggingMiddleware)
 
 
 # ============================================================================
