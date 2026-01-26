@@ -215,7 +215,7 @@ try {
         Write-Step "7/8" "Create Example Project"
         
         $pyspringExe = Join-Path $ProjectPath ".venv\Scripts\pyspring.exe"
-        & $pyspringExe init . --example --force
+        & $pyspringExe init . --example
         
         if ($LASTEXITCODE -ne 0) {
             Write-Err "Failed to create example project"
@@ -223,15 +223,6 @@ try {
             exit 1
         }
         Write-Success "Example project created"
-        
-        Write-Info "Recreating virtual environment after --force cleanup..."
-        uv venv
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Err "Failed to recreate virtual environment"
-            Pop-Location
-            exit 1
-        }
         
         Write-Info "Installing project dependencies..."
         uv pip install -r requirements.txt
@@ -241,6 +232,16 @@ try {
             Pop-Location
             exit 1
         }
+        
+        Write-Info "Reinstalling PySpring in editable mode (to preserve local changes)..."
+        uv pip install -e $PySpringSourcePath
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Err "PySpring reinstallation failed"
+            Pop-Location
+            exit 1
+        }
+        
         Write-Success "Dependencies installed"
     } else {
         Write-Info "Skipped example project creation"

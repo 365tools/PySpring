@@ -371,30 +371,10 @@ def create_example_project(target_dir: Path, force: bool = False):
     
     Args:
         target_dir: 目标目录
-        force: 是否强制清空目录后再初始化
+        force: 是否强制清空 example 相关文件后再初始化
     """
     print_header("Creating Complete Example Project")
     print_info(f"Target Directory: {target_dir}")
-
-    # 如果 force=True，清空目标目录（仅保留 .git）
-    if force and target_dir.exists():
-        print_warning(f"Force mode: Cleaning directory {target_dir}")
-        preserved_dirs = {'.git'}
-
-        for item in target_dir.iterdir():
-            if item.name in preserved_dirs:
-                print_info(f"Preserving: {item}")
-                continue
-
-            try:
-                if item.is_dir():
-                    shutil.rmtree(item)
-                    print_info(f"Removed directory: {item}")
-                else:
-                    item.unlink()
-                    print_info(f"Removed file: {item}")
-            except Exception as e:
-                print_warning(f"Failed to remove {item}: {e}")
 
     # 检查示例模板目录
     example_template_dir = get_template_dir() / "example"
@@ -402,6 +382,61 @@ def create_example_project(target_dir: Path, force: bool = False):
         print_error(f"Example template directory not found: {example_template_dir}")
         print_warning("Please ensure PySpring is properly installed with example templates.")
         return False
+
+    # 如果 force=True，清空示例项目相关文件（保留 .git, .venv）
+    if force and target_dir.exists():
+        print_warning(f"Force mode: Removing example project files from {target_dir}")
+
+        # 收集所有模板文件对应的目标路径
+        files_to_remove = []
+        for item in example_template_dir.rglob("*"):
+            if item.is_file():
+                rel_path = item.relative_to(example_template_dir)
+
+                # 去除 .template 后缀计算目标路径
+                if rel_path.name.endswith('.template'):
+                    target_name = rel_path.name[:-9]
+                    target_path = target_dir / rel_path.parent / target_name
+                else:
+                    target_path = target_dir / rel_path
+
+                if target_path.exists():
+                    files_to_remove.append(target_path)
+
+        # 删除文件
+        for file_path in files_to_remove:
+            try:
+                file_path.unlink()
+                print_info(f"Removed: {file_path}")
+            except Exception as e:
+                print_warning(f"Failed to remove {file_path}: {e}")
+
+        # 删除运行时目录（data, logs）
+        runtime_dirs = ['data', 'logs', '__pycache__']
+        for dir_name in runtime_dirs:
+            dir_path = target_dir / dir_name
+            if dir_path.exists():
+                try:
+                    shutil.rmtree(dir_path)
+                    print_info(f"Removed runtime directory: {dir_path}")
+                except Exception as e:
+                    print_warning(f"Failed to remove {dir_path}: {e}")
+
+        # 删除空目录（从深到浅）
+        dirs_to_check = set()
+        for file_path in files_to_remove:
+            parent = file_path.parent
+            while parent != target_dir and parent not in dirs_to_check:
+                dirs_to_check.add(parent)
+                parent = parent.parent
+
+        for dir_path in sorted(dirs_to_check, key=lambda p: len(p.parts), reverse=True):
+            try:
+                if dir_path.exists() and not any(dir_path.iterdir()):
+                    dir_path.rmdir()
+                    print_info(f"Removed empty directory: {dir_path}")
+            except Exception:
+                pass  # 目录不为空或无法删除，忽略
 
     # 复制整个示例项目结构（默认覆盖已存在文件）
     print_info("\nCopying example project files...")

@@ -32,7 +32,7 @@ logging:
     # 压缩格式: zip, gz, tar, tar.gz, tar.bz2
     compression: "zip"
     # 文件日志格式
-    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]: <55}:{line: >4} | {message}"
+    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]: <30}:{line: >4} | {message}"
 
   # 高级配置
   advanced:

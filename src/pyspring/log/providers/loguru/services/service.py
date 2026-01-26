@@ -144,14 +144,20 @@ class LoguruService(IManaged, ILoggerService):
                     if len(relevant_parts) > 0:
                         # 移除文件扩展名
                         module_parts = list(relevant_parts[:-1]) + [relevant_parts[-1].replace('.py', '')]
-                        # 只保留最后2-3级，使其简洁
+
+                        # 智能裁剪：超过3级时，保留首尾，裁剪中间
                         if len(module_parts) > 3:
-                            module_parts = module_parts[-3:]
-                        module_path = ".".join(module_parts)
+                            # 保留第一级 + 最后一级，中间用 ... 代替
+                            # 例如：authentication.infrastructure.initializer → authentication...initializer
+                            module_path = f"{module_parts[0]}...{module_parts[-1]}"
+                        else:
+                            module_path = ".".join(module_parts)
+                        
                         record["extra"]["file_relative"] = f"[fw] {module_path}"
-                        # 裁剪过长的模块路径（保留后50个字符）
-                        if len(record["extra"]["file_relative"]) > 55:
-                            record["extra"]["file_relative"] = "..." + record["extra"]["file_relative"][-52:]
+
+                        # 如果还是太长，再裁剪（保留后50字符）
+                        if len(record["extra"]["file_relative"]) > 30:
+                            record["extra"]["file_relative"] = "..." + record["extra"]["file_relative"][-17:]
                     else:
                         record["extra"]["file_relative"] = "[fw] pyspring"
                 else:
@@ -186,7 +192,7 @@ class LoguruService(IManaged, ILoggerService):
         _loguru.remove()
         _loguru.add(
             sys.stdout,
-            format='<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <55}</cyan>:<cyan>{line: >4}</cyan> | {message}',
+            format='<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <30}</cyan>:<cyan>{line: >4}</cyan> | {message}',
             level='DEBUG',
             colorize=True,
             filter=self._add_relative_path
@@ -204,7 +210,7 @@ class LoguruService(IManaged, ILoggerService):
         if console_config.get('enabled', True):
             _loguru.add(
                 sys.stdout,
-                format=console_config.get('format', '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <55}</cyan>:<cyan>{line: >4}</cyan> | {message}'),
+                format=console_config.get('format', '<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <30}</cyan>:<cyan>{line: >4}</cyan> | {message}'),
                 level=logging_config.get('level', 'INFO'),
                 colorize=console_config.get('colorize', True),
                 backtrace=logging_config.get('advanced', {}).get('backtrace', True),
