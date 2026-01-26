@@ -224,6 +224,15 @@ try {
         }
         Write-Success "Example project created"
         
+        Write-Info "Recreating virtual environment after --force cleanup..."
+        uv venv
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Err "Failed to recreate virtual environment"
+            Pop-Location
+            exit 1
+        }
+        
         Write-Info "Installing project dependencies..."
         uv pip install -r requirements.txt
         

@@ -18,9 +18,9 @@ logging:
     colorize: true  # 生产环境可设置为 false
     # 可选格式：
     # 简洁格式: "<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | {message}"
-    # 详细格式（推荐）: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}"
+    # 详细格式（推荐）: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <55}</cyan>:<cyan>{line: >4}</cyan> | {message}"
     # 最详细格式: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | {message}"
-    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}"
+    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <55}</cyan>:<cyan>{line: >4}</cyan> | {message}"
 
   # 文件日志配置
   file:
@@ -33,7 +33,7 @@ logging:
     # 保留时间: "1 day", "1 week", "1 month", "3 months"
     retention: "7 days"
     compression: "zip"  # zip, gz, tar
-    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]}:{line} | {message}"
+    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]: <55}:{line: >4} | {message}"
 
   # 高级配置
   advanced:

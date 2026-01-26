@@ -328,7 +328,7 @@ def copy_template_dir_recursive(src_dir: Path, dst_dir: Path, force: bool = Fals
     Args:
         src_dir: 源模板目录
         dst_dir: 目标目录
-        force: 是否强制覆盖
+        force: 是否强制覆盖（默认覆盖已存在文件）
     """
     for item in src_dir.rglob("*"):
         if item.is_file():
@@ -342,17 +342,17 @@ def copy_template_dir_recursive(src_dir: Path, dst_dir: Path, force: bool = Fals
             else:
                 target_path = dst_dir / rel_path
 
-            # 跳过已存在的文件（除非 force）
-            if target_path.exists() and not force:
-                print_info(f"File exists, skipping: {target_path}")
-                continue
-
+            # 默认覆盖已存在的文件
+            if target_path.exists():
+                print_info(f"Overwriting: {target_path}")
+            
             # 创建目标目录
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
             # 复制文件
             shutil.copy2(item, target_path)
             print_success(f"Created: {target_path}")
+
 
 
 def create_example_project(target_dir: Path, force: bool = False):
@@ -368,9 +368,33 @@ def create_example_project(target_dir: Path, force: bool = False):
     - FastAPI 路由
     - 中间件
     - 结构化日志
+    
+    Args:
+        target_dir: 目标目录
+        force: 是否强制清空目录后再初始化
     """
     print_header("Creating Complete Example Project")
     print_info(f"Target Directory: {target_dir}")
+
+    # 如果 force=True，清空目标目录（仅保留 .git）
+    if force and target_dir.exists():
+        print_warning(f"Force mode: Cleaning directory {target_dir}")
+        preserved_dirs = {'.git'}
+
+        for item in target_dir.iterdir():
+            if item.name in preserved_dirs:
+                print_info(f"Preserving: {item}")
+                continue
+
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item)
+                    print_info(f"Removed directory: {item}")
+                else:
+                    item.unlink()
+                    print_info(f"Removed file: {item}")
+            except Exception as e:
+                print_warning(f"Failed to remove {item}: {e}")
 
     # 检查示例模板目录
     example_template_dir = get_template_dir() / "example"
@@ -379,7 +403,7 @@ def create_example_project(target_dir: Path, force: bool = False):
         print_warning("Please ensure PySpring is properly installed with example templates.")
         return False
 
-    # 复制整个示例项目结构
+    # 复制整个示例项目结构（默认覆盖已存在文件）
     print_info("\nCopying example project files...")
     copy_template_dir_recursive(example_template_dir, target_dir, force)
 

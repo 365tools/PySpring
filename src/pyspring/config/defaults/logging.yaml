@@ -16,7 +16,7 @@ logging:
     # 是否启用彩色输出
     colorize: true
     # 日志格式
-    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]}</cyan>:<cyan>{line}</cyan> | {message}"
+    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <55}</cyan>:<cyan>{line: >4}</cyan> | {message}"
 
   # 文件日志配置
   file:
@@ -31,7 +31,7 @@ logging:
     # 压缩格式: zip, gz, tar, tar.gz, tar.bz2
     compression: "zip"
     # 文件日志格式
-    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]}:{line} | {message}"
+    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]: <55}:{line: >4} | {message}"
 
   # 高级配置
   advanced:
