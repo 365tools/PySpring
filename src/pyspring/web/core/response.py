@@ -122,6 +122,11 @@ class Response:
         else:
             merged_data = {"value": safe_base, **payload}
 
-        augmented = HttpResponse(code=base_resp.code, message=base_resp.message, data=merged_data)
+        # 优化响应：如果 message 与 reason 相同，则不返回 message
+        final_message = base_resp.message
+        if final_message and "reason" in merged_data and final_message == merged_data["reason"]:
+            final_message = None
+
+        augmented = HttpResponse(code=base_resp.code, message=final_message, data=merged_data)
         http_status = augmented.code if augmented.code is not None else default_status_code
         return _json(augmented, status_code=http_status, headers=headers)
