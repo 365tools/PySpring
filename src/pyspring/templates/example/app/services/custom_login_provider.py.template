@@ -1,18 +1,12 @@
 """
 自定义登录提供者示例
 
-⚠️ 注意：从 v1.1.0 开始，框架已支持配置化登录字段，大多数情况下无需自定义！
+⚠️ 重要说明：
+1. 此文件是可选的高级自定义示例，默认情况下不启用
+2. 从 v1.1.0 开始，框架已支持配置化登录字段，大多数情况下无需自定义
+3. 如需启用，请取消注释 @Component() 装饰器
 
-推荐做法：
-1. 在 config/security.yaml 中配置 identifier_fields
-2. 框架会自动支持配置的字段进行登录
-
-仅在以下情况需要自定义：
-- 需要特殊的登录逻辑（如短信验证码、OAuth2）
-- 需要在登录前后添加额外的业务逻辑
-- 需要自定义密码验证规则
-
-配置示例（推荐）：
+推荐做法（使用配置）：
 ```yaml
 # config/security.yaml
 authentication:
@@ -20,10 +14,17 @@ authentication:
     - "username"   # 用户名
     - "email"      # 邮箱
     - "phone"      # 手机号（如果用户模型有此字段）
-    - "employee_id" # 员工工号（自定义字段）
 ```
 
-如果确实需要自定义，参考以下示例：
+仅在以下情况需要自定义：
+- 需要特殊的登录逻辑（如短信验证码、OAuth2）
+- 需要在登录前后添加额外的业务逻辑
+- 需要自定义密码验证规则
+
+使用步骤：
+1. 取消注释下面的 @Component() 装饰器
+2. 根据需要修改 authenticate() 方法中的自定义逻辑
+3. 重启应用即可生效（会自动替换框架默认的 DefaultPasswordLoginProvider）
 """
 from typing import Any
 
@@ -40,11 +41,12 @@ from app.models.user import User
 
 
 # ============================================================================
-# 示例：自定义登录提供者（仅作参考，大多数情况下不需要）
+# ⚠️ 以下是示例代码 - 默认禁用
+# ============================================================================
+# 启用方式：取消注释下面的 @Component() 装饰器
 # ============================================================================
 
-# 取消注释以启用自定义登录提供者
-# @Component()
+# @Component()  # ⬅️ 取消此行注释以启用自定义登录提供者
 class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     """
     自定义密码登录提供者 - 示例
@@ -101,4 +103,6 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
         return user
 
 
-__all__ = ["CustomPasswordLoginProvider"]
+# 注意：此文件是示例代码，默认不导出
+# 如果取消注释 @Component() 启用自定义登录提供者，也不需要显式导出
+# __all__ = ["CustomPasswordLoginProvider"]
