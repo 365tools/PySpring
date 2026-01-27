@@ -242,6 +242,7 @@ def custom_token_generator() -> ITokenGenerator:
 # ❌ 问题：未定义IPasswordEncoder接口，直接使用第三方库
 from fastapi_users.password import PasswordHelper
 
+
 class DefaultPasswordLoginProvider(ILoginProvider):
     def __init__(self, user_provider, db):
         self.password_helper = PasswordHelper()  # ❌ 耦合第三方库
@@ -261,32 +262,34 @@ class IPasswordEncoder(IManaged, ABC):
     @abstractmethod
     def encode(self, raw_password: str) -> str:
         pass
-    
+
     @abstractmethod
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         pass
+
 
 # ✅ 默认实现
 @Component()
 class BCryptPasswordEncoder(IPasswordEncoder):
     def __init__(self):
         self.helper = PasswordHelper()
-    
+
     def encode(self, raw_password: str) -> str:
         return self.helper.hash(raw_password)
-    
+
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         return self.helper.verify(encoded_password, raw_password)
+
 
 # ✅ 用户DIY：Argon2编码器
 @Component()
 class Argon2PasswordEncoder(IPasswordEncoder):
     def __init__(self):
         self.hasher = argon2.PasswordHasher()
-    
+
     def encode(self, raw_password: str) -> str:
         return self.hasher.hash(raw_password)
-    
+
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         try:
             self.hasher.verify(encoded_password, raw_password)
@@ -308,7 +311,7 @@ class ILoginProvider(IManaged, ABC):
     @abstractmethod
     def supports(self, request) -> bool:
         pass
-    
+
     @abstractmethod
     async def authenticate(self, request) -> Optional[Any]:
         pass
@@ -321,11 +324,11 @@ class ILoginProvider(IManaged, ABC):
 class LDAPLoginProvider(ILoginProvider):
     def supports(self, request) -> bool:
         return request.auth_type == "ldap"
-    
+
     async def authenticate(self, request):
         # LDAP认证逻辑
         ldap_user = await ldap_client.authenticate(
-            request.username, 
+            request.username,
             request.password
         )
         return await self.user_repository.find_by_email(ldap_user.email)
@@ -596,16 +599,17 @@ from pyspring.ioc.annotations.component import Component
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from fastapi_users.password import PasswordHelper
 
+
 @Component()
 class BCryptPasswordEncoder(IPasswordEncoder):
     """BCrypt密码编码器（默认实现）"""
-    
+
     def __init__(self):
         self._helper = PasswordHelper()
-    
+
     def encode(self, raw_password: str) -> str:
         return self._helper.hash(raw_password)
-    
+
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         verified, _ = self._helper.verify_and_update(encoded_password, raw_password)
         return verified
@@ -629,8 +633,8 @@ def default_password_encoder() -> IPasswordEncoder:
 # 文件：authentication/providers/login/password.py
 
 class DefaultPasswordLoginProvider(ILoginProvider):
-    def __init__(self, 
-                 user_provider: IUserProvider, 
+    def __init__(self,
+                 user_provider: IUserProvider,
                  db: DBManagerService,
                  password_encoder: IPasswordEncoder):  # ✅ 注入接口
         self.user_provider = user_provider

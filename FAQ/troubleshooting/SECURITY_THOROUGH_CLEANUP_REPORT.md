@@ -63,13 +63,14 @@ if not token_jti:
 ```python
 from fastapi_users.password import PasswordHelper
 
+
 class BCryptPasswordEncoder(IPasswordEncoder):
     def __init__(self):
         self._helper = PasswordHelper()  # ❌ 依赖第三方库
-    
+
     def encode(self, raw_password: str) -> str:
         return self._helper.hash(raw_password)  # ❌ 包装调用
-    
+
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         verified, _ = self._helper.verify_and_update(encoded_password, raw_password)
         return verified
@@ -80,16 +81,17 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 ```python
 import bcrypt
 
+
 class BCryptPasswordEncoder(IPasswordEncoder):
     def __init__(self):
         self.rounds = 12  # ✅ 直接控制参数
-    
+
     def encode(self, raw_password: str) -> str:
         password_bytes = raw_password.encode('utf-8')
         salt = bcrypt.gensalt(rounds=self.rounds)
         hashed = bcrypt.hashpw(password_bytes, salt)
         return hashed.decode('utf-8')  # ✅ 直接调用bcrypt
-    
+
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         password_bytes = raw_password.encode('utf-8')
         encoded_bytes = encoded_password.encode('utf-8')

@@ -182,13 +182,13 @@ from fastapi_users.password import PasswordHelper
 @Component()
 class BCryptPasswordEncoder(IPasswordEncoder):
     """BCrypt密码编码器（默认实现）"""
-    
+
     def __init__(self):
         self._helper = PasswordHelper()
-    
+
     def encode(self, raw_password: str) -> str:
         return self._helper.hash(raw_password)
-    
+
     def verify(self, raw_password: str, encoded_password: str) -> bool:
         verified, _ = self._helper.verify_and_update(encoded_password, raw_password)
         return verified
@@ -220,11 +220,12 @@ def default_password_encoder(self) -> IPasswordEncoder:
     """创建默认密码编码器（BCrypt）"""
     return BCryptPasswordEncoder()
 
+
 @Bean()
 @ConditionalOnMissingBean(DefaultPasswordLoginProvider)
 def default_password_login_provider(
-        self, 
-        default_user_provider: IUserProvider, 
+        self,
+        default_user_provider: IUserProvider,
         db: DBManagerService,
         default_password_encoder: IPasswordEncoder  # ✅ 注入接口
 ) -> DefaultPasswordLoginProvider:

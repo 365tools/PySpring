@@ -61,6 +61,7 @@
 ## 🔍 配置加载路径验证
 
 ### SecurityConfigManager
+
 ```python
 from pyspring.security.core.config.loader import SecurityConfigManager
 
@@ -80,6 +81,7 @@ def _load_config(self) -> Dict[str, Any]:
 ```
 
 ### LoggingConfigManager
+
 ```python
 from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
 
@@ -91,6 +93,7 @@ def _load_config(self) -> Dict[str, Any]:
 ## 📋 配置文件状态检查
 
 ### 框架级配置（Framework Level）
+
 ```
 ✅ src/pyspring/config/framework.yaml          # 框架核心配置
 ✅ src/pyspring/config/defaults/security.yaml  # 安全模块默认值
@@ -99,6 +102,7 @@ def _load_config(self) -> Dict[str, Any]:
 ```
 
 ### 示例项目配置（Example Project）
+
 ```
 ✅ src/pyspring/templates/example/config/application.yaml.template
 ✅ src/pyspring/templates/example/config/security.yaml.template
@@ -108,6 +112,7 @@ def _load_config(self) -> Dict[str, Any]:
 ```
 
 ### 测试配置（Test Config）
+
 ```
 ✅ tests/config/security.yaml
 ✅ tests/config/repositories.yaml
@@ -119,6 +124,7 @@ def _load_config(self) -> Dict[str, Any]:
 ## 🧪 测试结果
 
 ### 配置架构测试（14个测试用例）
+
 ```bash
 $ python -m pytest tests/unit/config/test_config_architecture.py -v
 
@@ -143,6 +149,7 @@ $ python -m pytest tests/unit/config/test_config_architecture.py -v
 ## 📊 配置加载流程验证
 
 ### 流程图
+
 ```
 1️⃣ 框架默认配置 (src/pyspring/config/defaults/)
    ↓ ConfigManager._load_framework_defaults()
@@ -159,6 +166,7 @@ $ python -m pytest tests/unit/config/test_config_architecture.py -v
 ```
 
 ### 验证点
+
 - ✅ 框架默认值正确加载（security: 3600秒, database: memory, logging: INFO）
 - ✅ 用户配置正确覆盖（access_token_expire: 7200秒）
 - ✅ 环境变量最高优先级（JWT_SECRET_KEY 覆盖一切）
@@ -169,6 +177,7 @@ $ python -m pytest tests/unit/config/test_config_architecture.py -v
 ## 🎯 环境变量支持验证
 
 ### 安全配置（security.yaml）
+
 ```bash
 ✅ JWT_SECRET_KEY           → authentication.jwt.secret_key
 ✅ JWT_ENCRYPTION_KEY       → authentication.jwt.encryption.encryption_key
@@ -178,6 +187,7 @@ $ python -m pytest tests/unit/config/test_config_architecture.py -v
 ```
 
 ### 数据库配置（database.yaml）
+
 ```bash
 ✅ POSTGRES_PASSWORD        → database.postgresql.password
 ✅ MYSQL_PASSWORD           → database.mysql.password
@@ -187,6 +197,7 @@ $ python -m pytest tests/unit/config/test_config_architecture.py -v
 ## ⚠️ 旧配置文件状态
 
 ### 不再使用的文件（可删除）
+
 ```
 ⚠️  src/pyspring/templates/config/security.yaml       # 已被 defaults/security.yaml 替代
 ⚠️  src/pyspring/templates/config/repositories.yaml  # 已被 defaults/database.yaml 替代
@@ -196,6 +207,7 @@ $ python -m pytest tests/unit/config/test_config_architecture.py -v
 ```
 
 **建议：** 这些文件可以删除或标记为废弃，因为：
+
 1. 框架默认值现在在 `src/pyspring/config/defaults/`
 2. 示例项目模板在 `src/pyspring/templates/example/config/`
 

@@ -309,6 +309,22 @@ PySpring 设计为开放架构，你几乎可以替换任何组件。以下是�
 
 ---
 
+## 📚 文档与资源
+
+- 📖 **[FAQ 常见问题](./FAQ/README.md)** - 技术问题解答、使用指南和故障排查
+  - [认证与登录](./FAQ/authentication/) - Identifier登录、字段配置等
+  - [配置管理](./FAQ/configuration/) - 配置架构、合并策略等
+  - [IoC容器](./FAQ/ioc/) - 依赖注入、注解使用等
+  - [故障排查](./FAQ/troubleshooting/) - 常见错误解决方案
+
+- 🔧 **[开发工具脚本](./scripts/README.md)** - 实用工具和诊断脚本
+  - [数据库工具](./scripts/utilities/) - 初始化、检查ORM等
+  - [诊断工具](./scripts/diagnostics/) - 框架验证、问题诊断
+
+- 📝 **[项目清理总结](./docs/PROJECT_CLEANUP_SUMMARY.md)** - 项目结构优化说明
+
+---
+
 ## 🤝 贡献与支持
 
 PySpring 是一个开源项目，欢迎任何形式的贡献！
