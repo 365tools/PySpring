@@ -5,11 +5,9 @@
 from typing import Dict, Any
 
 import yaml
-
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
-from pyspring.log.instance import logger
 from pyspring.utils.config.finder import find_config_file
 
 
@@ -162,6 +160,5 @@ class RepositoriesConfigManager(IManaged):
 
     def reload(self):
         """重新加载配置"""
-        logger.debug("Reloading repositories configuration...")
         self._config = None
         self._config = self._load_config()

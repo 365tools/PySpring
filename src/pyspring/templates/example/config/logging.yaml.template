@@ -17,10 +17,10 @@ logging:
     enabled: true
     colorize: true  # 生产环境可设置为 false
     # 可选格式：
-    # 简洁格式: "<green>{time:HH:mm:ss}</green> | <level>{level: <8}</level> | {message}"
-    # 详细格式（推荐）: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <30}</cyan>:<cyan>{line: >4}</cyan> | {message}"
-    # 最详细格式: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> | {message}"
-    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <30}</cyan>:<cyan>{line: >4}</cyan> | {message}"
+    # 简洁格式: "<green>{time:HH:mm:ss}</green> | <level>{level}</level> | {message}"
+    # 相对路径（推荐，IDEA完美支持跳转）: 'File "{extra[file_relative]}", line {line}'
+    # 绝对路径版本: 'File "{file.path}", line {line}'
+    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>File \"{extra[file_relative]}\", line {line}</cyan> | {message}"
 
   # 文件日志配置
   file:
@@ -33,7 +33,7 @@ logging:
     # 保留时间: "1 day", "1 week", "1 month", "3 months"
     retention: "7 days"
     compression: "zip"  # zip, gz, tar
-    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]: <30}:{line: >4} | {message}"
+    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | File \"{extra[file_relative]}\", line {line} | {message}"
 
   # 高级配置
   advanced:

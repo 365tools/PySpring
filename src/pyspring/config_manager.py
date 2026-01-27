@@ -1,13 +1,17 @@
 """
 PySpring 配置管理器
 支持三层配置架构：框架级配置、框架默认值、用户配置
+
+注意：此模块是基础设施层，不应依赖日志系统（避免循环依赖）
 """
 import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 
 import yaml
-from loguru import logger
+
+# 调试开关：仅用于开发调试，生产环境应关闭
+_DEBUG_CONFIG = os.getenv("PYSPRING_DEBUG_CONFIG", "false").lower() == "true"
 
 
 class ConfigManager:
@@ -53,7 +57,8 @@ class ConfigManager:
         # 检查缓存
         cache_key = f"{config_name}:{user_config_dir}"
         if use_cache and cache_key in cls._config_cache:
-            logger.debug(f"📦 从缓存加载配置: {config_name}")
+            if _DEBUG_CONFIG:
+                print(f"[ConfigManager] 📦 从缓存加载配置: {config_name}")
             return cls._config_cache[cache_key].copy()
 
         # 1. 加载框架默认配置
@@ -80,16 +85,19 @@ class ConfigManager:
         defaults_file = cls._FRAMEWORK_DEFAULTS_DIR / f"{config_name}.yaml"
 
         if not defaults_file.exists():
-            logger.warning(f"⚠️  框架默认配置不存在: {defaults_file}")
+            if _DEBUG_CONFIG:
+                print(f"[ConfigManager] ⚠️  框架默认配置不存在: {defaults_file}")
             return {}
 
         try:
             with open(defaults_file, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f) or {}
-            logger.debug(f"✅ 已加载框架默认配置: {config_name} <- {defaults_file}")
+            if _DEBUG_CONFIG:
+                print(f"[ConfigManager] ✅ 已加载框架默认配置: {config_name} <- {defaults_file}")
             return config
         except Exception as e:
-            logger.error(f"❌ 加载框架默认配置失败: {defaults_file}, 错误: {e}")
+            if _DEBUG_CONFIG:
+                print(f"[ConfigManager] ❌ 加载框架默认配置失败: {defaults_file}, 错误: {e}")
             return {}
 
     @classmethod
@@ -111,16 +119,19 @@ class ConfigManager:
         user_config_file = user_config_path / f"{config_name}.yaml"
 
         if not user_config_file.exists():
-            logger.debug(f"📝 用户配置不存在（使用框架默认值）: {user_config_file}")
+            if _DEBUG_CONFIG:
+                print(f"[ConfigManager] 📝 用户配置不存在（使用框架默认值）: {user_config_file}")
             return {}
 
         try:
             with open(user_config_file, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f) or {}
-            logger.debug(f"✅ 已加载用户配置: {config_name} <- {user_config_file}")
+            if _DEBUG_CONFIG:
+                print(f"[ConfigManager] ✅ 已加载用户配置: {config_name} <- {user_config_file}")
             return config
         except Exception as e:
-            logger.warning(f"⚠️  加载用户配置失败，使用框架默认值: {user_config_file}, 错误: {e}")
+            if _DEBUG_CONFIG:
+                print(f"[ConfigManager] ⚠️  加载用户配置失败，使用框架默认值: {user_config_file}, 错误: {e}")
             return {}
 
     @classmethod
@@ -164,28 +175,33 @@ class ConfigManager:
             # JWT 密钥
             if jwt_secret := os.getenv("JWT_SECRET_KEY"):
                 cls._set_nested(result, ["authentication", "jwt", "secret_key"], jwt_secret)
-                logger.debug("✅ 从环境变量加载 JWT_SECRET_KEY")
+                if _DEBUG_CONFIG:
+                    print("[ConfigManager] ✅ 从环境变量加载 JWT_SECRET_KEY")
 
             # JWT 加密密钥
             if jwt_enc_key := os.getenv("JWT_ENCRYPTION_KEY"):
                 cls._set_nested(result, ["authentication", "jwt", "encryption", "encryption_key"], jwt_enc_key)
-                logger.debug("✅ 从环境变量加载 JWT_ENCRYPTION_KEY")
+                if _DEBUG_CONFIG:
+                    print("[ConfigManager] ✅ 从环境变量加载 JWT_ENCRYPTION_KEY")
 
         elif config_name == "repositories":
             # PostgreSQL 密码
             if pg_password := os.getenv("POSTGRES_PASSWORD"):
                 cls._set_nested(result, ["database", "postgresql", "password"], pg_password)
-                logger.debug("✅ 从环境变量加载 POSTGRES_PASSWORD")
+                if _DEBUG_CONFIG:
+                    print("[ConfigManager] ✅ 从环境变量加载 POSTGRES_PASSWORD")
 
             # MySQL 密码
             if mysql_password := os.getenv("MYSQL_PASSWORD"):
                 cls._set_nested(result, ["database", "mysql", "password"], mysql_password)
-                logger.debug("✅ 从环境变量加载 MYSQL_PASSWORD")
+                if _DEBUG_CONFIG:
+                    print("[ConfigManager] ✅ 从环境变量加载 MYSQL_PASSWORD")
 
             # Redis 密码
             if redis_password := os.getenv("REDIS_PASSWORD"):
                 cls._set_nested(result, ["cache", "redis", "password"], redis_password)
-                logger.debug("✅ 从环境变量加载 REDIS_PASSWORD")
+                if _DEBUG_CONFIG:
+                    print("[ConfigManager] ✅ 从环境变量加载 REDIS_PASSWORD")
 
         return result
 
@@ -203,7 +219,8 @@ class ConfigManager:
     def clear_cache(cls) -> None:
         """清除配置缓存"""
         cls._config_cache.clear()
-        logger.debug("🧹 已清除配置缓存")
+        if _DEBUG_CONFIG:
+            print("[ConfigManager] 🧹 已清除配置缓存")
 
     @classmethod
     def reload_config(cls, config_name: str, user_config_dir: Optional[str] = None) -> Dict[str, Any]:

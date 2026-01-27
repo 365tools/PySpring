@@ -61,11 +61,14 @@ def global_record_patcher(record):
             # 优先使用全局缓存的 root
             root = _PROJECT_ROOT
             if root:
-                record["extra"]["file_relative"] = str(path_obj.relative_to(root))
+                relative_path = str(path_obj.relative_to(root)).replace("\\", "/")
+                record["extra"]["file_relative"] = relative_path
             else:
-                record["extra"]["file_relative"] = record["file"].name
+                # 回退到完整文件名（包含扩展名）
+                record["extra"]["file_relative"] = path_obj.name
         except (ValueError, AttributeError):
-            record["extra"]["file_relative"] = record["file"].name
+            # 最终回退到完整文件名
+            record["extra"]["file_relative"] = Path(record["file"].path).name
 
     # 2. 注入自动补全的默认值
     for k, v in _AUTO_INJECTED_DEFAULTS.items():

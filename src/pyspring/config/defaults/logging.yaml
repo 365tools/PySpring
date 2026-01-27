@@ -15,8 +15,10 @@ logging:
     enabled: true
     # 是否启用彩色输出
     colorize: true
-    # 日志格式
-    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{extra[file_relative]: <30}</cyan>:<cyan>{line: >4}</cyan> | {message}"
+    # 日志格式 (使用相对路径，IDEA完美支持点击跳转)
+    # 相对路径版本（推荐，简洁）: File "{extra[file_relative]}", line {line}
+    # 绝对路径版本: File "{file.path}", line {line}
+    format: "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>File \"{extra[file_relative]}\", line {line}</cyan> | {message}"
 
   # 文件日志配置
   file:
@@ -30,8 +32,8 @@ logging:
     retention: "7 days"
     # 压缩格式: zip, gz, tar, tar.gz, tar.bz2
     compression: "zip"
-    # 文件日志格式
-    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {extra[file_relative]: <30}:{line: >4} | {message}"
+    # 文件日志格式 (使用相对路径)
+    format: "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | File \"{extra[file_relative]}\", line {line} | {message}"
 
   # 高级配置
   advanced:

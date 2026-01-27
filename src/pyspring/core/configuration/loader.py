@@ -11,8 +11,6 @@ from typing import Dict, Any, Optional, List
 import yaml
 from dotenv import load_dotenv
 
-from pyspring.log.instance import logger
-
 
 class ConfigLoader:
     """
@@ -64,16 +62,13 @@ class ConfigLoader:
             Dict[str, Any]: 配置字典
         """
         if not yaml_path.exists():
-            logger.debug(f"YAML配置文件不存在: {yaml_path}")
             return {}
 
         try:
             with open(yaml_path, 'r', encoding='utf-8') as f:
                 config = yaml.safe_load(f) or {}
-                logger.debug(f"✅ 已加载YAML配置: {yaml_path}")
                 return config
         except Exception as e:
-            logger.error(f"❌ 加载YAML配置失败: {yaml_path}, 错误: {e}")
             return {}
 
     def load_env_files(self, env_files: List[str], override: bool = True) -> None:
@@ -88,9 +83,6 @@ class ConfigLoader:
             env_path = self.project_root / env_file
             if env_path.exists():
                 load_dotenv(env_path, override=override)
-                logger.debug(f"✅ 已加载环境文件: {env_file}")
-            else:
-                logger.debug(f"环境文件不存在: {env_file}")
 
     def flatten_dict(
             self,
@@ -138,9 +130,6 @@ class ConfigLoader:
             if override or key not in os.environ:
                 os.environ[key] = str(value)
                 count += 1
-
-        if count > 0:
-            logger.debug(f"✅ 已合并 {count} 个配置到环境变量")
 
     def load_all(
             self,
