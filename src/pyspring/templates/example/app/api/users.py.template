@@ -8,7 +8,7 @@ from pydantic import BaseModel, EmailStr, Field
 from pyspring.ioc import Inject
 from pyspring.web.core.response import Response
 from app.services.user_service import UserService
-from app.dependencies.auth import get_current_user
+from app.dependencies.auth import AuthenticatedUser  # 使用框架推荐的类型别名
 from app.models.user import User
 
 
@@ -35,7 +35,7 @@ class UserUpdateRequest(BaseModel):
 
 @router.get("/me")
 async def get_current_user_info(
-    current_user: User = Depends(get_current_user)
+    current_user: AuthenticatedUser
 ) -> JSONResponse:
     """
     获取当前登录用户信息
@@ -47,10 +47,10 @@ async def get_current_user_info(
 
 @router.get("")
 async def list_users(
+    current_user: AuthenticatedUser,
     skip: int = Query(default=0, ge=0, description="跳过的记录数"),
     limit: int = Query(default=10, ge=1, le=100, description="返回的记录数"),
-    user_service: UserService = Depends(lambda: Inject(UserService)),
-    current_user: User = Depends(get_current_user)
+    user_service: UserService = Depends(lambda: Inject(UserService))
 ) -> JSONResponse:
     """
     获取用户列表
@@ -65,8 +65,8 @@ async def list_users(
 @router.get("/{user_id}")
 async def get_user(
     user_id: str,
-    user_service: UserService = Depends(lambda: Inject(UserService)),
-    current_user: User = Depends(get_current_user)
+    current_user: AuthenticatedUser,
+    user_service: UserService = Depends(lambda: Inject(UserService))
 ) -> JSONResponse:
     """
     获取指定用户信息
@@ -91,8 +91,8 @@ async def get_user(
 async def update_user(
     user_id: str,
     request: UserUpdateRequest,
-    user_service: UserService = Depends(lambda: Inject(UserService)),
-    current_user: User = Depends(get_current_user)
+    current_user: AuthenticatedUser,
+    user_service: UserService = Depends(lambda: Inject(UserService))
 ) -> JSONResponse:
     """
     更新用户信息
@@ -149,8 +149,8 @@ async def update_user(
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: str,
-    user_service: UserService = Depends(lambda: Inject(UserService)),
-    current_user: User = Depends(get_current_user)
+    current_user: AuthenticatedUser,
+    user_service: UserService = Depends(lambda: Inject(UserService))
 ) -> JSONResponse:
     """
     删除用户

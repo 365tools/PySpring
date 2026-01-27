@@ -59,10 +59,13 @@ class RegisterRequest(BaseModel):
     """
     用户注册请求
     
-    设计原则：
+    安全设计原则：
     - 注册需要明确的字段，不使用 identifier 模式
     - 所有必填字段都要明确指定，便于数据验证
     - 登录可以灵活（identifier），注册必须规范
+    - ⚠️ **禁止用户指定角色**：防止权限提升攻击
+    - 新用户默认分配 'guest' 角色
+    - 其他角色（如admin、manager）需通过管理后台授予
     
     字段说明：
     - username: 用户名（必填，用于显示和登录）
@@ -160,26 +163,44 @@ async def register(
     register_service: IRegisterService = Depends(lambda: Inject(IRegisterService))
 ) -> JSONResponse:
     """
-    用户注册（使用框架注册服务 + 自定义扩展）
+    用户注册（使用框架注册服务）
     
-    框架特性：
+    框架安全特性：
     - ✅ 自动密码加密（BCrypt）
     - ✅ 邮箱/用户名唯一性验证
-    - ✅ 用户角色分配
+    - ✅ **自动分配默认角色（guest）**
+    - ✅ **禁止用户指定角色（防止权限提升攻击）**
     - ✅ 事务管理（失败自动回滚）
     
-    自定义扩展（CustomRegisterService）：
-    - ✅ 自定义字段处理（username、phone）
-    - ✅ 自定义验证规则（密码强度、黑名单检查）
-    - ✅ 注册后置处理（发送欢迎邮件、短信通知）
+    角色分配说明：
+    - 新用户注册后自动分配 'guest' 角色
+    - 其他角色（如 admin、manager）必须通过管理后台授予
+    - 配置文件：config/security.yaml → authentication.registration.default_role
     
     请求示例：
+    ```json
     {
         "username": "testuser",
         "email": "test@example.com",
         "password": "password123",
         "phone": "13800138000"
     }
+    ```
+    
+    响应示例：
+    ```json
+    {
+        "success": true,
+        "data": {
+            "user_id": "550e8400-e29b-41d4-...",
+            "email": "test@example.com",
+            "username": "testuser",
+            "phone": "13800138000",
+            "roles": ["guest"]
+        },
+        "message": "注册成功"
+    }
+    ```
     """
     # 生成 UUID
     import uuid

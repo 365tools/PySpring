@@ -1,75 +1,83 @@
 """
 认证依赖
 
-展示：
-1. FastAPI 依赖注入
-2. JWT 令牌验证
-3. 用户身份获取
+展示如何使用框架提供的认证授权依赖函数（推荐方式）
+
+框架提供的依赖函数（v1.1.0+）：
+- require_authentication_from_token: 强制Token认证
+- get_current_user_from_token: 可选Token认证  
+- permission_dependency(permission): 权限检查
+- role_dependency(role): 角色检查
+
+推荐做法：
+- ✅ 直接使用框架提供的依赖函数
+- ✅ 使用 Annotated 类型别名简化代码
+- ❌ 不需要自定义 get_current_user（除非有特殊需求）
 """
-from typing import Optional
+from typing import Annotated, Any
 
-from fastapi import Depends, HTTPException, status
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import Depends
 
-from pyspring.ioc import Inject
-from app.services.auth_service import AuthService
-from app.models.user import User
-
-
-# HTTP Bearer 安全方案
-security = HTTPBearer()
-
-
-async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(security),
-    auth_service: AuthService = Depends(lambda: Inject(AuthService))
-) -> User:
-    """
-    获取当前登录用户
-    
-    从请求头中提取 JWT 令牌并验证，返回当前用户
-    
-    使用示例：
-        @router.get("/protected")
-        async def protected_route(current_user: User = Depends(get_current_user)):
-            return {"user": current_user.username}
-    
-    Raises:
-        HTTPException: 令牌无效或用户不存在
-    """
-    token = credentials.credentials
-    
-    user = await auth_service.get_current_user(token)
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="无效的认证凭据",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if not user.active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="用户已被禁用"
-        )
-    
-    return user
+# 导入框架提供的依赖函数
+from pyspring.security.authentication.web.middleware.dependencies import (
+    require_authentication_from_token,
+    get_current_user_from_token,
+    permission_dependency,
+    role_dependency
+)
 
 
-async def get_current_user_optional(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
-    auth_service: AuthService = Depends(lambda: Inject(AuthService))
-) -> Optional[User]:
-    """
-    获取当前用户（可选）
-    
-    不强制要求认证，如果提供了令牌则验证并返回用户
-    """
-    if not credentials:
-        return None
-    
-    token = credentials.credentials
-    user = await auth_service.get_current_user(token)
-    
-    return user if user and user.active else None
+# ============================================================================
+# 类型别名定义（推荐做法）
+# ============================================================================
+
+# 认证类型
+AuthenticatedUser = Annotated[Any, Depends(require_authentication_from_token)]
+OptionalUser = Annotated[Any, Depends(get_current_user_from_token)]
+
+# 权限类型
+UserReadPermission = Annotated[Any, Depends(permission_dependency("user:read"))]
+UserWritePermission = Annotated[Any, Depends(permission_dependency("user:write"))]
+UserDeletePermission = Annotated[Any, Depends(permission_dependency("user:delete"))]
+
+# 角色类型
+AdminOnly = Annotated[Any, Depends(role_dependency("admin"))]
+ManagerOnly = Annotated[Any, Depends(role_dependency("manager"))]
+GuestOnly = Annotated[Any, Depends(role_dependency("guest"))]
+
+
+# ============================================================================
+# 使用示例（在路由中）
+# ============================================================================
+
+"""
+# 示例1: 强制认证
+@router.get("/profile")
+async def get_profile(user: AuthenticatedUser):
+    return {"user_id": user.id, "username": user.username}
+
+# 示例2: 可选认证
+@router.get("/info")
+async def get_info(user: OptionalUser):
+    if user:
+        return {"message": f"Hello, {user.username}"}
+    return {"message": "Hello, Guest"}
+
+# 示例3: 权限检查
+@router.delete("/users/{user_id}")
+async def delete_user(user_id: int, _: UserDeletePermission):
+    # 只有拥有 user:delete 权限的用户才能访问
+    return {"message": f"User {user_id} deleted"}
+
+# 示例4: 角色检查
+@router.get("/admin/dashboard")
+async def admin_dashboard(_: AdminOnly):
+    # 只有 admin 角色的用户才能访问
+    return {"message": "Admin Dashboard"}
+
+# 示例5: 组合使用（先认证，再授权）
+@router.post("/orders")
+async def create_order(user: AuthenticatedUser, _: UserWritePermission):
+    # 用户必须已认证，且拥有 user:write 权限
+    return {"message": f"Order created by {user.username}"}
+"""

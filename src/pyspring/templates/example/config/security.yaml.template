@@ -5,6 +5,23 @@
 authentication:
   enabled: true
   
+  # 登录凭据字段配置 (v1.1.0+)
+  # 定义哪些字段可以用于登录（identifier 匹配）
+  # 示例：用户可以使用 username、email 或 phone 中的任意一个登录
+  identifier_fields:
+    - "username"   # 用户名
+    - "email"      # 邮箱
+    - "phone"      # 手机号（可选）
+    # - "employee_id"  # 员工号（自定义字段）
+    # - "user_id"      # 用户ID (UUID)
+  
+  # 注册安全配置
+  registration:
+    # 默认角色（新用户注册后自动分配）
+    default_role: "guest"  # 默认为 guest 角色
+    # 禁止用户在注册时指定角色（防止权限提升攻击）
+    allow_role_selection: false
+  
   # JWT 配置
   jwt:
     # ⚠️ 密钥必须通过环境变量 JWT_SECRET_KEY 设置（生产环境）

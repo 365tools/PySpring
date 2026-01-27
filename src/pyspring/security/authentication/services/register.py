@@ -1,6 +1,9 @@
 from typing import Any
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from pyspring.ioc.annotations import ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
@@ -8,8 +11,6 @@ from pyspring.security.authentication.config.entity import SecurityEntityConfigu
 from pyspring.security.authentication.contracts.flow import IRegisterService
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @ConditionalOnMissingBean(IRegisterService)
@@ -37,8 +38,13 @@ class DefaultRegisterService(IRegisterService):
         """
         注册新用户
         
+        安全说明：
+        - 角色不能由用户自己指定，防止权限提升攻击
+        - 新注册用户默认分配 'guest' 角色
+        - 管理员角色需要通过后台审批授予
+        
         Args:
-            request: 用户注册信息(包含用户、角色等)
+            request: 用户注册信息(仅包含用户基本信息，不含角色)
 
         Returns:
             创建的完整用户信息
@@ -54,17 +60,16 @@ class DefaultRegisterService(IRegisterService):
                 # 2. 创建用户
                 db_user = await self._create_user(session, request.user)
 
-                # 3. 分配角色（如果有）
-                if request.roles:
-                    await self._assign_roles(session, db_user, request.roles)
+                # 3. 分配默认角色（固定为'user'角色，不接受外部输入）
+                await self._assign_default_role(session, db_user)
 
                 # 4. 提交事务
                 await session.commit()
                 await session.refresh(db_user)
 
-                logger.info(f"[Success] 用户注册成功: {db_user.email} (UUID: {db_user.user_id})")
+                logger.info(f"[Success] 用户注册成功: {db_user.email} (UUID: {db_user.user_id})，已分配默认角色: guest")
 
-                # 6. 构造返回结果
+                # 5. 构造返回结果
                 return await self._build_user_info(session, db_user)
 
         except HTTPException:
@@ -138,9 +143,47 @@ class DefaultRegisterService(IRegisterService):
 
         return db_user
 
+    async def _assign_default_role(self, session: AsyncSession, user: Any) -> None:
+        """
+        为新用户分配默认角色
+        
+        安全说明：
+        - 固定分配 'guest' 角色，不接受外部参数
+        - 管理员等高级角色必须通过管理后台授予
+        
+        Args:
+            session: 数据库会话
+            user: 用户对象（使用 user.user_id UUID）
+        """
+        default_role_code = "guest"  # 默认角色固定为 'guest'
+
+        # 检查默认角色是否存在
+        stmt = select(self.component.role_orm_model).where(
+            self.component.role_orm_model.code == default_role_code
+        )
+        result = await session.execute(stmt)
+        db_role = result.scalar_one_or_none()
+
+        if not db_role:
+            logger.warning(
+                f"[Warning] 默认角色'{default_role_code}'不存在，用户注册成功但未分配角色。"
+                "请在数据库中创建'guest'角色。"
+            )
+            return
+
+        # 创建用户角色关联
+        user_role = self.component.user_role_orm_model(
+            user_id=user.user_id,  # UUID
+            role_code=default_role_code
+        )
+        session.add(user_role)
+        logger.info(f"[Success] 为新用户分配默认角色: {default_role_code}")
+    
     async def _assign_roles(self, session: AsyncSession, user: Any, roles: list[Role]) -> None:
         """
-        为用户分配角色
+        为用户分配角色（仅供管理员使用）
+        
+        ⚠️ 警告：此方法仅应由管理员接口调用，不应在用户注册时使用
         
         Args:
             session: 数据库会话
