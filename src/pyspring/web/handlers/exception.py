@@ -11,14 +11,14 @@ from typing import Any, Dict, Optional, Callable
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
 from pyspring.config_manager import ConfigManager
 from pyspring.core.abstracts.exceptions import AppError
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.conditional import ConditionalOnMissingBean
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
 from .base import IExceptionHandler
 from ..core.response import Response, HttpResponse
 
@@ -233,6 +233,14 @@ class GlobalExceptionHandler(IExceptionHandler):
         validation_errors = []
         try:
             if isinstance(exc, ValidationError):
+                # 记录验证错误详细信息
+                logger.warning(
+                    f"⚠️  请求数据验证失败 - "
+                    f"Path: {request.url.path} | "
+                    f"Method: {request.method} | "
+                    f"Errors: {len(exc.errors())} \n{exc}"
+                )
+                
                 for error in exc.errors():
                     # 过滤敏感信息：不返回完整的 input 数据
                     error_input = error.get("input")

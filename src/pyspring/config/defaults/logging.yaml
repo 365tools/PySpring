@@ -63,6 +63,27 @@ logging:
         - "/static"
         - "/favicon.ico"
 
+  # HTTP 请求/响应日志配置
+  http:
+    # 是否启用详细请求日志
+    log_request_details: false
+    # 是否启用详细响应日志
+    log_response_details: false
+    # 是否记录请求头（开发环境建议 true）
+    log_request_headers: false
+    # 是否记录请求体（注意：可能包含敏感信息）
+    log_request_body: false
+    # 是否记录响应体（注意：可能很大）
+    log_response_body: false
+    # 请求体最大记录长度（字节）
+    max_body_length: 1024
+    # 敏感头部（不记录）
+    sensitive_headers:
+      - "authorization"
+      - "cookie"
+      - "x-api-key"
+      - "x-auth-token"
+
 # 框架内部日志配置
 framework:
   # 框架组件日志级别
