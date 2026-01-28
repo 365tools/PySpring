@@ -337,30 +337,28 @@ class TokenService(ITokenService):
 
                     # 2.1 加入黑名单（防止已撤销的Token被用于刷新）
                     try:
-                        # 从payload获取JTI
-                        token_jti = None
-                        try:
-                            payload = self.token_generator.decode(record.refresh_token)
-                            if payload:
-                                token_jti = payload.get("jti")
-                        except Exception:
-                            pass
+                        # 解码token获取JTI（JWT标准必需字段）
+                        payload = self.token_generator.decode(record.token)
+                        if not payload:
+                            logger.error(f"[Security] Token解码失败，跳过黑名单处理: token_id={record.id}")
+                            continue
 
+                        token_jti = payload.get("jti")
                         if not token_jti:
-                            logger.error(f"[Security] Refresh Token缺SJTI字段，数据异常: token_id={record.id}")
-                            raise ValueError(f"Invalid refresh token: missing JTI (token_id={record.id})")
+                            logger.error(f"[Security] Token缺少JTI字段，数据异常: token_id={record.id}")
+                            continue
 
                         # 写入黑名单表
                         blacklist_record = TokenBlacklistTable(
                             token_id=token_jti,
-                            user_id=user_id,  # UUID 字符串
+                            user_id=user_id,
                             token_type="refresh",
                             reason=reason or RevokeTokenReason.USER_LOGIN,
                             expires_at=record.expires_at
                         )
                         db_session.add(blacklist_record)
 
-                        # Redis黑名单
+                        # 写入Redis黑名单
                         try:
                             blacklist_key = f"token:blacklist:{token_jti}"
                             ttl = int((record.expires_at - datetime.now(UTC)).total_seconds())
@@ -370,6 +368,7 @@ class TokenService(ITokenService):
                             logger.warning(f"[TokenService] Redis黑名单写入失败: {e}")
                     except Exception as e:
                         logger.error(f"[TokenService] 黑名单处理失败: {e}")
+                        continue
 
                 # 3. 从 Redis 删除
                 try:
