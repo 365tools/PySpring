@@ -164,7 +164,7 @@ _security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user_from_token(
-        credentials: Optional[HTTPAuthorizationCredentials] = None,
+        credentials: Optional[HTTPAuthorizationCredentials] = Depends(_security),
 ) -> Optional[Any]:
     """
     从Authorization header的Token中获取当前用户（框架级实现）
@@ -240,7 +240,7 @@ async def get_current_user_from_token(
 
 
 async def require_authentication_from_token(
-        credentials: HTTPAuthorizationCredentials = None,
+        credentials: HTTPAuthorizationCredentials = Depends(_security),
 ) -> Any:
     """
     从Token获取当前用户（强制认证，框架级实现）

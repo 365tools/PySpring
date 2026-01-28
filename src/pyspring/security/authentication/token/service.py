@@ -7,6 +7,8 @@
 from datetime import datetime, UTC
 from typing import Optional, Dict, Any
 
+from sqlalchemy import select, and_
+
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.context import ApplicationContext
@@ -17,7 +19,6 @@ from pyspring.security.authentication.contracts.constant import RevokeTokenReaso
 from pyspring.security.authentication.contracts.token import ITokenService, ITokenGenerator
 from pyspring.security.authentication.factories.token_generator.factory import TokenGeneratorFactory
 from pyspring.security.orm.tables import TokenBlacklistTable, RefreshTokenTable
-from sqlalchemy import select, and_
 
 
 @Component()
@@ -140,7 +141,7 @@ class TokenService(ITokenService):
             # 4.2 写入 Redis
             try:
                 refresh_key = f"token:refresh:{user_id}:{refresh_token[:16]}"
-                await self.cache.set(refresh_key, refresh_token, ttl=7 * 24 * 3600)
+                await self.cache.set(refresh_key, refresh_token, ex=7 * 24 * 3600)
                 logger.debug(f"[TokenService] Refresh Token 已写入Redis")
             except Exception as e:
                 logger.warning(f"[TokenService] Redis写入失败（数据库已保存）: {e}")
@@ -346,8 +347,8 @@ class TokenService(ITokenService):
                             pass
 
                         if not token_jti:
-                            logger.error(f"[Security] Refresh Token缺JTI字段，数据异常: token_id={record.token_id}")
-                            raise ValueError(f"Invalid refresh token: missing JTI (token_id={record.token_id})")
+                            logger.error(f"[Security] Refresh Token缺SJTI字段，数据异常: token_id={record.id}")
+                            raise ValueError(f"Invalid refresh token: missing JTI (token_id={record.id})")
 
                         # 写入黑名单表
                         blacklist_record = TokenBlacklistTable(
@@ -364,7 +365,7 @@ class TokenService(ITokenService):
                             blacklist_key = f"token:blacklist:{token_jti}"
                             ttl = int((record.expires_at - datetime.now(UTC)).total_seconds())
                             if ttl > 0:
-                                await self.cache.set(blacklist_key, "1", ttl=ttl)
+                                await self.cache.set(blacklist_key, "1", ex=ttl)
                         except Exception as e:
                             logger.warning(f"[TokenService] Redis黑名单写入失败: {e}")
                     except Exception as e:
