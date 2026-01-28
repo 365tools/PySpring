@@ -254,7 +254,7 @@ IoC 容器查找 IRegisterService 实现
 
 ```python
 # app/database/initializer.py
-@Component()
+@Component
 class DatabaseInitializer(IStartupInitializer):
 
    def __init__(self, register_service: IRegisterService):

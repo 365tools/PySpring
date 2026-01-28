@@ -111,7 +111,7 @@
 
 ### 破坏性变更
 
-1. **所有ISingletonService引用** → 必须改为 `@Component() @Singleton`
+1. **所有ISingletonService引用** → 必须改为 `@Component @Singleton`
 2. **所有IStartupInitializer引用** → 改为 `from pyspring.ioc.lifecycle import IStartupInitializer`
 3. **所有IShutdownHandler引用** → 改为 `from pyspring.ioc.lifecycle import IShutdownHandler`
 4. **AppContainerManager调用** → 改为 `ApplicationContext.get_instance()`

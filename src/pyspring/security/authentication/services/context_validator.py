@@ -19,7 +19,7 @@ class ContextEvaluationResult:
         return len(self.errors) == 0
 
 
-@Component()
+@Component
 @Singleton
 class SecurityContextManagerService(IManaged):
     """

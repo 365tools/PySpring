@@ -4,7 +4,7 @@ SystemService - 系统配置服务
 提供统一的配置访问接口。
 
 使用方式（推荐IoC注入）:
-    @Component()
+    @Component
     class MyService:
         def __init__(self, config_service: SystemService):
             port = config_service.settings.app.server.port
@@ -20,7 +20,7 @@ from ..configuration.loader import ConfigLoader
 from ..configuration.models import AppSettings
 
 
-@Component()
+@Component
 @Singleton
 class SystemService(IManaged):
     """

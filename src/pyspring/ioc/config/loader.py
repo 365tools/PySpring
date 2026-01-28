@@ -7,11 +7,12 @@ import os
 from typing import Dict, Any, List, Optional
 
 import yaml
+
 from pyspring.ioc.annotations.scope import Scope
 from pyspring.log.instance import logger
 
 
-class IoCConfig:
+class IOCConfig:
     """IOC配置数据模型"""
 
     def __init__(self, data: Dict[str, Any]):
@@ -20,7 +21,7 @@ class IoCConfig:
         self.exclude_packages = data.get('exclude_packages', [])
 
 
-class IoCConfigLoader:
+class IOCConfigLoader:
     """
     IOC配置加载器
     
@@ -57,7 +58,7 @@ class IoCConfigLoader:
             config_path: 配置文件路径，默认为 config/container.yaml
         """
         self.config_path = config_path or self._find_default_config()
-        self.config: Optional[IoCConfig] = None
+        self.config: Optional[IOCConfig] = None
 
     def _find_default_config(self) -> str:
         """查找默认配置文件"""
@@ -74,26 +75,28 @@ class IoCConfigLoader:
         # 默认返回第一个路径
         return possible_paths[0]
 
-    def load(self) -> IoCConfig:
+    def load(self) -> IOCConfig:
         """
         加载配置
         
         Returns:
-            IoCConfig: 配置对象
+            IOCConfig: 配置对象
         """
         if not os.path.exists(self.config_path):
             logger.warning(f"⚠️  配置文件不存在: {self.config_path}，使用默认配置")
-            return IoCConfig({})
+            self.config = IOCConfig({})
+            return self.config
 
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f) or {}
-                self.config = IoCConfig(data)
+                self.config = IOCConfig(data)
                 logger.debug(f"✅ 加载IOC配置: {self.config_path}")
                 return self.config
         except Exception as e:
             logger.error(f"❌ 加载配置文件失败: {e}")
-            return IoCConfig({})
+            self.config = IOCConfig({})
+            return self.config
 
     def get_health_config(self) -> Dict[str, Any]:
         """
@@ -203,4 +206,4 @@ class IoCConfigLoader:
         return factory
 
 
-__all__ = ['IoCConfigLoader', 'IoCConfig']
+__all__ = ['IOCConfigLoader', 'IOCConfig']

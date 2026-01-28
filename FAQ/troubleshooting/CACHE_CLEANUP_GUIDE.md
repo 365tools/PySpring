@@ -28,7 +28,7 @@ Get-ChildItem -Recurse -File -Filter "*.pyc" | Remove-Item -Force
 from pyspring.ioc.annotations.component import Component
 
 
-@Component()
+@Component
 class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     ...
 ```
@@ -38,7 +38,7 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
 ```python
 from pyspring.ioc.annotations.component import Component
 
-@Component()
+@Component
 class CustomRegisterService(DefaultRegisterService):
     ...
 ```

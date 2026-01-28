@@ -19,7 +19,7 @@ try:
         pass
 
 
-    @Component()
+    @Component
     class TestComponent2:
         pass
 
@@ -238,7 +238,7 @@ print("总结：所有装饰器都支持灵活的使用方式！")
 print("=" * 60)
 print()
 print("支持的用法：")
-print("  @Component / @Component() / @Component(name='...')")
+print("  @Component / @Component / @Component(name='...')")
 print("  @Service / @Service() / @Service(name='...')")
 print("  @Repository / @Repository() / @Repository(name='...')")
 print("  @Configuration / @Configuration()")

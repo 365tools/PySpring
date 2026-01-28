@@ -184,7 +184,7 @@ authentication:
 ### 示例3：代码配置
 
 ```python
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     def __init__(self):
         super().__init__(

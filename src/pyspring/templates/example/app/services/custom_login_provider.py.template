@@ -4,7 +4,7 @@
 ⚠️ 重要说明：
 1. 此文件是可选的高级自定义示例，默认情况下不启用
 2. 从 v1.1.0 开始，框架已支持配置化登录字段，大多数情况下无需自定义
-3. 如需启用，请取消注释 @Component() 装饰器
+3. 如需启用，请取消注释 @Component 装饰器
 
 推荐做法（使用配置）：
 ```yaml
@@ -22,7 +22,7 @@ authentication:
 - 需要自定义密码验证规则
 
 使用步骤：
-1. 取消注释下面的 @Component() 装饰器
+1. 取消注释下面的 @Component 装饰器
 2. 根据需要修改 authenticate() 方法中的自定义逻辑
 3. 重启应用即可生效（会自动替换框架默认的 DefaultPasswordLoginProvider）
 """
@@ -43,10 +43,10 @@ from app.models.user import User
 # ============================================================================
 # ⚠️ 以下是示例代码 - 默认禁用
 # ============================================================================
-# 启用方式：取消注释下面的 @Component() 装饰器
+# 启用方式：取消注释下面的 @Component 装饰器
 # ============================================================================
 
-# @Component()  # ⬅️ 取消此行注释以启用自定义登录提供者
+# @Component  # ⬅️ 取消此行注释以启用自定义登录提供者
 class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     """
     自定义密码登录提供者 - 示例
@@ -104,5 +104,5 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
 
 
 # 注意：此文件是示例代码，默认不导出
-# 如果取消注释 @Component() 启用自定义登录提供者，也不需要显式导出
+# 如果取消注释 @Component 启用自定义登录提供者，也不需要显式导出
 # __all__ = ["CustomPasswordLoginProvider"]

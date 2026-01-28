@@ -251,7 +251,7 @@ PySpring v1.1.0+ 使用统一的 DBManagerService 进行数据库访问：
 ```python
 from pyspring.repositories.db.manager import DBManagerService
 
-@Component()
+@Component
 class UserRepository:
     def __init__(self, db_manager: DBManagerService):
         self.db = db_manager
@@ -322,7 +322,7 @@ alembic upgrade head
 查看 [app/repositories/user_repository.py](app/repositories/user_repository.py)：
 
 ```python
-@Component()
+@Component
 class UserRepository:
     def __init__(self, db_manager: DBManagerService):
         self.db = db_manager
@@ -338,7 +338,7 @@ class UserRepository:
 查看 [app/database/initializer.py](app/database/initializer.py)：
 
 ```python
-@Component()
+@Component
 class DatabaseInitializer(IStartupInitializer):
     async def initialize(self) -> bool:
         """应用启动时执行"""

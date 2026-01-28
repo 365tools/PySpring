@@ -61,7 +61,7 @@ from app.models.user import User
 # 方式1：自定义 SecurityEntityConfiguration（推荐）
 # ============================================================
 
-@Component()  # ✅ 使用默认的 @Component，框架自动处理替换
+@Component  # ✅ 使用默认的 @Component，框架自动处理替换
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     """
     自定义安全实体配置 - 最简洁的方式
@@ -72,7 +72,7 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     
     工作原理（继承替换机制 v1.1.0b27+）：
     1. 继承 SecurityEntityConfiguration 并重写 __init__
-    2. 使用 @Component() - 无需指定 Bean 名称！
+    2. 使用 @Component - 无需指定 Bean 名称！
     3. 扫描阶段：
        - 框架扫描所有组件
        - 构建类型映射表
@@ -97,7 +97,7 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     注意：
     - 无需指定 Bean 名称！框架会自动检测继承关系
     - 父类必须有 @ConditionalOnMissingBean（框架默认配置已提供）
-    - 子类只需要普通的 @Component() 即可
+    - 子类只需要普通的 @Component 即可
     """
     
     def __init__(self):
@@ -158,7 +158,7 @@ from pyspring.security.authentication.contracts.login import ILoginProvider
 from pyspring.security.authentication.contracts.request import LoginRequest
 from pyspring.ioc.annotations import Component
 
-@Component()  # 不需要 @ConditionalOnMissingBean，因为可以有多个 ILoginProvider
+@Component  # 不需要 @ConditionalOnMissingBean，因为可以有多个 ILoginProvider
 class SmsLoginProvider(ILoginProvider):
     '''短信验证码登录提供者'''
     

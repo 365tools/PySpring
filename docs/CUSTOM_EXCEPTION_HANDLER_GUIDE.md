@@ -78,7 +78,7 @@ from pyspring.web.handlers.exception import GlobalExceptionHandler
 from pyspring.log.instance import logger
 
 
-@Component()
+@Component
 @Singleton
 class CustomExceptionHandler(GlobalExceptionHandler):
     """自定义异常处理器（继承框架实现）"""
@@ -132,7 +132,7 @@ from pyspring.web.handlers.base import IExceptionHandler
 from pyspring.log.instance import logger
 
 
-@Component()
+@Component
 @Singleton
 class MyCustomExceptionHandler(IExceptionHandler):
     """完全自定义的异常处理器"""
@@ -274,7 +274,7 @@ PySpring 框架使用 **继承检测机制** 自动替换组件：
 
 **原因：**
 
-1. 没有添加 `@Component()` 注解
+1. 没有添加 `@Component` 注解
 2. 没有继承 `GlobalExceptionHandler` 或实现 `IExceptionHandler`
 3. 包路径未被扫描
 
@@ -285,7 +285,7 @@ from pyspring.ioc import Component, Singleton
 from pyspring.web.handlers.exception import GlobalExceptionHandler
 
 
-@Component()  # ← 必须添加
+@Component  # ← 必须添加
 @Singleton
 class CustomExceptionHandler(GlobalExceptionHandler):  # ← 必须继承
     ...

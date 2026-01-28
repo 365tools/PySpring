@@ -203,7 +203,7 @@ class ITokenGenerator(IManaged, ABC):
 from pyspring.security.authentication.contracts.token import ITokenGenerator
 from pyspring.ioc.annotations.component import Component, Bean
 
-@Component()
+@Component
 class SessionTokenGenerator(ITokenGenerator):
     def encode(self, payload, expires_delta):
         session_id = str(uuid.uuid4())
@@ -269,7 +269,7 @@ class IPasswordEncoder(IManaged, ABC):
 
 
 # ✅ 默认实现
-@Component()
+@Component
 class BCryptPasswordEncoder(IPasswordEncoder):
     def __init__(self):
         self.helper = PasswordHelper()
@@ -282,7 +282,7 @@ class BCryptPasswordEncoder(IPasswordEncoder):
 
 
 # ✅ 用户DIY：Argon2编码器
-@Component()
+@Component
 class Argon2PasswordEncoder(IPasswordEncoder):
     def __init__(self):
         self.hasher = argon2.PasswordHasher()
@@ -320,7 +320,7 @@ class ILoginProvider(IManaged, ABC):
 **用户DIY示例：LDAP登录**
 
 ```python
-@Component()
+@Component
 class LDAPLoginProvider(ILoginProvider):
     def supports(self, request) -> bool:
         return request.auth_type == "ldap"
@@ -370,7 +370,7 @@ class IPermissionService(IManaged, ABC):
 import casbin
 from pyspring.security.authorization.contracts.permission import IPermissionService
 
-@Component()
+@Component
 class CasbinPermissionService(IPermissionService):
     def __init__(self):
         self.enforcer = casbin.Enforcer("model.conf", "policy.csv")
@@ -417,7 +417,7 @@ class IRoleProvider(IManaged, ABC):
 **用户DIY示例：Redis角色提供者**
 
 ```python
-@Component()
+@Component
 class RedisRoleProvider(IRoleProvider):
     async def get_user_roles(self, user_id):
         roles = await redis.smembers(f"user:{user_id}:roles")
@@ -600,7 +600,7 @@ from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from fastapi_users.password import PasswordHelper
 
 
-@Component()
+@Component
 class BCryptPasswordEncoder(IPasswordEncoder):
     """BCrypt密码编码器（默认实现）"""
 

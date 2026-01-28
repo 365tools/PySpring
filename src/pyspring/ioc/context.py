@@ -45,8 +45,8 @@ class ApplicationContext:
 
         # 如果提供了配置文件，从配置文件加载
         if config_file:
-            from pyspring.ioc.config.loader import IoCConfigLoader
-            loader = IoCConfigLoader(config_file)
+            from pyspring.ioc.config.loader import IOCConfigLoader
+            loader = IOCConfigLoader(config_file)
             loader.apply_to_container(instance._container)
 
         # 自动扫描框架级别的包和用户包

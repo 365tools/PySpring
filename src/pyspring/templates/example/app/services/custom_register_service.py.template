@@ -41,12 +41,12 @@ from app.models.user import User as UserModel
 from app.schemas.user import CustomUser
 
 
-@Component()
+@Component
 class CustomRegisterService(DefaultRegisterService):
     """
     自定义用户注册服务（继承框架默认实现）
     
-    使用 @Component() 装饰器：
+    使用 @Component 装饰器：
     - 让扫描器能够识别这个类
     - 父类 DefaultRegisterService 已有 @ConditionalOnMissingBean(IRegisterService)
     - 子类后注册，由于父类是条件组件，子类会替换父类

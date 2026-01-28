@@ -138,7 +138,7 @@ def create_component_decorator(
     
     这些装饰器都支持：
     1. 不带括号：@Component
-    2. 带括号：@Component()
+    2. 带括号：@Component
     3. 带参数：@Component(name="xxx", primary=True, lazy=True)
     
     Args:

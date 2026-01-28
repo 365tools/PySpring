@@ -72,7 +72,7 @@ class TestCustomConfiguration:
         from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
 
         # 创建自定义登录提供者（继承框架默认实现）
-        @Component()
+        @Component
         class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
             """
             自定义密码登录提供者
@@ -104,7 +104,7 @@ class TestCustomConfiguration:
         from pyspring.security.authentication.services.register import DefaultRegisterService
 
         # 创建自定义注册服务
-        @Component()
+        @Component
         class CustomRegisterService(DefaultRegisterService):
             """
             自定义注册服务
@@ -198,7 +198,7 @@ class TestCustomConfiguration:
                 return True
 
         # 用户提供的自定义实现（会替换默认实现）
-        @Component()
+        @Component
         class SMTPEmailService(IEmailService):
             """用户自定义的SMTP邮件服务"""
 
@@ -224,14 +224,14 @@ class TestCustomConfiguration:
         from pyspring.ioc.annotations import Component, Primary
 
         # 多个相同类型的实现
-        @Component()
+        @Component
         class RedisCache:
             """Redis缓存实现"""
 
             def get(self, key: str):
                 return f"redis:{key}"
 
-        @Component()
+        @Component
         @Primary()
         class MemoryCache:
             """内存缓存实现（主要候选者）"""
@@ -257,7 +257,7 @@ class TestCustomConfiguration:
 
         from pyspring.ioc.annotations import Component, Lazy
 
-        @Component()
+        @Component
         @Lazy()
         class ExpensiveService:
             """
@@ -289,7 +289,7 @@ class TestCustomConfiguration:
 
         from pyspring.ioc.annotations import Component, Singleton, Prototype
 
-        @Component()
+        @Component
         @Singleton()
         class DatabaseConnection:
             """单例Bean - 整个应用共享一个实例"""
@@ -299,7 +299,7 @@ class TestCustomConfiguration:
                 DatabaseConnection.instance_count += 1
                 self.id = DatabaseConnection.instance_count
 
-        @Component()
+        @Component
         @Prototype()
         class RequestContext:
             """原型Bean - 每次注入都创建新实例"""
@@ -326,7 +326,7 @@ class TestCustomConfiguration:
         from pyspring.ioc.annotations import Component
         from pyspring.security.authentication.contracts.user import IUserProvider
 
-        @Component()
+        @Component
         class LDAPUserProvider(IUserProvider):
             """LDAP用户提供者示例"""
 
@@ -389,7 +389,7 @@ class TestCustomConfiguration:
                 return Mock(name="AuditLogger")
 
         # 3. 自定义组件
-        @Component()
+        @Component
         class EmployeeService:
             """员工服务"""
 

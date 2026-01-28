@@ -18,7 +18,7 @@ from pyspring.repositories.db.manager import DBManagerService
 from app.models.user import User
 
 
-@Component()
+@Component
 class UserRepository:
     """
     用户仓储

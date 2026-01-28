@@ -102,7 +102,7 @@ class DefaultLoginProviderManager:
 
 ```python
 # ✅ 认证链设计优秀
-@Component()
+@Component
 class AuthenticationChain:
     async def authenticate(self, request):
         for provider in self.providers:
@@ -373,7 +373,7 @@ async def has_permission(self, user_id, permission):
 
 ```python
 # ✅ 添加缓存层
-@Component()
+@Component
 class CachedPermissionService(IPermissionService):
     def __init__(self, delegate: IPermissionService, cache: CacheManager):
         self.delegate = delegate
@@ -537,7 +537,7 @@ mv authentication/providers/response/builder/default.py → authentication/provi
 
 ```python
 # 创建 authorization/providers/permission/cached.py
-@Component()
+@Component
 class CachedPermissionService(IPermissionService):
     def __init__(self, delegate: IPermissionService, cache: CacheManager): ...
 ```

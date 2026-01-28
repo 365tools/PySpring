@@ -26,7 +26,7 @@ authentication:
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.ioc.annotations import Component
 
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     def __init__(self):
         super().__init__(

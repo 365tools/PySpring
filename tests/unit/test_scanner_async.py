@@ -7,7 +7,7 @@ from pyspring.ioc.annotations.component import Component
 
 
 # 模拟 example 中的类结构
-@Component()
+@Component
 class TestAsyncClass:
     """测试异步方法的类"""
 

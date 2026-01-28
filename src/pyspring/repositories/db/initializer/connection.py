@@ -10,7 +10,7 @@ from pyspring.log.instance import logger
 from ..manager import DBManagerService
 
 
-@Component()
+@Component
 class DBConnectionInitializer(IStartupInitializer):
     """
     数据库连接初始化器

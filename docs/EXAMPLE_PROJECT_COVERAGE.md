@@ -24,7 +24,7 @@ PySpring 示例项目是一个**完整的、生产级的示例应用**，全面�
 
 **示例代码：**
 ```python
-@Component()
+@Component
 class UserService:
     def __init__(self, user_repository: UserRepository):  # 自动注入
         self.user_repository = user_repository
@@ -49,7 +49,7 @@ class UserService:
 
 **示例代码：**
 ```python
-@Component()
+@Component
 class DatabaseInitializer(IStartupInitializer):
     async def initialize(self) -> bool:
         """应用启动时执行"""
@@ -187,7 +187,7 @@ def register(register_service: IRegisterService):  # 注入接口
 
 **示例代码：**
 ```python
-@Component()
+@Component
 class CacheService:
     async def get(self, key: str) -> Optional[str]:
         """获取缓存"""
@@ -300,7 +300,7 @@ async def timing_middleware(request: Request, call_next):
 
 **示例代码：**
 ```python
-@Component()
+@Component
 class DatabaseHealthIndicator(IHealthIndicator):
     async def check_health(self) -> HealthStatus:
         """检查数据库连接"""

@@ -16,7 +16,7 @@
 # ============================================================
 # 1. 配置层（已完成）
 # ============================================================
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     yaml_config_file = "config/repositories.yaml"
@@ -30,7 +30,7 @@ class CacheConfig(ConfigSection):
 # ============================================================
 # 2. 服务层 - 注册为 Component
 # ============================================================
-@Component()
+@Component
 @Singleton
 class RedisService(ICacheService):
     """Redis 服务实现"""
@@ -53,7 +53,7 @@ class RedisService(ICacheService):
         return self._pool
 
 
-@Component()
+@Component
 @Singleton
 class MemoryService(ICacheService):
     """内存缓存实现"""
@@ -66,7 +66,7 @@ class MemoryService(ICacheService):
 # ============================================================
 # 3. 工厂模式 - 根据配置选择实现
 # ============================================================
-@Component()
+@Component
 @Singleton
 class CacheServiceFactory:
     """缓存服务工厂"""
@@ -94,7 +94,7 @@ class CacheServiceFactory:
 # ============================================================
 # 4. Manager 使用工厂
 # ============================================================
-@Component()
+@Component
 @Singleton
 class CacheManagerService(IManaged):
     """缓存管理服务"""
@@ -122,7 +122,7 @@ class CacheManagerService(IManaged):
 # ============================================================
 # 5. Initializer 只负责连接初始化
 # ============================================================
-@Component()
+@Component
 class CacheConnectionInitializer(IStartupInitializer):
     """缓存连接初始化器"""
     
@@ -178,20 +178,20 @@ async def get_cache(
 
 ```python
 # 使用 @Conditional 注解根据配置动态注册
-@Component()
+@Component
 @Singleton
 @Conditional(lambda: get_config().cache.type == "redis")
 class RedisService(ICacheService):
     ...
 
-@Component()
+@Component
 @Singleton  
 @Conditional(lambda: get_config().cache.type == "memory")
 class MemoryService(ICacheService):
     ...
 
 # Manager 直接注入接口（IOC 自动选择正确的实现）
-@Component()
+@Component
 @Singleton
 class CacheManagerService:
     def __init__(self, cache_service: ICacheService):
@@ -202,14 +202,14 @@ class CacheManagerService:
 
 ```python
 # 1. 服务注册为 Component
-@Component()
+@Component
 @Singleton
 class SqliteService(IDBService):
     def __init__(self, db_config: DatabaseConfig):
         self.config = db_config.sqlite
         self._engine: Optional[AsyncEngine] = None
 
-@Component()
+@Component
 @Singleton
 class PostgresService(IDBService):
     def __init__(self, db_config: DatabaseConfig):
@@ -218,7 +218,7 @@ class PostgresService(IDBService):
 
 
 # 2. 工厂选择
-@Component()
+@Component
 @Singleton
 class DBServiceFactory:
     def __init__(
@@ -242,7 +242,7 @@ class DBServiceFactory:
 
 
 # 3. Manager 使用工厂
-@Component()
+@Component
 @Singleton
 class DBManagerService(IManaged):
     def __init__(self, db_factory: DBServiceFactory):

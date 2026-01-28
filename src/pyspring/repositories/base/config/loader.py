@@ -5,13 +5,14 @@
 from typing import Dict, Any
 
 import yaml
+
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
 from pyspring.utils.config.finder import find_config_file
 
 
-@Component()
+@Component
 @Singleton
 class RepositoriesConfigManager(IManaged):
     """

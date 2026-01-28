@@ -90,7 +90,7 @@ from pyspring.ioc.annotations.component import Component
 from pyspring.security.authentication.contracts.login import ILoginProvider
 
 
-@Component()  # ← 自动注册为Bean
+@Component  # ← 自动注册为Bean
 class LDAPLoginProvider(ILoginProvider):
     """LDAP登录提供者"""
 
@@ -151,7 +151,7 @@ def custom_login_service(...) -> ILoginService:
 from pyspring.security.authentication.contracts.user import IUserProvider
 
 
-@Component()
+@Component
 class RedisUserProvider(IUserProvider):
     """从Redis读取用户"""
 
@@ -173,7 +173,7 @@ class RedisUserProvider(IUserProvider):
 from pyspring.security.authentication.contracts.token import ITokenGenerator
 
 
-@Component()
+@Component
 class SessionTokenGenerator(ITokenGenerator):
     """Session Token生成器"""
 
@@ -206,7 +206,7 @@ from pyspring.security.authentication.contracts.password import IPasswordEncoder
 import argon2
 
 
-@Component()
+@Component
 class Argon2PasswordEncoder(IPasswordEncoder):
     """Argon2密码编码器（更强的安全性）"""
 
@@ -287,7 +287,7 @@ class AuthorizationConfiguration:
 from pyspring.security.authorization.contracts.role import IRoleProvider
 
 
-@Component()
+@Component
 class RedisRoleProvider(IRoleProvider):
     """从Redis读取角色和权限"""
 
@@ -322,7 +322,7 @@ import casbin
 from pyspring.security.authorization.contracts.permission import IPermissionService
 
 
-@Component()
+@Component
 class CasbinPermissionService(IPermissionService):
     """使用Casbin进行权限判定"""
 
@@ -406,7 +406,7 @@ def custom_cached_permission_service(
 
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider
 
-@Component()
+@Component
 class DatabasePathPermissionProvider(IPathPermissionProvider):
     """从数据库读取路径权限规则"""
     
@@ -548,7 +548,7 @@ class MultiTenantSecurityConfig:
 
 1. **优先使用@Component**
    ```python
-   @Component()  # 简单，自动注册
+   @Component  # 简单，自动注册
    class MyCustomProvider(ILoginProvider):
        pass
    ```

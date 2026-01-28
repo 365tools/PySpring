@@ -598,7 +598,7 @@ async def test(user: AuthenticatedUser):
 from pyspring.ioc.annotations import Component
 from pyspring.security.authentication.contracts.token import ITokenService
 
-@Component()
+@Component
 class MyCustomTokenService(ITokenService):
     async def verify_token(self, token: str):
         # 自定义验证逻辑

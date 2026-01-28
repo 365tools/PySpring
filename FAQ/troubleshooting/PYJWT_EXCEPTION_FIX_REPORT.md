@@ -252,7 +252,7 @@ def verify_token(self, token: str) -> Optional[dict]:
 推荐方式：
 from pyspring.security.authentication.token.generator.jwt import JWTTokenGenerator
 
-@Component()
+@Component
 class AuthService:
     def __init__(self, jwt_generator: JWTTokenGenerator):
         self.jwt_generator = jwt_generator

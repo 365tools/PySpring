@@ -11,7 +11,7 @@ print()
 # 测试1: 不带括号 + @Component
 print("测试1: @Component + @ConditionalOnMissingBean (不带括号)")
 try:
-    @Component()
+    @Component
     @ConditionalOnMissingBean
     class TestClass1:
         pass
@@ -34,7 +34,7 @@ print()
 # 测试2: 带括号 + @Component
 print("测试2: @Component + @ConditionalOnMissingBean() (带括号)")
 try:
-    @Component()
+    @Component
     @ConditionalOnMissingBean()
     class TestClass2:
         pass
@@ -66,7 +66,7 @@ try:
             pass
 
 
-    @Component()
+    @Component
     @ConditionalOnMissingBean(SomeInterface)
     class TestClass3(SomeInterface):
         def do_something(self):

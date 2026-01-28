@@ -77,7 +77,7 @@ def Component(
         # @Component 形式：直接装饰类
         return decorator(cls)
     else:
-        # @Component() 或 @Component(name="xxx") 形式：返回装饰器函数
+        # @Component 或 @Component(name="xxx") 形式：返回装饰器函数
         return decorator
 
 

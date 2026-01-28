@@ -14,7 +14,7 @@ class IPasswordEncoder(IManaged, ABC):
     
     示例：
         # 默认实现（BCrypt）
-        @Component()
+        @Component
         class BCryptPasswordEncoder(IPasswordEncoder):
             def encode(self, raw_password: str) -> str:
                 return bcrypt.hashpw(raw_password.encode(), bcrypt.gensalt()).decode()
@@ -23,7 +23,7 @@ class IPasswordEncoder(IManaged, ABC):
                 return bcrypt.checkpw(raw_password.encode(), encoded_password.encode())
         
         # 用户DIY（Argon2）
-        @Component()
+        @Component
         class Argon2PasswordEncoder(IPasswordEncoder):
             def encode(self, raw_password: str) -> str:
                 return argon2.hash(raw_password)

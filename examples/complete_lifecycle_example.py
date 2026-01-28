@@ -19,6 +19,7 @@ import uvicorn
 from fastapi import FastAPI, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 # PySpring 导入
 from pyspring.ioc import ApplicationContext
 from pyspring.ioc.annotations.component import Component
@@ -33,7 +34,7 @@ from pyspring.log.instance import logger
 # 1. 定义业务服务
 # ============================================================================
 
-@Component()
+@Component
 @Singleton
 class UserService(IManaged):
     """用户服务示例"""
@@ -53,7 +54,7 @@ class UserService(IManaged):
         return self.users[user_id]
 
 
-@Component()
+@Component
 @Singleton
 class OrderService(IManaged):
     """订单服务示例 - 展示依赖注入"""
@@ -82,7 +83,7 @@ class OrderService(IManaged):
 # 2. 定义启动初始化器
 # ============================================================================
 
-@Component()
+@Component
 @Singleton
 class DatabaseInitializer(IStartupInitializer):
     """数据库初始化器"""
@@ -101,7 +102,7 @@ class DatabaseInitializer(IStartupInitializer):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class CacheInitializer(IStartupInitializer):
     """缓存初始化器"""
@@ -120,7 +121,7 @@ class CacheInitializer(IStartupInitializer):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class DataPreloadInitializer(IStartupInitializer):
     """数据预加载初始化器"""
@@ -149,7 +150,7 @@ class DataPreloadInitializer(IStartupInitializer):
 # 3. 定义关闭处理器
 # ============================================================================
 
-@Component()
+@Component
 @Singleton
 class DatabaseShutdownHandler(IShutdownHandler):
     """数据库关闭处理器"""
@@ -165,7 +166,7 @@ class DatabaseShutdownHandler(IShutdownHandler):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class CacheShutdownHandler(IShutdownHandler):
     """缓存关闭处理器"""
@@ -181,7 +182,7 @@ class CacheShutdownHandler(IShutdownHandler):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class StateSaveHandler(IShutdownHandler):
     """状态保存处理器"""

@@ -6,14 +6,13 @@ from typing import Optional
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
-
 from .config import CacheConfig
 from .providers.memory.services.service import MemoryService
 from .providers.redis.services.service import RedisService
 from .service import ICacheService
 
 
-@Component()
+@Component
 @Singleton
 class CacheServiceFactory:
     """缓存服务工厂（由 IOC 容器管理）"""

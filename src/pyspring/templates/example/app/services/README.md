@@ -58,7 +58,7 @@ authentication:
 ### 如何启用？
 
 1. **打开文件** `app/services/custom_login_provider.py`
-2. **取消注释** `@Component()` 装饰器（第 45 行左右）
+2. **取消注释** `@Component` 装饰器（第 45 行左右）
 3. **根据需要修改** `authenticate()` 方法中的自定义逻辑
 4. **重启应用**
 
@@ -71,12 +71,12 @@ A: 如果你的项目中同时存在以下文件：
 - `custom_login_provider.py`
 - `custom_login_provider_example.py`
 
-并且两个文件都定义了 `CustomPasswordLoginProvider` 类且都启用了 `@Component()`，会导致重复注册。
+并且两个文件都定义了 `CustomPasswordLoginProvider` 类且都启用了 `@Component`，会导致重复注册。
 
 **解决方案：**
 
 - 删除其中一个文件（推荐保留 `custom_login_provider.py`）
-- 或者确保只有一个文件启用了 `@Component()` 装饰器
+- 或者确保只有一个文件启用了 `@Component` 装饰器
 
 ---
 
@@ -85,12 +85,12 @@ A: 如果你的项目中同时存在以下文件：
 创建新服务的步骤：
 
 1. 在 `app/services/` 目录下创建新文件，如 `my_service.py`
-2. 定义服务类并使用 `@Component()` 装饰器：
+2. 定义服务类并使用 `@Component` 装饰器：
 
 ```python
 from pyspring.ioc import Component
 
-@Component()
+@Component
 class MyService:
     def __init__(self, dependency: SomeDependency):
         self.dependency = dependency
@@ -104,7 +104,7 @@ class MyService:
 4. 在其他地方通过依赖注入使用：
 
 ```python
-@Component()
+@Component
 class OtherService:
     def __init__(self, my_service: MyService):
         self.my_service = my_service

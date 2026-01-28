@@ -70,7 +70,7 @@ class SQLiteConfig(ConfigSection):
     pool: DatabasePoolConfig = Field(default_factory=DatabasePoolConfig, description="连接池配置")
 
 
-@Component()
+@Component
 @Singleton
 class DatabaseConfig(ConfigSection):
     """通用数据库配置"""

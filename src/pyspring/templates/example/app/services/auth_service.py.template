@@ -24,7 +24,7 @@ from app.repositories.user_repository import UserRepository
 from app.models.user import User
 
 
-@Component()
+@Component
 class AuthService:
     """
     认证服务 - 框架最佳实践示范

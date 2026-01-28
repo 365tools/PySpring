@@ -23,7 +23,7 @@ log_mgr = LoggingConfigManager()  # 自动加载 logging.yaml
 1. **配置类不自动加载 YAML**
    ```python
    # ❌ Pydantic 原生不支持 YAML
-   @Component()
+   @Component
    @Singleton
    class CacheConfig(ConfigSection):
        type: str = Field(default="memory")
@@ -76,7 +76,7 @@ class ConfigSection(BaseSettings):
     4. Field 默认值
     
     使用示例：
-        @Component()
+        @Component
         @Singleton
         class CacheConfig(ConfigSection):
             model_config = SettingsConfigDict(
@@ -194,7 +194,7 @@ from pydantic import Field
 from pydantic_settings import SettingsConfigDict
 
 
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """
@@ -249,7 +249,7 @@ database:
 
 ```python
 # 业务代码
-@Component()
+@Component
 class CacheConnectionInitializer:
     def __init__(self, cache_config: CacheConfig):
         # IOC 自动注入配置（已自动加载 YAML）
@@ -419,7 +419,7 @@ class CacheConfigProvider:
 ```python
 # repositories/cache/config.py
 
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     model_config = SettingsConfigDict(
@@ -455,7 +455,7 @@ CACHE__REDIS__PASSWORD=secret123
 ### 业务代码
 
 ```python
-@Component()
+@Component
 class CacheConnectionInitializer:
     def __init__(self, cache_config: CacheConfig):
         # IOC 注入配置（YAML 已自动加载）

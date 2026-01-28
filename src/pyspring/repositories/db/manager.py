@@ -7,7 +7,7 @@ from .factory import DBServiceFactory
 from .service import IDBService
 
 
-@Component()
+@Component
 @Singleton
 class DBManagerService(IManaged):
     """

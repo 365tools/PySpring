@@ -14,7 +14,7 @@ from app.repositories.user_repository import UserRepository
 from app.services.cache_service import CacheService
 
 
-@Component()
+@Component
 class HealthCheckService:
     """健康检查服务"""
     

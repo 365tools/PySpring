@@ -148,7 +148,7 @@ assert len(TestImpl.__abstractmethods__) == 0  # 已实现所有抽象方法
 ### 测试用例 3: 继承实现类
 
 ```python
-@Component()
+@Component
 class TestImpl2(TestImpl):
     pass
 
@@ -164,7 +164,7 @@ from pyspring.security.authentication.providers.login.password import DefaultPas
 from pyspring.ioc.annotations import Component
 
 
-@Component()
+@Component
 class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     pass
 
@@ -319,7 +319,7 @@ def test_conditional_on_missing_bean_inheritance():
         def foo(self): return "foo"
 
     # 应该可以正常继承
-    @Component()
+    @Component
     class CustomFoo(FooImpl):
         def foo(self): return "custom foo"
 

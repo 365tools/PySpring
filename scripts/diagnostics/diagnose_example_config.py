@@ -135,8 +135,8 @@ def diagnose_example_project(project_dir: Path) -> dict:
     if results["security_config_exists"]:
         results["has_component_decorator"] = check_file_content(
             security_config_file,
-            "@Component()",
-            "CustomSecurityEntityConfiguration 有 @Component() 装饰器"
+            "@Component",
+            "CustomSecurityEntityConfiguration 有 @Component 装饰器"
         )
         results["has_user_orm_model"] = check_file_content(
             security_config_file,
@@ -145,7 +145,7 @@ def diagnose_example_project(project_dir: Path) -> dict:
         )
 
         if not results["has_component_decorator"]:
-            results["issues"].append("security_config.py 缺少 @Component() 装饰器")
+            results["issues"].append("security_config.py 缺少 @Component 装饰器")
         if not results["has_user_orm_model"]:
             results["issues"].append("security_config.py 未配置 self.user_orm_model = User")
     else:
@@ -204,7 +204,7 @@ def create_security_config_file(project_dir: Path) -> bool:
         - 这样 identifier 登录才能查询正确的用户表
         
         重要：
-        - 必须有 @Component() 装饰器
+        - 必须有 @Component 装饰器
         - 必须继承 SecurityEntityConfiguration
         - 重写 user_orm_model 指向你的自定义 User 类
         """
@@ -213,7 +213,7 @@ def create_security_config_file(project_dir: Path) -> bool:
         from app.models.user import User  # 导入自定义 User 模型
         
         
-        @Component()
+        @Component
         class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
             """自定义安全实体配置"""
             

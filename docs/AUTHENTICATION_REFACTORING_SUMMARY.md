@@ -82,7 +82,7 @@ class ITokenGenerator(ABC):
 #### 新增实现：`JWTTokenGenerator`
 
 ```python
-@Component()
+@Component
 @Singleton
 class JWTTokenGenerator(ITokenGenerator):
     """JWT Token 生成器"""
@@ -412,7 +412,7 @@ from pyspring.security.authentication.contracts.interface.token_generator import
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 
-@Component()
+@Component
 @Singleton
 class SessionTokenGenerator(ITokenGenerator):
     """基于 Session 的 Token 生成器"""

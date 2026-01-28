@@ -17,7 +17,7 @@ from app.models.user import User
 from app.services.cache_service import CacheService
 
 
-@Component()
+@Component
 class UserService:
     """
     用户服务

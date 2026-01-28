@@ -10,7 +10,7 @@ from .core.interface import ILoggerService
 from .providers.loguru.services.service import LoguruService
 
 
-@Component()
+@Component
 @Singleton
 class LogManager(IManaged):
     """

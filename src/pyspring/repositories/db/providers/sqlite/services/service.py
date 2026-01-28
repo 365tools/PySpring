@@ -4,17 +4,17 @@ import asyncio
 import os
 from typing import Any, Optional, List, Dict
 
-from pyspring.ioc.annotations.component import Component
-from pyspring.ioc.annotations.scope import Singleton
-from pyspring.log.instance import logger
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker, AsyncEngine
 
+from pyspring.ioc.annotations.component import Component
+from pyspring.ioc.annotations.scope import Singleton
+from pyspring.log.instance import logger
 from ..interfaces.service import ISqliteService
 from ....config import DatabaseConfig
 
 
-@Component()
+@Component
 @Singleton
 class SqliteService(ISqliteService):
     """SQLite数据库服务实现（由 IOC 容器管理）"""

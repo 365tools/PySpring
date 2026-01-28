@@ -8,16 +8,16 @@ import json
 from typing import Optional, Any
 
 import redis.asyncio as redis
+from redis.asyncio.connection import ConnectionPool
+
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
-from redis.asyncio.connection import ConnectionPool
-
 from ..interfaces.service import IRedisService
 from ....config import CacheConfig
 
 
-@Component()
+@Component
 @Singleton
 class RedisService(IRedisService):
     """Redis 缓存服务（由 IOC 容器管理）"""

@@ -29,18 +29,18 @@
 
 ```python
 # 服务层
-@Component() @Singleton
+@Component @Singleton
 class RedisService(ICacheService):
     def __init__(self, cache_config: CacheConfig):
         # 配置通过构造函数注入
 
-@Component() @Singleton  
+@Component @Singleton  
 class MemoryService(ICacheService):
     def __init__(self, cache_config: CacheConfig):
         # 配置通过构造函数注入
 
 # Factory 层
-@Component() @Singleton
+@Component @Singleton
 class CacheServiceFactory:
     def __init__(self, cache_config: CacheConfig, 
                  redis_service: RedisService, 
@@ -51,7 +51,7 @@ class CacheServiceFactory:
         # 基于配置返回正确的服务
 
 # Manager 层
-@Component() @Singleton
+@Component @Singleton
 class CacheManagerService(IManaged):
     def __init__(self, cache_service_factory: CacheServiceFactory):
         # Factory 注入
@@ -61,7 +61,7 @@ class CacheManagerService(IManaged):
         # 延迟初始化
 
 # Initializer 层
-@Component()
+@Component
 class CacheConnectionInitializer(IStartupInitializer):
     def __init__(self, cache_manager: CacheManagerService):
         # Manager 注入
@@ -120,7 +120,7 @@ class CacheConnectionInitializer(IStartupInitializer):
 
 ```python
 # Manager 使用类方法模式（不是实例方法）
-@Component() @Singleton
+@Component @Singleton
 class LogManager(IManaged):
     _implementation: Optional[ILoggerService] = None
     _provider_registry: Dict[str, Type[ILoggerService]] = {
@@ -143,7 +143,7 @@ class LogManager(IManaged):
         return cls._implementation
 
 # 服务层
-@Component() @Singleton
+@Component @Singleton
 class LoguruService(IManaged, ILoggerService):
     def __init__(self):
         """无需配置注入，直接初始化"""
@@ -221,7 +221,7 @@ class AuthProviderFactory:
 
 
 # Chain 模式管理提供者
-@Component() @ Singleton
+@Component @ Singleton
 class AuthenticationChain(IManaged):
     def __init__(self):
         self.providers: List[BaseAuthenticationProvider] = []
@@ -255,7 +255,7 @@ class DefaultLoginProviderManager(ILoginProvider):
 
 
 # Service 层（IOC 注入）
-@Component() @ Singleton
+@Component @ Singleton
 class DefaultLoginService(ILoginService):
     def __init__(self,
                  user_provider: IUserProvider,
@@ -312,7 +312,7 @@ class DefaultLoginService(ILoginService):
 
 ```python
 # 系统配置服务（IOC 注入）
-@Component() @Singleton
+@Component @Singleton
 class SystemService(IManaged):
     def __init__(self, settings: AppSettings):
         """AppSettings 通过 IOC 注入"""
@@ -487,13 +487,13 @@ AOP（面向切面编程）模块通常使用装饰器模式：
 
 ```python
 # 1. 服务注册
-@Component() @Singleton
+@Component @Singleton
 class RedisService:
     def __init__(self, cache_config: CacheConfig):
         # 配置注入
 
 # 2. Factory 选择
-@Component() @Singleton
+@Component @Singleton
 class CacheServiceFactory:
     def __init__(self, cache_config: CacheConfig, 
                  redis_service: RedisService, 
@@ -504,7 +504,7 @@ class CacheServiceFactory:
         # 基于配置返回
 
 # 3. Manager 延迟
-@Component() @Singleton
+@Component @Singleton
 class CacheManagerService:
     def __init__(self, cache_service_factory: CacheServiceFactory):
         # Factory 注入
@@ -517,7 +517,7 @@ class CacheManagerService:
 ### ✅ 正确的类方法模式（log）
 
 ```python
-@Component() @Singleton
+@Component @Singleton
 class LogManager:
     @classmethod
     def get_logger(cls) -> ILoggerService:
@@ -533,7 +533,7 @@ class AuthProviderFactory:
 # Factory 创建
 
 
-@Component() @ Singleton
+@Component @ Singleton
 class AuthenticationChain:
     def register_providers(self, providers: List):
 # Chain 注册

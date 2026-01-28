@@ -6,14 +6,13 @@ from typing import Optional
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
-
 from .config import DatabaseConfig
 from .providers.postgres.services.service import PostgresService
 from .providers.sqlite.services.service import SqliteService
 from .service import IDBService
 
 
-@Component()
+@Component
 @Singleton
 class DBServiceFactory:
     """数据库服务工厂（由 IOC 容器管理）"""

@@ -78,7 +78,7 @@ def test_ioc_registration():
     print("测试：IoC 容器中的Bean名称机制")
     print("=" * 80 + "\n")
 
-    print("分析：@Component() 如何生成 Bean 名称...\n")
+    print("分析：@Component 如何生成 Bean 名称...\n")
 
     # 模拟 _generate_name 逻辑
     import re
@@ -88,7 +88,7 @@ def test_ioc_registration():
 
     from pyspring.ioc.annotations import Component
 
-    @Component()
+    @Component
     class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
         def __init__(self):
             super().__init__()

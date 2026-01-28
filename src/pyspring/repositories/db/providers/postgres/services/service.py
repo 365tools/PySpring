@@ -13,7 +13,7 @@ from ..interfaces.service import IPostgresService
 from ....config import DatabaseConfig
 
 
-@Component()
+@Component
 @Singleton
 class PostgresService(IPostgresService):
     """PostgreSQL数据库服务实现（由 IOC 容器管理）"""

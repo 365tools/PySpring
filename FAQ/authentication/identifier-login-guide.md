@@ -205,7 +205,7 @@ from sqlalchemy import select, or_
 from app.models.user import User
 
 
-@Component()
+@Component
 class CustomUserProvider(DefaultUserProvider):
     """自定义用户提供者"""
 

@@ -3,7 +3,7 @@
 
 测试场景：
 1. 框架默认使用 UserTable（表名：pyspring_user）
-2. 用户通过 @Component() 自定义 CustomSecurityEntityConfiguration
+2. 用户通过 @Component 自定义 CustomSecurityEntityConfiguration
 3. 验证 IoC 容器是否使用自定义的 User 模型（表名：custom_users）
 4. 验证数据库查询是否使用正确的表
 
@@ -57,13 +57,13 @@ class CustomUser(BaseUserTable):
 # ============================================================
 # 2. 定义自定义配置（模拟 example 中的 app/config/security_config.py）
 # ============================================================
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     """
     自定义安全实体配置
     
     模拟 example 项目中的配置方式：
-    - 使用 @Component() 装饰器
+    - 使用 @Component 装饰器
     - 继承 SecurityEntityConfiguration
     - 重写 user_orm_model
     """
@@ -244,11 +244,11 @@ def test_check_example_template():
             content = file_path.read_text(encoding='utf-8')
 
             if name == "security_config.py.template":
-                has_component = "@Component()" in content
+                has_component = "@Component" in content
                 has_inheritance = "SecurityEntityConfiguration" in content
                 has_user_model = "self.user_orm_model = User" in content
 
-                print(f"   • 包含 @Component(): {has_component}")
+                print(f"   • 包含 @Component: {has_component}")
                 print(f"   • 继承 SecurityEntityConfiguration: {has_inheritance}")
                 print(f"   • 配置 user_orm_model: {has_user_model}")
 

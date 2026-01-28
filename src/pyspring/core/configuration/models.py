@@ -5,7 +5,7 @@
 所有具体配置类从各模块引用，避免重复定义。
 
 使用方式（通过IoC注入）：
-    @Component()
+    @Component
     class MyService:
         def __init__(self, settings: AppSettings):
             self.port = settings.app.server.port
@@ -46,7 +46,7 @@ class AppConfig(ConfigSection):
 
 # ==================== 主配置类 ====================
 
-@Component()
+@Component
 @Singleton
 class AppSettings(BaseSettings):
     """
@@ -58,7 +58,7 @@ class AppSettings(BaseSettings):
     3. 默认值
     
     使用方式：
-        @Component()
+        @Component
         class MyService:
             def __init__(self, settings: AppSettings):
                 self.port = settings.app.server.port

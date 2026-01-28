@@ -28,7 +28,7 @@ class CustomUser(BaseUserTable):
 
 
 # 自定义配置（继承框架默认配置）
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     """自定义安全配置 - 测试继承替换"""
 

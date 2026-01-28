@@ -309,13 +309,13 @@ class Container:
 
 ```python
 # 场景 1：父类有 @ConditionalOnMissingBean
-@Component()
+@Component
 @ConditionalOnMissingBean
 class SecurityEntityConfiguration:
     pass
 
 
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     pass
 
@@ -324,13 +324,13 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
 
 
 # 场景 2：父类指定了检查类型
-@Component()
+@Component
 @ConditionalOnMissingBean(IUserProvider)
 class DefaultUserProvider(IUserProvider):
     pass
 
 
-@Component()
+@Component
 class CustomUserProvider(IUserProvider):
     pass
 
@@ -348,7 +348,7 @@ class MiddleConfig(BaseConfig):
     pass
 
 
-@Component()
+@Component
 class FinalConfig(MiddleConfig):
     pass
 

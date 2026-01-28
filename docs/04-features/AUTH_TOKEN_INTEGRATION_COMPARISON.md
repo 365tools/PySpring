@@ -206,28 +206,28 @@ async def test(user: AuthenticatedUser):
 
 ```python
 # 1. JWT令牌提供者（默认）
-@Component()
+@Component
 class JWTTokenService(ITokenService):
     async def verify_token(self, token: str):
         # JWT验证逻辑
         pass
 
 # 2. Session令牌提供者（可选）
-@Component()
+@Component
 class SessionTokenService(ITokenService):
     async def verify_token(self, token: str):
         # Session验证逻辑
         pass
 
 # 3. API Key提供者（可选）
-@Component()
+@Component
 class APIKeyTokenService(ITokenService):
     async def verify_token(self, token: str):
         # API Key验证逻辑
         pass
 
 # 4. 多租户令牌提供者（自定义）
-@Component()
+@Component
 class MultiTenantTokenService(ITokenService):
     async def verify_token(self, token: str):
         # 多租户验证逻辑

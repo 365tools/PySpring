@@ -38,7 +38,7 @@ from pyspring.security.authentication.config.entity import SecurityEntityConfigu
 from app.models.user import User  # 导入你的自定义 User 模型
 
 
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     """自定义安全实体配置"""
     
@@ -96,7 +96,7 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
 ## 快速检查清单
 
 - [ ] `app/config/security_config.py` 文件存在
-- [ ] `CustomSecurityEntityConfiguration` 有 `@Component()` 装饰器
+- [ ] `CustomSecurityEntityConfiguration` 有 `@Component` 装饰器
 - [ ] `user_orm_model = User` 指向正确的自定义模型
 - [ ] `app/main.py` 中 `base_packages` 包含 `'app'`
 - [ ] 启动日志显示 `CustomSecurityEntityConfiguration` 已注册
@@ -128,7 +128,7 @@ from pyspring.security.authentication.config.entity import SecurityEntityConfigu
 from app.models.user import User
 
 
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     def __init__(self):
         super().__init__()
@@ -175,7 +175,7 @@ authentication:
 
 ## 常见错误
 
-### 错误 1：忘记 `@Component()` 装饰器
+### 错误 1：忘记 `@Component` 装饰器
 
 ```python
 # ❌ 错误：没有装饰器，扫描器无法识别
@@ -183,7 +183,7 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     ...
 
 # ✅ 正确
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     ...
 ```

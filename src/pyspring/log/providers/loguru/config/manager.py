@@ -13,7 +13,7 @@ from pyspring.ioc.interfaces.core import IManaged
 from pyspring.log.core.config import LoggingConfig
 
 
-@Component()
+@Component
 @Singleton
 class LoggingConfigManager(IManaged):
     """

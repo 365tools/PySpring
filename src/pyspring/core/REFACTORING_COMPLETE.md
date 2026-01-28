@@ -76,7 +76,7 @@ system_service.settings.authentication.jwt.secret_key
 
 **新增内容**:
 
-- ✅ IoC 装饰器: `@Component()` + `@Singleton`
+- ✅ IoC 装饰器: `@Component` + `@Singleton`
 - ✅ 依赖注入: 通过构造器注入 `AppSettings`
 
 **代码对比**:
@@ -86,7 +86,7 @@ system_service.settings.authentication.jwt.secret_key
 settings = AppSettings()  # 全局单例
 
 # ✅ 新方式
-@Component()
+@Component
 @Singleton
 class AppSettings(BaseSettings):
     ...

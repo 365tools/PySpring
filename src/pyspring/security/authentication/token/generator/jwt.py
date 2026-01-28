@@ -18,7 +18,7 @@ from pyspring.security.authentication.infrastructure.crypto.encryption import JW
 from pyspring.security.core.config.loader import SecurityConfigManager
 
 
-@Component()
+@Component
 @Singleton
 class JWTTokenGenerator(ITokenGenerator):
     """

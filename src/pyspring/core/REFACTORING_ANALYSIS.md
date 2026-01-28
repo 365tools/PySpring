@@ -62,7 +62,7 @@ from pyspring.core.abstracts.config import (
 **问题：**
 
 ```python
-@Component()
+@Component
 @Singleton
 class BaseConfigManager(IManaged, ABC, Generic[TSettings]):
     """配置管理器基类"""
@@ -90,7 +90,7 @@ class BaseConfigManager(IManaged, ABC, Generic[TSettings]):
 **问题：**
 
 ```python
-@Component()
+@Component
 @Singleton
 class ConfigRegistry(IManaged):
     """配置注册中心"""
@@ -140,7 +140,7 @@ class ConfigValidator:
 **问题：**
 
 ```python
-@Component()
+@Component
 @Singleton
 class EnvConfigLoader(IManaged):
     """环境配置加载器"""
@@ -451,7 +451,7 @@ port = system_service.get("server").port
 from pyspring.core.configuration.models import AppSettings
 
 
-@Component()
+@Component
 class MyService:
     def __init__(self, settings: AppSettings):  # IoC注入
         self.port = settings.app.server.port

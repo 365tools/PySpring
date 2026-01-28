@@ -24,7 +24,7 @@ class ConfigSection(BaseSettings):
     配置优先级：环境变量 > YAML 文件 > Field 默认值
     
     使用示例：
-        @Component()
+        @Component
         @Singleton
         class CacheConfig(ConfigSection):
             model_config = SettingsConfigDict(

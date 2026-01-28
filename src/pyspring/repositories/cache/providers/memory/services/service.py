@@ -14,7 +14,7 @@ from ..interfaces.service import IMemoryService
 from ....config import CacheConfig
 
 
-@Component()
+@Component
 @Singleton
 class MemoryService(IMemoryService):
     """内存缓存服务（LRU 实现，由 IOC 容器管理）"""

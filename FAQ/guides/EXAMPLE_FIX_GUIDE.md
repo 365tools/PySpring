@@ -41,7 +41,7 @@ from pyspring.ioc.annotations.component import Component
 在类定义前添加装饰器：
 
 ```python
-@Component()
+@Component
 class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
     ...
 ```
@@ -57,7 +57,7 @@ from pyspring.ioc.annotations.component import Component
 确认类定义前有装饰器：
 
 ```python
-@Component()
+@Component
 class CustomRegisterService(DefaultRegisterService):
     ...
 ```
@@ -69,7 +69,7 @@ class CustomRegisterService(DefaultRegisterService):
 ```python
 from pyspring.ioc.annotations.component import Component
 
-@Component()
+@Component
 class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
     ...
 ```

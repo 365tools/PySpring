@@ -6,13 +6,13 @@
 
 ```python
 # 方式 1: 配置类
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
 
 # 方式 2: 初始化器类
-@Component()
+@Component
 class CacheConnectionInitializer:
     def __init__(self, cache_config: CacheConfig, cache_manager: CacheManagerService):
         ...
@@ -38,7 +38,7 @@ class CacheConnectionInitializer:
 
 ```python
 # 步骤 1: 定义配置类（数据容器）
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """配置类 - 只负责存储配置数据"""
@@ -46,7 +46,7 @@ class CacheConfig(ConfigSection):
     redis: RedisConfig = Field(default_factory=RedisConfig)
 
 # 步骤 2: 定义业务类（使用配置）
-@Component()
+@Component
 class CacheConnectionInitializer:
     """初始化器 - 使用配置来初始化缓存"""
     def __init__(self, cache_config: CacheConfig, cache_manager: CacheManagerService):
@@ -102,12 +102,12 @@ class CacheConnectionInitializer:
 
 ```python
 # ❌ 配置类不加 @Singleton
-@Component()  # 每次获取都创建新实例
+@Component  # 每次获取都创建新实例
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
 
 # ✅ 配置类必须加 @Singleton
-@Component()
+@Component
 @Singleton  # 全局唯一实例，所有服务共享
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
@@ -128,7 +128,7 @@ class CacheConfig(ConfigSection):
 #### ✅ Pydantic 原生支持（自动）
 
 ```python
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):  # ConfigSection 继承 BaseSettings
     """Pydantic 自动支持以下来源"""
@@ -166,7 +166,7 @@ cache_config = CacheConfig(**yaml_data.get('cache', {}))
 **适用场景**: 12-Factor App，容器化部署
 
 ```python
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """配置完全通过环境变量"""
@@ -201,7 +201,7 @@ CACHE__REDIS__PORT=6379
 **适用场景**: 传统部署，复杂配置
 
 ```python
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """YAML 提供默认值，环境变量覆盖"""
@@ -264,7 +264,7 @@ container.register_singleton(CacheConfig, cache_config)
 
 ```python
 # 1. CacheConfig 定义
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
@@ -275,7 +275,7 @@ class CacheConfig(ConfigSection):
 config = CacheConfig()  # Pydantic 自动从环境变量加载
 
 # 3. 业务类注入
-@Component()
+@Component
 class CacheConnectionInitializer:
     def __init__(self, cache_config: CacheConfig):
         # IOC 注入步骤 2 创建的实例
@@ -306,7 +306,7 @@ class CacheConnectionInitializer:
 
 ```python
 # ✅ 推荐：小而专注的配置类
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """只负责缓存配置"""
@@ -314,7 +314,7 @@ class CacheConfig(ConfigSection):
     redis: RedisConfig = Field(default_factory=RedisConfig)
 
 # ❌ 不推荐：大而全的配置类
-@Component()
+@Component
 @Singleton
 class AllConfig(ConfigSection):
     """包含所有配置（难维护）"""

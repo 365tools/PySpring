@@ -10,7 +10,7 @@ from pyspring.log.instance import logger
 from ..manager import CacheManagerService
 
 
-@Component()
+@Component
 class CacheConnectionInitializer(IStartupInitializer):
     """
     缓存连接初始化器

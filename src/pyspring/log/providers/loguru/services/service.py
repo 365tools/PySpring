@@ -1,6 +1,7 @@
 ﻿from typing import Any, Dict
 
 from loguru import logger as _loguru
+
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.ioc.interfaces.core import IManaged
@@ -51,7 +52,7 @@ class _BoundLogger(ILoggerService):
         return _BoundLogger(self._base, new_extra)
 
 
-@Component()
+@Component
 @Singleton
 class LoguruService(IManaged, ILoggerService):
     """Loguru 日志服务（由IOC容器管理单例）"""

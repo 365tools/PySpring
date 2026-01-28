@@ -21,7 +21,7 @@ from pyspring.security.authentication.factories.token_generator.factory import T
 from pyspring.security.orm.tables import TokenBlacklistTable, RefreshTokenTable
 
 
-@Component()
+@Component
 @Singleton
 class TokenService(ITokenService):
     """

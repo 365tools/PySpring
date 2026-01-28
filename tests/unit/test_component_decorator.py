@@ -9,7 +9,7 @@ class TestServiceA:
 
 
 # 测试2: 空括号
-@Component()
+@Component
 class TestServiceB:
     pass
 

@@ -152,14 +152,14 @@
 
 ```python
 # 示例1：自定义RoleProvider
-@Component()
+@Component
 class RedisRoleProvider(IRoleProvider):
     async def get_user_roles(self, user_id):
         return await redis.smembers(f"user:{user_id}:roles")
 
 
 # 示例2：集成Casbin
-@Component()
+@Component
 class CasbinPermissionService(IPermissionService):
     def __init__(self):
         self.enforcer = casbin.Enforcer("model.conf", "policy.csv")
@@ -293,7 +293,7 @@ admin
 
 ```python
 # 1. 自定义LoginProvider（5分钟）
-@Component()
+@Component
 class LDAPLoginProvider(ILoginProvider):
     def supports(self, request): return request.auth_type == "ldap"
 
@@ -301,7 +301,7 @@ class LDAPLoginProvider(ILoginProvider):
 
 
 # 2. 自定义TokenGenerator（10分钟）
-@Component()
+@Component
 class SessionTokenGenerator(ITokenGenerator):
     def encode(self, payload, expires_delta): return session_id
 
@@ -309,14 +309,14 @@ class SessionTokenGenerator(ITokenGenerator):
 
 
 # 3. 自定义RoleProvider（15分钟）
-@Component()
+@Component
 class RedisRoleProvider(IRoleProvider):
     async def get_user_roles(self, user_id):
         return await redis.smembers(f"user:{user_id}:roles")
 
 
 # 4. 集成Casbin（30分钟）
-@Component()
+@Component
 class CasbinPermissionService(IPermissionService):
     def __init__(self):
         self.enforcer = casbin.Enforcer("model.conf", "policy.csv")
@@ -495,7 +495,7 @@ authorization:
 
 1. **审计日志**
    ```python
-   @Component()
+   @Component
    class AuditPermissionService(IPermissionService):
        async def has_permission(self, user_id, permission):
            result = await self.delegate.has_permission(user_id, permission)

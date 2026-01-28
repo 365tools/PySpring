@@ -18,7 +18,7 @@ from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 
 
-@Component()
+@Component
 class DatabaseInitializer(IStartupInitializer):
     """
     数据库初始化器

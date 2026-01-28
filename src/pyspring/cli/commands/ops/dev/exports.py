@@ -185,6 +185,144 @@ def generate_init_content(pkg_path, modules, use_absolute=False):
     return "\n".join(lines)
 
 
+def extract_comments_and_imports(init_path: str) -> Tuple[List[str], List[str]]:
+    """
+    Extract comments (docstring and header comments) and import statements from __init__.py
+    Returns (comments_lines, import_lines)
+    """
+    if not os.path.exists(init_path):
+        return [], []
+
+    with open(init_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    try:
+        tree = ast.parse(content)
+    except SyntaxError:
+        # If there's a syntax error, just return empty
+        return [], []
+
+    comments = []
+    imports = []
+
+    # Extract module docstring
+    docstring = ast.get_docstring(tree, clean=True)
+    if docstring:
+        # Reconstruct docstring with triple quotes
+        comments.append('"""')
+        comments.append(docstring)
+        comments.append('"""')
+
+    # Extract import statements
+    for node in tree.body:
+        if isinstance(node, (ast.Import, ast.ImportFrom)):
+            # Get the line from the original content
+            start_line = node.lineno - 1
+            end_line = node.end_lineno if node.end_lineno else node.lineno
+            lines = content.split('\n')[start_line:end_line]
+            imports.extend(lines)
+
+    return comments, imports
+
+
+def generate_standard_all_content(symbols: List[str], comments: List[str]) -> str:
+    """
+    Generate standard __all__ format content.
+    
+    Format:
+        '''Docstring'''
+        
+        __all__ = [
+            'Symbol1',
+            'Symbol2',
+        ]
+    """
+    lines = []
+
+    # Add comments (docstring)
+    if comments:
+        lines.extend(comments)
+        lines.append("")
+
+    # Generate __all__
+    lines.append("__all__ = [")
+    for symbol in sorted(symbols):
+        lines.append(f"    '{symbol}',")
+    lines.append("]")
+    lines.append("")
+
+    return "\n".join(lines)
+
+
+def process_output_recursive(target_path: str) -> int:
+    """
+    Recursively process directory for standard __all__ output format.
+    - Preserves existing comments (docstrings)
+    - Only rewrites the __all__ section
+    - Ignores __init__.py itself when scanning
+    Returns count of updated files.
+    """
+    updated_count = 0
+
+    # 1. Scan .py files (exclude __init__.py)
+    try:
+        files = [f for f in os.listdir(target_path)
+                 if f.endswith('.py') and f != '__init__.py']
+    except FileNotFoundError:
+        return 0
+
+    # 2. Scan sub-directories (packages)
+    dirs = [d for d in os.listdir(target_path)
+            if os.path.isdir(os.path.join(target_path, d))
+            and os.path.exists(os.path.join(target_path, d, '__init__.py'))
+            and not d.startswith('_') and d != '__pycache__']
+
+    # Recurse first
+    for d in dirs:
+        updated_count += process_output_recursive(os.path.join(target_path, d))
+
+    # Collect all public symbols
+    all_symbols = []
+
+    # From Python files
+    for file in files:
+        full_path = os.path.join(target_path, file)
+        defined, explicit_all = get_defined_symbols(full_path)
+
+        # Use explicit __all__ if defined, otherwise use all public symbols
+        symbols = explicit_all if explicit_all is not None else defined
+        all_symbols.extend(symbols)
+
+    # From sub-packages (just add the package name)
+    all_symbols.extend(dirs)
+
+    # Skip if no symbols found
+    if not all_symbols:
+        return updated_count
+
+    # Remove duplicates and sort
+    all_symbols = sorted(set(all_symbols))
+
+    # Extract existing comments from __init__.py
+    init_path = os.path.join(target_path, '__init__.py')
+    comments, _ = extract_comments_and_imports(init_path)
+
+    # Generate new content
+    content = generate_standard_all_content(all_symbols, comments)
+
+    # Write to file
+    try:
+        with open(init_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+        print_issue("1", "Updated Standard __all__", init_path, level='success')
+        updated_count += 1
+    except Exception as e:
+        print_error(f"Failed to update {init_path}: {e}")
+
+    return updated_count
+
+
 def process_fixed_recursive(target_path: str) -> int:
     """
     Recursively process directory for fixed exports.
@@ -258,10 +396,17 @@ def sync_exports(args):
         return
 
     is_fixed = getattr(args, 'fixed', False)
+    is_output = getattr(args, 'output', False)
 
     print_title(f"Sync Exports: {target_path}")
 
-    if is_fixed:
+    if is_output:
+        # Standard __all__ Output Mode
+        print_info("Mode: Standard __all__ Format (Preserves Comments)")
+        count = process_output_recursive(target_path)
+        print_summary(0, 0, count, fixable=False)
+        print_info("\n💡 Hint: Generated standard __all__ list format.")
+    elif is_fixed:
         print_info("Mode: Recursive Fixed")
         count = process_fixed_recursive(target_path)
         print_summary(0, 0, count, fixable=False)

@@ -57,7 +57,7 @@ class UserService(IManaged):
 # 方式2：使用装饰器（更简洁）
 from pyspring.ioc import Component, Singleton
 
-@Component()
+@Component
 @Singleton
 class UserService:
     pass
@@ -75,7 +75,7 @@ class UserService:
 from pyspring.ioc.interfaces.core import ILifecycle, IManaged
 from pyspring.ioc import Component, Singleton
 
-@Component()
+@Component
 @Singleton
 class DatabaseService(IManaged, ILifecycle):
     def __init__(self):
@@ -110,7 +110,7 @@ class DatabaseService(IManaged, ILifecycle):
 ```python
 from pyspring.ioc import Component, Singleton
 
-@Component()
+@Component
 @Singleton
 class ConfigService:
     """整个应用只有一个实例"""
@@ -135,7 +135,7 @@ class ConfigService:
 ```python
 from pyspring.ioc import Component, Prototype
 
-@Component()
+@Component
 @Prototype
 class TaskProcessor:
     """每次请求都创建新实例"""
@@ -156,7 +156,7 @@ class TaskProcessor:
 ```python
 from pyspring.ioc import Component, Singleton
 
-@Component()  # 使用默认名称
+@Component  # 使用默认名称
 @Singleton
 class EmailService:
     pass
@@ -243,7 +243,7 @@ class DefaultConfig:
 ```python
 from pyspring.ioc import Component, Singleton
 
-@Component()
+@Component
 @Singleton
 class UserService:
     def __init__(
@@ -276,21 +276,21 @@ class INotificationService(ABC):
         pass
 
 # 多个实现
-@Component()
+@Component
 @Singleton
 @Primary  # 标记为主要实现
 class EmailNotificationService(INotificationService):
     def send(self, message: str):
         print(f"Email: {message}")
 
-@Component()
+@Component
 @Singleton
 class SMSNotificationService(INotificationService):
     def send(self, message: str):
         print(f"SMS: {message}")
 
 # 使用时
-@Component()
+@Component
 @Singleton
 class OrderService:
     def __init__(self, notification: INotificationService):
@@ -360,14 +360,14 @@ async def get_users():
 
 ```python
 # ServiceA 依赖 ServiceB
-@Component()
+@Component
 @Singleton
 class ServiceA:
     def __init__(self, service_b: 'ServiceB'):
         self.service_b = service_b  # 自动使用LazyProxy
 
 # ServiceB 依赖 ServiceA
-@Component()
+@Component
 @Singleton
 class ServiceB:
     def __init__(self, service_a: ServiceA):
@@ -386,7 +386,7 @@ class ServiceB:
 ```python
 from pyspring.ioc import Component, Singleton, Lazy
 
-@Component()
+@Component
 @Singleton
 @Lazy  # 延迟到第一次使用时才实例化
 class ExpensiveService:
@@ -447,7 +447,7 @@ class MyService(ISingletonService):
 from pyspring.ioc import Component, Singleton
 from pyspring.ioc.interfaces import IManaged
 
-@Component()
+@Component
 @Singleton
 class MyService(IManaged):
     # 不需要实现任何强制方法
@@ -467,7 +467,7 @@ container.bind_singleton('my_service', MyService)
 
 ```python
 # 使用装饰器，自动扫描注册
-@Component()
+@Component
 @Singleton
 class MyService:
     pass
@@ -492,7 +492,7 @@ class MyService:
 
 ```python
 # 直接注入，框架自动处理循环依赖
-@Component()
+@Component
 @Singleton
 class MyService:
     def __init__(self, dependency: SomeService):
@@ -513,7 +513,7 @@ class MyService:
 # 当前版本暂不支持List注入
 # 建议使用以下方式：
 
-@Component()
+@Component
 @Singleton
 class MyService:
     def __init__(self, container: Container):

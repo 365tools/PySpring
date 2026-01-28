@@ -19,7 +19,7 @@ from pyspring.security.authentication.infrastructure.path_matcher import PathMat
 from pyspring.security.core.config.loader import SecurityConfigManager
 
 
-@Component()
+@Component
 @Singleton
 class AuthenticationChain(IManaged):
     """认证链（责任链模式）- 由IOC容器管理单例"""

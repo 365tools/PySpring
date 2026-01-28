@@ -232,7 +232,7 @@ from pyspring.ioc.annotations.component import Component
 from pyspring.security.authentication.contracts.login import ILoginProvider
 
 
-@Component()
+@Component
 class LDAPLoginProvider(ILoginProvider):
     """LDAP登录提供者"""
 
@@ -264,7 +264,7 @@ from pyspring.ioc.annotations.component import Component
 from pyspring.security.authentication.contracts.token import ITokenGenerator
 
 
-@Component()
+@Component
 class SessionTokenGenerator(ITokenGenerator):
     """Session Token生成器"""
 
@@ -305,7 +305,7 @@ from pyspring.security.authentication.contracts.password import IPasswordEncoder
 import argon2
 
 
-@Component()
+@Component
 class Argon2PasswordEncoder(IPasswordEncoder):
     """Argon2密码编码器（更强的安全性）"""
 
@@ -342,7 +342,7 @@ def custom_password_encoder() -> IPasswordEncoder:
 from pyspring.security.authorization.contracts.role import IRoleProvider
 
 
-@Component()
+@Component
 class RedisRoleProvider(IRoleProvider):
     """从Redis读取角色和权限"""
 
@@ -378,7 +378,7 @@ import casbin
 from pyspring.security.authorization.contracts.permission import IPermissionService
 
 
-@Component()
+@Component
 class CasbinPermissionService(IPermissionService):
     """使用Casbin进行权限判定"""
 
@@ -803,7 +803,7 @@ class AuditPermissionService(IPermissionService):
 
 ```python
 # 1️⃣ 自定义LoginProvider（5分钟）
-@Component()
+@Component
 class MyLoginProvider(ILoginProvider):
     def supports(self, request): return True
 
@@ -811,7 +811,7 @@ class MyLoginProvider(ILoginProvider):
 
 
 # 2️⃣ 自定义TokenGenerator（10分钟）
-@Component()
+@Component
 class MyTokenGenerator(ITokenGenerator):
     def encode(self, payload, expires_delta): return "token"
 
@@ -821,7 +821,7 @@ class MyTokenGenerator(ITokenGenerator):
 
 
 # 3️⃣ 自定义RoleProvider（15分钟）
-@Component()
+@Component
 class MyRoleProvider(IRoleProvider):
     async def get_user_roles(self, user_id): return ["admin"]
 

@@ -39,7 +39,7 @@ class MemoryConfig(ConfigSection):
     ttl: int = Field(default=3600, description="默认过期时间(秒)")
 
 
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """

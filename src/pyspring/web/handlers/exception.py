@@ -23,7 +23,7 @@ from .base import IExceptionHandler
 from ..core.response import Response, HttpResponse
 
 
-@Component()
+@Component
 @Singleton
 @ConditionalOnMissingBean(IExceptionHandler)
 class GlobalExceptionHandler(IExceptionHandler):

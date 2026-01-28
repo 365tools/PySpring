@@ -27,6 +27,7 @@ class InitSyncCommand(BaseCommand):
         CommandArg('path', nargs='?', default='.', help='Path to package directory (default: current dir)'),
         CommandArg('--fixed', action='store_true', help='Generate fixed explicit exports'),
         CommandArg('--dynamic', action='store_true', help='Use dynamic auto-import (default)'),
+        CommandArg('--output', action='store_true', help='Generate standard __all__ format (preserves comments)'),
     ]
 
     def run(self, args):

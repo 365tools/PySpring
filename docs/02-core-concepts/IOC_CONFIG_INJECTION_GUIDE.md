@@ -7,7 +7,7 @@
 IOC 容器已经支持配置对象注入，通过 `AppSettings` 演示：
 
 ```python
-@Component()
+@Component
 @Singleton
 class AppSettings(BaseSettings):
     """主配置类，通过 IOC 管理"""
@@ -15,7 +15,7 @@ class AppSettings(BaseSettings):
     redis: RedisConfig = ...
     logging: LoggingConfig = ...
 
-@Component()
+@Component
 class SystemService:
     def __init__(self, settings: AppSettings):
         # IOC 自动注入 AppSettings
@@ -37,7 +37,7 @@ class SystemService:
 ```python
 # repositories/cache/config.py
 
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """缓存配置（由IOC管理）"""
@@ -46,7 +46,7 @@ class CacheConfig(ConfigSection):
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
 
 # 使用
-@Component()
+@Component
 class CacheConnectionInitializer:
     def __init__(self, cache_config: CacheConfig, cache_manager: CacheManagerService):
         # IOC 自动注入 CacheConfig
@@ -65,7 +65,7 @@ class CacheConnectionInitializer:
 
 ```python
 # 使用 AppSettings 已包含的 cache 配置
-@Component()
+@Component
 class CacheConnectionInitializer:
     def __init__(self, settings: AppSettings, cache_manager: CacheManagerService):
         # 通过 settings.cache 访问缓存配置
@@ -88,7 +88,7 @@ class CacheConnectionInitializer:
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     """缓存配置（由IOC管理）"""
@@ -102,7 +102,7 @@ class CacheConfig(ConfigSection):
 ```python
 # core/configuration/models.py
 
-@Component()
+@Component
 @Singleton
 class AppSettings(BaseSettings):
     """主配置类"""
@@ -124,7 +124,7 @@ from pyspring.ioc.annotations.component import Component
 from ..config import CacheConfig
 from ..manager import CacheManagerService
 
-@Component()
+@Component
 class CacheConnectionInitializer(IStartupInitializer):
     """缓存连接初始化器"""
     
@@ -226,13 +226,13 @@ class CacheConnectionInitializer(IStartupInitializer):
 
 ```python
 # ✅ 正确
-@Component()
+@Component
 @Singleton
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
 
 # ❌ 错误
-@Component()
+@Component
 class CacheConfig:  # 不继承 BaseSettings/ConfigSection
     type: str = "memory"
 ```
@@ -241,13 +241,13 @@ class CacheConfig:  # 不继承 BaseSettings/ConfigSection
 
 ```python
 # ❌ 配置类不应该依赖业务服务
-@Component()
+@Component
 class CacheConfig(ConfigSection):
     def __init__(self, logger: LoggerService):  # 不要这样做
         ...
 
 # ✅ 配置类应该无依赖
-@Component()
+@Component
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
 ```

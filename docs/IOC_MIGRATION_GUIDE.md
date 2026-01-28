@@ -31,7 +31,7 @@ from pyspring.ioc import Component, Singleton
 from pyspring.ioc.lifecycle import IStartupInitializer
 
 
-@Component()
+@Component
 @Singleton
 class AuthenticationInitializer(IStartupInitializer):
     def __init__(self, enabled: bool = True):
@@ -52,7 +52,7 @@ class AuthenticationInitializer(IStartupInitializer):
 from pyspring.ioc import Component, Singleton, ILifecycle
 
 
-@Component()
+@Component
 @Singleton
 class AuthenticationService(ILifecycle):
     async def on_init(self):
@@ -92,7 +92,7 @@ from pyspring.ioc import Component, Singleton
 from pyspring.ioc.lifecycle import IShutdownHandler
 
 
-@Component()
+@Component
 @Singleton
 class DBShutdownHandler(IShutdownHandler):
     async def shutdown(self) -> bool:
@@ -110,7 +110,7 @@ class DBShutdownHandler(IShutdownHandler):
 from pyspring.ioc import Component, Singleton, ILifecycle
 
 
-@Component()
+@Component
 @Singleton
 class DatabaseService(ILifecycle):
     async def on_init(self):
@@ -153,7 +153,7 @@ class UserService(ISingletonService):
 from pyspring.ioc import Component, Singleton, IManaged
 
 
-@Component()
+@Component
 @Singleton
 class UserService(IManaged):
     def __init__(self, user_repo: IUserRepository):
@@ -300,7 +300,7 @@ ctx = ApplicationContext.initialize(['myapp'], enable_aop=True)
 from pyspring.aop import Aspect, Before, Component, Singleton
 
 
-@Component()
+@Component
 @Singleton
 @Aspect
 class LoggingAspect:
@@ -313,7 +313,7 @@ class LoggingAspect:
 from pyspring.ioc import Component, Singleton
 
 
-@Component()
+@Component
 @Singleton
 class UserService:
     pass
@@ -381,14 +381,14 @@ class AppConfig:
 from pyspring.ioc import Component, Singleton
 
 
-@Component()
+@Component
 @Singleton
 class UserService:
     def __init__(self, user_repo: IUserRepository):
         self.user_repo = user_repo
 
 
-@Component()
+@Component
 @Singleton
 class DatabaseConfig:
     def __init__(self):
@@ -509,7 +509,7 @@ async def shutdown():
     - → `ApplicationContext.get_instance().get_by_type()`
 
 - [ ] 所有 `class XxxService(ISingletonService)`
-    - → `@Component() @Singleton class XxxService(IManaged)`
+    - → `@Component @Singleton class XxxService(IManaged)`
 
 - [ ] 所有 `class XxxInitializer(IStartupInitializer)`
     - → `from pyspring.ioc.lifecycle import IStartupInitializer`

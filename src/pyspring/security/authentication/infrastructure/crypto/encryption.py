@@ -219,7 +219,7 @@ class JWTEncryption:
         return jwt_dot_count < 2
 
 
-@Component()
+@Component
 @Singleton
 class JWTEncryptionManager(IManaged):
     """

@@ -12,7 +12,7 @@ from .factory import CacheServiceFactory
 from .service import ICacheService
 
 
-@Component()
+@Component
 @Singleton
 class CacheManagerService(IManaged):
     """

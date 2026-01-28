@@ -20,7 +20,7 @@ from pyspring.security.orm.tables import (
 )
 
 
-@Component()
+@Component
 @ConditionalOnMissingBean
 class SecurityEntityConfiguration:
     """

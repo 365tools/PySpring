@@ -179,7 +179,7 @@ from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from fastapi_users.password import PasswordHelper
 
 
-@Component()
+@Component
 class BCryptPasswordEncoder(IPasswordEncoder):
     """BCrypt密码编码器（默认实现）"""
 
@@ -249,7 +249,7 @@ from pyspring.security.authentication.contracts.password import IPasswordEncoder
 from pyspring.ioc.annotations.component import Component, Bean
 import argon2
 
-@Component()
+@Component
 class Argon2PasswordEncoder(IPasswordEncoder):
     """Argon2密码编码器（更强的安全性）"""
     
@@ -282,7 +282,7 @@ def custom_password_encoder() -> IPasswordEncoder:
 import hashlib
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 
-@Component()
+@Component
 class Pbkdf2PasswordEncoder(IPasswordEncoder):
     """Pbkdf2密码编码器（FIPS 140-2兼容）"""
     
@@ -411,7 +411,7 @@ class IPasswordValidator(IManaged, ABC):
         pass
 
 # 用户DIY
-@Component()
+@Component
 class StrongPasswordValidator(IPasswordValidator):
     def validate(self, password: str) -> Tuple[bool, str]:
         if len(password) < 8:

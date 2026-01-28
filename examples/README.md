@@ -180,7 +180,7 @@ service = ApplicationContext.service(UserService)
 #### @Component - 自动注册为组件
 
 ```python
-@Component()
+@Component
 @Singleton
 class UserService(IManaged):
     def __init__(self, db: DatabaseService):
@@ -223,7 +223,7 @@ class MyService(ILifecycle, IManaged):
 #### IStartupInitializer - 启动初始化器
 
 ```python
-@Component()
+@Component
 class DatabaseInit(IStartupInitializer):
     def get_name(self) -> str:
         return "数据库初始化器"
@@ -237,7 +237,7 @@ class DatabaseInit(IStartupInitializer):
 #### IShutdownHandler - 关闭处理器
 
 ```python
-@Component()
+@Component
 class DatabaseShutdown(IShutdownHandler):
     def get_name(self) -> str:
         return "数据库关闭处理器"
@@ -253,7 +253,7 @@ class DatabaseShutdown(IShutdownHandler):
 PySpring 使用**构造函数注入**，自动解析依赖：
 
 ```python
-@Component()
+@Component
 class OrderService(IManaged):
     # 构造函数参数会被自动注入
     def __init__(self,
@@ -319,7 +319,7 @@ app = FastAPI(lifespan=lifespan)
 
 ```python
 # ✅ 推荐：轻量级构造函数，耗时操作放在 on_init
-@Component()
+@Component
 @Singleton
 class MyService(ILifecycle, IManaged):
     def __init__(self, config: dict):
@@ -333,7 +333,7 @@ class MyService(ILifecycle, IManaged):
 
 
 # ❌ 不推荐：构造函数中做耗时操作
-@Component()
+@Component
 class BadService(IManaged):
     def __init__(self):
         # 构造函数中同步阻塞

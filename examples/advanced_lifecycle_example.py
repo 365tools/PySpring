@@ -19,6 +19,7 @@ from typing import Annotated, Optional
 import uvicorn
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
 # PySpring 导入
 from pyspring.ioc import ApplicationContext
 from pyspring.ioc.annotations.component import Component
@@ -70,7 +71,7 @@ class AppConfiguration:
 # 2. 带生命周期的服务类
 # ============================================================================
 
-@Component()
+@Component
 @Singleton
 class DatabaseService(ILifecycle, IManaged):
     """数据库服务 - 实现完整生命周期"""
@@ -102,7 +103,7 @@ class DatabaseService(ILifecycle, IManaged):
         return {"result": "模拟查询结果", "rows": 10}
 
 
-@Component()
+@Component
 @Singleton
 class CacheService(ILifecycle, IManaged):
     """缓存服务 - 实现完整生命周期"""
@@ -145,7 +146,7 @@ class CacheService(ILifecycle, IManaged):
 # 3. Prototype 作用域 - 每次获取都创建新实例
 # ============================================================================
 
-@Component()
+@Component
 @Prototype  # 注意：这里使用 Prototype 而不是 Singleton
 class RequestContext(IManaged):
     """请求上下文 - 每个请求创建新实例"""
@@ -169,7 +170,7 @@ class RequestContext(IManaged):
 # 4. 业务服务 - 展示复杂依赖注入
 # ============================================================================
 
-@Component()
+@Component
 @Singleton
 class UserRepository(IManaged):
     """用户仓储 - 依赖 DatabaseService"""
@@ -190,7 +191,7 @@ class UserRepository(IManaged):
         return user
 
 
-@Component()
+@Component
 @Singleton
 class UserService(IManaged):
     """用户服务 - 依赖多个服务"""
@@ -233,7 +234,7 @@ class UserService(IManaged):
 # 5. 高级启动初始化器 - 带优先级和依赖
 # ============================================================================
 
-@Component()
+@Component
 @Singleton
 class SchemaInitializer(IStartupInitializer):
     """数据库表结构初始化器 - 优先级最高"""
@@ -255,7 +256,7 @@ class SchemaInitializer(IStartupInitializer):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class DataMigrationInitializer(IStartupInitializer):
     """数据迁移初始化器 - 优先级中等，依赖 SchemaInitializer"""
@@ -276,7 +277,7 @@ class DataMigrationInitializer(IStartupInitializer):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class SeedDataInitializer(IStartupInitializer):
     """种子数据初始化器 - 优先级最低，依赖前面的初始化器"""
@@ -314,7 +315,7 @@ class SeedDataInitializer(IStartupInitializer):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class CacheWarmupInitializer(IStartupInitializer):
     """缓存预热初始化器"""
@@ -344,7 +345,7 @@ class CacheWarmupInitializer(IStartupInitializer):
 # 6. 高级关闭处理器
 # ============================================================================
 
-@Component()
+@Component
 @Singleton
 class MetricsExportHandler(IShutdownHandler):
     """指标导出处理器 - 关闭前导出监控指标"""
@@ -372,7 +373,7 @@ class MetricsExportHandler(IShutdownHandler):
         return True
 
 
-@Component()
+@Component
 @Singleton
 class AuditLogHandler(IShutdownHandler):
     """审计日志处理器 - 关闭前写入审计日志"""

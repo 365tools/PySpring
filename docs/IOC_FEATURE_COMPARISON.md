@@ -93,7 +93,7 @@ container.bind_singleton('user_service', UserService)
 from pyspring.ioc import Component, Singleton
 
 
-@Component()
+@Component
 @Singleton
 class UserService:
     pass
@@ -140,7 +140,7 @@ class DBShutdownHandler(IShutdownHandler):
 from pyspring.ioc import ILifecycle, Component, Singleton
 
 
-@Component()
+@Component
 @Singleton
 class DatabaseService(ILifecycle):
     async def on_init(self):
@@ -173,7 +173,7 @@ class MyInitializer(IStartupInitializer):
 
 
 # 新代码
-@Component()
+@Component
 @Singleton
 class MyService(ILifecycle):
     async def on_init(self):
@@ -192,7 +192,7 @@ class MyService(ILifecycle):
 #### 旧版本和新版本都支持
 
 ```python
-@Component()
+@Component
 @Singleton
 class UserService:
     def __init__(
@@ -224,14 +224,14 @@ exceeded
 
 ```python
 # 自动使用LazyProxy解决，透明处理
-@Component()
+@Component
 @Singleton
 class ServiceA:
     def __init__(self, service_b: 'ServiceB'):
         self.service_b = service_b  # 自动注入LazyProxy
 
 
-@Component()
+@Component
 @Singleton
 class ServiceB:
     def __init__(self, service_a: ServiceA):
@@ -330,7 +330,7 @@ class LifecycleManager:
 from pyspring.ioc.lifecycle import IStartupInitializer, IShutdownHandler
 
 
-@Component()
+@Component
 @Singleton
 class MyInitializer(IStartupInitializer):
     async def initialize(self) -> bool:
@@ -371,7 +371,7 @@ from pyspring.ioc import ApplicationContext, Component, Singleton
 from pyspring.aop import Aspect, Before
 
 
-@Component()
+@Component
 @Singleton
 @Aspect
 class LoggingAspect:
@@ -385,7 +385,7 @@ ctx = ApplicationContext.initialize(['myapp'], enable_aop=True)
 
 
 # UserService会自动被代理
-@Component()
+@Component
 @Singleton
 class UserService:
     def get_user(self, user_id):
@@ -405,7 +405,7 @@ class UserService:
     - 所有 `IShutdownHandler` → `ILifecycle.on_destroy()`
 
 2. **服务注册**
-    - 所有 `ISingletonService` → `@Component() + @Singleton`
+    - 所有 `ISingletonService` → `@Component + @Singleton`
     - 所有手动注册 → 装饰器注册
 
 3. **容器获取**
@@ -417,7 +417,7 @@ class UserService:
     - 不需要实现 `get()`, `save()` 等方法
 
 2. **接口继承改为标记**
-    - `class MyService(ISingletonService)` → `@Component() @Singleton class MyService(IManaged)`
+    - `class MyService(ISingletonService)` → `@Component @Singleton class MyService(IManaged)`
 
 ### 🟢 低优先级（可选）
 

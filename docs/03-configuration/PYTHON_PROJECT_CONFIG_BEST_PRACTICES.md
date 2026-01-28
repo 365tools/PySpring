@@ -291,7 +291,7 @@ from pyspring.ioc.annotations.scope import Singleton
 from your_app.config.settings import settings
 
 
-@Component()
+@Component
 @Singleton
 class DatabaseService:
     def __init__(self):
@@ -358,7 +358,7 @@ class AppConfiguration:
 
 
 # 服务中注入使用
-@Component()
+@Component
 @Singleton
 class UserService:
     def __init__(self, database_config: dict):

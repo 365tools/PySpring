@@ -11,12 +11,11 @@ from pyspring.ioc.lifecycle.initializer import IStartupInitializer
 from pyspring.log.instance import logger
 from pyspring.security.authentication.contracts.request_auth import IRequestAuthenticationProvider
 from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
-
 from .chain import AuthenticationChain
 from ..contracts.validator import ISecurityContextValidator
 
 
-@Component()
+@Component
 @Singleton
 class AuthenticationInitializer(IStartupInitializer, IManaged):
     """
