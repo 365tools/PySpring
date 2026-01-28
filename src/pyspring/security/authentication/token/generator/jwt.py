@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, UTC
 from typing import Dict, Any, Optional
 
 from jose import JWTError, jwt
+
 from pyspring.ioc.annotations.component import Component
 from pyspring.ioc.annotations.scope import Singleton
 from pyspring.log.instance import logger
@@ -167,7 +168,9 @@ class JWTTokenGenerator(ITokenGenerator):
             return payload
 
         except JWTError as e:
-            logger.error(f"[TokenGen][JWT] Token 解码失败: {e}")
+            # 记录token信息便于调试（不记录完整token避免泄露）
+            token_preview = token[:20] + '...' if len(token) > 20 else token
+            logger.error(f"[TokenGen][JWT] Token 解码失败: {e} | Token长度: {len(token)} | 前20字符: {token_preview}")
             return None
         except Exception as e:
             logger.error(f"[TokenGen][JWT] Token 解码异常: {e}")

@@ -103,40 +103,38 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         token = REQUEST_ID_CTX.set(trace_id)
         set_trace_id(trace_id)
 
-        # 记录请求开始（基础信息）
-        logger.bind(trace_id=trace_id).info(f"🎢 {client_ip} - \"{method} {url}\" - 请求开始")
+        # 收集请求详细信息（可配置）
+        request_details: Dict[str, Any] = {}
 
-        # 记录详细请求信息（可配置）
-        if self._log_request_details or self._log_request_headers or self._log_request_body:
-            request_details: Dict[str, Any] = {}
+        if self._log_request_headers:
+            headers_dict = dict(request.headers.items())
+            sanitized = self._sanitize_headers(headers_dict)
+            request_details["headers"] = sanitized
 
-            if self._log_request_headers:
-                headers_dict = dict(request.headers.items())
-                sanitized = self._sanitize_headers(headers_dict)
-                request_details["headers"] = sanitized
+        if self._log_request_body:
+            try:
+                # 读取请求体（需要缓存，避免后续处理无法读取）
+                body_bytes = await request.body()
+                if body_bytes:
+                    try:
+                        # 尝试解析为JSON对象
+                        body_json = json.loads(body_bytes.decode('utf-8'))
+                        # 直接存储对象，而不是字符串
+                        request_details["body"] = self._truncate_body(body_json)
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        # 非JSON或无法解码，记录原始字节
+                        request_details["body"] = self._truncate_body(body_bytes.decode('utf-8', errors='replace'))
+            except Exception as e:
+                logger.debug(f"读取请求体失败: {e}")
 
-            if self._log_request_body:
-                try:
-                    # 读取请求体（需要缓存，避免后续处理无法读取）
-                    body_bytes = await request.body()
-                    if body_bytes:
-                        try:
-                            # 尝试解析为JSON对象
-                            body_json = json.loads(body_bytes.decode('utf-8'))
-                            # 直接存储对象，而不是字符串
-                            request_details["body"] = self._truncate_body(body_json)
-                        except (json.JSONDecodeError, UnicodeDecodeError):
-                            # 非JSON或无法解码，记录原始字节
-                            request_details["body"] = self._truncate_body(body_bytes.decode('utf-8', errors='replace'))
-                except Exception as e:
-                    logger.debug(f"读取请求体失败: {e}")
-
-            if request_details:
-                # 使用换行输出，避免JSON转义字符
-                formatted_json = json.dumps(request_details, ensure_ascii=False, indent=2)
-                logger.bind(trace_id=trace_id, **request_details).debug(
-                    "📥 请求详情:\n" + formatted_json
-                )
+        # 记录请求开始（合并基础信息和详情）
+        if request_details and (self._log_request_details or self._log_request_headers or self._log_request_body):
+            formatted_json = json.dumps(request_details, ensure_ascii=False, indent=2)
+            logger.bind(trace_id=trace_id, **request_details).debug(
+                f"🎢 {client_ip} - \"{method} {url}\" - 请求开始\n📥 请求详情:\n{formatted_json}"
+            )
+        else:
+            logger.bind(trace_id=trace_id).info(f"🎢 {client_ip} - \"{method} {url}\" - 请求开始")
 
         try:
             # 处理请求
@@ -167,33 +165,52 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 emoji = "❌"
                 log_method = logger.error
 
-            log_method(f"{emoji} {client_ip} - \"{method} {url}\" {status_code} - 耗时: {process_time:.3f}s")
+            # 收集响应详情（可配置）
+            response_details: Dict[str, Any] = {}
 
-            # 记录响应详情（仅成功请求，失败请求在异常处理器中记录）
-            if self._log_response_details or self._log_response_body:
-                if 200 <= status_code < 300:
-                    response_details: Dict[str, Any] = {"status": status_code}
+            if (self._log_response_details or self._log_response_body) and (200 <= status_code < 300):
+                response_details["status"] = status_code
 
-                    if self._log_response_body:
-                        try:
-                            # 注意：StreamingResponse无法读取body，这里只处理JSONResponse等
-                            if hasattr(response, 'body'):
-                                body_bytes = response.body
-                                if body_bytes:
-                                    try:
-                                        body_json = json.loads(body_bytes.decode('utf-8'))
-                                        # 直接存储对象，而不是字符串
-                                        response_details["body"] = self._truncate_body(body_json)
-                                    except (json.JSONDecodeError, UnicodeDecodeError):
-                                        response_details["body"] = self._truncate_body(body_bytes.decode('utf-8', errors='replace'))
-                        except Exception as e:
-                            logger.debug(f"读取响应体失败: {e}")
+                if self._log_response_body:
+                    try:
+                        # FastAPI响应可能需要读取body_iterator
+                        body_bytes = None
 
-                    if len(response_details) > 1:  # 除了status还有其他字段
-                        formatted_json = json.dumps(response_details, ensure_ascii=False, indent=2)
-                        logger.bind(trace_id=trace_id, **response_details).debug(
-                            "📤 响应详情:\n" + formatted_json
-                        )
+                        # 方式1: 直接有body属性（部分响应类型）
+                        if hasattr(response, 'body'):
+                            body_bytes = response.body
+                        # 方式2: 有body_iterator（StreamingResponse等）
+                        elif hasattr(response, 'body_iterator'):
+                            body_chunks = []
+                            async for chunk in response.body_iterator:
+                                body_chunks.append(chunk)
+                            body_bytes = b"".join(body_chunks)
+
+                            # 重新创建响应（因为body_iterator已被消费）
+                            from starlette.responses import Response as StarletteResponse
+                            response = StarletteResponse(
+                                content=body_bytes,
+                                status_code=response.status_code,
+                                headers=dict(response.headers),
+                                media_type=response.media_type,
+                            )
+
+                        # 解析body
+                        if body_bytes:
+                            try:
+                                body_json = json.loads(body_bytes.decode('utf-8'))
+                                response_details["body"] = self._truncate_body(body_json)
+                            except (json.JSONDecodeError, UnicodeDecodeError):
+                                response_details["body"] = self._truncate_body(body_bytes.decode('utf-8', errors='replace'))
+                    except Exception as e:
+                        logger.debug(f"读取响应体失败: {e}")
+
+            # 记录请求完成（合并基础信息和响应详情）
+            if len(response_details) > 1:  # 有响应详情
+                formatted_json = json.dumps(response_details, ensure_ascii=False, indent=2)
+                log_method(f"{emoji} {client_ip} - \"{method} {url}\" {status_code} - 耗时: {process_time:.3f}s\n📤 响应详情:\n{formatted_json}")
+            else:
+                log_method(f"{emoji} {client_ip} - \"{method} {url}\" {status_code} - 耗时: {process_time:.3f}s")
 
             return response
 

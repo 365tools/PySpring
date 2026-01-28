@@ -220,12 +220,32 @@ class GlobalExceptionHandler(IExceptionHandler):
 
     async def handle_http_exception(self, request: Request, exc: Exception) -> JSONResponse:
         """处理 HTTP 异常（HTTPException）"""
+        # 记录HTTP异常日志
+        status_code = getattr(exc, "status_code", 500)
+        detail = str(getattr(exc, "detail", exc))
+
+        # 根据状态码选择日志级别
+        if status_code >= 500:
+            logger.error(
+                f"🚨 HTTP异常 [{status_code}] - "
+                f"Path: {request.url.path} | "
+                f"Method: {request.method} | "
+                f"Detail: {detail}"
+            )
+        elif status_code >= 400:
+            logger.warning(
+                f"⚠️  HTTP异常 [{status_code}] - "
+                f"Path: {request.url.path} | "
+                f"Method: {request.method} | "
+                f"Detail: {detail}"
+            )
+        
         return self.to_http_error_response(
             exc,
-            message=str(getattr(exc, "detail", exc)),
-            status_code=getattr(exc, "status_code", 500),
+            message=detail,
+            status_code=status_code,
             details={"path": str(request.url.path), "method": request.method},
-            include_trace=False
+            include_trace=self._include_trace_in_response  # 使用配置
         )
 
     async def handle_validation_exception(self, request: Request, exc: Exception) -> JSONResponse:

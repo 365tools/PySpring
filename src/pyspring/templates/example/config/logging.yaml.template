@@ -54,6 +54,29 @@ logging:
       - "/favicon.ico"
       # - "/api/internal"  # 添加您的路径
 
+  # HTTP 请求/响应详细日志配置（开发调试利器）
+  http:
+    # ⚠️  生产环境建议全部设置为 false，避免日志过多和性能问题
+    # 是否启用详细请求日志（包含headers和body）
+    log_request_details: true   # 开发环境: true, 生产环境: false
+    # 是否启用详细响应日志（包含响应体）
+    log_response_details: true  # 开发环境: true, 生产环境: false
+    # 是否记录请求头（会过滤敏感字段）
+    log_request_headers: true   # 开发环境: true, 生产环境: false
+    # 是否记录请求体（⚠️  可能包含密码等敏感信息）
+    log_request_body: true      # 开发环境: true, 生产环境: false
+    # 是否记录响应体（⚠️  可能很大，影响性能）
+    log_response_body: true     # 开发环境: true, 生产环境: false
+    # 请求/响应体最大记录长度（字节）
+    max_body_length: 2048       # 开发环境: 2048, 生产环境: 512
+    # 敏感请求头（这些字段会被替换为 ***）
+    sensitive_headers:
+      - "authorization"
+      - "cookie"
+      - "x-api-key"
+      - "x-auth-token"
+      - "x-csrf-token"
+
   # 日志拦截配置
   intercept:
     stdlib: true
