@@ -1,0 +1,49 @@
+"""
+用户角色关联表模型
+
+演示：
+1. 继承框架的 BaseUserRoleTable 基类
+2. 自动获得用户-角色关联字段
+3. 建立用户和角色的多对多关系
+4. 如无特殊需求，可直接使用框架默认的 UserRoleTable
+
+💡 提示：
+- 本文件为扩展示例，展示如何自定义 UserRole 关联表
+- 如不需要自定义字段，可删除此文件，框架会使用默认的 UserRoleTable
+- 如需使用此自定义模型，需在 CustomSecurityEntityConfiguration 中替换：
+  self.user_role_orm_model = UserRole
+"""
+from pyspring.repositories.db.models.common.define import BaseUserRoleTable
+
+
+class UserRole(BaseUserRoleTable):
+    """
+    用户角色关联表
+    
+    继承自框架的 BaseUserRoleTable，自动包含：
+    - id: 主键
+    - user_id: 用户UUID（String(36)，关联 pyspring_user.uuid）
+    - role_code: 角色代码（String(50)，关联 pyspring_role.code）
+    - active/deleted: 状态标识（继承自审计字段）
+    - creator/modifier: 审计字段
+    - created_time/modified_time: 时间戳
+    
+    关联关系：
+    - 使用业务代码（UUID、code）进行关联，无外键约束
+    - user_id 关联到 User.uuid（不是 User.id）
+    - role_code 关联到 Role.code（不是 Role.id）
+    
+    自定义扩展字段（示例）：
+    # assigned_by = Column(String(36), comment="分配人UUID")
+    # expires_at = Column(DateTime, comment="过期时间")
+    # is_default = Column(Boolean, default=False, comment="是否默认角色")
+    """
+    __tablename__ = "user_roles"  # 基础表名，实际会应用前缀（如 myapp_user_roles）
+    
+    # 如需扩展字段，在此添加：
+    # from sqlalchemy import Column, String, DateTime, Boolean
+    # assigned_by = Column(String(36), comment="分配人UUID")
+    # expires_at = Column(DateTime, comment="过期时间")
+    
+    def __repr__(self):
+        return f"<UserRole(user_id='{self.user_id}', role_code='{self.role_code}')>"

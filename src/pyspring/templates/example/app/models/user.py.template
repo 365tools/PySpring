@@ -6,6 +6,12 @@
 2. 自动获得鉴权授权所需的所有字段
 3. 可扩展自定义字段
 4. 表名会自动应用项目前缀（repositories.yaml 中配置 table_prefix）
+
+💡 提示：
+- Role/Permission/UserRole/RolePermission 表同样可以继承框架基类扩展
+- 框架默认提供：BaseRoleTable、BasePermissionTable、BaseUserRoleTable、BaseRolePermissionTable
+- 如无特殊需求，建议直接使用框架默认的权限表！
+- 扩展示例参考本文件的 User 模型
 """
 from sqlalchemy import Column, String
 

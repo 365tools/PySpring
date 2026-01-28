@@ -272,6 +272,21 @@ class UserRepository:
 
 ### 4. 数据库初始化
 
+**框架权限表（自动创建）：**
+
+框架提供完整的 RBAC 权限表，通过 Alembic 迁移自动创建：
+- `pyspring_user` - 用户表
+- `pyspring_role` - 角色表
+- `pyspring_permission` - 权限表
+- `pyspring_user_role` - 用户角色关联表
+- `pyspring_role_permission` - 角色权限关联表
+
+**无需自定义 ORM 模型！** 如需扩展字段：
+1. 继承框架的 `BaseUserTable`、`BaseRoleTable` 等基类
+2. 通过 `SecurityEntityConfiguration` 替换默认模型（参考 `app/config/security_config.py`）
+
+**业务自定义表：**
+
 数据库表由框架的 MigrationInitializer 自动创建，在 `config/repositories.yaml` 配置：
 
 ```yaml
@@ -281,7 +296,26 @@ initialization:
   script_path: null             # null 则使用 SQLAlchemy metadata.create_all()
 ```
 
-初始数据由 `DatabaseInitializer` 填充（示例项目自动创建管理员用户和权限）。
+**初始数据：**
+
+初始数据由 `scripts/db/init_*.sql` 脚本填充，包括：
+- 默认角色（admin、editor、user）
+- 默认权限（users:read、articles:write 等）
+- 角色权限关联
+
+**Alembic 迁移（推荐）：**
+
+```bash
+# 生成迁移脚本
+pyspring db migrate -m "Initial migration"
+
+# 执行迁移
+pyspring db upgrade
+
+# 或直接使用 alembic
+alembic revision --autogenerate -m "Initial migration"
+alembic upgrade head
+```
 
 ### 5. Repository 模式
 

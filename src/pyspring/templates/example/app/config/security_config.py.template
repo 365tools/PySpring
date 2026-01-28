@@ -50,6 +50,12 @@ from pyspring.security.authentication.config.entity import SecurityEntityConfigu
 # 导入自定义的用户模型
 from app.models.user import User
 
+# 可选：导入其他权限模型（如需自定义）
+# from app.models.role import Role
+# from app.models.permission import Permission
+# from app.models.user_role import UserRole
+# from app.models.role_permission import RolePermission
+
 
 # ============================================================
 # 方式1：自定义 SecurityEntityConfiguration（推荐）
@@ -100,8 +106,26 @@ class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
         # 只重写需要自定义的字段
         self.user_orm_model = User  # 使用自定义的 User 模型
         
-        # 其他字段（role_orm_model, permission_orm_model 等）自动继承默认值
-        # 无需显式声明！
+        # 其他字段自动继承框架默认值：
+        # - role_orm_model = RoleTable（框架默认）
+        # - permission_orm_model = PermissionTable（框架默认）
+        # - user_role_orm_model = UserRoleTable（框架默认）
+        # - role_permission_orm_model = RolePermissionTable（框架默认）
+        # 
+        # 💡 提示：
+        # 如无特殊需求，建议直接使用框架默认的权限表！
+        # 框架默认表已包含：code、name、description、status 等字段
+        # 
+        # 📝 如需扩展权限表字段，参考以下步骤：
+        #   1. 在 app/models/ 中定义自定义模型（已提供示例文件）
+        #   2. 取消下面对应行的注释
+        #   3. 导入对应的模型类（文件顶部）
+        
+        # 示例：使用自定义的权限模型（默认注释，按需启用）
+        # self.role_orm_model = Role  # 使用自定义的 Role 模型
+        # self.permission_orm_model = Permission  # 使用自定义的 Permission 模型
+        # self.user_role_orm_model = UserRole  # 使用自定义的 UserRole 模型
+        # self.role_permission_orm_model = RolePermission  # 使用自定义的 RolePermission 模型
 
 
 # ============================================================
