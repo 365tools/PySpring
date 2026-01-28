@@ -54,8 +54,32 @@ class SecurityEntityConfiguration:
             role_schema: Type[Role] = Role,
             permission_schema: Type[Permission] = Permission,
             # ==================== 登录标识符字段配置 ====================
-            identifier_fields: Optional[List[str]] = None
+            identifier_fields: Optional[List[str]] = None,
+            display_identifier_field: Optional[str] = None  # 用于展示的标识符字段（如不指定则使用第一个identifier_fields）
     ):
+        """
+        重要要求：
+        - identifier_fields 配置的所有字段必须在数据库表中有 unique=True 约束
+        - 这是登录安全的基本要求，防止凭据冲突
+        - 框架会在注册时动态检查唯一性
+        
+        可选字段设计：
+        - identifier_fields 可以是可选的（nullable=True）
+        - 数据库允许多个 NULL 值共存（不触发 unique 约束）
+        - 注册/登录时只检查/匹配非 NULL 值
+        
+        示例：
+        class CustomUserTable(BaseUserTable):
+            username = Column(String, unique=True, nullable=True, index=True)  # 可选但唯一
+            phone = Column(String, unique=True, nullable=True, index=True)     # 可选但唯一
+        
+        配置示例：
+        authentication:
+          identifier_fields:
+            - "username"  # 可选，但填了必须唯一
+            - "email"     # 可选，但填了必须唯一
+            - "phone"     # 可选，但填了必须唯一
+        """
         self.user_orm_model = user_orm_model
         self.role_orm_model = role_orm_model
         self.permission_orm_model = permission_orm_model
@@ -82,7 +106,13 @@ class SecurityEntityConfiguration:
                     'identifier_fields',
                     ['username', 'email', 'user_id']  # 默认值（包含框架标准字段）
                 )
+                # 加载展示字段配置
+                if display_identifier_field is None:
+                    display_identifier_field = config.get('authentication', {}).get('display_identifier_field')
             except Exception:
                 # 如果加载失败，使用默认值
                 identifier_fields = ['username', 'email', 'user_id']
         self.identifier_fields = identifier_fields
+
+        # 展示字段配置（如果未指定，则使用第一个identifier_fields）
+        self.display_identifier_field = display_identifier_field

@@ -67,7 +67,7 @@ class DefaultRegisterService(IRegisterService):
                 await session.commit()
                 await session.refresh(db_user)
 
-                logger.info(f"[Success] 用户注册成功: {db_user.email} (UUID: {db_user.user_id})，已分配默认角色: guest")
+                logger.info(f"[Success] 用户注册成功: user_id={db_user.user_id}，已分配默认角色: guest")
 
                 # 5. 构造返回结果
                 return await self._build_user_info(session, db_user)
@@ -85,6 +85,12 @@ class DefaultRegisterService(IRegisterService):
         """
         检查用户是否已存在
         
+        根据 identifier_fields 配置动态检查所有登录凭据字段的唯一性
+        
+        设计原则：
+        - 只检查非 NULL 值的字段（允许多个用户不填某个 identifier）
+        - 发现冲突时返回具体字段名（注册场景需要明确反馈）
+        
         Args:
             session: 数据库会话
             user: 用户信息
@@ -92,23 +98,28 @@ class DefaultRegisterService(IRegisterService):
         Raises:
             HTTPException: 用户已存在
         """
-        # 检查邮箱是否已被注册
-        stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.email == user.email)
-        result = await session.execute(stmt)
-        if result.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="注册失败：用户信息已存在"  # 统一错误消息，不泄露具体字段
-            )
+        # 动态检查所有 identifier_fields 配置的字段
+        for field_name in self.component.identifier_fields:
+            # 检查用户模型是否有该字段
+            if not hasattr(self.component.user_orm_model, field_name):
+                continue
 
-        # 检查 user_id 是否已被使用
-        stmt = select(self.component.user_orm_model).where(self.component.user_orm_model.user_id == user.user_id)
-        result = await session.execute(stmt)
-        if result.scalar_one_or_none():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="注册失败：用户信息已存在"  # 统一错误消息
-            )
+            # 检查用户请求是否提供了该字段（只检查非 NULL 值）
+            field_value = getattr(user, field_name, None)
+            if field_value is None or field_value == "":
+                continue  # 跳过 NULL/空值，允许多个用户不填
+
+            # 查询数据库检查唯一性
+            field_column = getattr(self.component.user_orm_model, field_name)
+            stmt = select(self.component.user_orm_model).where(field_column == field_value)
+            result = await session.execute(stmt)
+            if result.scalar_one_or_none():
+                logger.warning(f"[注册失败] {field_name} 已存在: {field_value}")
+                # 注册场景返回具体字段，帮助用户修正
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"注册失败：{field_name} 已被使用"
+                )
 
     async def _create_user(self, session: AsyncSession, user: User) -> Any:
         """
@@ -129,14 +140,23 @@ class DefaultRegisterService(IRegisterService):
 
         hashed_password = self.password_encoder.encode(user.password)
 
+        # 动态构建用户字段（从user对象映射所有字段）
+        user_data = {
+            'password': hashed_password,
+            'user_id': user.user_id,
+        }
+
+        # 动态映射user对象的所有字段（排除系统字段）
+        exclude_fields = {'password', 'id'}  # 排除敏感和系统字段
+        if hasattr(user, 'model_fields'):  # Pydantic v2
+            for field_name in user.model_fields.keys():
+                if field_name not in exclude_fields and field_name != 'user_id':
+                    field_value = getattr(user, field_name, None)
+                    if field_value is not None:
+                        user_data[field_name] = field_value
+        
         # 创建用户数据库对象
-        db_user = self.component.user_orm_model(
-            user_id=user.user_id,
-            first_name=user.first_name,
-            last_name=user.last_name,
-            email=user.email,
-            password=hashed_password,
-        )
+        db_user = self.component.user_orm_model(**user_data)
 
         session.add(db_user)
         await session.flush()  # 刷新以获取自增ID
@@ -230,13 +250,22 @@ class DefaultRegisterService(IRegisterService):
             完整的用户信息
         """
         # 构造用户基本信息（不返回密码）
-        user = User(
-            id=db_user.id,
-            user_id=db_user.user_id,
-            first_name=db_user.first_name,
-            last_name=db_user.last_name,
-            email=db_user.email,
-        )
+        user_data = {
+            'id': db_user.id,
+            'user_id': db_user.user_id,
+        }
+
+        # 动态映射db_user的所有字段（排除敏感字段）
+        exclude_fields = {'password', '_sa_instance_state'}  # 排除密码和SQLAlchemy内部字段
+        for column in self.component.user_orm_model.__table__.columns:
+            field_name = column.name
+            if field_name not in exclude_fields and field_name not in user_data:
+                if hasattr(db_user, field_name):
+                    field_value = getattr(db_user, field_name, None)
+                    if field_value is not None:
+                        user_data[field_name] = field_value
+
+        user = User(**user_data)
 
         # 查询用户角色
         stmt = select(self.component.role_orm_model).join(

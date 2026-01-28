@@ -15,6 +15,11 @@ authentication:
     # - "employee_id"  # 员工号（自定义字段）
     # - "user_id"      # 用户ID (UUID)
   
+  # 展示字段配置 (v1.1.0+)
+  # 指定用于日志/展示的标识符字段（可选）
+  # 如果不指定，则使用 identifier_fields 的第一个非空值
+  # display_identifier_field: "email"  # 例如：优先展示邮箱
+  
   # 注册安全配置
   registration:
     # 默认角色（新用户注册后自动分配）

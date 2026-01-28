@@ -125,7 +125,7 @@ class AuthenticationChain(IManaged):
                 result = await provider.authenticate(request)
 
                 if result.success:
-                    logger.info(f"[Success] 认证成功: {provider.get_name()} - 用户: {result.username}")
+                    logger.info(f"[Success] 认证成功: {provider.get_name()} - 用户: {result.display_name}")
                     return result
                 else:
                     # 记录失败原因

@@ -134,6 +134,12 @@ authentication:
     - "username"   # 用户名
     - "email"      # 邮箱
     - "phone"      # 手机号（可选）
+  
+  # 可选：指定展示字段（用于日志和认证结果）
+  # display_identifier_field: "email"  # 不指定则使用第一个非空identifier
+  
+  # 重要：identifier_fields 必须在数据库中有 unique=True 约束
+  # 但可以是 nullable=True（允许不填，填了必须唯一）
 ```
 
 **用户注册**

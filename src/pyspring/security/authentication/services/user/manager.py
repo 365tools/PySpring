@@ -8,6 +8,9 @@ from datetime import datetime, UTC
 from typing import Optional, List, Any
 
 from fastapi import HTTPException, status
+from sqlalchemy import select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from pyspring.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
@@ -16,8 +19,6 @@ from pyspring.security.authentication.contracts.response import UserInfo, User, 
 from pyspring.security.authentication.contracts.token import ITokenService
 from pyspring.security.authentication.contracts.user import IUserManagerService
 from pyspring.security.authentication.infrastructure.context import AuthContext
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class DefaultUserManagerService(IUserManagerService):
@@ -247,7 +248,7 @@ class DefaultUserManagerService(IUserManagerService):
                 await session.commit()
                 await session.refresh(db_user)
 
-                logger.info(f"[Success] 用户信息完整更新成功: {db_user.email} (ID: {user_id})")
+                logger.info(f"[Success] 用户信息完整更新成功: user_id={user_id}")
 
                 return await self._build_user_info(session, db_user)
 
@@ -301,7 +302,7 @@ class DefaultUserManagerService(IUserManagerService):
                 await session.commit()
                 await session.refresh(db_user)
 
-                logger.info(f"[Success] 用户字段更新成功: {db_user.email} - {field_name}")
+                logger.info(f"[Success] 用户字段更新成功: user_id={user_id}, field={field_name}")
 
                 return await self._build_user_info(session, db_user)
 
@@ -343,7 +344,7 @@ class DefaultUserManagerService(IUserManagerService):
                 await self._update_user_roles(session, db_user.user_id, roles)  # 使用 UUID
                 await session.commit()
 
-                logger.info(f"[Success] 用户角色更新成功: {db_user.email}")
+                logger.info(f"[Success] 用户角色更新成功: user_id={user_id}")
 
                 return await self._build_user_info(session, db_user)
 
@@ -391,7 +392,7 @@ class DefaultUserManagerService(IUserManagerService):
                 await session.delete(db_user)
                 await session.commit()
 
-                logger.info(f"[Success] 用户删除成功: {db_user.email} (ID: {user_id})")
+                logger.info(f"[Success] 用户删除成功: user_id={user_id}")
                 return True
 
         except HTTPException:

@@ -9,6 +9,7 @@ from typing import Optional
 from fastapi import Request
 
 from pyspring.log.instance import logger
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.request_auth import (
     IRequestAuthenticationProvider,
     RequestAuthenticationResult
@@ -27,7 +28,8 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
     - 验证逻辑：委托给 TokenManagerService
     """
 
-    def __init__(self, name: str, config: dict, token_manager: ITokenService):
+    def __init__(self, name: str, config: dict, token_manager: ITokenService,
+                 security_config: SecurityEntityConfiguration):
         """
         初始化 JWT 认证提供者
         
@@ -35,9 +37,11 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
             name: 提供者名称
             config: 提供者配置
             token_manager: Token 管理服务
+            security_config: 安全配置（用于获取identifier_fields）
         """
         super().__init__(name, config)
         self.token_manager = token_manager
+        self.security_config = security_config
 
         # 从配置读取 token 来源优先级
         self.token_sources = self.get_config("token_sources", ["header", "cookie", "query"])
@@ -129,14 +133,35 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
 
             # 提取用户信息
             user_id = payload.get("sub")
-            username = payload.get("email")
             roles = payload.get("roles", [])
+
+            # 动态提取 user_info（包含所有 identifier_fields）
+            user_info = {}
+            display_name = None
+
+            # 优先使用配置的展示字段
+            if self.security_config.display_identifier_field:
+                display_name = payload.get(self.security_config.display_identifier_field)
+
+            # 遍历所有identifier_fields
+            for field_name in self.security_config.identifier_fields:
+                field_value = payload.get(field_name)
+                if field_value is not None:
+                    user_info[field_name] = field_value
+                    # 如果未配置展示字段，使用第一个非空identifier
+                    if display_name is None:
+                        display_name = field_value
+
+            # 如果没有任何identifier，降级使用user_id
+            if not display_name:
+                display_name = user_id
 
             return RequestAuthenticationResult(
                 success=True,
                 user_id=user_id,
-                username=username,
+                display_name=display_name,  # 展示用名称
                 roles=roles,
+                user_info=user_info,  # 动态用户信息
                 extra_data=payload,
                 provider_name=self.name
             )

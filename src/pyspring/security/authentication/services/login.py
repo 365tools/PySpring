@@ -1,6 +1,7 @@
 ﻿from typing import Optional, List
 
 from fastapi import HTTPException, status
+
 from pyspring.ioc.annotations import ConditionalOnMissingBean
 from pyspring.log.instance import logger
 from pyspring.security.authentication.contracts.constant import RevokeTokenReason
@@ -113,7 +114,7 @@ class DefaultLoginService(ILoginService):
             access_token = self.token_manager.create_access_token(data=access_payload)
             refresh_token = await self.token_manager.create_refresh_token(data=refresh_payload)
 
-            logger.info(f"[Success]用户登录成功: {user.email}")
+            logger.info(f"[Success]用户登录成功: user_id={user.user_id}")
 
             # 5. 构造响应（委托给 ResponseBuilder)
             return self.response_builder.build_login_response(
@@ -148,8 +149,8 @@ class DefaultLoginService(ILoginService):
             # 2. 撤销 Token
             await self.token_manager.revoke_token(token)
 
-            email = payload.get("email", "unknown")
-            logger.info(f"[Success]用户登出成功: {email}")
+            user_id = payload.get("sub", "unknown")
+            logger.info(f"[Success]用户登出成功: user_id={user_id}")
 
             # 3. 构造响应
             return self.response_builder.build_logout_response()

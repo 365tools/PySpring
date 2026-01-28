@@ -18,8 +18,9 @@ class RequestAuthenticationResult:
     """请求认证结果"""
     success: bool
     user_id: Optional[str] = None
-    username: Optional[str] = None
+    display_name: Optional[str] = None  # 展示用名称（根据display_identifier_field配置选择，或默认第一个非空identifier）
     roles: Optional[List[str]] = None
+    user_info: Optional[Dict[str, Any]] = None  # 动态用户信息（包含所有identifier_fields）
     extra_data: Optional[Dict[str, Any]] = None
     error_message: Optional[str] = None
     provider_name: Optional[str] = None

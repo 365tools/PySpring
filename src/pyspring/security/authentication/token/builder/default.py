@@ -1,9 +1,10 @@
 from typing import Any, Dict
 
+from sqlalchemy import select
+
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder
-from sqlalchemy import select
 
 
 class DefaultTokenPayloadBuilder(ITokenPayloadBuilder):
@@ -40,10 +41,17 @@ class DefaultTokenPayloadBuilder(ITokenPayloadBuilder):
         # 避免使用数据库自增 ID（可枚举、不安全）或 email（可变）
         payload = {
             "sub": user.user_id,  # Subject: 用户唯一标识符（UUID，不可变）
-            "email": user.email,  # 可选：便于调试和显示
             "roles": role_codes,
             "permissions": permissions,
         }
+
+        # 动态添加配置中定义的所有 identifier_fields 到 payload
+        # 这些字段可以用于登录和用户识别
+        for field_name in self.component.identifier_fields:
+            if hasattr(user, field_name):
+                field_value = getattr(user, field_name)
+                if field_value is not None:  # 只添加非空值
+                    payload[field_name] = field_value
 
         # 3. 合并来自安全上下文的动态 Claims
         if context_evaluation and context_evaluation.claims:

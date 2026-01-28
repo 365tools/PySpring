@@ -72,7 +72,10 @@ class AuthProviderFactory:
             if token_manager is None:
                 # 懒加载 TokenManagerService，避免在 Bean 注册阶段触发依赖
                 token_manager = ApplicationContext.get_instance().get_by_type(ITokenService)
-            return provider_class(str(provider_name), provider_config, token_manager)
+            # 获取SecurityEntityConfiguration
+            from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
+            security_config = ApplicationContext.get_instance().get_by_type(SecurityEntityConfiguration)
+            return provider_class(str(provider_name), provider_config, token_manager, security_config)
 
         # 其他提供者类型的创建逻辑
         # elif provider_type == "APIKeyAuthProvider":

@@ -128,43 +128,54 @@ class CustomRegisterService(DefaultRegisterService):
         自定义验证逻辑
         
         扩展点：
-        - 邮箱格式验证
-        - 用户名规则验证
+        - identifier_fields 唯一性验证（动态配置驱动）
         - 密码强度验证
-        - 手机号验证
         - 黑名单检查
+        
+        框架最佳实践（v1.1.0+）：
+        - ✅ 使用 self.component.identifier_fields 配置驱动
+        - ✅ 只检查非 NULL 值的字段
+        - ❌ 避免硬编码字段名（email、username等）
         """
         from sqlalchemy import select
         
-        # 检查邮箱是否已存在
-        result = await session.execute(
-            select(UserModel).where(UserModel.email == user.email)
-        )
-        if result.scalar_one_or_none():
-            raise ValueError(f"邮箱已被注册: {user.email}")
-        
-        # 检查 username 是否已存在（自定义字段）
-        if hasattr(user, 'username') and user.username:
-            result = await session.execute(
-                select(UserModel).where(UserModel.username == user.username)
-            )
+        # 动态检查所有 identifier_fields 配置的字段唯一性
+        for field_name in self.component.identifier_fields:
+            # 检查用户模型是否有该字段
+            if not hasattr(UserModel, field_name):
+                continue
+            
+            # 检查用户请求是否提供了该字段（只检查非 NULL 值）
+            field_value = getattr(user, field_name, None)
+            if field_value is None or field_value == "":
+                continue  # 跳过 NULL/空值，允许多个用户不填
+            
+            # 查询数据库检查唯一性
+            field_column = getattr(UserModel, field_name)
+            stmt = select(UserModel).where(field_column == field_value)
+            result = await session.execute(stmt)
             if result.scalar_one_or_none():
-                raise ValueError(f"用户名已被占用: {user.username}")
+                raise ValueError(f"{field_name} 已被使用: {field_value}")
         
         # 自定义验证：密码强度
         if len(user.password) < 6:
             raise ValueError("密码长度至少6位")
         
-        logger.info(f"✅ 用户验证通过: {user.email}")
+        logger.info(f"✅ 用户验证通过: user_id={user.user_id}")
     
     async def _create_user(self, session: Any, user: User) -> UserModel:
         """
         创建用户记录
         
+        框架最佳实践（v1.1.0+）：
+        - ✅ 使用动态字段映射（支持 identifier_fields 配置）
+        - ✅ 自动处理可选字段（NULL 值）
+        - ❌ 避免硬编码字段名
+        
         处理：
         - 密码加密
         - UUID生成
-        - 自定义字段映射（username, phone 等）
+        - 动态字段映射（identifier_fields + 扩展字段）
         - 默认值设置
         """
         import uuid
@@ -175,22 +186,36 @@ class CustomRegisterService(DefaultRegisterService):
         # 生成 UUID（如果没有提供）
         user_uuid = user.user_id if user.user_id else str(uuid.uuid4())
         
-        # 创建用户实例（映射自定义字段）
-        db_user = UserModel(
-            user_id=user_uuid,                    # 框架字段（UUID）
-            email=user.email,                     # 框架字段
-            password=hashed_password,             # 框架字段
-            username=getattr(user, 'username', user.email.split('@')[0]),  # 自定义字段（默认使用邮箱前缀）
-            phone=getattr(user, 'phone', None),   # 自定义字段
-            active=True,                          # 框架字段（激活状态）
-            deleted=False,                        # 框架字段（软删除）
-            creator="system",                     # 框架字段（审计）
-        )
+        # 动态构建用户字段（支持 identifier_fields 配置）
+        user_data = {
+            'user_id': user_uuid,              # 框架字段（UUID）
+            'password': hashed_password,       # 框架字段
+            'active': True,                    # 框架字段（激活状态）
+            'deleted': False,                  # 框架字段（软删除）
+            'creator': "system",               # 框架字段（审计）
+        }
+        
+        # 动态添加 identifier_fields 和其他基本字段
+        for field_name in ['first_name', 'last_name'] + self.component.identifier_fields:
+            if hasattr(user, field_name):
+                field_value = getattr(user, field_name, None)
+                if field_value is not None:
+                    user_data[field_name] = field_value
+        
+        # 添加自定义扩展字段（非 identifier_fields）
+        for field_name in ['phone', 'address', 'avatar']:  # 示例扩展字段
+            if hasattr(user, field_name):
+                field_value = getattr(user, field_name, None)
+                if field_value is not None:
+                    user_data[field_name] = field_value
+        
+        # 创建用户实例
+        db_user = UserModel(**user_data)
         
         session.add(db_user)
         await session.flush()  # 获取 ID
         
-        logger.info(f"✅ 用户创建成功: {db_user.email} (ID: {db_user.id})")
+        logger.info(f"✅ 用户创建成功: user_id={db_user.user_id}")
         return db_user
     
     async def _assign_roles(self, session: Any, user_id: str, roles: list[Role]) -> None:

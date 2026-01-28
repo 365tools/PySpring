@@ -19,7 +19,8 @@ class UserResponse(BaseModel):
     """用户响应模型"""
     id: int
     user_id: str
-    username: str
+    first_name: str | None = None
+    last_name: str | None = None
     email: str
     active: bool
     
