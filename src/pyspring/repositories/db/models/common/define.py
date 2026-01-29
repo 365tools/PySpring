@@ -1,6 +1,6 @@
 from datetime import datetime, UTC
 
-from sqlalchemy import Column, String, Boolean, INT, TIMESTAMP
+from sqlalchemy import Column, String, Boolean, INT, TIMESTAMP, Integer, DateTime, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -77,3 +77,43 @@ class BaseRolePermissionTable(Base):
     id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
     role_code: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     permission_code: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+
+
+# ============================================================
+# Token 相关表
+# ============================================================
+
+class BaseTokenBlacklistTable(Base):
+    """
+    Token 黑名单表（已撤销的 Token 抽象类）
+
+    用于存储被撤销的 Access Token，防止其继续使用
+    """
+    __abstract__ = True
+
+    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
+    token_id = Column(String(36), nullable=False, unique=True, index=True, comment="Token ID (JTI)")
+    token_type = Column(String(20), nullable=False, comment="Token类型")
+    user_id = Column(String(36), nullable=False, index=True, comment="用户UUID")
+    expires_at = Column(DateTime, nullable=False, comment="Token过期时间")
+    reason = Column(String(200), nullable=True, comment="撤销原因")
+
+
+class BaseRefreshTokenTable(Base):
+    """
+    Refresh Token 抽象类
+
+    用于存储长期有效的 Refresh Token，用于刷新 Access Token
+    """
+    __abstract__ = True
+
+    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
+    token = Column(String(500), unique=True, nullable=False, index=True, comment="Refresh Token字符串")
+    user_id = Column(String(36), nullable=False, index=True, comment="用户UUID")
+    user_email = Column(String(100), nullable=False, comment="用户邮箱")
+    roles = Column(Text, nullable=True, comment="用户角色(JSON数组)")
+    issued_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC), comment="签发时间")
+    expires_at = Column(DateTime, nullable=False, comment="过期时间")
+    is_revoked = Column(Boolean, nullable=False, default=False, index=True, comment="是否已撤销")
+    revoked_at = Column(DateTime, nullable=True, comment="撤销时间")
+    revoke_reason = Column(String(200), nullable=True, comment="撤销原因(如: 用户重新登录、主动登出、安全原因等)")

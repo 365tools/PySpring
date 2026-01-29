@@ -12,17 +12,16 @@ PySpring Security 模块 ORM 表定义
 """
 
 import uuid
-from datetime import datetime, UTC
+
+from sqlalchemy import Column, String
 
 from pyspring.repositories.db.models.common.define import (
-    Base,
     BaseUserTable,
     BaseRoleTable,
     BasePermissionTable,
     BaseUserRoleTable,
-    BaseRolePermissionTable
+    BaseRolePermissionTable, BaseTokenBlacklistTable, BaseRefreshTokenTable
 )
-from sqlalchemy import Column, String, Integer, DateTime, Text, Boolean
 
 
 # ============================================================
@@ -88,43 +87,25 @@ class RolePermissionTable(BaseRolePermissionTable):
 # Token 相关表
 # ============================================================
 
-class TokenBlacklistTable(Base):
+class TokenBlacklistTable(BaseTokenBlacklistTable):
     """
     Token 黑名单表（已撤销的 Token）
     
     用于存储被撤销的 Access Token，防止其继续使用
     """
-    __tablename__ = "token_blacklist"
-
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    token_id = Column(String(36), nullable=False, unique=True, index=True, comment="Token ID (JTI)")
-    token_type = Column(String(20), nullable=False, comment="Token类型")
-    user_id = Column(String(36), nullable=False, index=True, comment="用户UUID")
-    expires_at = Column(DateTime, nullable=False, comment="Token过期时间")
-    reason = Column(String(200), nullable=True, comment="撤销原因")
+    __tablename__ = "pyspring_token_blacklist"
 
     def __repr__(self):
         return f"<TokenBlacklist(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at})>"
 
 
-class RefreshTokenTable(Base):
+class RefreshTokenTable(BaseRefreshTokenTable):
     """
     Refresh Token 表
     
     用于存储长期有效的 Refresh Token，用于刷新 Access Token
     """
-    __tablename__ = "refresh_token"
-
-    id = Column(Integer, primary_key=True, autoincrement=True, comment="主键ID")
-    token = Column(String(500), unique=True, nullable=False, index=True, comment="Refresh Token字符串")
-    user_id = Column(String(36), nullable=False, index=True, comment="用户UUID")
-    user_email = Column(String(100), nullable=False, comment="用户邮箱")
-    roles = Column(Text, nullable=True, comment="用户角色(JSON数组)")
-    issued_at = Column(DateTime, nullable=False, default=lambda: datetime.now(UTC), comment="签发时间")
-    expires_at = Column(DateTime, nullable=False, comment="过期时间")
-    is_revoked = Column(Boolean, nullable=False, default=False, index=True, comment="是否已撤销")
-    revoked_at = Column(DateTime, nullable=True, comment="撤销时间")
-    revoke_reason = Column(String(200), nullable=True, comment="撤销原因(如: 用户重新登录、主动登出、安全原因等)")
+    __tablename__ = "pyspring_refresh_token"
 
     def __repr__(self):
         return f"<RefreshToken(id={self.id}, user_id={self.user_id}, expires_at={self.expires_at}, is_revoked={self.is_revoked})>"
