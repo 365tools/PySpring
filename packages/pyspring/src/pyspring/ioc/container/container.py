@@ -49,9 +49,8 @@ class Container:
             from pyspring.ioc.aop.integration import AopIntegration
             self._aop_integration = AopIntegration(self)
 
-        # Initializer/Shutdown管理器
-        self._initializer_manager = None
-        self._shutdown_manager = None
+        # 循环依赖检测
+        self._instantiation_stack: List[str] = []
 
         # 状态标记
         self._initialized = False
@@ -282,14 +281,20 @@ class Container:
         if not service_def:
             raise ValueError(f"服务 '{name}' 未注册")
 
+        # 检查循环依赖
+        if name in self._instantiation_stack:
+            raise RuntimeError(f"检测到循环依赖: {' -> '.join(self._instantiation_stack)} -> {name}")
+        
+        # 将当前服务加入实例化栈
+        self._instantiation_stack.append(name)
+        
         try:
             # 如果是Bean，直接调用工厂
             if service_def.is_bean:
                 instance = service_def.factory()
             else:
-                # 解析依赖
-                from pyspring.ioc.resolver.resolver import DependencyResolver
-                dependencies = DependencyResolver(self.registry).resolve_dependencies(service_def, self)
+                # 使用共享的依赖解析器
+                dependencies = self.resolver.resolve_dependencies(service_def, self)
 
                 # 实例化
                 instance = service_def.service_type(**dependencies)
@@ -305,8 +310,13 @@ class Container:
             return instance
 
         except Exception as e:
-            logger.error(f"❌ 实例化服务失败 {name}: {e}")
+            logger.error(f"服务实例化失败 {name}: {str(e)}")
             raise
+        
+        finally:
+            # 从实例化栈中移除当前服务
+            if self._instantiation_stack and self._instantiation_stack[-1] == name:
+                self._instantiation_stack.pop()
 
     def get_by_type(self, service_type: type) -> Any:
         """根据类型获取服务实例"""
@@ -326,9 +336,7 @@ class Container:
         impl_defs = self.registry.get_implementations(service_type)
         return [self.get(impl_def.name) for impl_def in impl_defs]
 
-    def get_all_instances_of(self, service_type: type) -> List[Any]:
-        """获取某类型的所有实例（别名方法）"""
-        return self.get_all_of_type(service_type)
+
 
     def has(self, name: str) -> bool:
         """检查服务是否已注册"""

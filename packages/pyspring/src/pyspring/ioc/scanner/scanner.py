@@ -51,6 +51,9 @@ class ComponentScanner:
         self.config = config or DEFAULT_SCAN_CONFIG
         self.scanned_components: Dict[type, ComponentMetadata] = {}
         self.scanned_modules: Set[str] = set()
+        
+        # 性能优化：缓存已处理的类信息
+        self._processed_classes_cache: Dict[str, bool] = {}
 
         # 类型映射表（用于替换检测）
         self.type_to_components: Dict[type, List[ComponentMetadata]] = {}  # 类型 -> 组件列表
@@ -168,32 +171,62 @@ class ComponentScanner:
 
     def _should_process_class(self, cls: type) -> bool:
         """判断是否应该处理该类"""
+        # 使用缓存避免重复计算
+        class_key = f"{cls.__module__}.{cls.__name__}"
+        if class_key in self._processed_classes_cache:
+            return self._processed_classes_cache[class_key]
+        
         # 1. 检查是否是Protocol（接口定义）
         if getattr(cls, '_is_protocol', False):
-            return False
-
+            result = False
+        
         # 2. 检查是否是抽象类（有未实现的抽象方法）
-        if not self.config.scan_abstract:
-            # 不能简单用 inspect.isabstract()，因为它会将任何继承ABC的类标记为抽象
-            # 应该检查是否有未实现的抽象方法
-            abstract_methods = getattr(cls, '__abstractmethods__', None)
-            if abstract_methods and len(abstract_methods) > 0:
-                return False
+        elif not self.config.scan_abstract:
+            if self._is_unimplemented_abstract_class(cls):
+                result = False
+            else:
+                # 3. 应用配置的过滤规则
+                if not self.config.should_scan_class(cls):
+                    result = False
+                else:
+                    # 4. 排除生命周期组件（Initializer/Handler）
+                    if is_lifecycle_component(cls):
+                        logger.debug(f"⏩ 跳过生命周期组件: {cls.__name__}")
+                        result = False
+                    else:
+                        # 5. 检查是否有组件标记
+                        result = self._is_component(cls)
+        else:
+            # 如果配置允许扫描抽象类，跳过前面的抽象类检查
+            # 3. 应用配置的过滤规则
+            if not self.config.should_scan_class(cls):
+                result = False
+            else:
+                # 4. 排除生命周期组件（Initializer/Handler）
+                if is_lifecycle_component(cls):
+                    logger.debug(f"⏩ 跳过生命周期组件: {cls.__name__}")
+                    result = False
+                else:
+                    # 5. 检查是否有组件标记
+                    result = self._is_component(cls)
+        
+        # 缓存结果
+        self._processed_classes_cache[class_key] = result
+        return result
 
-        # 3. 应用配置的过滤规则
-        if not self.config.should_scan_class(cls):
-            return False
-
-        # 4. 排除生命周期组件（Initializer/Handler）
-        if is_lifecycle_component(cls):
-            logger.debug(f"⏩ 跳过生命周期组件: {cls.__name__}")
-            return False
-
-        # 5. 检查是否有组件标记
-        if not self._is_component(cls):
-            return False
-
-        return True
+    def _is_unimplemented_abstract_class(self, cls: type) -> bool:
+        """
+        检查是否是未实现的抽象类
+        
+        Args:
+            cls: 待检查的类
+            
+        Returns:
+            如果是未实现的抽象类则返回True，否则返回False
+        """
+        # 检查是否存在未实现的抽象方法
+        abstract_methods = getattr(cls, '__abstractmethods__', None)
+        return abstract_methods is not None and len(abstract_methods) > 0
 
     def _is_component(self, cls: type) -> bool:
         """判断类是否是组件"""

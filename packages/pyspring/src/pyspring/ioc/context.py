@@ -145,16 +145,20 @@ class ApplicationContext:
         """根据类型获取Bean（别名方法）"""
         return self.get_by_type(service_type)
 
-    def get_all_instances_of(self, service_type: type):
+    def get_all_of_type(self, service_type: type):
         """获取某类型的所有实例（快捷方法）"""
-        return self.container.get_all_instances_of(service_type)
+        return self.container.get_all_of_type(service_type)
+    
+    # Note: get_all_instances_of is kept as alias for backward compatibility
+    # Use get_all_of_type for new code as it's more consistent with other method names
+
 
     @staticmethod
     def service(service_type: type):
         """
         静态方法：根据类型获取服务实例
         
-        兼容旧版 AppContainerManager.service() 的用法，可在 FastAPI Depends 中直接使用：
+        ApplicationContext.service() 的用法，可在 FastAPI Depends 中直接使用：
         
         Example:
             from fastapi import Depends

@@ -52,6 +52,42 @@ class ServiceRegistry:
         # 已注册的服务名称集合（快速查询）
         self._registered_names: Set[str] = set()
 
+    def _is_interface_type(self, base_type: type) -> bool:
+        """
+        判断是否是接口类型
+        
+        Args:
+            base_type: 待检查的类型
+            
+        Returns:
+            是否是接口类型
+        """
+        import inspect
+        from typing import Protocol
+        
+        # 检查是否是抽象基类
+        if inspect.isabstract(base_type):
+            return True
+        
+        # 检查是否是Protocol
+        if getattr(base_type, '_is_protocol', False):
+            return True
+        
+        # 检查是否是 typing.Protocol
+        if base_type is Protocol:
+            return True
+        
+        # 检查是否是 ABC 的子类（Abstract Base Classes）
+        try:
+            import abc
+            if issubclass(base_type, abc.ABC):
+                # 额外检查是否确实有抽象方法
+                return hasattr(base_type, '__abstractmethods__') and len(base_type.__abstractmethods__) > 0
+        except (TypeError, AttributeError):
+            pass
+        
+        return False
+
     def register(self, definition: ServiceDefinition):
         """
         注册服务
@@ -93,7 +129,7 @@ class ServiceRegistry:
         # 遍历所有基类（跳过自己）
         for base in impl_type.__mro__[1:]:
             # 只映射抽象基类和Protocol
-            if inspect.isabstract(base) or getattr(base, '_is_protocol', False):
+            if self._is_interface_type(base):
                 if base not in self._interface_to_impls:
                     self._interface_to_impls[base] = []
 
