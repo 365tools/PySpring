@@ -3,6 +3,14 @@
 
 负责解析服务之间的依赖关系，支持类型提示、命名注入和集合注入。
 """
+from typing import Dict, Any, List, get_type_hints, get_origin, get_args
+from dataclasses import dataclass
+from ..registry.registry import ServiceRegistry, ServiceDefinition
+from ..proxy.lazy import get_lazy_proxy_class
+from ..container.container import get_container_class
+from ...log.instance import logger
+from ..dependency import DependencyInfo
+
 
 class DependencyResolver:
     """
@@ -17,6 +25,33 @@ class DependencyResolver:
     def __init__(self, registry: ServiceRegistry):
         self.registry = registry
         self._instantiation_stack = []
+
+    def _generate_service_name(self, param_type: type) -> str:
+        """
+        根据类型生成服务名称
+        
+        Args:
+            param_type: 参数类型
+            
+        Returns:
+            服务名称
+        """
+        if hasattr(param_type, '__name__'):
+            # 将驼峰命名转为蛇形命名
+            import re
+            name = param_type.__name__
+            # 将驼峰命名转换为蛇形命名
+            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            return name
+        elif hasattr(param_type, '_name') and param_type._name:
+            # 对于一些特殊类型如List[int]等
+            import re
+            name = param_type._name
+            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            return name
+        else:
+            # 如果类型没有 __name__ 属性，返回基于类型的唯一标识
+            return f"type_{abs(hash(str(param_type))) % 10000}"
 
     def resolve_dependencies(self, service_def: ServiceDefinition, container: Any) -> Dict[str, Any]:
         """
@@ -40,16 +75,17 @@ class DependencyResolver:
             
         dependencies = {}
         for param_name, param_type in init_signature.items():
-            dep_info = self._create_dependency_info(param_name, param_type)
+            dep_info = self._create_dependency_info(service_def, param_name, param_type)
             dependencies[param_name] = self._resolve_dependency(dep_info, container, service_def.name)
             
         return dependencies
 
-    def _create_dependency_info(self, param_name: str, param_type: type) -> DependencyInfo:
+    def _create_dependency_info(self, service_def, param_name: str, param_type: type) -> DependencyInfo:
         """
         创建依赖信息对象
         
         Args:
+            service_def: 服务定义
             param_name: 参数名称
             param_type: 参数类型
             
@@ -58,7 +94,7 @@ class DependencyResolver:
         """
         # 检查是否是List注入
         origin = get_origin(param_type)
-        if origin is list or origin is List:
+        if origin is list:
             type_args = get_args(param_type)
             if type_args:
                 element_type = type_args[0]
@@ -84,10 +120,12 @@ class DependencyResolver:
             )
             
         # 默认按类型查找
+        # 使用类型名称生成服务名称
+        service_name = self._generate_service_name(param_type)
         return DependencyInfo(
             param_name=param_name,
             param_type=param_type,
-            service_name="",  # 空字符串表示按类型查找
+            service_name=service_name,  # 使用类型生成的服务名
             qualifier=None
         )
 
@@ -140,4 +178,47 @@ class DependencyResolver:
             return LazyProxy(container, service_name, service_def.service_type)
 
         # 正常获取实例
-        return container.get(service_name)
+        try:
+            return container.get(service_name)
+        except ValueError:
+            # 如果按名称找不到服务，则尝试按类型查找
+            try:
+                return container.get_by_type(dep_info.param_type)
+            except ValueError:
+                # 对于某些原生类型如bool, str, int等，返回默认值
+                # 或者对于typing.Any等通用类型，返回None
+                if dep_info.param_type == bool:
+                    return False
+                elif dep_info.param_type == str:
+                    return ""
+                elif dep_info.param_type == int:
+                    return 0
+                elif dep_info.param_type == float:
+                    return 0.0
+                elif dep_info.param_type == list:
+                    return []
+                elif dep_info.param_type == dict:
+                    return {}
+                elif dep_info.param_type == tuple:
+                    return ()
+                else:
+                    # 对于其他无法处理的类型，抛出异常
+                    # 但对于typing模块的特殊类型如Any，返回None
+                    import typing
+                    if hasattr(typing, 'Any') and dep_info.param_type == typing.Any:
+                        return None
+                    # 尝试检查是否是通用类型
+                    origin = get_origin(dep_info.param_type)
+                    if origin is not None:
+                        # 处理Generic、Union等类型
+                        if origin == list:
+                            return []
+                        elif origin == dict:
+                            return {}
+                        elif origin == tuple:
+                            return ()
+                        elif origin == type(None):
+                            return None
+                    # 对于其他情况，记录警告并返回None
+                    logger.warning(f"⚠️ 无法解析依赖 {dep_info.param_name} 的类型 {dep_info.param_type}，返回 None")
+                    return None

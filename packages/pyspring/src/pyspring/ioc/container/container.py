@@ -414,4 +414,9 @@ class Container:
         return name
 
 
-__all__ = ['Container']
+def get_container_class():
+    """获取容器类"""
+    return Container
+
+
+__all__ = ['Container', 'get_container_class']

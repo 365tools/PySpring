@@ -55,3 +55,15 @@ class LazyProxy:
             object.__setattr__(self, '_instance', instance)
             object.__setattr__(self, '_initialized', True)
         return self._instance
+
+
+def get_lazy_proxy_class():
+    """获取懒加载代理类"""
+    return LazyProxy
+
+
+def get_container_class():
+    """获取容器类"""
+    # 为了避免循环导入，动态导入
+    from ..container.container import Container
+    return Container
