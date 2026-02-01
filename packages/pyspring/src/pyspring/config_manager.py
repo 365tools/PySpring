@@ -121,6 +121,21 @@ class ConfigManager:
         if not user_config_file.exists():
             if _DEBUG_CONFIG:
                 print(f"[ConfigManager] 📝 用户配置不存在（使用框架默认值）: {user_config_file}")
+            else:
+                # 非调试模式下给出友好警告
+                import sys
+                config_locations = [
+                    f"./config/{config_name}.yaml",
+                    f"./{config_name}.yaml",
+                    f"../config/{config_name}.yaml",
+                    f"../{config_name}.yaml"
+                ]
+                print(
+                    f"⚠️  警告：未找到 {config_name}.yaml 配置文件，将使用框架默认配置。\n"
+                    f"请在以下任一位置创建配置文件以自定义设置：\n" + 
+                    "\n".join([f"  {i+1}. {loc}" for i, loc in enumerate(config_locations)]),
+                    file=sys.stderr
+                )
             return {}
 
         try:
@@ -128,10 +143,18 @@ class ConfigManager:
                 config = yaml.safe_load(f) or {}
             if _DEBUG_CONFIG:
                 print(f"[ConfigManager] ✅ 已加载用户配置: {config_name} <- {user_config_file}")
+            else:
+                # 非调试模式下给出简短的成功提示
+                import sys
+                print(f"✅ 成功加载用户配置: {config_name} (from {user_config_file})", file=sys.stderr)
             return config
         except Exception as e:
             if _DEBUG_CONFIG:
                 print(f"[ConfigManager] ⚠️  加载用户配置失败，使用框架默认值: {user_config_file}, 错误: {e}")
+            else:
+                # 非调试模式下给出简短的错误提示
+                import sys
+                print(f"⚠️  加载用户配置失败，使用框架默认值: {config_name} ({user_config_file}), 错误: {e}", file=sys.stderr)
             return {}
 
     @classmethod

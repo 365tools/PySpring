@@ -3,6 +3,7 @@
 
 负责解析服务之间的依赖关系，支持类型提示、命名注入和集合注入。
 """
+import inspect
 from typing import Dict, Any, List, get_type_hints, get_origin, get_args
 from dataclasses import dataclass
 from ..registry.registry import ServiceRegistry, ServiceDefinition
@@ -10,6 +11,14 @@ from ..proxy.lazy import get_lazy_proxy_class
 from ..container.container import get_container_class
 from ...log.instance import logger
 from ..dependency import DependencyInfo
+
+
+# 特殊标记：表示应该使用参数的默认值
+class _UseDefaultValue:
+    """标记类，表示参数应使用其默认值"""
+    pass
+
+_USE_DEFAULT_VALUE = _UseDefaultValue()
 
 
 class DependencyResolver:
@@ -67,6 +76,9 @@ class DependencyResolver:
         # 获取构造函数参数类型
         init_signature = get_type_hints(service_def.service_type.__init__)
         
+        # 获取构造函数的签名（用于获取默认值）
+        sig = inspect.signature(service_def.service_type.__init__)
+        
         # 移除self参数
         if 'return' in init_signature:
             del init_signature['return']
@@ -75,8 +87,21 @@ class DependencyResolver:
             
         dependencies = {}
         for param_name, param_type in init_signature.items():
+            # 获取参数的默认值
+            param = sig.parameters.get(param_name)
+            has_default = param is not None and param.default != inspect.Parameter.empty
+            
             dep_info = self._create_dependency_info(service_def, param_name, param_type)
-            dependencies[param_name] = self._resolve_dependency(dep_info, container, service_def.name)
+            
+            # 尝试解析依赖，传入是否有默认值的信息
+            resolved_value = self._resolve_dependency(dep_info, container, service_def.name, has_default)
+            
+            # 如果返回了特殊标记表示"使用默认值"，则跳过此参数
+            if resolved_value is _USE_DEFAULT_VALUE:
+                logger.debug(f"📌 参数 '{param_name}' 使用构造函数默认值: {param.default}")
+                continue
+                
+            dependencies[param_name] = resolved_value
             
         return dependencies
 
@@ -133,7 +158,8 @@ class DependencyResolver:
             self,
             dep_info: DependencyInfo,
             container: Any,
-            current_service: str
+            current_service: str,
+            has_default: bool = False
     ) -> Any:
         """
         解析单个依赖，返回实例或代理
@@ -142,9 +168,10 @@ class DependencyResolver:
             dep_info: 依赖信息
             container: 容器
             current_service: 当前正在实例化的服务名称
+            has_default: 该参数是否有默认值
             
         Returns:
-            依赖实例或代理
+            依赖实例、代理或 _USE_DEFAULT_VALUE 标记
         """
         service_name = dep_info.service_name
 
@@ -186,8 +213,6 @@ class DependencyResolver:
             try:
                 return container.get_by_type(dep_info.param_type)
             except ValueError:
-                # 尝试获取内置类型默认值
-                builtin_default = self._get_builtin_type_default(dep_info.param_type)
                 # 如果是特殊类型（如 typing.Any 或 Optional[T]），即使返回 None 也应该静默处理
                 import typing
                 if dep_info.param_type is typing.Any:
@@ -197,13 +222,26 @@ class DependencyResolver:
                 if self._is_optional_type(dep_info.param_type):
                     return None
                 
+                # 尝试获取内置类型默认值
+                builtin_default = self._get_builtin_type_default(dep_info.param_type)
+                
+                # 🔑 关键修改：如果参数有默认值，且是基本类型，则使用构造函数的默认值而不是类型的默认值
+                if builtin_default is not None and has_default:
+                    # 返回特殊标记，表示应该使用构造函数的默认值
+                    return _USE_DEFAULT_VALUE
+                
                 if builtin_default is not None:
+                    # 没有默认值时，才使用类型的默认值
                     return builtin_default
                 
                 # 尝试处理泛型类型
                 generic_default = self._get_generic_type_default(dep_info.param_type)
                 if generic_default is not None:
                     return generic_default
+                
+                # 对于其他无法处理的类型，如果有默认值则使用默认值
+                if has_default:
+                    return _USE_DEFAULT_VALUE
                 
                 # 对于其他无法处理的类型，记录警告并返回None
                 logger.warning(f"⚠️ 无法解析依赖 {dep_info.param_name} 的类型 {dep_info.param_type}，返回 None")
@@ -258,7 +296,7 @@ class DependencyResolver:
             param_type: 参数类型
                 
         Returns:
-            默认值，如果类型不是内置类型则返回None
+            默认值, 如果类型不是内置类型则返回None
         """
         # 内置类型映射
         builtin_defaults = {
@@ -308,7 +346,7 @@ class DependencyResolver:
             param_type: 参数类型
             
         Returns:
-            默认值，如果类型不是泛型类型则返回None
+            默认值, 如果类型不是泛型类型则返回None
         """
         # 检查是否是typing.Any类型（需要优先处理）
         import typing
