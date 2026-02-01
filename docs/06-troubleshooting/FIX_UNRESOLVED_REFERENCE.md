@@ -132,13 +132,14 @@ pyspring diagnose
 
 ```python
 from pyspring.log.loguru.logger import logger
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 
 # 应该有代码提示和自动补全
 logger.info("Hello PySpring!")
 
-# 初始化 IoC 容器
-ioc = AppContainerManager()
+# 初始化应用上下文
+app_context = ApplicationContext.initialize(base_packages=[])
+ioc = app_context.container
 ```
 
 现在输入 `from pyspring.` 时应该能看到自动补全提示！

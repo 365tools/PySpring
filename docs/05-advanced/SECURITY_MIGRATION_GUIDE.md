@@ -91,7 +91,7 @@ app.add_middleware(AuthenticationMiddleware)
 ```python
 @staticmethod
 async def verify_token(token: str) -> Optional[dict]:
-    token_service: TokenManagerService = AppContainerManager.service(TokenManagerService)
+    token_service: TokenManagerService = ApplicationContext.service(TokenManagerService)
     payload = await token_service.verify_token(token)
     return payload
 ```

@@ -54,7 +54,7 @@ graph TD
 class UserService:
     # 移除构造函数中的 NotificationService 依赖
     def __init__(self):
-        self.container = AppContainerManager().container
+        self.container = ApplicationContext.get_instance().container
 
     def register(self):
         # 运行时延迟获取

@@ -108,7 +108,7 @@ pip show pyspring
 python -c "import sys; print('\n'.join(sys.path))"
 
 # 尝试导入
-python -c "from pyspring.log.loguru.logger import logger; from pyspring.ioc.manager import AppContainerManager; print('✅ 导入成功!')"
+python -c "from pyspring.log.loguru.logger import logger; from pyspring.ioc import ApplicationContext; print('✅ 导入成功!')"
 ```
 
 ### 方法 2：使用测试脚本
@@ -207,11 +207,10 @@ YourProject/
 ```python
 # your_code.py
 from pyspring.log.loguru.logger import logger
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 
 # 初始化 IoC 容器
-ioc_manager = AppContainerManager()
-ioc_manager.register_all_services()
+app_context = ApplicationContext.initialize(base_packages=['your_app.services'])
 
 # 使用日志
 logger.info("✅ PySpring 初始化成功")

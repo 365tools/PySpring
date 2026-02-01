@@ -87,10 +87,10 @@ if __name__ == "__main__":
 ### 方式 2：通过 IoC 容器
 
 ```python
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 
 # 获取系统服务
-system_service = AppContainerManager.service(SystemService)
+system_service = ApplicationContext.service(SystemService)
 
 # 读取配置
 app_name = system_service.get_config("app.name")
@@ -101,11 +101,11 @@ server_port = system_service.get_config("server.port", 8000)
 
 ```python
 from fastapi import FastAPI, Depends
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 
 
 def get_system_service():
-    return AppContainerManager.service(SystemService)
+    return ApplicationContext.service(SystemService)
 
 
 @app.get("/config")

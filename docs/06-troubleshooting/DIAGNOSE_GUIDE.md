@@ -51,7 +51,7 @@ Python 版本: 3.12.10
 
 测试具体模块:
 ✅ pyspring.log.loguru.logger.logger
-✅ pyspring.ioc.manager.AppContainerManager
+✅ pyspring.ioc.ApplicationContext
 
 ======================================================================
 4. Python 搜索路径
@@ -70,10 +70,11 @@ Python 版本: 3.12.10
 示例代码:
 ```python
 from pyspring.log.loguru.logger import logger
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 
 logger.info('Hello PySpring!')
-ioc = AppContainerManager()
+# 注意：需要先初始化应用上下文
+app_context = ApplicationContext.initialize(base_packages=[])
 ```
 
 ```

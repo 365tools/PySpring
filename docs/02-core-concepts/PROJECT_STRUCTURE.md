@@ -145,7 +145,7 @@ PySpring/
 
 **主要组件**:
 
-- `AppContainerManager`: 容器管理器，管理所有服务实例（单例模式）
+- `ApplicationContext`: 应用上下文，管理所有服务实例（单例模式）
 - `DynamicContainer`: 动态服务容器，支持运行时注册
 
 **文档**: [IoC 容器与单例服务](docs/IOC_SINGLETON_GUIDE.md)

@@ -28,7 +28,7 @@ PySpring 提供以下内置单例服务：
 | `RepositoriesConfigManager`  | 存储配置管理，管理数据库和缓存配置         |
 | `ConfigRegistry`             | 配置注册表，集中管理所有配置信息          |
 | `EnvConfigLoader`            | 环境变量加载器，加载和解析 .env 文件     |
-| `AppContainerManager`        | 容器管理器，管理 IoC 容器本身         |
+| `ApplicationContext`        | 应用上下文，管理 IoC 容器本身         |
 
 ## ISingletonService 接口
 
@@ -106,7 +106,7 @@ class ISingletonService(IService, Protocol):
 
 # 获取容器实例（容器本身也是单例）
 
-container = AppContainerManager()
+app_context = ApplicationContext.get_instance()
 
 ```
 
@@ -115,15 +115,16 @@ container = AppContainerManager()
 
 ```python
 from fastapi import APIRouter, Depends
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 from pyspring.security.auth.config_manager import SecurityConfigManager
 
 router = APIRouter()
 
 def get_config_manager():
     """依赖注入函数"""
-    container = AppContainerManager()
-    return container.get(SecurityConfigManager)
+    # 从全局应用上下文获取服务
+    app_context = ApplicationContext.get_instance()
+    return app_context.get_by_type(SecurityConfigManager)
 
 @router.get("/config")
 async def get_config(
@@ -136,7 +137,7 @@ async def get_config(
     }
 
 # 再次获取，返回同一实例
-service2 = container.get(MyCustomService)
+service2 = app_context.get_by_type(MyCustomService)
 print(service2.get_data("config"))  # {"debug": True}
 ```
 
@@ -145,21 +146,21 @@ print(service2.get_data("config"))  # {"debug": True}
 对于需要频繁访问单例服务的类，建议缓存容器引用：
 
 ```python
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 from pyspring.log.loguru.config.manager import LoggingConfigManager
 
 class BusinessService:
     def __init__(self):
         # 缓存容器引用
-        self.container = AppContainerManager()
-        self.logger = self.container.get(LoggingConfigManager)
+        self.app_context = ApplicationContext.get_instance()
+        self.logger = self.app_context.get_by_type(LoggingConfigManager)
     
     def process(self, data):
         # 直接使用缓存的服务
         self.logger.info(f"Processing {data}")
         
         # 获取其他服务
-        config = self.container.get(SecurityConfig
+        config = self.app_context.get_by_type(SecurityConfig
 
 ## 迁移指南
 
@@ -173,7 +174,7 @@ from pyspring.security.auth.chain import auth_chain_manager
 
 # 新代码
 from pyspring.security.auth.chain import AuthenticationChainManager
-        from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 ```
 
 ###最佳实践
@@ -186,17 +187,19 @@ from pyspring.security.auth.chain import AuthenticationChainManager
 # ❌ 不推荐
 class ServiceA(ISingletonService):
     def __init__(self):
-        container = AppContainerManager()
-        self.service_b = container.get(ServiceB)  # 可能循环依赖
+        # 从全局应用上下文获取服务
+        app_context = ApplicationContext.get_instance()
+        self.service_b = app_context.get_by_type(ServiceB)  # 可能循环依赖
 
 # ✅ 推荐
 class ServiceA(ISingletonService):
     def __init__(self):
-        self.container = AppContainerManager()
+        # 从全局应用上下文获取
+        self.app_context = ApplicationContext.get_instance()
     
     def do_something(self):
         # 在方法中动态获取
-        service_b = self.container.get(ServiceB)
+        service_b = self.app_context.get_by_type(ServiceB)
         service_b.process()
 ```
 
@@ -207,10 +210,11 @@ class ServiceA(ISingletonService):
 ```python
 class MyService(ISingletonService):
     def __init__(self):
-        self.container = AppContainerManager()
+        # 从全局应用上下文获取
+        self.app_context = ApplicationContext.get_instance()
         # 缓存常用服务
-        self.logger = self.container.get(LoggingConfigManager)
-        self.config = self.container.get(SecurityConfigManager)
+        self.logger = self.app_context.get_by_type(LoggingConfigManager)
+        self.config = self.app_context.get_by_type(SecurityConfigManager)
 ```
 
 ### 3. 单元测试中的 Mock
@@ -245,13 +249,15 @@ def test_my_feature():
 
 ### Q3: 容器本身是单例吗？
 
-是的，`AppContainerManager`
+是的，`ApplicationContext`
 本身也实现为单例，确保整个应用使用同一个容器实例：
 
 ```python
-container1 = AppContainerManager()
-container2 = AppContainerManager()
-assert container1 is container2  # True
+# 初始化
+ctx1 = ApplicationContext.initialize(base_packages=['app'])
+# 获取实例
+ctx2 = ApplicationContext.get_instance()
+assert ctx1 is ctx2  # True
 ```
 
 ### Q4: 单例服务是线程安全的吗？

@@ -71,11 +71,14 @@ class UserService(ISingletonService):
 
 使用服务：
 ```python
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 from app.services.user_service import UserService
 
-container = AppContainerManager()
-user_service = container.get(UserService)
+# 需先初始化应用上下文
+app_context = ApplicationContext.initialize(base_packages=['app'])
+
+user_service = app_context.get_by_type(UserService)
+
 users = user_service.get_users()
 ```
 

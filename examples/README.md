@@ -159,7 +159,7 @@ curl http://localhost:8001/context
 
 ### 1. ApplicationContext（应用上下文）
 
-替代旧版的 `AppContainerManager`，是 PySpring 的核心入口。
+是 PySpring 的核心入口。
 
 ```python
 # 初始化（应用启动时调用一次）
@@ -453,12 +453,12 @@ class MyService(ILifecycle, IManaged):
 
 ### Q4: `ApplicationContext` 和旧版 `AppContainerManager` 有什么区别？
 
-| 特性     | AppContainerManager（旧版）                                                | ApplicationContext（新版）                                |
+| 特性     | 描述                                                                | ApplicationContext（新版）                                |
 |--------|------------------------------------------------------------------------|-------------------------------------------------------|
-| 初始化方式  | `manager = AppContainerManager()`<br>`manager.register_all_services()` | `ctx = ApplicationContext.initialize([...])`          |
-| 生命周期管理 | `await manager.run_startup_initializers()`                             | `await ctx.container.initialize_lifecycle_services()` |
-| 关闭     | `await manager.run_shutdown_handlers()`                                | `await ctx.container.shutdown_lifecycle_services()`   |
-| 获取服务   | `manager.service(ServiceType)`                                         | `ApplicationContext.service(ServiceType)`             |
+| 初始化方式  | - | `ctx = ApplicationContext.initialize([...])`          |
+| 生命周期管理 | - | `await ctx.container.initialize_lifecycle_services()` |
+| 关闭     | - | `await ctx.container.shutdown_lifecycle_services()`   |
+| 获取服务   | - | `ApplicationContext.service(ServiceType)`             |
 
 ---
 

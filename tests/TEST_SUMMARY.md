@@ -132,7 +132,7 @@ python tests/run_all_tests.py
 
 ### 1. 单例模式实现
 
-AppContainerManager 使用类变量实现单例状态，在测试中需要注意：
+ApplicationContext 使用类变量实现单例状态，在测试中需要注意：
 
 - 多次创建实例会共享状态
 - 建议在测试中重用同一个实例

@@ -76,10 +76,10 @@ container:
 如果不创建配置文件，容器会使用内置的默认配置：
 
 ```python
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 
-manager = AppContainerManager()
-manager.register_all_services()
+# 初始化应用上下文，替代原来的 manager.register_all_services()
+app_context = ApplicationContext.initialize(base_packages=['your_app.services'])
 ```
 
 ### 2. 使用自定义配置
@@ -97,10 +97,13 @@ scan:
 然后正常初始化容器：
 
 ```python
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 
-manager = AppContainerManager()
-manager.register_all_services()  # 会自动加载 YAML 配置
+# 初始化应用上下文，自动加载配置文件
+app_context = ApplicationContext.initialize(
+    base_packages=['your_app.services'],
+    config_file='config/container.yaml'
+)
 ```
 
 ### 3. 获取配置信息
@@ -195,7 +198,7 @@ scan:
 2. 代码简化为:
 
 ```python
-manager = AppContainerManager()
+app_context = ApplicationContext.initialize(base_packages=['your_app.services'])
 manager.register_all_services()  # 自动从 YAML 加载
 ```
 

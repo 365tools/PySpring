@@ -45,7 +45,7 @@
 ### 设计模式
 
 - **单例模式** - ISingletonService 接口
-- **工厂模式** - AppContainerManager 服务容器
+- **工厂模式** - ApplicationContext 服务容器
 - **责任链模式** - 认证链、初始化链
 - **策略模式** - 缓存策略、认证策略
 

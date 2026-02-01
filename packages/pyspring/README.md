@@ -27,7 +27,7 @@ PySpring 内部各组件通过 IoC 容器紧密协作，形成了一个稳固的
 
 ```mermaid
 graph TD
-    App[FastAPI Application] --> IoC[AppContainerManager - IoC 容器]
+    App[FastAPI Application] --> IoC[ApplicationContext - IoC 容器]
     
     subgraph Core[核心基础 Core]
         IoC --> Config[Config - 配置管理]
@@ -180,12 +180,15 @@ class UserService(ISingletonService):
 在业务代码中使用：
 
 ```python
-from pyspring.ioc.manager import AppContainerManager
+from pyspring.ioc import ApplicationContext
 from app.services.user_service import UserService
 
 # 框架会在启动时自动扫描并注册 UserService
-container = AppContainerManager()
-user_service = container.get(UserService)
+# 首先需要初始化应用上下文
+app_context = ApplicationContext.initialize(base_packages=['app'])
+
+# 然后获取服务
+user_service = app_context.get_by_type(UserService)
 
 users = user_service.get_users()
 ```
@@ -305,7 +308,7 @@ PySpring 设计为开放架构，你几乎可以替换任何组件。以下是�
     - `pyspring uv`: 封装 uv 命令，简化依赖管理。
 
 - **代码辅助**:
-    - `AppContainerManager.service(Xxx)`: 在非注入环境（如脚本中）快速获取服务实例。
+    - `ApplicationContext.service(Xxx)`: 在非注入环境（如脚本中）快速获取服务实例。
 
 ---
 
