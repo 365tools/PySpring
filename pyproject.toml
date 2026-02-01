@@ -1,111 +1,29 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "pyspring"
-version = "1.1.0b19"
-authors = [
-  { name="Yingchun", email="allureyc@gmail.com" },
-]
-description = "A SpringBoot-style scaffold for FastAPI with IoC and Auto-Configuration."
-readme = "README.md"
+name = "pyspring-workspace"
+version = "1.1.0"
+description = "PySpring Framework and CLI Tools Development Workspace"
+authors = [{ name = "Yingchun", email = "allureyc@gmail.com" }]
 requires-python = ">=3.12"
-classifiers = [
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: Apache Software License",
-    "Operating System :: OS Independent",
-]
-dependencies = [
-    "fastapi>=0.104.0,<1.0",
-    "uvicorn[standard]>=0.24.0",
-    "python-multipart>=0.0.6",
-    "pydantic>=2.0.0",
-    "pydantic-core>=2.10.1",
-    "pydantic-settings>=2.0.0",
-    "pydantic[email]>=2.0.0",
-    "dependency_injector>=4.42.0",
-    "loguru>=0.7.0",
-    "pyyaml>=6.0.0",
-    "python-dotenv>=1.0.0",
-    "cryptography>=41.0.0",
-    "sqlalchemy>=2.0.0",
-    "alembic>=1.12.0",
-    "asyncpg>=0.29.0",
-    "aiosqlite>=0.19.0",
-    "redis>=5.0.0",
-    "python-jose[cryptography]>=3.3.0",
-    "passlib[bcrypt]>=1.7.4",
-    "fastapi-users[sqlalchemy]>=13.0.0",
-]
+license = { text = "Apache-2.0" }
 
 [project.optional-dependencies]
-# CLI tools dependencies
-cli = [
-    # CLI tools currently only depend on standard libraries, but keep this extra for future extensions
-    # For example: rich, click and other libraries to enhance CLI experience
-]
-
-# Development environment dependencies (testing, formatting, type checking, etc.)
 dev = [
-    "pytest>=7.4.0",
-    "pytest-asyncio>=0.21.0",
-    "httpx>=0.25.0",
-    "black>=23.0.0",
-    "flake8>=6.0.0",
-    "mypy>=1.5.0",
+    "pyspring>=1.1.0",
+    "pyspring-cli>=1.0.0",
 ]
-
-# Full development environment (includes CLI + dev tools)
 full = [
-    "pyspring[cli,dev]",
+    "pyspring[full]>=1.1.0",
 ]
 
-[tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-
-[tool.uv]
-package = true
-
-[project.urls]
-"Homepage" = "https://github.com/365tools/PySpring"
-"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
-
-# CLI command entry point (always available, but guide users to install on demand via documentation)
-[project.scripts]
-pyspring = "pyspring.cli.main:main"
-
-# Notes:
-# - Production: pip install pyspring (CLI will be installed but not used)
-# - Development: pip install pyspring[cli] or pyspring[full] (explicitly install CLI)
-# - Or use temporary execution: uvx --from pyspring pyspring init (no installation needed)
-
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["pyspring*"]
-exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
-
-[tool.setuptools.package-data]
-pyspring = [
-    "templates/**/*",
-    "templates/**/*.template",
-    "templates/**/*.yaml",
-    "templates/config/*.yaml",
-    "templates/app/*.template",
-    "templates/project/*.template",
-    "templates/example/**/*",
-    "templates/example/**/*.template",
+[tool.uv.workspace]
+members = [
+    "packages/pyspring",
+    "packages/pyspring-cli",
 ]
 
-[tool.setuptools.exclude-package-data]
-pyspring = [
-    "**/*.json",
-    "**/*.log",
-    "**/*.db",
-    "**/*.sqlite",
-    "**/*.pyc",
-    "**/__pycache__",
-]
+[tool.uv.sources]
+pyspring = { workspace = true }
+pyspring-cli = { workspace = true }
+
+# This is a workspace file that manages dependencies and workspace members
+# It does not need a build system as it's not meant to be packaged itself

@@ -2,18 +2,25 @@
 
 ## ✅ 测试文件整理完成
 
-### 已迁移到 tests/ 目录
+### 新的目录结构
 
-1. **test_comprehensive.py** - 综合测试套件（22个测试用例）
-2. **test_full_lifecycle.py** - 完整生命周期测试
-3. **test_auto_discover_handlers.py** - 自动发现关闭处理器测试
-4. **test_auto_discover_initializers.py** - 自动发现启动初始化器测试
-5. **quick_test.py** - 快速功能测试（不依赖pytest）
-
-### 已删除临时调试文件
-
-- ✅ test_debug_services.py
-- ✅ test_manual_get_handler.py
+```
+tests/
+├── conftest.py              # Pytest 配置文件
+├── run_all_tests.py         # 统一运行所有测试的脚本
+├── pyspring/               # PySpring 框架相关测试
+│   ├── unit/               # 单元测试
+│   │   ├── aop/            # AOP 相关测试
+│   │   ├── config/         # 配置相关测试
+│   │   ├── ioc/            # IoC 相关测试
+│   │   ├── log/            # 日志相关测试
+│   │   └── security/       # 安全相关测试
+│   ├── ioc/                # IoC 容器集成测试
+│   ├── security/           # 安全模块测试
+│   └── config/             # 配置模块测试
+└── pyspring_cli/           # PySpring CLI 工具相关测试
+    └── cli/                # CLI 命令测试
+```
 
 ## 📋 测试覆盖的核心功能
 
@@ -67,6 +74,13 @@
 - Redis → Memory 缓存降级
 - PostgreSQL → SQLite 数据库降级
 
+### 9. CLI 工具功能 ✅
+
+- 项目初始化命令
+- 依赖检查命令
+- 配置验证命令
+- 代码生成命令
+
 ## 🚀 运行测试
 
 ### 使用 pytest（推荐）
@@ -75,57 +89,44 @@
 # 运行所有测试
 pytest tests/ -v
 
-# 运行综合测试
-pytest tests/test_comprehensive.py -v
+# 运行框架测试
+pytest tests/pyspring/ -v
 
-# 运行特定测试类
-pytest tests/test_comprehensive.py::TestIoCContainer -v
+# 运行单元测试
+pytest tests/pyspring/unit/ -v
 
-# 运行异步测试
-pytest tests/test_comprehensive.py::TestFullLifecycle -v
-```
+# 运行 IoC 测试
+pytest tests/pyspring/ioc/ -v
 
-### 使用快速测试（无需pytest）
+# 运行安全测试
+pytest tests/pyspring/security/ -v
 
-```bash
-python tests/quick_test.py
+# 运行 CLI 测试
+pytest tests/pyspring_cli/cli/ -v
 ```
 
 ### 使用测试运行器
 
 ```bash
 # 运行所有测试
-python tests/run_tests.py all
-
-# 运行综合测试
-python tests/run_tests.py comprehensive
-
-# 运行生命周期测试
-python tests/run_tests.py lifecycle
+python tests/run_all_tests.py
 ```
 
 ## 📊 测试统计
 
-### 综合测试套件（test_comprehensive.py）
+### 按模块分类
 
-- **22个测试用例**
-    - IoC 容器: 3个测试
-    - 自动扫描: 2个测试
-    - 依赖注入: 2个测试
-    - 接口映射: 2个测试
-    - 配置管理: 3个测试
-    - 启动初始化器: 2个测试
-    - 关闭处理器: 2个测试
-    - 完整生命周期: 1个测试
-    - 数据库服务: 2个测试
-    - 缓存服务: 2个测试
-    - 安全服务: 1个测试
+- **单元测试 (unit/)**: 包含基础功能、装饰器、组件等的单元测试
+- **IoC 测试 (ioc/)**: 包含 IoC 容器功能和依赖注入的测试
+- **安全测试 (security/)**: 包含认证、授权、安全配置的测试
+- **配置测试 (config/)**: 包含 YAML 配置解析和加载的测试
+- **CLI 测试 (cli/)**: 包含命令行工具功能的测试
 
 ### 测试执行时间
 
-- 综合测试套件: ~10-15秒（包含真实服务初始化）
-- 快速测试: ~5秒
-- 单个测试类: ~1-2秒
+- 单个单元测试: ~0.1-1秒
+- 单个集成测试: ~1-5秒
+- 完整测试套件: ~30-60秒
 
 ## ⚠️ 已知问题
 
@@ -176,39 +177,30 @@ pip install pytest-asyncio
 
 ## 📝 添加新测试
 
-### 1. 添加到综合测试
+### 1. 创建新测试文件
 
 ```python
-# tests/test_comprehensive.py
+# tests/pyspring/unit/test_your_feature.py
+import pytest
+from pyspring.ioc.context import ApplicationContext
 
-class TestYourFeature:
-    """测试你的功能"""
-    
-    def test_your_functionality(self):
-        """测试说明"""
-        manager = AppContainerManager()
-        manager.register_all_services()
-        
-        # 你的测试代码
-        assert True
+def test_your_functionality():
+    """测试你的新功能"""
+    app_context = ApplicationContext()
+    # 你的测试代码
+    assert True
 ```
 
-### 2. 创建独立测试文件
+### 2. 添加到现有测试套件
 
 ```python
-# tests/test_your_feature.py
-import pytest
+# 在适当的测试目录中创建新文件
+# 例如：tests/pyspring/unit/test_new_feature.py
 
-def test_your_feature():
-    """测试你的新功能"""
+def test_new_feature():
+    """测试新功能"""
     # 测试代码
     assert True
-
-@pytest.mark.asyncio
-async def test_async_feature():
-    """测试异步功能"""
-    result = await some_async_function()
-    assert result is not None
 ```
 
 ## 🎉 测试完成度
@@ -224,7 +216,8 @@ async def test_async_feature():
 | 关闭处理   | ✅ 完整 | 通过 |
 | 数据库服务  | ✅ 完整 | 通过 |
 | 缓存服务   | ✅ 完整 | 通过 |
-| 安全服务   | ✅ 基础 | 通过 |
+| 安全服务   | ✅ 完整 | 通过 |
+| CLI 工具   | ✅ 基础 | 通过 |
 
 ## 🔧 持续改进
 

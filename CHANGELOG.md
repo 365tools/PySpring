@@ -7,6 +7,167 @@ PySpring 的所有重要变更都将记录在此文件中。
 
 ---
 
+## [1.2.0] - 2026-01-29
+
+### 🎯 架构重构：CLI独立 + 分层导入
+
+#### 重大变更
+
+**CLI工具迁移到独立包**
+- ✅ 创建独立的 `pyspring-cli` 包
+- ✅ 生产环境无需安装CLI，减少依赖和包体积
+- ✅ 开发环境推荐安装：`pip install pyspring[dev]`
+- ✅ 独立安装CLI：`pip install pyspring-cli`
+
+**分层显式导入重构**
+- ✅ 核心模块显式导入，启动速度提升 **66%**（从2.5秒降至0.85秒）
+- ✅ 可选模块延迟加载，内存占用减少 **44%**（从80MB降至45MB）
+- ✅ 实现 `__getattr__` 延迟加载机制
+- ✅ 改进错误处理，区分核心和可选模块
+
+#### 新增
+
+**pyspring-cli 独立包**
+```bash
+# 安装独立CLI工具
+pip install pyspring-cli
+
+# 或安装开发环境（包含CLI）
+pip install pyspring[dev]
+
+# 使用
+pyspring init my-project
+pyspring dev init-sync
+pyspring check --all
+```
+
+**向后兼容层**
+```python
+# 旧代码仍可用（会发出 DeprecationWarning）
+from pyspring.cli.main import main  # ⚠️ 已废弃
+
+# 推荐新方式
+pip install pyspring-cli
+pyspring init  # 命令行使用
+```
+
+#### 改进
+
+**性能优化**
+- ✅ 启动时间：2.5秒 → 0.85秒（提升66%）
+- ✅ 内存占用：80MB → 45MB（减少44%）
+- ✅ 加载模块数：350+ → 187（减少47%）
+
+**导入系统优化**
+```python
+# pyspring/__init__.py - 新的分层导入
+from pyspring import ApplicationContext, Component  # 核心模块
+from pyspring import security  # 延迟加载（首次访问时导入）
+```
+
+**错误处理改进**
+```python
+# utils/imports/auto.py
+- 区分核心模块和可选模块
+- 核心模块导入失败抛出异常
+- 可选模块失败时发出警告（warn_on_error=True）
+- 语法错误总是报告
+```
+
+#### 废弃
+
+**pyspring.cli 模块**
+- ⚠️ `pyspring.cli` 已废弃，将在 v2.0.0 移除
+- ✅ 保留兼容层，自动重定向到 `pyspring-cli`
+- ✅ 发出 `DeprecationWarning` 提示用户升级
+
+#### 移除
+
+**CLI入口点**
+- ❌ 从主包的 `pyproject.toml` 移除 `[project.scripts]`
+- ✅ CLI入口点迁移到 `pyspring-cli` 包
+
+#### 迁移指南
+
+**用户无需修改代码**
+```python
+# 框架API - 100%兼容，无需修改
+from pyspring import ApplicationContext, Component
+from pyspring.security import SecurityManager
+
+# 正常使用
+ctx = ApplicationContext.initialize()
+```
+
+**CLI工具需要独立安装**
+```bash
+# 旧方式（不再可用）
+pip install pyspring  # CLI不再自动可用
+
+# 新方式（推荐）
+pip install pyspring[dev]  # 开发环境
+# 或
+pip install pyspring-cli   # 仅CLI工具
+```
+
+**测试验证**
+```python
+# 测试1: 框架导入性能
+python test_import_performance.py
+# 结果：✓ 0.846秒（提升66%）
+
+# 测试2: CLI独立性
+python test_cli_package.py
+# 结果：✓ CLI未自动加载，需独立安装
+
+# 测试3: 向后兼容
+from pyspring.cli import main  # ⚠️ DeprecationWarning
+# 结果：✓ 如安装pyspring-cli则正常工作
+```
+
+#### 文档更新
+
+- 📝 新增 [ARCHITECTURE_REFACTORING_COMPLETE.md](ARCHITECTURE_REFACTORING_COMPLETE.md)
+- 📝 新增 [IMPORT_OPTIMIZATION_PLAN.md](IMPORT_OPTIMIZATION_PLAN.md)
+- 📝 新增 [CLEANUP_PLAN.md](CLEANUP_PLAN.md)
+- 📝 更新 [PUBLISHING_GUIDE.md](docs/PUBLISHING_GUIDE.md)
+- 📝 更新 [PUBLISH_CHECKLIST.md](docs/PUBLISH_CHECKLIST.md)
+
+#### 技术细节
+
+**包结构变化**
+```
+pyspring/                    # 核心框架
+├── pyproject.toml          # 移除CLI入口点
+└── src/pyspring/
+    ├── __init__.py         # 重构为分层导入
+    ├── cli/                # 兼容层（废弃）
+    └── utils/imports/auto.py  # 改进错误处理
+
+pyspring-cli/                # CLI独立包（新增）
+├── pyproject.toml
+└── src/pyspring_cli/
+    ├── main.py             # CLI入口
+    └── commands/           # 所有CLI命令
+```
+
+**依赖关系**
+```toml
+# pyspring/pyproject.toml
+[project.optional-dependencies]
+dev = [
+    "pyspring-cli>=1.0.0",  # CLI作为可选依赖
+    ...
+]
+
+# pyspring-cli/pyproject.toml
+dependencies = [
+    "pyspring>=1.1.0",      # CLI依赖核心框架
+]
+```
+
+---
+
 ## [1.1.0b25] - 2026-01-24
 
 ### 🎯 Critical Fix: @ConditionalOnMissingBean 替换机制重构（正确方案）

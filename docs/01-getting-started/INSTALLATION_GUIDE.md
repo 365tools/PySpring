@@ -79,8 +79,8 @@ REDIS_PASSWORD=your-password
 
 ```python
 from fastapi import FastAPI
-from pyspring.ioc.container import ServiceContainer
-from pyspring.system.config.manager import ConfigManager
+from pyspring.ioc.context import ApplicationContext
+from pyspring.config_manager import ConfigManager
 
 # 创建 FastAPI 应用
 app = FastAPI()
@@ -90,8 +90,8 @@ config_manager = ConfigManager()
 config_manager.load_config("config")
 
 # 初始化 IoC 容器
-container = ServiceContainer()
-container.register_all()
+ApplicationContext.initialize(base_packages=["app"])
+container = ApplicationContext.get_instance().container
 
 @app.get("/")
 async def root():

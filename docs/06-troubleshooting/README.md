@@ -12,6 +12,11 @@
     - 配置验证
     - 依赖检测
 
+- **[IDENTIFIER_LOGIN_TROUBLESHOOTING.md](IDENTIFIER_LOGIN_TROUBLESHOOTING.md)** - 标识符登录故障排除
+    - 登录问题诊断
+    - 配置验证
+    - 常见错误处理
+
 ### 常见问题
 
 - **[CIRCULAR_DEPENDENCY.md](CIRCULAR_DEPENDENCY.md)** - 解决循环依赖问题 (v1.0.1)
@@ -60,6 +65,7 @@
 - Token 验证失败
 - 权限配置问题
 - 白名单不生效
+- 标识符登录问题
 
 ## 🛠️ 诊断流程
 

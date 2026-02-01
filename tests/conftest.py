@@ -1,9 +1,19 @@
 import copy
 import os
 import sys
+import pytest
 
-# Ensure 'src' is in python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+# Ensure 'packages/pyspring/src' is in python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../packages/pyspring/src')))
+
+# Also ensure the CLI package is in python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../packages/pyspring-cli/src')))
+
+# Also ensure the main packages directory is in python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../packages')))
+
+# Ensure the root directory is in python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import pytest
 

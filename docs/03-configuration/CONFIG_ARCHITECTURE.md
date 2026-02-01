@@ -87,25 +87,27 @@
 ### 读取服务器配置
 
 ```python
-from pyspring.system.impl.service import SystemService
+from pyspring.config_manager import ConfigManager
 
-system = SystemService()
-host = system.get_config("server.host", "0.0.0.0")
-port = system.get_config("server.port", 8000)
+config = ConfigManager.load_config("application")
+host = config.get("server.host", "0.0.0.0")
+port = config.get("server.port", 8000)
 ```
 
 ### 读取 CORS 配置
 
 ```python
-cors_enabled = system.get_config("security.cors.enabled", True)
-allow_origins = system.get_config("security.cors.allow_origins", ["*"])
+config = ConfigManager.load_config("security")
+cors_enabled = config.get("security.cors.enabled", True)
+allow_origins = config.get("security.cors.allow_origins", ["*"])
 ```
 
 ### 读取数据库配置
 
 ```python
-db_host = system.get_config("database.postgres.host", "localhost")
-db_port = system.get_config("database.postgres.port", 5432)
+config = ConfigManager.load_config("repositories")
+db_host = config.get("database.postgresql.host", "localhost")
+db_port = config.get("database.postgresql.port", 5432)
 ```
 
 ## 最佳实践

@@ -207,6 +207,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
 # Temporary debug/test scripts in project root
 # Keep only scripts in tests/ directory
 /test_*.py
@@ -217,3 +218,138 @@ __marimo__/
 /run_quick_test.py
 /example_*.py
 *.log
+
+# PySpring specific ignores
+# Local configuration files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Local database files
+data/*.db
+logs/*.log
+
+# Assets and resources created during development
+assets/.history/
+assets/dev-tools/
+
+# Package build artifacts
+dist-packages/
+build/lib/
+
+# Coverage reports
+.coverage*
+htmlcov/
+
+# IDE specific files
+.vs/
+.vscode/settings.json
+.idea/*
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Dependency management
+requirements-local.txt
+requirements-dev.txt
+
+# Pytest
+.pytest_cache/
+
+# Logs
+*.log
+logs/
+*.out
+
+# Runtime
+pids
+*.pid
+*.seed
+*.pkl
+
+# Coverage directory used by tools like coveralls and the like.
+.coverage
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre
+.pyre/
+
+# pytype
+.pytype/
+
+# Local development
+.local/
+
+# Compiled static assets
+.webpack/
+webpack-stats.json
+
+# Documentation builds
+docs/_build/
+
+# PyInstaller
+*.dist-info/
+
+# Local secrets
+secrets/
+.secret-token
+
+# Docker
+.dockerignore
+
+# GitBook
+_book/
+
+# Sphinx build
+_build/
+
+# Local backup files
+*~
+*.bak
+*.tmp
+
+# uv specific
+uv.lock
+
+# Local project specific
+.history/
+.lingma/
+.reloadignore
+
+# Package management
+*.whl
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+.vs/
+
+# OS
+.DS_Store
+Thumbs.db

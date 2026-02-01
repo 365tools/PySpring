@@ -1,6 +1,6 @@
 # IoC 容器与依赖注入详解 (Smart IoC Container)
 
-AppContainerManager 是 PySpring 框架的心脏，负责应用组件的发现、创建、装配和管理。
+ApplicationContext 是 PySpring 框架的心脏，负责应用组件的发现、创建、装配和管理。
 
 ## 1. 核心特性
 
@@ -54,7 +54,7 @@ PySpring v1.0.1 引入了 `.pyspring_cache/` 机制。
 
 ## 5. 循环依赖检测 (v1.0.1)
 
-在所有服务注册完成后，`AppContainerManager` 会执行 `IoCValidator.validate_dependencies()`。
+在所有服务注册完成后，`ApplicationContext` 会执行 `IoCValidator.validate_dependencies()`。
 
 - **机制**：构建包含所有服务的有向图 (`Adjacency List`)，运行 DFS 算法检测环。
 - **行为**：如果发现 `A -> B -> C -> A`，启动直接抛出 `CircularDependencyError` 并打印完整依赖链，而不是等到运行时报 `RecursionError`。

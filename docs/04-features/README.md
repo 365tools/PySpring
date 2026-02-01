@@ -4,6 +4,28 @@ PySpring 提供的核心功能模块详细说明。
 
 ## 📚 文档列表
 
+### 认证与授权
+
+- **[AUTH_ARCHITECTURE.md](AUTH_ARCHITECTURE.md)** - 认证架构设计
+    - 安全框架概述
+    - 认证流程
+    - 权限模型
+
+- **[AUTH_AUTHORIZATION_INTEGRATION_GUIDE.md](AUTH_AUTHORIZATION_INTEGRATION_GUIDE.md)** - 认证授权集成指南
+    - 完整集成示例
+    - 依赖关系
+    - 实现细节
+
+- **[AUTH_LOGIN_IDENTIFIER_CONFIG.md](AUTH_LOGIN_IDENTIFIER_CONFIG.md)** - 标识符登录配置
+    - 多字段登录支持
+    - 配置方法
+    - 使用示例
+
+- **[identifier-login-guide.md](identifier-login-guide.md)** - 标识符登录使用指南
+    - identifier字段详解
+    - 登录实现方式
+    - 配置选项
+
 ### JWT 加密
 
 - **[JWT_ENCRYPTION_GUIDE.md](JWT_ENCRYPTION_GUIDE.md)** - JWT Token 加密使用指南
@@ -41,6 +63,7 @@ PySpring 提供的核心功能模块详细说明。
 - JWT Token 加密保护
 - 责任链认证架构
 - RBAC 权限模型
+- 多字段登录支持
 
 ### 💾 数据存储
 
