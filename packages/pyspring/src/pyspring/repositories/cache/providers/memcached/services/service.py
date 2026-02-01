@@ -39,7 +39,7 @@ class MemcachedService(ICacheService):
             logger.info("✅ Memcached 服务初始化完成")
             self._connected = True
         except ImportError:
-            logger.error("❌ pymemcache 未安装，无法使用 Memcached 服务")
+            logger.warning("❌ pymemcache 未安装，无法使用 Memcached 服务")
             self._connected = False
         except Exception as e:
             logger.error(f"❌ Memcached 服务初始化失败: {e}")

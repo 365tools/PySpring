@@ -118,6 +118,12 @@ database:
     # 数据库文件路径（相对于项目根目录）
     # 如果目录不存在，会自动创建
     database: "data/app.db"
+    # 是否在内存中运行（测试用）
+    in_memory: false
+    # 是否启用外键约束
+    foreign_keys: true
+    # 是否启用 WAL 模式
+    wal_mode: true
     
     pool:
       size: 5
