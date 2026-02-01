@@ -21,10 +21,21 @@ from .templates import (
 
 
 def get_template_dir() -> Path:
-    """Get template directory"""
-    # From cli/commands/ops/init/core.py up to pyspring/templates
-    # core.py -> init -> ops -> commands -> cli -> pyspring
-    return Path(__file__).parent.parent.parent.parent.parent / "templates"
+    """Get template directory from pyspring package"""
+    # Since templates are in the pyspring package, not pyspring-cli package
+    # we need to locate the pyspring package and get its templates
+    try:
+        import pyspring
+        pyspring_path = Path(pyspring.__file__).parent
+        template_dir = pyspring_path / "templates"
+        if template_dir.exists():
+            return template_dir
+        else:
+            # Fallback to the old logic if pyspring package isn't found
+            return Path(__file__).parent.parent.parent.parent.parent / "templates"
+    except ImportError:
+        # If pyspring is not available, fall back to old logic
+        return Path(__file__).parent.parent.parent.parent.parent / "templates"
 
 
 def get_config_files_from_templates(minimal: bool = False) -> list[tuple[str, str]]:
