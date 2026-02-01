@@ -1,12 +1,36 @@
-# Byte-compiled / optimized / DLL files
+# Python bytecode and build artifacts
 __pycache__/
-*.py[codz]
+*.py[cod]
 *$py.class
-
-# C extensions
 *.so
+*.egg
+*.whl
+*.dist-info/
+*.egg-info/
+.installed.cfg
+MANIFEST
 
-# Distribution / packaging
+# Virtual environments and dependency management
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.env
+.envrc
+uv.lock
+Pipfile.lock
+poetry.lock
+pdm.lock
+requirements-local.txt
+requirements-dev.txt
+.pdm-python
+.pdm-build/
+.pixi
+__pypackages__/
+
+# Build and distribution directories
 .Python
 build/
 out/
@@ -22,14 +46,10 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
+dist-packages/
+build/lib/
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -37,7 +57,7 @@ MANIFEST
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Test and coverage reports
 htmlcov/
 .tox/
 .nox/
@@ -57,198 +77,70 @@ cover/
 *.mo
 *.pot
 
-# Django stuff:
-*.log
-local_settings.py
+# Database files
+*.sqlite
+*.sqlite3
+*.db
 db.sqlite3
 db.sqlite3-journal
 
-# Flask stuff:
+# Logs
+*.log
+logs/
+
+# Web development
 instance/
 .webassets-cache
+.webpack/
+webpack-stats.json
 
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
+# Documentation
 docs/_build/
+_book/
+_build/
+/site
 
-# PyBuilder
+# Development tools
 .pybuilder/
 target/
+.scrapy
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
 
-# Jupyter Notebook
+# Jupyter and IPython
 .ipynb_checkpoints
-
-# IPython
 profile_default/
 ipython_config.py
 
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
-
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
-#poetry.toml
-
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
-.pdm-python
-.pdm-build/
-
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.envrc
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
+# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
-
-# Pyre type checker
 .pyre/
-
-# pytype static type analyzer
 .pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-.idea/
-
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
- .vscode/
-
-# Ruff stuff:
 .ruff_cache/
 
-# PyPI configuration file
+# PyPI
 .pypirc
 
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
-
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
-
-# Temporary debug/test scripts in project root
-# Keep only scripts in tests/ directory
-/test_*.py
-/verify_*.py
-/diagnose_*.py
-/fix_*.py
-/clean_*.py
-/run_quick_test.py
-/example_*.py
-*.log
-
-# PySpring specific ignores
-# Local configuration files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Local database files
-data/*.db
-logs/*.log
-
-# Assets and resources created during development
-assets/.history/
-assets/dev-tools/
-
-# Package build artifacts
-dist-packages/
-build/lib/
-
-# Coverage reports
-.coverage*
-htmlcov/
-
-# IDE specific files
+# IDE and editors
+.vscode/
+.idea/
 .vs/
+.spyderproject
+.spyproject
+.ropeproject
 .vscode/settings.json
-.idea/*
+
+# Editor backup files
 *.swp
 *.swo
+*~
+*.bak
+*.tmp
+*.temp
+*.backup
 
 # OS generated files
 .DS_Store
@@ -259,23 +151,17 @@ htmlcov/
 ehthumbs.db
 Thumbs.db
 
-# Python virtual environments
-.venv/
-venv/
-env/
-ENV/
+# Local configuration files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+data/*.db
+logs/*.log
 
-# Dependency management
-requirements-local.txt
-requirements-dev.txt
-
-# Pytest
-.pytest_cache/
-
-# Logs
-*.log
-logs/
-*.out
+# Assets and resources
+assets/.history/
+assets/dev-tools/
 
 # Runtime
 pids
@@ -283,73 +169,31 @@ pids
 *.seed
 *.pkl
 
-# Coverage directory used by tools like coveralls and the like.
-.coverage
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre
-.pyre/
-
-# pytype
-.pytype/
-
-# Local development
-.local/
-
-# Compiled static assets
-.webpack/
-webpack-stats.json
-
-# Documentation builds
-docs/_build/
-
-# PyInstaller
-*.dist-info/
-
-# Local secrets
+# Secrets and sensitive data
 secrets/
 .secret-token
 
-# Docker
-.dockerignore
-
-# GitBook
-_book/
-
-# Sphinx build
-_build/
-
-# Local backup files
-*~
-*.bak
-*.tmp
-
-# uv specific
-uv.lock
-
-# Local project specific
+# Project specific
 .history/
 .lingma/
 .reloadignore
+/PySpring.iml
 
-# Package management
-*.whl
-__pycache__/
-*.pyc
-*.pyo
+# PySpring specific debug/test scripts
+/test_*.py
+/verify_*.py
+/diagnose_*.py
+/fix_*.py
+/clean_*.py
+/run_quick_test.py
+/example_*.py
 
-# IDE
-.vscode/
-.idea/
-.vs/
-
-# OS
-.DS_Store
-Thumbs.db
+# AI tools and other
+.cursorignore
+.cursorindexingignore
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+.local/
+compiled/
+staticfiles/
