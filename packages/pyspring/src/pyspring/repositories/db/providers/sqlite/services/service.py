@@ -31,24 +31,27 @@ class SqliteService(ISqliteService):
         sqlite_config = self.config.sqlite
         self.database = sqlite_config.database
 
-        # 如果是相对路径，基于当前工作目录解析（用户项目根目录）
-        if not os.path.isabs(self.database):
-            # 优先使用当前工作目录（用户项目），而不是框架安装目录
-            cwd = os.getcwd()
-            self.database = os.path.join(cwd, self.database)
+        # 特殊处理内存数据库
+        if self.database != ':memory:':
+            # 如果是相对路径，基于当前工作目录解析（用户项目根目录）
+            if not os.path.isabs(self.database):
+                # 优先使用当前工作目录（用户项目），而不是框架安装目录
+                cwd = os.getcwd()
+                self.database = os.path.join(cwd, self.database)
 
-        # 确保数据库目录存在
-        db_dir = os.path.dirname(self.database)
-        if db_dir and not os.path.exists(db_dir):
-            os.makedirs(db_dir, exist_ok=True)
+            # 确保数据库目录存在
+            db_dir = os.path.dirname(self.database)
+            if db_dir and not os.path.exists(db_dir):
+                os.makedirs(db_dir, exist_ok=True)
 
         self.url = self._build_url()
 
-        # 连接池配置
+        # 连接池配置 - SQLite 使用 StaticPool，不支持某些参数
         pool_config = sqlite_config.pool
         self._pool_size = pool_config.size
         self._max_overflow = pool_config.max_overflow
         self._pool_recycle = pool_config.recycle
+        self._pool_pre_ping = pool_config.pre_ping
 
         # 延迟初始化
         self._engine: Optional[AsyncEngine] = None
@@ -63,13 +66,10 @@ class SqliteService(ISqliteService):
 
         try:
             logger.debug(f"Creating SQLite Engine with url: {self.url}")
+            # SQLite 使用 aiosqlite，不支持连接池参数，只支持 echo 参数
             self._engine = create_async_engine(
                 self.url,
                 echo=False,
-                pool_size=self._pool_size,
-                max_overflow=self._max_overflow,
-                pool_recycle=self._pool_recycle,
-                pool_pre_ping=True,
             )
             self._session_factory = async_sessionmaker(
                 self._engine,
@@ -83,6 +83,8 @@ class SqliteService(ISqliteService):
 
     def _build_url(self) -> str:
         """构建 SQLite 连接 URL"""
+        if self.database == ':memory:':
+            return 'sqlite+aiosqlite:///:memory:'
         return f"sqlite+aiosqlite:///{self.database}"
 
     async def engine(self):

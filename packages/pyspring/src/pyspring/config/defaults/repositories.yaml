@@ -5,7 +5,7 @@
 
 # 缓存配置（框架默认）
 cache:
-  # 缓存类型: redis, memory, auto
+  # 缓存类型: redis, memory, memcached, auto
   type: "memory"  # 默认使用内存缓存
   
   # Redis 失败时是否降级到 Memory
@@ -27,6 +27,13 @@ cache:
   memory:
     max_size: 1000      # 最大缓存项数
     ttl: 3600           # 默认过期时间（秒）
+  
+  # Memcached 配置（框架默认）
+  memcached:
+    host: "localhost"
+    port: 11211
+    connect_timeout: 5
+    timeout: 5
 
 # 数据库配置（框架默认）
 database:
@@ -44,9 +51,16 @@ database:
     user: "postgres"
     password: null  # 通过环境变量 POSTGRES_PASSWORD 设置
     pool:
-      min_size: 5
-      max_size: 20
+      size: 5
+      max_overflow: 10
+      recycle: 3600
       timeout: 30
+      pre_ping: true
+      pool_pre_ping: true
+      pool_recycle: 3600
+      pool_timeout: 30
+      echo: false
+      pool_reset_on_return: "commit"
   
   # SQLite 配置（框架默认）
   sqlite:
@@ -68,9 +82,16 @@ database:
     password: null  # 通过环境变量 MYSQL_PASSWORD 设置
     charset: "utf8mb4"
     pool:
-      min_size: 5
-      max_size: 20
+      size: 5
+      max_overflow: 10
+      recycle: 3600
       timeout: 30
+      pre_ping: true
+      pool_pre_ping: true
+      pool_recycle: 3600
+      pool_timeout: 30
+      echo: false
+      pool_reset_on_return: "commit"
 
 # ORM 配置（框架默认）
 orm:

@@ -39,6 +39,16 @@ class MemoryConfig(ConfigSection):
     ttl: int = Field(default=3600, description="默认过期时间(秒)")
 
 
+class MemcachedConfig(ConfigSection):
+    """Memcached配置"""
+    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
+
+    host: str = Field(default="localhost", description="主机地址")
+    port: int = Field(default=11211, ge=1, le=65535, description="端口号")
+    connect_timeout: int = Field(default=5, description="连接超时(秒)")
+    timeout: int = Field(default=5, description="操作超时(秒)")
+
+
 @Component
 @Singleton
 class CacheConfig(ConfigSection):
@@ -53,14 +63,16 @@ class CacheConfig(ConfigSection):
 
     model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
 
-    type: str = Field(default="memory", description="缓存类型：redis、memory")
+    type: str = Field(default="memory", description="缓存类型：redis、memory、memcached")
     redis: RedisConfig = Field(default_factory=RedisConfig, description="Redis配置")
     memory: MemoryConfig = Field(default_factory=MemoryConfig, description="内存缓存配置")
+    memcached: MemcachedConfig = Field(default_factory=MemcachedConfig, description="Memcached配置")
 
 
 __all__ = [
     "RedisPoolConfig",
     "RedisConfig",
     "MemoryConfig",
+    "MemcachedConfig",
     "CacheConfig",
 ]

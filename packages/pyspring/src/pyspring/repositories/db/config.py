@@ -21,11 +21,16 @@ class DatabasePoolConfig(ConfigSection):
     
     model_config = SettingsConfigDict(extra='ignore')
 
-    size: int = Field(default=5, description="连接池大小")
-    max_overflow: int = Field(default=10, description="最大溢出连接数")
-    recycle: int = Field(default=3600, description="连接回收时间(秒)")
-    timeout: int = Field(default=30, description="连接超时时间(秒)")
+    size: int = Field(default=5, ge=1, le=100, description="连接池大小")
+    max_overflow: int = Field(default=10, ge=0, le=50, description="最大溢出连接数")
+    recycle: int = Field(default=3600, ge=0, le=86400, description="连接回收时间(秒)")
+    timeout: int = Field(default=30, ge=1, le=300, description="连接超时时间(秒)")
     pre_ping: bool = Field(default=True, description="连接前ping检查")
+    pool_pre_ping: bool = Field(default=True, description="连接池预检查")
+    pool_recycle: int = Field(default=3600, ge=0, le=86400, description="连接池回收时间(秒)")
+    pool_timeout: int = Field(default=30, ge=1, le=300, description="连接池获取连接超时时间(秒)")
+    echo: bool = Field(default=False, description="SQL日志输出")
+    pool_reset_on_return: str = Field(default="commit", description="返回连接时的重置行为")
 
 
 class PostgreSQLConfig(ConfigSection):

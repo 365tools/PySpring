@@ -70,10 +70,10 @@ class CachedPermissionService(IPermissionService):
         # 3. 缓存未命中，查询数据库（委托）
         has_perm = await self.delegate.has_permission(user_id, permission)
 
-        # 4. 更新缓存
+        # 4. 更新缓存（即使结果为False也缓存，防止缓存穿透）
         try:
             await self.cache.set(cache_key, "1" if has_perm else "0", ttl=self.ttl)
-            logger.debug(f"[CachedPermission] 缓存已更新: user={user_id}, perm={permission}")
+            logger.debug(f"[CachedPermission] 缓存已更新: user={user_id}, perm={permission}, value={has_perm}")
         except Exception as e:
             logger.warning(f"[CachedPermission] 缓存写入失败: {e}")
 
@@ -106,10 +106,10 @@ class CachedPermissionService(IPermissionService):
         # 3. 缓存未命中，查询数据库（委托）
         has_role_result = await self.delegate.has_role(user_id, role)
 
-        # 4. 更新缓存
+        # 4. 更新缓存（即使结果为False也缓存，防止缓存穿透）
         try:
             await self.cache.set(cache_key, "1" if has_role_result else "0", ttl=self.ttl)
-            logger.debug(f"[CachedPermission] 角色缓存已更新: user={user_id}, role={role}")
+            logger.debug(f"[CachedPermission] 角色缓存已更新: user={user_id}, role={role}, value={has_role_result}")
         except Exception as e:
             logger.warning(f"[CachedPermission] 角色缓存写入失败: {e}")
 

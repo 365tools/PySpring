@@ -3,12 +3,13 @@
 
 # 缓存配置
 cache:
-  # 缓存类型: redis, memory, auto（自动选择）
+  # 缓存类型: redis, memory, memcached, auto（自动选择）
   # - redis: 使用 Redis 缓存
   # - memory: 使用内存缓存
-  # - auto: 自动选择（优先 Redis，失败则降级到 Memory）
-  # 开发环境: 建议使用 auto 或 memory，避免依赖 Redis
-  # 生产环境: 建议使用 redis
+  # - memcached: 使用 Memcached 缓存
+  # - auto: 自动选择（优先 Redis，失败则降级到 Memcached，最后降级到 Memory）
+  # 开发环境: 建议使用 auto 或 memory，避免依赖外部缓存
+  # 生产环境: 建议使用 redis 或 memcached
   type: "auto"
   
   # Redis 失败时是否降级到 Memory
@@ -40,20 +41,30 @@ cache:
   memory:
     max_size: 1000      # 最大缓存项数
     ttl: 3600           # 默认过期时间（秒）
+  
+  # Memcached 配置
+  memcached:
+    # 连接配置
+    host: "localhost"      # 主机地址
+    port: 11211            # 端口号
+    connect_timeout: 5     # 连接超时时间（秒）
+    timeout: 5             # 操作超时时间（秒）
 
 # 数据库配置
 database:
-  # 数据库类型: postgresql, sqlite, auto（自动选择）
+  # 数据库类型: postgresql, sqlite, mysql, auto（自动选择）
   # - postgresql: 使用 PostgreSQL 数据库
   # - sqlite: 使用 SQLite 数据库
-  # - auto: 自动选择（优先 PostgreSQL，失败则降级到 SQLite）
+  # - mysql: 使用 MySQL 数据库
+  # - auto: 自动选择（优先 PostgreSQL，失败则降级到 MySQL，最后降级到 SQLite）
   # 开发环境: 建议使用 auto 或 sqlite（简单快速）
-  # 生产环境: 建议使用 postgresql
+  # 生产环境: 建议使用 postgresql 或 mysql
   type: "auto"
   
   # auto 模式说明：
   # - 默认尝试连接 PostgreSQL
-  # - 如果 PostgreSQL 配置不完整或连接失败，自动降级到 SQLite
+  # - 如果 PostgreSQL 配置不完整或连接失败，自动降级到 MySQL
+  # - 如果 MySQL 配置也不完整或连接失败，最终降级到 SQLite
   # - 无需手动切换，适合开发环境
   
   # 数据库初始化配置
@@ -101,6 +112,16 @@ database:
       timeout: 30
       # 连接前 ping 检查：确保连接有效
       pre_ping: true
+      # 连接池预检查：从池中获取连接时执行检查
+      pool_pre_ping: true
+      # 连接池回收时间（秒）：连接池中连接的最大生存时间
+      pool_recycle: 3600
+      # 从池中获取连接的超时时间（秒）
+      pool_timeout: 30
+      # SQL 日志输出：仅在调试时开启，生产环境会降低性能
+      echo: false
+      # 返回连接到池时的行为：commit, rollback, none
+      pool_reset_on_return: "commit"
   
   # SQLite 配置
   sqlite:
@@ -112,6 +133,51 @@ database:
       size: 5
       max_overflow: 10
       recycle: 3600
+      timeout: 30
+      pre_ping: true
+      pool_pre_ping: true
+      pool_recycle: 3600
+      pool_timeout: 30
+      echo: false
+      pool_reset_on_return: "commit"
+  
+  # MySQL 配置
+  mysql:
+    # 连接配置
+    host: "localhost"      # 主机地址
+    port: 3306             # 端口号
+    database: "app_db"     # 数据库名
+    user: "root"           # 用户名
+    # 密码配置：可以直接在此设置，或通过环境变量 MYSQL_PASSWORD
+    # password: "your_mysql_password"
+    password: null
+    charset: "utf8mb4"     # 字符集
+    
+    # 连接池配置
+    pool:
+      # 连接池大小：根据应用负载调整
+      # 小型应用: 5-10
+      # 中型应用: 10-20
+      # 大型应用: 20-50
+      size: 5
+      # 最大溢出连接数：允许的额外连接数
+      max_overflow: 10
+      # 连接回收时间（秒）：定期回收连接避免长时间占用
+      recycle: 3600
+      # 连接超时时间（秒）
+      timeout: 30
+      # 连接前 ping 检查：确保连接有效
+      pre_ping: true
+      # 连接池预检查：从池中获取连接时执行检查
+      pool_pre_ping: true
+      # 连接池回收时间（秒）：连接池中连接的最大生存时间
+      pool_recycle: 3600
+      # 从池中获取连接的超时时间（秒）
+      pool_timeout: 30
+      # SQL 日志输出：仅在调试时开启，生产环境会降低性能
+      echo: false
+      # 返回连接到池时的行为：commit, rollback, none
+      pool_reset_on_return: "commit"
 
 # 环境配置建议：
 # 开发环境：

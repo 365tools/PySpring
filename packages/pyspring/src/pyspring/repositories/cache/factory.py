@@ -9,6 +9,7 @@ from pyspring.log.instance import logger
 from .config import CacheConfig
 from .providers.memory.services.service import MemoryService
 from .providers.redis.services.service import RedisService
+from .providers.memcached.services.service import MemcachedService
 from .service import ICacheService
 
 
@@ -27,6 +28,13 @@ class CacheServiceFactory:
         self.config: CacheConfig = cache_config
         self._service: Optional[ICacheService] = None
         self._service_type: Optional[str] = None
+        
+        # 注册所有支持的服务创建器（使用 lambda 实现延迟加载）
+        self._service_creators = {
+            "redis": lambda: self._create_redis_service(),
+            "memory": lambda: self._create_memory_service(),
+            "memcached": lambda: self._create_memcached_service(),
+        }
 
     async def get_service(self) -> ICacheService:
         """
@@ -41,18 +49,16 @@ class CacheServiceFactory:
 
         cache_type = self.config.type.lower()
 
-        if cache_type == "redis":
-            self._service = self._create_redis_service()
-            self._service_type = "redis"
-        elif cache_type == "memory":
-            self._service = self._create_memory_service()
-            self._service_type = "memory"
+        if cache_type in self._service_creators:
+            self._service = self._service_creators[cache_type]()
+            self._service_type = cache_type
         elif cache_type == "auto":
-            # auto 模式：默认 Redis，失败降级到 Memory
+            # auto 模式：默认 Redis，失败降级到 Memcached，最后降级到 Memory
             logger.debug("CacheServiceFactory: Auto mode - trying Redis first...")
-            self._service = await self._try_redis_or_fallback()
+            self._service = await self._try_redis_or_memcached_or_fallback()
         else:
-            raise ValueError(f"Unsupported cache type: {cache_type}. Use 'redis', 'memory', or 'auto'.")
+            available_types = list(self._service_creators.keys()) + ["auto"]
+            raise ValueError(f"Unsupported cache type: {cache_type}. Available types: {', '.join(available_types)}.")
 
         return self._service
 
@@ -66,26 +72,32 @@ class CacheServiceFactory:
         logger.info("✅ 使用内存缓存")
         return MemoryService(self.config)
 
-    async def _try_redis_or_fallback(self) -> ICacheService:
+    def _create_memcached_service(self) -> MemcachedService:
+        """创建 Memcached 服务"""
+        logger.info("✅ 使用 Memcached 缓存")
+        return MemcachedService(self.config)
+
+    async def _try_redis_or_memcached_or_fallback(self) -> ICacheService:
         """
-        尝试连接 Redis，失败则降级到内存缓存
+        尝试连接 Redis，失败则降级到 Memcached，再失败则降级到内存缓存
         
         策略：
         1. 检查 Redis 配置完整性
         2. 创建 Redis 服务并执行 ping 测试
-        3. 测试成功：返回 Redis
-        4. 测试失败或配置不完整：降级到内存缓存
+        3. Redis 测试成功：返回 Redis
+        4. Redis 测试失败：尝试 Memcached
+        5. Memcached 测试成功：返回 Memcached
+        6. Memcached 测试失败：降级到内存缓存
         
         Returns:
-            ICacheService: Redis 或 Memory 服务（已测试可用）
+            ICacheService: Redis、Memcached 或 Memory 服务（已测试可用）
         """
         redis_config = self.config.redis
 
-        # 1. 检查配置完整性
+        # 1. 检查 Redis 配置完整性
         if not redis_config.host:
-            logger.warning("⚠️ Redis 配置不完整，降级到内存缓存")
-            self._service_type = "memory"
-            return self._create_memory_service()
+            logger.warning("⚠️ Redis 配置不完整，尝试 Memcached...")
+            return await self._try_memcached_or_fallback()
 
         # 2. 创建并测试 Redis 服务
         try:
@@ -100,11 +112,52 @@ class CacheServiceFactory:
                 self._service_type = "redis"
                 return service
             else:
-                logger.warning("⚠️ Redis 连接失败，降级到内存缓存")
+                logger.warning("⚠️ Redis 连接失败，尝试 Memcached...")
+                return await self._try_memcached_or_fallback()
+
+        except Exception as e:
+            logger.warning(f"⚠️ Redis 初始化失败，尝试 Memcached: {e}")
+            return await self._try_memcached_or_fallback()
+
+    async def _try_memcached_or_fallback(self) -> ICacheService:
+        """
+        尝试连接 Memcached，失败则降级到内存缓存
+        
+        策略：
+        1. 检查 Memcached 配置完整性
+        2. 创建 Memcached 服务并执行 ping 测试
+        3. 测试成功：返回 Memcached
+        4. 测试失败或配置不完整：降级到内存缓存
+        
+        Returns:
+            ICacheService: Memcached 或 Memory 服务（已测试可用）
+        """
+        memcached_config = self.config.memcached
+
+        # 1. 检查配置完整性
+        if not memcached_config.host:
+            logger.warning("⚠️ Memcached 配置不完整，降级到内存缓存")
+            self._service_type = "memory"
+            return self._create_memory_service()
+
+        # 2. 创建并测试 Memcached 服务
+        try:
+            logger.info("🔍 Auto 模式：测试 Memcached 连接...")
+            service = MemcachedService(self.config)
+
+            # 执行异步 ping 测试
+            is_connected = await service.ping()
+
+            if is_connected:
+                logger.info("✅ Memcached 连接成功，使用 Memcached 缓存")
+                self._service_type = "memcached"
+                return service
+            else:
+                logger.warning("⚠️ Memcached 连接失败，降级到内存缓存")
                 self._service_type = "memory"
                 return self._create_memory_service()
 
         except Exception as e:
-            logger.warning(f"⚠️ Redis 初始化失败，降级到内存缓存: {e}")
+            logger.warning(f"⚠️ Memcached 初始化失败，降级到内存缓存: {e}")
             self._service_type = "memory"
             return self._create_memory_service()
