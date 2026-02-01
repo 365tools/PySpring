@@ -325,6 +325,35 @@ PySpring 设计为开放架构，你几乎可以替换任何组件。以下是�
 
 ---
 
+## 🚀 发布管理
+
+PySpring 项目采用独立包发布策略，支持分别发布核心框架和CLI工具。
+
+### 包结构
+
+- **pyspring** (v1.1.0): 核心框架，提供IoC容器、安全体系等功能
+- **pyspring-cli** (v1.0.0): 命令行工具，提供项目初始化、诊断等功能
+
+### 发布脚本
+
+使用独立发布脚本可以分别发布两个包：
+
+```bash
+# PowerShell
+./scripts/publish-individual.ps1 pyspring test      # 发布核心框架到TestPyPI
+./scripts/publish-individual.ps1 pyspring-cli test  # 发布CLI工具到TestPyPI
+
+# Bash
+./scripts/publish-individual.sh pyspring test      # 发布核心框架到TestPyPI
+./scripts/publish-individual.sh pyspring-cli test  # 发布CLI工具到TestPyPI
+```
+
+### 依赖关系
+
+pyspring-cli 依赖 pyspring (>=1.1.0)，确保了功能兼容性。
+
+---
+
 ## 🤝 贡献与支持
 
 PySpring 是一个开源项目，欢迎任何形式的贡献！
