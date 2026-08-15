@@ -1,0 +1,99 @@
+"""
+PySpring 应用启动示例
+
+展示如何使用 IoC 容器和启动初始化器
+"""
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+# 导入 PySpring 组件
+from pyspring.core.log.instance import logger
+from pyspring.core.ioc.context import ApplicationContext
+
+# 全局应用上下文引用
+app_context: ApplicationContext = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """应用生命周期管理"""
+    global app_context
+    
+    # 启动时执行
+    logger.info("🚀 PySpring 应用启动中...")
+    
+    # 1. 初始化应用上下文并扫描注册服务
+    app_context = ApplicationContext.initialize(
+        base_packages=['app'],  # 扫描应用包中的组件
+        enable_aop=True
+    )
+    logger.info("✅ IoC 容器服务注册完成")
+    
+    # 2. 执行启动初始化器
+    # 包括: CacheInitializer, DBInitializer, DatabaseInitializer
+    await app_context.container.initialize_lifecycle_services()
+    logger.info("✅ 启动初始化完成")
+    logger.info("✅ PySpring 应用启动完成")
+    
+    yield  # 应用运行期间
+    
+    # 关闭时执行
+    logger.info("👋 PySpring 应用关闭中...")
+    
+    # 执行所有关闭处理器
+    # 包括: 关闭数据库连接、关闭缓存连接等
+    await app_context.container.shutdown_lifecycle_services()
+    
+    logger.info("✅ 应用已关闭")
+
+
+app = FastAPI(
+    title="PySpring Application",
+    description="基于 PySpring 框架构建的应用",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# 配置 CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 生产环境请修改为具体域名
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/")
+async def root():
+    """根路径"""
+    return {
+        "message": "Welcome to PySpring",
+        "docs": "/docs",
+        "redoc": "/redoc"
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """健康检查"""
+    return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    from pyspring.core.config_manager import ConfigManager
+
+    # 从 application.yaml 读取服务器配置
+    config = ConfigManager.load_config("application")
+    server = config.get("server", {})
+    
+    uvicorn.run(
+        "main:app",
+        host=server.get("host", "0.0.0.0"),
+        port=int(server.get("port", 8000)),
+        reload=server.get("reload", True),
+        log_level=server.get("log_level", "info"),
+        workers=int(server.get("workers", 1))
+    )

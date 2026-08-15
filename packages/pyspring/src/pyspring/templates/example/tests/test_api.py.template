@@ -1,0 +1,88 @@
+"""
+PySpring 示例项目测试
+
+展示：
+1. pytest 测试框架
+2. FastAPI 测试客户端
+3. IOC 容器测试
+"""
+import pytest
+from httpx import AsyncClient
+
+from app.main import app
+
+
+@pytest.fixture
+async def client():
+    """创建测试客户端"""
+    async with AsyncClient(app=app, base_url="http://test") as ac:
+        yield ac
+
+
+@pytest.mark.asyncio
+async def test_health_check(client: AsyncClient):
+    """测试健康检查端点"""
+    response = await client.get("/health")
+    assert response.status_code == 200
+    data = response.json()
+    assert "status" in data
+    assert "timestamp" in data
+
+
+@pytest.mark.asyncio
+async def test_root_endpoint(client: AsyncClient):
+    """测试根端点"""
+    response = await client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["framework"] == "PySpring"
+    assert "features" in data
+
+
+@pytest.mark.asyncio
+async def test_register_and_login(client: AsyncClient):
+    """测试用户注册和登录流程"""
+    # 注册新用户
+    register_data = {
+        "username": "testuser",
+        "email": "test@example.com",
+        "password": "testpass123"
+    }
+    
+    response = await client.post("/api/auth/register", json=register_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    
+    # 登录
+    login_data = {
+        "username": "testuser",
+        "password": "testpass123"
+    }
+    
+    response = await client.post("/api/auth/login", json=login_data)
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_protected_endpoint(client: AsyncClient):
+    """测试需要认证的端点"""
+    # 先登录获取令牌
+    login_data = {
+        "username": "admin",
+        "password": "admin123"
+    }
+    
+    response = await client.post("/api/auth/login", json=login_data)
+    assert response.status_code == 200
+    token = response.json()["access_token"]
+    
+    # 使用令牌访问受保护端点
+    headers = {"Authorization": f"Bearer {token}"}
+    response = await client.get("/api/users/me", headers=headers)
+    assert response.status_code == 200
+    data = response.json()
+    assert data["username"] == "admin"

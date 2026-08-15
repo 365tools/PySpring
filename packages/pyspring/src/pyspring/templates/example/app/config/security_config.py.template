@@ -1,0 +1,203 @@
+"""
+PySpring 安全模块自定义配置示例
+
+展示：
+1. 如何自定义 SecurityEntityConfiguration（自定义用户表映射）
+2. 如何自定义 IPasswordEncoder（自定义密码加密算法）
+3. 如何自定义 ILoginProvider（自定义登录方式）
+4. 如何集成框架的完整认证授权体系
+
+使用场景：
+- 当需要使用自定义用户表结构时
+- 当需要实现特殊的认证方式（OAuth2、LDAP、短信验证码等）
+- 当需要自定义密码加密算法时
+- 当需要扩展框架的默认行为时
+
+注意：
+- 此文件为可选配置，如不需要自定义，可删除
+- 框架提供的默认配置（DefaultRegisterService, DefaultLoginService）已满足大多数需求
+
+最佳实践（v1.1.0b27+）：
+- ✅ 推荐：直接继承父类 + @Component
+- ✅ 优点：只需重写需要修改的部分，其他字段自动继承
+- ✅ 机制：框架自动检测继承关系并替换父类
+
+工作原理（继承替换机制）：
+1. 扫描阶段：
+   - 扫描框架包 → 发现 SecurityEntityConfiguration (@ConditionalOnMissingBean)
+   - 扫描用户包 → 发现 CustomSecurityEntityConfiguration (@Component)
+   - 构建类型映射 → 检测到 CustomSecurityEntityConfiguration 继承 SecurityEntityConfiguration
+   - 标记替换关系 → metadata.replaces = 'security_entity_configuration'
+   
+2. 注册阶段：
+   - 注册父类时 → 检查 replaced_by → 跳过注册
+   - 注册子类时 → 正常注册 → 记录 replaces
+   
+3. 查询阶段：
+   - 调用 get_bean(SecurityEntityConfiguration)
+   - 精确查找失败（父类未注册）
+   - 子类查找成功 → 返回 CustomSecurityEntityConfiguration 实例
+   
+优势：
+- ✅ 无需手动指定 Bean 名称
+- ✅ 符合 Spring Boot 最佳实践
+- ✅ 支持多层继承
+- ✅ 框架透明处理替换逻辑
+"""
+from pyspring.core.ioc.annotations import Component
+from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
+
+# 导入自定义的用户模型
+from app.models.user import User
+
+# 导入自定义权限模型（与 app/models/__init__.py 导出的模型一致）
+from app.models.role import Role
+from app.models.permission import Permission
+from app.models.user_role import UserRole
+from app.models.role_permission import RolePermission
+
+
+# ============================================================
+# 方式1：自定义 SecurityEntityConfiguration（推荐）
+# ============================================================
+
+@Component  # ✅ 使用默认的 @Component，框架自动处理替换
+class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
+    """
+    自定义安全实体配置 - 最简洁的方式
+    
+    使用场景：
+    - 告诉框架使用我们自定义的 User 模型
+    - 只需重写 user_orm_model，其他字段自动继承默认值
+    
+    工作原理（继承替换机制 v1.1.0b27+）：
+    1. 继承 SecurityEntityConfiguration 并重写 __init__
+    2. 使用 @Component - 无需指定 Bean 名称！
+    3. 扫描阶段：
+       - 框架扫描所有组件
+       - 构建类型映射表
+       - 检测继承关系：CustomSecurityEntityConfiguration 继承 SecurityEntityConfiguration
+       - 标记替换：custom_security_entity_configuration 替换 security_entity_configuration
+    4. 注册阶段：
+       - 跳过父类注册（已被标记为 replaced_by）
+       - 正常注册子类（记录 replaces）
+    5. 查询阶段：
+       - get_bean(SecurityEntityConfiguration)
+       - 查找失败（父类未注册）→ 查找子类（issubclass 检查）
+       - 返回子类实例
+    
+    优点：
+    - ✅ 简洁：继承 + @Component，只写需要改的代码
+    - ✅ 清晰：明确标记这是一个组件
+    - ✅ 智能：框架自动检测继承关系并处理替换
+    - ✅ 高效：容器里只有一个实例（真正的替换）
+    - ✅ 可维护：框架新增字段自动继承
+    - ✅ 无需手动维护 Bean 名称
+    
+    注意：
+    - 无需指定 Bean 名称！框架会自动检测继承关系
+    - 父类必须有 @ConditionalOnMissingBean（框架默认配置已提供）
+    - 子类只需要普通的 @Component 即可
+    """
+    
+    def __init__(self):
+        super().__init__()  # 继承所有默认值
+        
+        # 统一使用自定义的 ORM 模型（User + 权限模型）
+        # 必须与 app/models/__init__.py 导出的模型保持一致，
+        # 否则会出现"建表的表"与"custom_register_service 操作的表"不一致的 RBAC 问题。
+        self.user_orm_model = User  # 自定义的 User 模型
+        self.role_orm_model = Role  # 自定义的 Role 模型
+        self.permission_orm_model = Permission  # 自定义的 Permission 模型
+        self.user_role_orm_model = UserRole  # 自定义的 UserRole 关联模型
+        self.role_permission_orm_model = RolePermission  # 自定义的 RolePermission 关联模型
+        
+        # 💡 提示：
+        # 如无特殊需求，可直接使用框架默认的权限表（不自定义权限字段时）：
+        #   - role_orm_model = RoleTable
+        #   - permission_orm_model = PermissionTable
+        #   - user_role_orm_model = UserRoleTable
+        #   - role_permission_orm_model = RolePermissionTable
+        # 但一旦启用了自定义 User 模型，强烈建议同时统一权限模型，
+        # 并让所有 RBAC 操作（如 custom_register_service）通过
+        # self.component.*_orm_model 动态获取，避免硬编码框架默认表。
+
+
+# ============================================================
+# 高级自定义示例（可选）
+# ============================================================
+
+# 示例2：自定义密码加密器（推荐方式）
+"""
+import bcrypt
+from pyspring.core.ioc.annotations import ConditionalOnMissingBean
+
+@ConditionalOnMissingBean(IPasswordEncoder)
+class CustomPasswordEncoder(IPasswordEncoder):
+    '''自定义密码加密器（使用 BCrypt） - 推荐方式'''
+    
+    def encode(self, raw_password: str) -> str:
+        return bcrypt.hashpw(raw_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    
+    def verify(self, raw_password: str, hashed_password: str) -> bool:
+        return bcrypt.checkpw(raw_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+# 无需 @Configuration + @Bean()！
+# 框架会自动扫描并注册此实现
+# 由于 @ConditionalOnMissingBean，框架的 BCryptPasswordEncoder 会被跳过
+"""
+
+# 示例3：自定义登录提供者（短信验证码登录）
+"""
+from pyspring.security.authentication.contracts.login import ILoginProvider
+from pyspring.security.authentication.contracts.request import LoginRequest
+from pyspring.core.ioc.annotations import Component
+
+@Component  # 不需要 @ConditionalOnMissingBean，因为可以有多个 ILoginProvider
+class SmsLoginProvider(ILoginProvider):
+    '''短信验证码登录提供者'''
+    
+    def support_type(self) -> str:
+        return "sms"  # 登录类型
+    
+    async def authenticate(self, request: LoginRequest) -> Optional[int]:
+        '''验证短信验证码'''
+        phone = request.username  # 手机号
+        code = request.password   # 验证码
+        
+        # TODO: 验证短信验证码
+        # 1. 从缓存获取验证码
+        # 2. 验证验证码是否正确
+        # 3. 返回用户ID
+        
+        return user_id  # 返回用户ID或None
+
+# 无需 @Configuration + @Bean()！
+# 框架会自动扫描并收集所有 ILoginProvider 实现
+"""
+
+# 示例4：完全自定义用户表（不继承 BaseUserTable）
+"""
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import declarative_base
+
+CustomBase = declarative_base()
+
+class CustomUser(CustomBase):
+    '''完全自定义的用户表（不继承 BaseUserTable）'''
+    __tablename__ = "custom_users"
+    
+    id = Column(Integer, primary_key=True)
+    login_name = Column(String(100), unique=True, nullable=False)
+    email_address = Column(String(100), unique=True, nullable=False)
+    hashed_pwd = Column(String(255), nullable=False)
+    
+    # 注意：需要实现字段映射逻辑
+    # 框架期望的字段名：user_id, email, password
+    # 自定义表的字段名：login_name, email_address, hashed_pwd
+    # 
+    # 解决方案：
+    # 1. 使用 property 映射字段
+    # 2. 或修改框架代码支持字段映射
+    # 3. 或自定义 IUserProvider
+"""

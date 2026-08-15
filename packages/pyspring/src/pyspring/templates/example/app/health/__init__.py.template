@@ -1,0 +1,13 @@
+"""
+健康检查指标示例
+"""
+
+from .api_indicator import APIHealthIndicator
+from .cache_indicator import CacheHealthIndicator
+from .database_indicator import DatabaseHealthIndicator
+
+__all__ = [
+    'APIHealthIndicator',
+    'CacheHealthIndicator',
+    'DatabaseHealthIndicator',
+]

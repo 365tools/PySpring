@@ -1,0 +1,14 @@
+"""
+框架扩展包（Extensions）
+
+存放对 PySpring 框架默认行为的自定义扩展与适配器。
+
+用途：
+- 继承框架默认实现（如 DefaultRegisterService / DefaultPasswordLoginProvider）
+- 通过 @ConditionalOnMissingBean 机制替换框架默认 Bean
+- 与业务服务（services/）解耦，保持 services/ 的纯业务内聚
+
+注意：
+- extensions/ 下的组件会被 IoC 扫描器自动发现（base_packages=['app']）
+- 无需手动 import，靠 @Component 注解注册
+"""

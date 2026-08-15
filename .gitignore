@@ -1,0 +1,210 @@
+# Python bytecode and build artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.whl
+*.dist-info/
+*.egg-info/
+.installed.cfg
+MANIFEST
+
+# Virtual environments and dependency management
+.venv/
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.env
+.envrc
+uv.lock
+Pipfile.lock
+poetry.lock
+pdm.lock
+requirements-local.txt
+requirements-dev.txt
+.pdm-python
+.pdm-build/
+.pixi
+__pypackages__/
+
+# Build and distribution directories
+.Python
+build/
+out/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+dist-packages/
+build/lib/
+# setuptools 临时构建目录（<pkgname>-<version>/）
+*-[0-9]*.[0-9]*.[0-9]*/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Test and coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py.cover
+.hypothesis/
+.pytest_cache/
+.pyspring_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Database files
+*.sqlite
+*.sqlite3
+*.db
+db.sqlite3
+db.sqlite3-journal
+
+# Logs
+*.log
+logs/
+
+# Web development
+instance/
+.webassets-cache
+.webpack/
+webpack-stats.json
+
+# Documentation
+docs/_build/
+_book/
+_build/
+/site
+
+# Development tools
+.pybuilder/
+target/
+.scrapy
+celerybeat-schedule
+celerybeat.pid
+*.sage.py
+
+# Jupyter and IPython
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# PyPI
+.pypirc
+
+# IDE and editors
+.vscode/
+.idea/
+.vs/
+.spyderproject
+.spyproject
+.ropeproject
+.vscode/settings.json
+
+# Editor backup files
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.temp
+*.backup
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Local configuration files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+data/*.db
+logs/*.log
+
+# Assets and resources
+assets/.history/
+assets/dev-tools/
+
+# Runtime
+pids
+*.pid
+*.seed
+*.pkl
+
+# Secrets and sensitive data
+secrets/
+.secret-token
+
+# Project specific
+.history/
+.lingma/
+.reloadignore
+/PySpring.iml
+
+# PySpring specific debug/test scripts
+/test_*.py
+/verify_*.py
+/diagnose_*.py
+/fix_*.py
+/clean_*.py
+/run_quick_test.py
+/example_*.py
+
+# AI tools and other
+.cursorignore
+.cursorindexingignore
+marimo/_static/
+marimo/_lsp/
+__marimo__/
+.local/
+compiled/
+staticfiles/
+
+# AI assistant / router internal state (never commit)
+.codebuddy/
+.skills-router/
+
+# Temporary diagnostic / helper scripts
+_diag_check.json
+scripts/_diag_errors.py
+scripts/_modernize_types.py

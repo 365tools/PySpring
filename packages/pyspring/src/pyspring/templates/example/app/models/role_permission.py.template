@@ -1,0 +1,49 @@
+"""
+角色权限关联表模型
+
+演示：
+1. 继承框架的 BaseRolePermissionTable 基类
+2. 自动获得角色-权限关联字段
+3. 建立角色和权限的多对多关系
+4. 如无特殊需求，可直接使用框架默认的 RolePermissionTable
+
+💡 提示：
+- 本文件为扩展示例，展示如何自定义 RolePermission 关联表
+- 如不需要自定义字段，可删除此文件，框架会使用默认的 RolePermissionTable
+- 如需使用此自定义模型，需在 CustomSecurityEntityConfiguration 中替换：
+  self.role_permission_orm_model = RolePermission
+"""
+from pyspring.repositories.db.models.common.define import BaseRolePermissionTable
+
+
+class RolePermission(BaseRolePermissionTable):
+    """
+    角色权限关联表
+    
+    继承自框架的 BaseRolePermissionTable，自动包含：
+    - id: 主键
+    - role_code: 角色代码（String(50)，关联 pyspring_role.code）
+    - permission_code: 权限代码（String(100)，关联 pyspring_permission.code）
+    - active/deleted: 状态标识（继承自审计字段）
+    - creator/modifier: 审计字段
+    - created_time/modified_time: 时间戳
+    
+    关联关系：
+    - 使用业务代码（code）进行关联，无外键约束
+    - role_code 关联到 Role.code（不是 Role.id）
+    - permission_code 关联到 Permission.code（不是 Permission.id）
+    
+    自定义扩展字段（示例）：
+    # granted_by = Column(String(36), comment="授权人UUID")
+    # expires_at = Column(DateTime, comment="过期时间")
+    # scope = Column(String(100), comment="权限范围限定")
+    """
+    __tablename__ = "role_permissions"  # 基础表名，实际会应用前缀（如 myapp_role_permissions）
+    
+    # 如需扩展字段，在此添加：
+    # from sqlalchemy import Column, String, DateTime
+    # granted_by = Column(String(36), comment="授权人UUID")
+    # expires_at = Column(DateTime, comment="过期时间")
+    
+    def __repr__(self):
+        return f"<RolePermission(role_code='{self.role_code}', permission_code='{self.permission_code}')>"

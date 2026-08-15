@@ -1,0 +1,50 @@
+# {{PROJECT_NAME}}
+
+基于 [PySpring](https://github.com/365tools/PySpring)（Spring Boot 风格的 FastAPI 框架）构建的 Web 应用。
+
+## 快速开始
+
+```bash
+# 1. 创建虚拟环境并安装依赖
+uv setup --dev
+
+# 2. 配置环境变量
+# 修改 .env 中的密钥和数据库配置
+
+# 3. 启动应用
+uv run python main.py
+```
+
+应用启动后访问：
+- API 文档：http://localhost:8000/docs
+- 健康检查：http://localhost:8000/health
+
+## 项目结构
+
+```
+.
+├── app/              # 应用代码
+│   ├── api/          # API 路由
+│   ├── models/       # 数据模型
+│   ├── services/     # 业务逻辑
+│   └── schemas/      # Pydantic 数据模式
+├── config/           # 配置文件（application/container/security 等 YAML）
+├── scripts/db/       # 数据库初始化脚本
+├── tests/            # 测试文件
+├── main.py           # 应用入口
+└── pyproject.toml    # 项目配置和依赖
+```
+
+## 配置说明
+
+- `config/application.yaml` — 应用、服务器、中间件等配置
+- `config/container.yaml` — IoC 容器配置
+- `config/security.yaml` — 认证与授权配置
+- `config/repositories.yaml` — 数据库与缓存配置
+- `.env` — 环境变量（JWT 密钥等，**勿提交到版本库**）
+
+## 文档
+
+- 项目文档：<https://github.com/365tools/PySpring/docs/>
+- 安全配置：<https://github.com/365tools/PySpring/docs/SECURITY_CONFIG_GUIDE.md>
+- 数据库配置：<https://github.com/365tools/PySpring/docs/REPOSITORIES_CONFIG_GUIDE.md>

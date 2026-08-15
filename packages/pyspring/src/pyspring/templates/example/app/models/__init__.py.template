@@ -1,0 +1,30 @@
+"""
+Models 包
+
+自动导出所有模型，方便 MigrationInitializer 扫描加载
+
+💡 权限模型说明：
+- Role/Permission/UserRole/RolePermission 为可选的扩展示例
+- 如不需要自定义字段，可删除这些文件，框架会使用默认模型
+- 如需使用自定义权限模型，需在 CustomSecurityEntityConfiguration 中替换
+"""
+from .user import User
+from .article import Article
+
+# 可选：自定义权限模型（如不需要可删除以下导入和 __all__ 中的条目）
+from .role import Role
+from .permission import Permission
+from .user_role import UserRole
+from .role_permission import RolePermission
+
+__all__ = [
+    # 必需模型
+    'User',
+    'Article',
+    # 可选权限模型（如不需要扩展可删除）
+    'Role',
+    'Permission',
+    'UserRole',
+    'RolePermission',
+]
+

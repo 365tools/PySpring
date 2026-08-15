@@ -1,0 +1,60 @@
+"""
+健康检查服务
+
+展示：
+1. 组件状态检查
+2. 依赖注入
+"""
+from typing import Dict
+
+from pyspring.core.ioc.annotations import Component
+from pyspring.core.log.instance import logger
+
+from app.repositories.user_repository import UserRepository
+from app.services.cache_service import CacheService
+
+
+@Component
+class HealthCheckService:
+    """健康检查服务"""
+    
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        cache_service: CacheService
+    ):
+        self.user_repository = user_repository
+        self.cache_service = cache_service
+        logger.info("📦 创建 HealthCheckService 实例")
+    
+    async def check_all(self) -> Dict:
+        """检查所有组件状态"""
+        results = {
+            "database": await self._check_database(),
+            "cache": await self._check_cache(),
+            "ioc_container": True  # 能调用说明 IOC 容器正常
+        }
+        
+        results["overall"] = all(results.values())
+        return results
+    
+    async def _check_database(self) -> bool:
+        """检查数据库连接"""
+        try:
+            await self.user_repository.count()
+            return True
+        except Exception as e:
+            logger.error(f"数据库检查失败: {e}")
+            return False
+    
+    async def _check_cache(self) -> bool:
+        """检查缓存服务"""
+        try:
+            test_key = "_health_check_"
+            await self.cache_service.set(test_key, "ok", ttl=5)
+            value = await self.cache_service.get(test_key)
+            await self.cache_service.delete(test_key)
+            return value == "ok"
+        except Exception as e:
+            logger.error(f"缓存检查失败: {e}")
+            return False

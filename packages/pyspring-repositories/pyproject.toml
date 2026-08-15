@@ -1,0 +1,57 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyspring-repositories"
+version = "0.0.1"
+authors = [
+  { name="Yingchun", email="allureyc@gmail.com" },
+]
+description = "Repositories starter for PySpring: database (PG/MySQL/SQLite) and cache (Redis/Memory/Memcached)."
+readme = "README.md"
+requires-python = ">=3.14"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pyspring-core>=0.0.1",
+    "pydantic>=2.13.0",
+    "sqlalchemy>=2.0.52",
+    "alembic>=1.19.0",
+    "asyncpg>=0.31.0",
+    "aiosqlite>=0.22.0",
+    "redis>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[project.entry-points."pyspring.starters"]
+pyspring-repositories = "pyspring.repositories.autoconfigure:load"
+
+[project.urls]
+"Homepage" = "https://github.com/365tools/PySpring"
+"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pyspring.repositories*"]
+namespaces = true
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
+
+[tool.setuptools.package-data]
+"pyspring.repositories" = [
+    "py.typed",
+]
+
+[tool.setuptools.exclude-package-data]
+"pyspring.repositories" = [
+    "**/*.log",
+    "**/*.db",
+    "**/*.sqlite",
+    "**/*.pyc",
+    "**/__pycache__",
+]

@@ -1,0 +1,26 @@
+# IoC 容器配置示例
+# 复制此文件为 container.yaml 并根据需要修改
+#
+# 配置结构说明：
+#   - scan_packages:   需要扫描并注册的包路径列表（可选，通常在代码中通过 base_packages 指定）
+#   - exclude_packages: 扫描时需要排除的包路径列表
+#   - services:         显式 Bean 定义（可选，推荐优先使用 @Component 注解声明）
+#                       factory 方式用于注册静态工厂方法生成的 Bean
+#
+# 注意事项：
+# 1. 包路径必须是有效的 Python 模块路径
+# 2. 单例作用域使用 @Component(scope="singleton")（默认），非单例使用 scope="prototype"
+# 3. 推荐优先使用 @Component / @Service 注解声明组件，配置文件仅用于补充扫描包与工厂 Bean
+
+# 服务扫描配置（示例，按需启用）
+# scan_packages:
+#   - your.custom.package  # 添加您的自定义包路径
+
+# 扫描时排除的包路径列表
+exclude_packages: []
+
+# 显式 Bean 定义（可选，示例，按需启用）
+# services:
+#   my_service:
+#     factory: yourpackage.module.ServiceFactory.create
+#     singleton: true

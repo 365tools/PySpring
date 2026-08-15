@@ -1,0 +1,90 @@
+[project]
+name = "pyspring-example"
+version = "1.0.0"
+description = "PySpring Framework Example Project"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+readme = "README.md"
+requires-python = ">=3.14"
+license = "MIT"
+
+dependencies = [
+    # ============================================================================
+    # 核心框架（聚合包：core/web/repositories/security）
+    # ============================================================================
+    "pyspring",  # 自动使用最新版本
+    "pyspring-health",  # 健康检查模块
+
+    # ============================================================================
+    # Web 框架
+    # ============================================================================
+    "fastapi>=0.141.0",
+    "uvicorn[standard]>=0.52.0",
+    "python-multipart>=0.0.30",
+
+    # ============================================================================
+    # 数据库
+    # ============================================================================
+    "sqlalchemy>=2.0.52",
+    "aiosqlite>=0.22.0",  # SQLite 异步驱动
+
+    # ============================================================================
+    # 缓存
+    # ============================================================================
+    "redis>=8.0.0",  # Redis 客户端（可选）
+
+    # ============================================================================
+    # 认证
+    # ============================================================================
+    "pyjwt>=2.8.0",  # JWT 令牌
+    "passlib[bcrypt]>=1.7.4",  # 密码哈希
+
+    # ============================================================================
+    # 配置管理
+    # ============================================================================
+    "pydantic>=2.13.0",
+    "pydantic-settings>=2.15.0",
+    "python-dotenv>=1.2.0",
+
+    # ============================================================================
+    # 日志
+    # ============================================================================
+    "loguru>=0.7.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.28.0",  # 用于测试 API
+    "ruff>=0.1.0",  # 代码检查和格式化
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "tests*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.pyright]
+pythonpath = ["."]
+typeCheckingMode = "standard"
+reportMissingImports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]

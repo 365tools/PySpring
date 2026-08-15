@@ -1,0 +1,419 @@
+# PySpring 示例项目
+
+这是一个使用 PySpring 框架构建的完整示例项目，展示了框架的所有核心功能。
+
+> 💡 **这个项目是如何创建的？**
+> 
+> 使用命令 `pyspring init --example` 或 `uvx --from pyspring pyspring init --example` 创建。
+> 
+> 如果你想创建自己的项目，查看 [PySpring 文档](https://github.com/365tools/PySpring)
+
+## 🎯 功能特性
+
+- ✅ **IOC 容器和依赖注入** - 使用 `@component` 和 `@inject` 装饰器
+- ✅ **生命周期管理** - 实现 `ILifecycle` 接口进行启动/关闭处理
+- ✅ **配置管理** - YAML 配置文件 + 环境变量
+- ✅ **数据库集成** - SQLAlchemy ORM + 异步操作
+- ✅ **Repository 模式** - 数据访问层封装
+- ✅ **缓存服务** - Redis 集成（可选降级为内存缓存）
+- ✅ **JWT 认证** - 用户登录/注册/令牌验证
+- ✅ **RESTful API** - FastAPI 路由和依赖注入
+- ✅ **中间件** - 请求日志、性能监控、异常处理
+- ✅ **结构化日志** - Loguru 日志系统
+
+## 📁 项目结构
+
+```
+.
+├── app/                    # 应用代码
+│   ├── main.py            # FastAPI 入口点
+│   ├── api/               # API 路由
+│   │   ├── health.py      # 健康检查
+│   │   ├── auth.py        # 认证相关
+│   │   └── users.py       # 用户管理
+│   ├── services/          # 业务逻辑层（纯业务服务）
+│   │   ├── user_service.py
+│   │   ├── auth_service.py
+│   │   ├── cache_service.py
+│   │   └── health_check_service.py
+│   ├── extensions/        # 框架扩展（替换默认 Bean，教学示例）
+│   │   ├── custom_register_service.py
+│   │   └── custom_login_provider.py
+│   ├── repositories/      # 数据访问层
+│   │   └── user_repository.py
+│   ├── models/            # 数据模型（ORM 实体）
+│   │   ├── user.py
+│   │   ├── article.py
+│   │   └── role.py        # 权限模型（可选）
+│   ├── schemas/           # Pydantic DTO（API 契约）
+│   ├── config/            # Spring 风格 @Configuration 类
+│   ├── database/          # 数据库初始化
+│   │   └── initializer.py
+│   ├── middleware/        # 中间件（教学示例）
+│   │   ├── request_logger.py
+│   │   └── timing.py
+│   ├── aspects/           # AOP 切面（教学示例）
+│   │   └── monitoring.py
+│   ├── health/            # 健康检查指示器
+│   └── dependencies/      # FastAPI 依赖
+│       └── auth.py
+├── config/                # 配置文件
+│   ├── application.yaml   # 应用配置
+│   ├── container.yaml     # IOC 容器配置
+│   └── logging.yaml       # 日志配置
+├── data/                  # 数据目录
+│   └── app.db            # SQLite 数据库
+├── logs/                  # 日志目录
+├── tests/                 # 测试代码
+├── .env                   # 环境变量
+├── requirements.txt       # 依赖列表
+└── README.md             # 本文件
+```
+
+## 🚀 快速开始
+
+### 1. 安装依赖
+
+**稳定版本（推荐）：**
+
+```bash
+# 使用 uv（推荐）
+uv pip install -r requirements.txt
+
+# 或使用 pip
+pip install -r requirements.txt
+```
+
+**测试版本（体验最新功能）：**
+
+```bash
+# 从 TestPyPI 安装最新测试版
+uv pip install --index-url https://test.pypi.org/simple/ \
+               --extra-index-url https://pypi.org/simple/ \
+               -r requirements.txt
+```
+
+> 💡 **说明**：
+> - **稳定版本**：从 PyPI 安装正式发布版本
+> - **测试版本**：从 TestPyPI 安装最新 Beta 版本（可能包含未发布的新功能）
+> - TestPyPI 地址：https://test.pypi.org/project/pyspring/
+
+### 2. 配置环境变量
+
+复制 `.env.example` 为 `.env` 并根据需要修改：
+
+```bash
+cp .env.example .env
+```
+
+### 3. 启动应用
+
+```bash
+# 方式 1：使用 uvicorn
+uvicorn app.main:app --reload
+
+# 方式 2：直接运行
+python -m app.main
+```
+
+### 4. 访问应用
+
+- **API 地址**: http://localhost:8000
+- **API 文档**: http://localhost:8000/docs
+- **健康检查**: http://localhost:8000/health
+
+## 📖 API 使用示例
+
+### 健康检查
+
+```bash
+curl http://localhost:8000/health
+```
+
+### 用户认证（框架配置化认证）
+
+示例项目使用框架的完整认证服务（`ILoginService`、`IRegisterService`）。
+
+从 v1.1.0 开始，框架支持配置化登录字段，无需编写自定义代码！
+
+**配置示例**（`config/security.yaml`）：
+```yaml
+authentication:
+  identifier_fields:
+    - "username"   # 用户名
+    - "email"      # 邮箱
+    - "phone"      # 手机号（可选）
+  
+  # 可选：指定展示字段（用于日志和认证结果）
+  # display_identifier_field: "email"  # 不指定则使用第一个非空identifier
+  
+  # 重要：identifier_fields 必须在数据库中有 unique=True 约束
+  # 但可以是 nullable=True（允许不填，填了必须唯一）
+```
+
+**用户注册**
+```bash
+curl -X POST http://localhost:8000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "password123",
+    "phone": "13800138000"
+  }'
+```
+
+**用户登录**
+```bash
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "admin",
+    "password": "admin123"
+  }'
+
+# identifier 可以是（框架自动匹配配置的字段）：
+# - 用户名：  "admin"
+# - 邮箱：    "admin@example.com"
+# - 手机号：  "13800138000"
+# - 用户ID：  "550e8400-e29b-41d4-a716-446655440000"
+
+# 响应包含完整的令牌信息：
+# {
+#   "success": true,
+#   "data": {
+#     "access_token": "eyJ...",
+#     "refresh_token": "eyJ...",
+#     "token_type": "bearer",
+#     "expires_in": 3600,
+#     "refresh_token_expire": 2592000,
+#     "message": "登录成功"
+#   }
+# }
+```
+
+**刷新令牌**
+```bash
+curl -X POST http://localhost:8000/api/auth/refresh \
+  -H "Content-Type: application/json" \
+  -d '{
+    "refresh_token": "YOUR_REFRESH_TOKEN"
+  }'
+```
+
+### 获取用户信息（需要认证）
+
+```bash
+curl http://localhost:8000/api/users/me \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### 🎨 自定义扩展说明
+
+示例项目展示了如何扩展框架功能：
+
+1. **CustomRegisterService** - 自定义注册服务
+   - 位置：`app/extensions/custom_register_service.py`
+   - 扩展：自定义字段处理、验证规则、注册后置操作
+
+2. **User 模型** - 扩展用户表
+   - 位置：`app/config/security_config.py`
+   - 扩展：添加 username、phone 等自定义字段
+
+3. **可选的其他自定义**
+   - `ILoginProvider` - 自定义登录方式（OAuth2、LDAP、短信验证码）
+   - `IResponseBuilder` - 自定义响应格式
+
+**框架会自动检测并使用你的自定义实现，无需额外配置！**
+
+## 🔑 默认账户
+
+应用首次启动时会自动创建一个管理员账户：
+
+- **用户名**: `admin`
+- **密码**: `admin123`
+- **邮箱**: `admin@example.com`
+
+## 🎓 学习要点
+
+### 1. IOC 容器和依赖注入
+
+查看 [app/services/user_service.py](app/services/user_service.py)：
+
+```python
+@component
+class UserService(ILifecycle):
+    @inject
+    def __init__(
+        self,
+        user_repository: UserRepository,
+        cache_service: CacheService
+    ):
+        # PySpring 自动注入依赖
+        ...
+```
+
+### 3. 数据库访问 - DBManagerService
+
+PySpring v1.1.0+ 使用统一的 DBManagerService 进行数据库访问：
+
+```python
+from pyspring.repositories.db.manager import DBManagerService
+
+@Component
+class UserRepository:
+    def __init__(self, db_manager: DBManagerService):
+        self.db = db_manager
+    
+    async def find_by_id(self, user_id: int):
+        async with await self.db.session() as session:
+            result = await session.execute(
+                select(User).where(User.id == user_id)
+            )
+            return result.scalar_one_or_none()
+```
+
+优势：
+- 自动管理连接池
+- 支持多数据库切换
+- 集成到 IoC 容器
+- 统一的会话管理
+
+### 4. 数据库初始化
+
+**框架权限表（自动创建）：**
+
+框架提供完整的 RBAC 权限表，通过 Alembic 迁移自动创建：
+- `pyspring_user` - 用户表
+- `pyspring_role` - 角色表
+- `pyspring_permission` - 权限表
+- `pyspring_user_role` - 用户角色关联表
+- `pyspring_role_permission` - 角色权限关联表
+
+**无需自定义 ORM 模型！** 如需扩展字段：
+1. 继承框架的 `BaseUserTable`、`BaseRoleTable` 等基类
+2. 通过 `SecurityEntityConfiguration` 替换默认模型（参考 `app/config/security_config.py`）
+
+**业务自定义表：**
+
+数据库表由框架的 MigrationInitializer 自动创建，在 `config/repositories.yaml` 配置：
+
+```yaml
+initialization:
+  enabled: true                 # 启用自动初始化
+  mode: "incremental"           # 增量模式（只创建不存在的表）
+  script_path: null             # null 则使用 SQLAlchemy metadata.create_all()
+```
+
+**初始数据：**
+
+初始数据由 `scripts/db/init_*.sql` 脚本填充，包括：
+- 默认角色（admin、editor、user）
+- 默认权限（users:read、articles:write 等）
+- 角色权限关联
+
+**Alembic 迁移（推荐）：**
+
+```bash
+# 生成迁移脚本
+pyspring db migrate -m "Initial migration"
+
+# 执行迁移
+pyspring db upgrade
+
+# 或直接使用 alembic
+alembic revision --autogenerate -m "Initial migration"
+alembic upgrade head
+```
+
+### 5. Repository 模式
+
+查看 [app/repositories/user_repository.py](app/repositories/user_repository.py)：
+
+```python
+@Component
+class UserRepository:
+    def __init__(self, db_manager: DBManagerService):
+        self.db = db_manager
+    
+    async def find_by_id(self, user_id: int):
+        async with await self.db.session() as session:
+            # 数据库操作
+            ...
+```
+
+### 6. 生命周期管理 - IStartupInitializer
+
+查看 [app/database/initializer.py](app/database/initializer.py)：
+
+```python
+@Component
+class DatabaseInitializer(IStartupInitializer):
+    async def initialize(self) -> bool:
+        """应用启动时执行"""
+        logger.info("初始化数据库...")
+        return True
+```
+
+注意：
+- 普通业务服务（Service、Repository）**不需要** ILifecycle
+- 只有管理外部资源的服务（缓存、消息队列等）才需要 ILifecycle
+- 数据库初始化使用 IStartupInitializer
+class UserRepository(ILifecycle):
+    async def find_by_id(self, user_id: int) -> Optional[User]:
+        # 数据访问逻辑封装
+        ...
+```
+
+### 4. 缓存集成
+
+查看 [app/services/cache_service.py](app/services/cache_service.py)：
+
+```python
+@component
+class CacheService(ILifecycle):
+    async def get(self, key: str) -> Optional[Any]:
+        # 支持 Redis 和内存缓存
+        ...
+```
+
+### 5. FastAPI 集成
+
+查看 [app/main.py](app/main.py)：
+
+```python
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 启动阶段
+    app_context = ApplicationContext.initialize(['app'])
+    await app_context.container.initialize_lifecycle_services()
+    
+    yield
+    
+    # 关闭阶段
+    await app_context.container.shutdown_lifecycle_services()
+```
+
+## 🧪 运行测试
+
+```bash
+# 使用 uv
+uv run pytest tests/
+
+# 或直接运行
+pytest tests/
+```
+
+## 📚 更多文档
+
+- [PySpring 官方文档](https://github.com/your-org/pyspring)
+- [FastAPI 文档](https://fastapi.tiangolo.com/)
+- [SQLAlchemy 文档](https://docs.sqlalchemy.org/)
+
+## 📝 License
+
+MIT License
+
+## 🤝 贡献
+
+欢迎提交 Issue 和 Pull Request！

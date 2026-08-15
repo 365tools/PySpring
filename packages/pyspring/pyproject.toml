@@ -1,0 +1,95 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyspring"
+version = "0.0.1"
+authors = [
+  { name="Yingchun", email="allureyc@gmail.com" },
+]
+description = "A SpringBoot-style scaffold for FastAPI with IoC and Auto-Configuration."
+readme = "README.md"
+requires-python = ">=3.14"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pyspring-core>=0.0.1",
+    "pyspring-web>=0.0.1",
+    "pyspring-repositories>=0.0.1",
+    "pyspring-security>=0.0.1",
+    "fastapi>=0.141.0,<1.0",
+    "uvicorn[standard]>=0.52.0",
+    "python-multipart>=0.0.30",
+    "pydantic>=2.13.0",
+    "pydantic-core>=2.46.0",
+    "pydantic-settings>=2.15.0",
+    "pydantic[email]>=2.13.0",
+    "loguru>=0.7.3",
+    "pyyaml>=6.0.3",
+    "python-dotenv>=1.2.0",
+    "cryptography>=50.0.0",
+    "sqlalchemy>=2.0.52",
+    "alembic>=1.19.0",
+    "asyncpg>=0.31.0",
+    "aiosqlite>=0.22.0",
+    "redis>=8.0.0",
+    "python-jose[cryptography]>=3.5.0",
+    "passlib[bcrypt]>=1.7.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.1.0",
+    "pytest-asyncio>=1.4.0",
+    "httpx>=0.28.0",
+]
+# full：全功能安装入口（文档公开承诺的安装方式）。当前所有核心功能均为默认 dependencies，故 full 不额外引入依赖。
+full = []
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["../../tests"]
+
+
+
+[tool.uv]
+package = true
+
+[project.urls]
+"Homepage" = "https://github.com/365tools/PySpring"
+"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+# 仅打包聚合包自身，各 Starter 的功能由独立发行包提供。
+# 若用 include = ["pyspring*"] 会把所有命名空间子包重复打进聚合包，造成冲突。
+include = ["pyspring"]
+namespaces = true
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
+
+[tool.setuptools.package-data]
+pyspring = [
+    "py.typed",
+    "templates/**/*",
+    "templates/**/*.template",
+    "templates/**/*.yaml",
+    "templates/config/*.yaml",
+    "templates/app/*.template",
+    "templates/project/*.template",
+    "templates/example/**/*",
+    "templates/example/**/*.template",
+]
+
+[tool.setuptools.exclude-package-data]
+pyspring = [
+    "**/*.json",
+    "**/*.log",
+    "**/*.db",
+    "**/*.sqlite",
+    "**/*.pyc",
+    "**/__pycache__",
+]

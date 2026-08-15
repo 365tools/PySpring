@@ -1,0 +1,191 @@
+# 数据仓储配置
+# 配置缓存和数据库服务
+
+# 缓存配置
+cache:
+  # 缓存类型: redis, memory, memcached, auto（自动选择）
+  # - redis: 使用 Redis 缓存
+  # - memory: 使用内存缓存
+  # - memcached: 使用 Memcached 缓存
+  # - auto: 自动选择（优先 Redis，失败则降级到 Memcached，最后降级到 Memory）
+  # 开发环境: 建议使用 auto 或 memory，避免依赖外部缓存
+  # 生产环境: 建议使用 redis 或 memcached
+  type: "auto"
+  
+  # Redis 失败时是否降级到 Memory
+  # 当 type="auto" 且 Redis 连接失败时，自动切换到内存缓存
+  fallback_to_memory: true
+  
+  # Redis 配置
+  redis:
+    # 连接配置
+    host: "localhost"
+    port: 6379
+    db: 0
+    # 密码配置：可以直接在此设置，或通过环境变量 REDIS_PASSWORD
+    # password: "your_redis_password"
+    password: null
+    
+    # 连接池配置
+    pool:
+      # 最大连接数：根据应用并发量调整
+      max_connections: 50
+      # 保持连接：建议开启
+      socket_keepalive: true
+      # 连接超时（秒）
+      socket_connect_timeout: 5
+      # 超时重试
+      retry_on_timeout: true
+  
+  # 内存缓存配置
+  memory:
+    max_size: 1000      # 最大缓存项数
+    ttl: 3600           # 默认过期时间（秒）
+  
+  # Memcached 配置
+  memcached:
+    # 连接配置
+    host: "localhost"      # 主机地址
+    port: 11211            # 端口号
+    connect_timeout: 5     # 连接超时时间（秒）
+    timeout: 5             # 操作超时时间（秒）
+
+# 数据库配置
+database:
+  # 数据库类型: postgresql, sqlite, mysql, auto（自动选择）
+  # - postgresql: 使用 PostgreSQL 数据库
+  # - sqlite: 使用 SQLite 数据库
+  # MySQL: 使用 MySQL 数据库
+  # - auto: 自动选择（优先 PostgreSQL，失败则降级到 MySQL，最后降级到 SQLite）
+  # 开发环境: 建议使用 auto 或 sqlite（简单快速）
+  # 生产环境: 建议使用 postgresql 或 mysql
+  type: "auto"
+  
+  # PostgreSQL 失败时是否降级到 SQLite
+  # 当 type="auto" 且 PostgreSQL 连接失败时，自动切换到 SQLite
+  fallback_to_sqlite: true
+  
+  # 数据库初始化配置
+  # 在应用启动时自动创建数据库表结构
+  initialization:
+    # 是否启用自动初始化
+    # 开发环境: 建议开启，框架会使用 SQLAlchemy metadata.create_all() 自动建表
+    # 生产环境: 建议关闭，使用 Alembic 等迁移工具管理表结构变更
+    enabled: true              # 是否启用自动初始化（开发环境建议 true，生产环境建议 false）
+    mode: "incremental"        # 初始化模式: incremental（增量，只创建不存在的表）或 full（全覆盖，危险！）
+    script_path: null          # SQL 脚本路径（null 则使用 SQLAlchemy 自动建表）
+    auto_detect: true          # 是否自动检测脚本路径
+  
+  # PostgreSQL 配置
+  postgresql:
+    # 连接配置
+    host: "localhost"
+    port: 5432
+    database: "app_db"
+    user: "postgres"
+    # 密码配置：可以直接在此设置，或通过环境变量 POSTGRES_PASSWORD
+    # password: "your_postgres_password"
+    password: null
+    
+    # 连接池配置
+    pool:
+      # 连接池大小：根据应用负载调整
+      # 小型应用: 5-10
+      # 中型应用: 10-20
+      # 大型应用: 20-50
+      size: 5
+      # 最大溢出连接数：允许的额外连接数
+      max_overflow: 10
+      # 连接回收时间（秒）：定期回收连接避免长时间占用
+      recycle: 3600
+      # 连接超时时间（秒）
+      timeout: 30
+      # 连接前 ping 检查：确保连接有效
+      pre_ping: true
+      # 连接池预检查：从池中获取连接时执行检查
+      pool_pre_ping: true
+      # 连接池回收时间（秒）：连接池中连接的最大生存时间
+      pool_recycle: 3600
+      # 从池中获取连接的超时时间（秒）
+      pool_timeout: 30
+      # SQL 日志输出：仅在调试时开启，生产环境会降低性能
+      echo: false
+      # 返回连接到池时的行为：commit, rollback, none
+      pool_reset_on_return: "commit"
+  
+  # SQLite 配置
+  sqlite:
+    # 数据库文件路径（相对于项目根目录）
+    # 如果目录不存在，会自动创建
+    database: "data/app.db"
+    # 是否在内存中运行（测试用）
+    in_memory: false
+    # 是否启用外键约束
+    foreign_keys: true
+    # 是否启用 WAL 模式
+    wal_mode: true
+    
+    pool:
+      size: 5
+      max_overflow: 10
+      recycle: 3600
+      timeout: 30
+      pre_ping: true
+      pool_pre_ping: true
+      pool_recycle: 3600
+      pool_timeout: 30
+      echo: false
+      pool_reset_on_return: "commit"
+  
+  # MySQL 配置
+  mysql:
+    # 连接配置
+    host: "localhost"      # 主机地址
+    port: 3306             # 端口号
+    database: "app_db"     # 数据库名
+    user: "root"           # 用户名
+    # 密码配置：可以直接在此设置，或通过环境变量 MYSQL_PASSWORD
+    # password: "your_mysql_password"
+    password: null
+    charset: "utf8mb4"     # 字符集
+    
+    # 连接池配置
+    pool:
+      # 连接池大小：根据应用负载调整
+      # 小型应用: 5-10
+      # 中型应用: 10-20
+      # 大型应用: 20-50
+      size: 5
+      # 最大溢出连接数：允许的额外连接数
+      max_overflow: 10
+      # 连接回收时间（秒）：定期回收连接避免长时间占用
+      recycle: 3600
+      # 连接超时时间（秒）
+      timeout: 30
+      # 连接前 ping 检查：确保连接有效
+      pre_ping: true
+      # 连接池预检查：从池中获取连接时执行检查
+      pool_pre_ping: true
+      # 连接池回收时间（秒）：连接池中连接的最大生存时间
+      pool_recycle: 3600
+      # 从池中获取连接的超时时间（秒）
+      pool_timeout: 30
+      # SQL 日志输出：仅在调试时开启，生产环境会降低性能
+      echo: false
+      # 返回连接到池时的行为：commit, rollback, none
+      pool_reset_on_return: "commit"
+
+# 环境配置建议：
+# 开发环境：
+#   - cache.type: "auto" 或 "memory"
+#   - database.type: "auto" 或 "sqlite"
+#   - initialization.enabled: true
+#
+# 生产环境：
+#   - cache.type: "redis"
+#   - database.type: "postgresql"
+#   - initialization.enabled: false
+#
+# 使用环境变量覆盖敏感配置：
+#   - REDIS_PASSWORD
+#   - POSTGRES_PASSWORD
