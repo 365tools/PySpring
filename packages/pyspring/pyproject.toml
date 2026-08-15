@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyspring"
-version = "1.1.0"
+version = "0.0.1"
 authors = [
   { name="Yingchun", email="allureyc@gmail.com" },
 ]
@@ -17,6 +17,10 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
+    "pyspring-core>=0.0.1",
+    "pyspring-web>=0.0.1",
+    "pyspring-repositories>=0.0.1",
+    "pyspring-security>=0.0.1",
     "fastapi>=0.104.0,<1.0",
     "uvicorn[standard]>=0.24.0",
     "python-multipart>=0.0.6",
@@ -48,10 +52,14 @@ dev = [
     "flake8>=6.0.0",
     "mypy>=1.5.0",
 ]
+# full：全功能安装入口（文档公开承诺的安装方式）。当前所有核心功能均为默认 dependencies，故 full 不额外引入依赖。
+full = []
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["../../tests"]
+
+
 
 [tool.uv]
 package = true
@@ -63,10 +71,12 @@ package = true
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["pyspring*"]
+namespaces = true
 exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
 [tool.setuptools.package-data]
 pyspring = [
+    "py.typed",
     "templates/**/*",
     "templates/**/*.template",
     "templates/**/*.yaml",

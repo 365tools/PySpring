@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyspring-cli"
-version = "1.0.0"
+version = "0.0.1"
 authors = [
   { name="Yingchun", email="allureyc@gmail.com" },
 ]
@@ -23,7 +23,7 @@ classifiers = [
 ]
 
 dependencies = [
-    "pyspring>=1.1.0",  # Core framework dependency
+    "pyspring>=0.0.1",  # Core framework dependency
                   # For local development: pip install -e ../pyspring
 ]
 
@@ -45,7 +45,8 @@ package = true
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["pyspring_cli*"]
+include = ["pyspring.cli*"]
+namespaces = true
 exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
 [project.urls]
@@ -55,4 +56,4 @@ exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
 # CLI entry point
 [project.scripts]
-pyspring = "pyspring_cli.main:main"
+pyspring = "pyspring.cli.main:main"

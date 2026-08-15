@@ -371,7 +371,7 @@ async def manager_reports(user: ManagerOnly):
 @app.get("/health")
 async def health_check():
     """健康检查"""
-    from pyspring.ioc.context import ApplicationContext
+    from pyspring.core.ioc.context import ApplicationContext
     from pyspring.security.authentication.contracts.token import ITokenService
     from pyspring.security.authorization.contracts.permission import IPermissionService
 

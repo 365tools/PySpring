@@ -22,10 +22,10 @@ def verify_all_fixes():
     # 检查1: 不应该存在的旧导入
     print("\n[检查 1] 旧的子模块导入（应该不存在）")
     old_imports = [
-        'from pyspring.ioc.annotations.component import',
-        'from pyspring.ioc.annotations.configuration import',
-        'from pyspring.ioc.annotations.modifiers import',
-        'from pyspring.ioc.annotations.conditional import',
+        'from pyspring.core.ioc.annotations.component import',
+        'from pyspring.core.ioc.annotations.configuration import',
+        'from pyspring.core.ioc.annotations.modifiers import',
+        'from pyspring.core.ioc.annotations.conditional import',
     ]
 
     found_old_imports = []
@@ -54,7 +54,7 @@ def verify_all_fixes():
 
     # 检查2: 应该存在的新导入
     print("\n[检查 2] 新的统一导入（应该存在）")
-    new_import = 'from pyspring.ioc.annotations import'
+    new_import = 'from pyspring.core.ioc.annotations import'
     files_with_new_import = []
 
     for root, dirs, files in os.walk(template_dir):

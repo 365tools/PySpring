@@ -50,20 +50,20 @@ def fix_existing_project(project_path):
 
         # 2. 修复装饰器导入路径（注解包重构）
         content = content.replace(
-            'from pyspring.ioc.annotations.component import',
-            'from pyspring.ioc.annotations import'
+            'from pyspring.core.ioc.annotations.component import',
+            'from pyspring.core.ioc.annotations import'
         )
         content = content.replace(
-            'from pyspring.ioc.annotations.configuration import',
-            'from pyspring.ioc.annotations import'
+            'from pyspring.core.ioc.annotations.configuration import',
+            'from pyspring.core.ioc.annotations import'
         )
         content = content.replace(
-            'from pyspring.ioc.annotations.modifiers import',
-            'from pyspring.ioc.annotations import'
+            'from pyspring.core.ioc.annotations.modifiers import',
+            'from pyspring.core.ioc.annotations import'
         )
         content = content.replace(
-            'from pyspring.ioc.annotations.conditional import',
-            'from pyspring.ioc.annotations import'
+            'from pyspring.core.ioc.annotations.conditional import',
+            'from pyspring.core.ioc.annotations import'
         )
 
         # 如果有修改，写回文件

@@ -208,7 +208,7 @@ def create_security_config_file(project_dir: Path) -> bool:
         - 必须继承 SecurityEntityConfiguration
         - 重写 user_orm_model 指向你的自定义 User 类
         """
-        from pyspring.ioc.annotations import Component
+        from pyspring.core.ioc.annotations import Component
         from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
         from app.models.user import User  # 导入自定义 User 模型
         

@@ -53,7 +53,7 @@ def test_imports():
         from pyspring.web.handlers.exception import GlobalExceptionHandler
         print("✅ GlobalExceptionHandler")
 
-        from pyspring.ioc import ApplicationContext
+        from pyspring.core.ioc import ApplicationContext
         print("✅ ApplicationContext")
 
         # 验证继承关系

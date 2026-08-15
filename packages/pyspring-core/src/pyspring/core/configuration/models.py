@@ -1,0 +1,78 @@
+"""
+应用配置模型 - 统一配置入口
+
+本类仅包含应用自身的核心配置（app），不再聚合其它 starter 的配置类，
+以保持 pyspring-core 的自包含性。各 starter（database/redis/logging/authentication）
+的配置通过各自的 @Component 独立注入，而非聚合在此。
+
+使用方式（通过IoC注入）：
+    @Component
+    class MyService:
+        def __init__(self, settings: AppSettings):
+            self.port = settings.app.server.port
+"""
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from pyspring.core.ioc.annotations.component import Component
+from pyspring.core.ioc.annotations.scope import Singleton
+from ..abstracts.config import ConfigSection
+
+
+# ==================== 应用基础配置（仅定义顶层应用相关配置）====================
+
+class ServerConfig(ConfigSection):
+    """服务器配置"""
+    host: str = Field(default="0.0.0.0", description="服务器地址")
+    port: int = Field(default=8000, ge=1, le=65535, description="服务器端口")
+    debug: bool = Field(default=False, description="调试模式")
+    reload: bool = Field(default=False, description="自动重载")
+    workers: int = Field(default=1, ge=1, description="工作进程数")
+    log_level: str = Field(default="INFO", description="Uvicorn服务器日志级别：DEBUG, INFO, WARNING, ERROR, CRITICAL")
+
+
+class AppConfig(ConfigSection):
+    """应用配置"""
+    name: str = Field(default="PySpring Application", description="应用名称")
+    version: str = Field(default="1.0.0", description="应用版本")
+    description: str = Field(default="", description="应用描述")
+    environment: str = Field(default="development", description="运行环境：development, production, test")
+    server: ServerConfig = Field(default_factory=ServerConfig, description="服务器配置")
+
+
+# ==================== 主配置类 ====================
+
+@Component
+@Singleton
+class AppSettings(BaseSettings):
+    """
+    应用配置主类（由IoC容器管理单例）
+    
+    聚合所有配置，自动从以下来源加载（优先级从高到低）：
+    1. 环境变量
+    2. .env 文件
+    3. 默认值
+    
+    使用方式：
+        @Component
+        class MyService:
+            def __init__(self, settings: AppSettings):
+                self.port = settings.app.server.port
+    """
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_nested_delimiter="__",
+        case_sensitive=False,
+        extra="ignore"
+    )
+
+    # 应用配置
+    app: AppConfig = Field(default_factory=AppConfig, description="应用配置")
+
+
+__all__ = [
+    "AppSettings",
+    "AppConfig",
+    "ServerConfig",
+]

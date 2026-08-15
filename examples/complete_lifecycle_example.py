@@ -21,13 +21,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 # PySpring 导入
-from pyspring.ioc import ApplicationContext
-from pyspring.ioc.annotations.component import Component
-from pyspring.ioc.annotations.scope import Singleton
-from pyspring.ioc.interfaces.core import IManaged
-from pyspring.ioc.lifecycle.initializer import IStartupInitializer
-from pyspring.ioc.lifecycle.shutdown import IShutdownHandler
-from pyspring.log.instance import logger
+from pyspring.core.ioc import ApplicationContext
+from pyspring.core.ioc.annotations.component import Component
+from pyspring.core.ioc.annotations.scope import Singleton
+from pyspring.core.ioc.interfaces.core import IManaged
+from pyspring.core.ioc.lifecycle.initializer import IStartupInitializer
+from pyspring.core.ioc.lifecycle.shutdown import IShutdownHandler
+from pyspring.core.log.instance import logger
 
 
 # ============================================================================

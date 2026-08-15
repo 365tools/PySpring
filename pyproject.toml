@@ -1,6 +1,6 @@
 [project]
 name = "pyspring-workspace"
-version = "1.1.0"
+version = "0.0.1"
 description = "PySpring Framework and CLI Tools Development Workspace"
 authors = [{ name = "Yingchun", email = "allureyc@gmail.com" }]
 requires-python = ">=3.12"
@@ -8,22 +8,45 @@ license = { text = "Apache-2.0" }
 
 [project.optional-dependencies]
 dev = [
-    "pyspring>=1.1.0",
-    "pyspring-cli>=1.0.0",
+    "pyspring>=0.0.1",
+    "pyspring-cli>=0.0.1",
+    "pyspring-health>=0.0.1",
+    "pyspring-core>=0.0.1",
+    "pyspring-web>=0.0.1",
+    "pyspring-repositories>=0.0.1",
+    "pyspring-security>=0.0.1",
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
 ]
 full = [
-    "pyspring[full]>=1.1.0",
+    "pyspring[full]>=0.0.1",
 ]
 
 [tool.uv.workspace]
 members = [
     "packages/pyspring",
     "packages/pyspring-cli",
+    "packages/pyspring-health",
+    "packages/pyspring-core",
+    "packages/pyspring-web",
+    "packages/pyspring-repositories",
+    "packages/pyspring-security",
 ]
 
 [tool.uv.sources]
 pyspring = { workspace = true }
 pyspring-cli = { workspace = true }
+pyspring-health = { workspace = true }
+pyspring-core = { workspace = true }
+pyspring-web = { workspace = true }
+pyspring-repositories = { workspace = true }
+pyspring-security = { workspace = true }
 
 # This is a workspace file that manages dependencies and workspace members
 # It does not need a build system as it's not meant to be packaged itself
+
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+

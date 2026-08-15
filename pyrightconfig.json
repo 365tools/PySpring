@@ -1,0 +1,25 @@
+{
+  "extraPaths": [
+    "packages/pyspring-core/src",
+    "packages/pyspring-web/src",
+    "packages/pyspring-security/src",
+    "packages/pyspring-repositories/src",
+    "packages/pyspring-health/src",
+    "packages/pyspring-cli/src",
+    "packages/pyspring/src"
+  ],
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": [
+    "packages/pyspring-core/src",
+    "packages/pyspring-web/src",
+    "packages/pyspring-security/src",
+    "packages/pyspring-repositories/src",
+    "packages/pyspring-health/src",
+    "packages/pyspring-cli/src",
+    "packages/pyspring/src"
+  ],
+  "pythonVersion": "3.12",
+  "typeCheckingMode": "standard",
+  "reportMissingImports": true
+}

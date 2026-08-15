@@ -3,7 +3,7 @@
 """
 import asyncio
 
-from pyspring.log.instance import logger
+from pyspring.core.log.instance import logger
 from pyspring.repositories.db.models.common.define import Base
 from sqlalchemy.ext.asyncio import create_async_engine
 

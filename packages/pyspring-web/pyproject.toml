@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyspring-web"
+version = "0.0.1"
+authors = [
+  { name="Yingchun", email="allureyc@gmail.com" },
+]
+description = "Web starter for PySpring: unified response, global exception handling."
+readme = "README.md"
+requires-python = ">=3.12"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pyspring-core>=0.0.1",
+    "fastapi>=0.104.0,<1.0",
+    "pydantic>=2.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[project.entry-points."pyspring.starters"]
+pyspring-web-starter = "pyspring.web.autoconfigure:load"
+
+[project.urls]
+"Homepage" = "https://github.com/365tools/PySpring"
+"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pyspring.web*"]
+namespaces = true
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
+
+[tool.setuptools.package-data]
+"pyspring.web" = [
+    "py.typed",
+]
+
+[tool.setuptools.exclude-package-data]
+"pyspring.web" = [
+    "**/*.log",
+    "**/*.pyc",
+    "**/__pycache__",
+]

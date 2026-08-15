@@ -6,7 +6,7 @@ import sys
 
 sys.path.insert(0, 'src')
 
-from pyspring.ioc.context import ApplicationContext
+from pyspring.core.ioc.context import ApplicationContext
 from pyspring.security.authorization.providers.permission.default import DefaultPermissionService
 from pyspring.security.authorization.providers.role.database import DefaultRoleProvider
 from pyspring.security.authorization.providers.rule.config import DefaultPathPermissionProvider

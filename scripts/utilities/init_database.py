@@ -3,8 +3,8 @@
 """
 import asyncio
 
-from pyspring.ioc.context import ApplicationContext
-from pyspring.log.instance import logger
+from pyspring.core.ioc.context import ApplicationContext
+from pyspring.core.log.instance import logger
 
 
 async def init_database():
