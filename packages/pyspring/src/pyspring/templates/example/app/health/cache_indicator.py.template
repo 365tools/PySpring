@@ -1,0 +1,57 @@
+"""
+缓存健康检查指标示例
+"""
+
+from loguru import logger
+from pyspring.core.ioc.annotations import Component
+from pyspring.health import HealthIndicator, HealthCheckResult, HealthStatus
+from app.services.cache_service import CacheService
+
+
+@Component
+class CacheHealthIndicator(HealthIndicator):
+    """缓存服务健康检查"""
+
+    def __init__(self, cache_service: CacheService):
+        self.cache_service = cache_service
+
+    def name(self) -> str:
+        return "cache"
+
+    def order(self) -> int:
+        return 1  # 第一个检查
+
+    async def check(self) -> HealthCheckResult:
+        """检查缓存服务是否正常"""
+        try:
+            # 测试缓存读写
+            test_key = "__health_check__"
+            test_value = "ok"
+            
+            await self.cache_service.set(test_key, test_value, ttl=10)
+            result = await self.cache_service.get(test_key)
+            
+            if result == test_value:
+                return HealthCheckResult(
+                    status=HealthStatus.UP,
+                    name=self.name(),
+                    details={
+                        "type": "memory",
+                        "operation": "read/write",
+                        "status": "operational"
+                    }
+                )
+            else:
+                return HealthCheckResult(
+                    status=HealthStatus.DOWN,
+                    name=self.name(),
+                    error="缓存读写不一致"
+                )
+                
+        except Exception as e:
+            logger.error(f"缓存健康检查失败: {e}")
+            return HealthCheckResult(
+                status=HealthStatus.DOWN,
+                name=self.name(),
+                error=str(e)
+            )

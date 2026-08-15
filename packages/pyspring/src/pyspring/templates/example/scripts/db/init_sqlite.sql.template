@@ -1,0 +1,137 @@
+-- ============================================================================
+-- Example 项目数据库初始化脚本 - SQLite
+-- ============================================================================
+-- 说明：
+-- 1. 本脚本仅用于初始化**默认数据**（角色、权限、默认管理员等）
+-- 2. **表结构由 Alembic 迁移自动创建**，无需手动执行 CREATE TABLE
+-- 3. 推荐工作流：
+--    a. 定义 ORM 模型（继承 BaseUserTable 等）
+--    b. 生成迁移：pyspring db migrate -m "Initial migration"
+--    c. 执行迁移：pyspring db upgrade
+--    d. 执行本脚本插入默认数据（可选，也可在代码中初始化）
+-- 4. 如需自定义权限表：
+--    - 继承框架基类（BaseRoleTable、BasePermissionTable 等）
+--    - 在 CustomSecurityEntityConfiguration 中替换默认模型
+-- ============================================================================
+
+-- ============================================================================
+-- 框架默认表（鉴权授权）- 由框架自动创建
+-- ============================================================================
+-- 说明：
+-- 1. 框架提供默认的权限表：pyspring_user、pyspring_role、pyspring_permission 等
+-- 2. 通过 Alembic 迁移自动创建（执行 pyspring db migrate 和 pyspring db upgrade）
+-- 3. 如需自定义：
+--    - User: 继承 BaseUserTable，在 CustomSecurityEntityConfiguration 中替换
+--    - Role/Permission/UserRole/RolePermission: 直接继承 BaseXxxTable 即可
+-- 4. 框架默认表结构参考：src/pyspring/security/orm/tables.py
+-- ============================================================================
+
+-- 框架默认表由 Alembic 迁移自动创建，无需手动定义
+-- 如需扩展，请参考 app/models/user.py 中的示例（继承 BaseUserTable）
+
+-- ============================================================================
+-- 业务自定义表（Example 项目特有）
+-- ============================================================================
+
+-- 文章表（示例业务表）
+CREATE TABLE IF NOT EXISTS articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    author_id INTEGER NOT NULL,
+    status VARCHAR(20) DEFAULT 'draft',
+    published_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (author_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- 评论表（示例业务表）
+CREATE TABLE IF NOT EXISTS comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    article_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (article_id) REFERENCES articles(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- ============================================================================
+-- 索引
+-- ============================================================================
+
+-- 框架默认表的索引由 Alembic 迁移自动创建
+
+-- 业务表索引
+CREATE INDEX IF NOT EXISTS idx_articles_author ON articles(author_id);
+CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status);
+CREATE INDEX IF NOT EXISTS idx_comments_article ON comments(article_id);
+CREATE INDEX IF NOT EXISTS idx_comments_user ON comments(user_id);
+
+-- ============================================================================
+-- 默认数据
+-- ============================================================================
+-- 说明：
+-- 1. 使用框架默认表名：pyspring_role、pyspring_permission、pyspring_role_permission
+-- 2. 框架字段：code（角色/权限代码）、name（显示名称）、description、status
+-- 3. 关联表使用 code 进行关联，无外键约束
+-- ============================================================================
+
+-- 插入默认角色（使用框架表：pyspring_role）
+INSERT OR IGNORE INTO pyspring_role (code, name, description, status) VALUES 
+    ('admin', '管理员角色', '拥有所有权限', 1),
+    ('editor', '编辑角色', '可以管理文章', 1),
+    ('user', '普通用户角色', '拥有基本权限', 1);
+
+-- 插入默认权限（使用框架表：pyspring_permission）
+INSERT OR IGNORE INTO pyspring_permission (code, name, description, status) VALUES 
+    -- 用户权限
+    ('users:read', '查看用户', '查看用户信息', 1),
+    ('users:write', '编辑用户', '创建/更新用户', 1),
+    ('users:delete', '删除用户', '删除用户', 1),
+    -- 角色权限
+    ('roles:read', '查看角色', '查看角色', 1),
+    ('roles:write', '管理角色', '管理角色', 1),
+    -- 文章权限（业务自定义）
+    ('articles:read', '查看文章', '查看文章', 1),
+    ('articles:write', '编辑文章', '创建/编辑文章', 1),
+    ('articles:delete', '删除文章', '删除文章', 1),
+    ('articles:publish', '发布文章', '发布文章', 1),
+    -- 评论权限（业务自定义）
+    ('comments:read', '查看评论', '查看评论', 1),
+    ('comments:write', '发表评论', '发表评论', 1),
+    ('comments:delete', '删除评论', '删除评论', 1);
+
+-- 为 admin 角色分配所有权限（使用框架表：pyspring_role_permission）
+INSERT OR IGNORE INTO pyspring_role_permission (role_code, permission_code)
+SELECT r.code, p.code
+FROM pyspring_role r, pyspring_permission p
+WHERE r.code = 'admin';
+
+-- 为 editor 角色分配文章管理权限
+INSERT OR IGNORE INTO pyspring_role_permission (role_code, permission_code)
+SELECT 'editor', code
+FROM pyspring_permission
+WHERE code LIKE 'articles:%' OR code LIKE 'comments:%';
+
+-- 为 user 角色分配基本权限
+INSERT OR IGNORE INTO pyspring_role_permission (role_code, permission_code)
+VALUES 
+    ('user', 'users:read'),
+    ('user', 'articles:read'),
+    ('user', 'comments:read'),
+    ('user', 'comments:write');
+
+-- ============================================================================
+-- 触发器
+-- ============================================================================
+
+-- 框架默认表的触发器由 Alembic 迁移自动创建
+
+-- 业务表的触发器
+CREATE TRIGGER IF NOT EXISTS update_articles_timestamp 
+AFTER UPDATE ON articles
+BEGIN
+    UPDATE articles SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;

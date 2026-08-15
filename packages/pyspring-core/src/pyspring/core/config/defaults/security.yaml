@@ -1,0 +1,147 @@
+# 安全模块框架默认配置
+# ⚠️  此文件由 PySpring 框架维护
+# ✅ 用户可通过项目的 config/security.yaml 覆盖这些默认值
+# 📦 打包到框架内部，不应直接修改
+
+# 认证配置
+authentication:
+  # 是否启用认证
+  enabled: true
+  
+  # 登录标识符字段配置
+  # 定义可用于登录的用户模型字段（按优先级排序）
+  identifier_fields:
+    - "username"   # 用户名（最常用）
+    - "email"      # 邮箱（框架标准字段）
+    - "user_id"    # 用户UUID（框架标准字段，向后兼容）
+  # 说明：
+  # 1. 框架会按列表顺序尝试匹配字段
+  # 2. 如果用户模型没有某个字段，会自动跳过
+  # 3. 保留 user_id 和 email 确保向后兼容（BaseUserTable 的标准字段）
+  # 4. 可以添加自定义字段（如 phone, employee_id 等）
+  
+  # JWT 配置
+  jwt:
+    # 密钥（⚠️ 生产环境务必通过环境变量 JWT_SECRET_KEY 覆盖此默认值）
+    # 开发环境使用此默认值，生产环境必须设置强密钥
+    secret_key: "pyspring-dev-secret-key-CHANGE-IN-PRODUCTION-32bytes-minimum"
+    # 算法
+    algorithm: "HS256"
+    # Access Token 过期时间（秒）
+    access_token_expire: 3600  # 1小时（默认值）
+    # Refresh Token 过期时间（秒）
+    refresh_token_expire: 2592000  # 30天（默认值）
+    
+    # JWT 加密配置
+    encryption:
+      # 是否启用 JWT 加密
+      enabled: false
+      # 加密密钥（生产环境务必通过环境变量 JWT_ENCRYPTION_KEY 设置）
+      encryption_key: null
+      # 加密算法
+      algorithm: "Fernet"
+  
+  # 认证提供者链（按顺序执行）
+  providers:
+    # JWT Token 认证
+    - name: "jwt"
+      type: "JWTAuthProvider"
+      enabled: true
+      priority: 1
+      config:
+        # Token 来源优先级
+        token_sources:
+          - "header"    # Authorization: Bearer <token>
+          - "cookie"    # Cookie: access_token=<token>
+          - "query"     # ?token=<token>
+        # Token 前缀
+        token_prefix: "Bearer"
+  
+  # 白名单配置（无需认证的路径）
+  whitelist:
+    # 完全匹配的路径
+    exact_paths:
+      - "/"
+      - "/health"
+      - "/favicon.ico"
+      - "/docs"
+      - "/redoc"
+      - "/openapi.json"
+      - "/api/auth/login"
+      - "/api/auth/register"
+      - "/api/auth/token/refresh"
+    
+    # 路径前缀匹配
+    path_prefixes:
+      - "/static"
+      - "/public"
+    
+    # 正则表达式匹配
+    patterns:
+      - "^/api/v\\d+/public/.*$"
+
+# 授权配置
+authorization:
+  # 是否启用授权
+  enabled: true
+  
+  # RBAC 角色定义（框架预定义角色）
+  roles:
+    admin:
+      description: "系统管理员"
+      permissions:
+        - "*"  # 所有权限
+    
+    user:
+      description: "普通用户"
+      permissions:
+        - "read:profile"
+        - "write:profile"
+    
+    guest:
+      description: "访客"
+      permissions:
+        - "read:public"
+
+# 密码策略（框架默认）
+password:
+  # 最小长度
+  min_length: 8
+  # 最大长度
+  max_length: 128
+  # 是否要求大写字母
+  require_uppercase: true
+  # 是否要求小写字母
+  require_lowercase: true
+  # 是否要求数字
+  require_digits: true
+  # 是否要求特殊字符
+  require_special: false
+  # 允许的特殊字符
+  allowed_special: "!@#$%^&*()_+-=[]{}|;:,.<>?"
+
+# 会话配置
+session:
+  # 是否启用会话
+  enabled: true
+  # 会话过期时间（秒）
+  expire: 86400  # 24小时
+  # 会话存储类型: memory, redis
+  storage: "memory"
+  # Cookie 配置
+  cookie:
+    name: "session_id"
+    secure: false  # 生产环境应设为 true（HTTPS）
+    httponly: true
+    samesite: "lax"
+
+# 安全头配置（框架默认）
+security_headers:
+  # 是否启用安全头
+  enabled: true
+  # 具体配置
+  headers:
+    X-Frame-Options: "DENY"
+    X-Content-Type-Options: "nosniff"
+    X-XSS-Protection: "1; mode=block"
+    Strict-Transport-Security: "max-age=31536000; includeSubDomains"

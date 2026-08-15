@@ -1,0 +1,108 @@
+"""
+数据库初始化器
+
+展示：
+1. IStartupInitializer 接口使用
+2. 数据库初始数据填充
+3. DBManagerService 集成
+4. 简单的初始用户创建
+
+注意：
+- 数据库表由框架的 MigrationInitializer 自动创建
+- 数据库和缓存连接由框架的 Manager 自动验证（Auto 模式）
+- 用户只需关注业务数据初始化
+"""
+from pyspring.core.ioc.annotations import Component
+from pyspring.core.ioc.lifecycle.initializer import IStartupInitializer
+from pyspring.core.log.instance import logger
+from pyspring.repositories.db.manager import DBManagerService
+
+
+@Component
+class DatabaseInitializer(IStartupInitializer):
+    """
+    数据库初始化器
+    
+    在应用启动时自动执行：
+    1. 填充初始数据（表由 MigrationInitializer 自动创建）
+    2. 创建默认管理员用户
+    
+    框架已自动处理：
+    - 数据库连接检测（Auto 模式）
+    - 缓存连接检测（Auto 模式）
+    - 数据库表创建（ORM 模型）
+    """
+    
+    def __init__(
+        self,
+        db_manager: DBManagerService,
+        enabled: bool = True
+    ):
+        """
+        Args:
+            db_manager: 数据库管理服务（框架提供，已自动验证连接）
+            enabled: 是否启用初始化器
+        """
+        super().__init__(enabled)
+        self.db_manager = db_manager
+        logger.info("📦 创建 DatabaseInitializer 实例")
+    
+    def get_name(self) -> str:
+        return "DatabaseInitializer"
+    
+    async def initialize(self) -> bool:
+        """执行数据库初始化"""
+        logger.info("🚀 DatabaseInitializer 开始初始化...")
+        
+        try:
+            # 填充初始数据
+            await self._seed_initial_data()
+            
+            logger.info("✅ DatabaseInitializer 初始化完成")
+            return True
+        except Exception as e:
+            logger.error(f"❌ DatabaseInitializer 初始化失败: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return False
+    
+    async def _seed_initial_data(self):
+        """
+        填充初始数据
+        
+        简化的初始化流程：
+        1. 检查是否已有用户
+        2. 创建默认管理员用户
+        """
+        from app.models.user import User
+        from sqlalchemy import select
+        
+        async with await self.db_manager.session() as session:
+            # 检查是否已有用户（使用 email 字段，新模型没有 username）
+            result = await session.execute(select(User))
+            users = result.scalars().all()
+            
+            if users:
+                logger.info(f"ℹ️ 数据库已有 {len(users)} 个用户，跳过初始化")
+                return
+            
+            logger.info("📝 填充初始用户数据...")
+            
+            # 创建管理员用户（使用 BCrypt 哈希算法，与框架默认一致）
+            import uuid
+            import bcrypt
+            
+            admin = User(
+                user_id=str(uuid.uuid4()),  # 系统内部UUID
+                username="admin",  # 用户名（用于登录）
+                email="admin@example.com",
+                password=bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
+                first_name="Admin",
+                last_name="User",
+                phone="13800138000"
+            )
+            
+            session.add(admin)
+            await session.commit()
+            
+            logger.info("✅ 初始用户创建完成: admin / admin@example.com / admin123")

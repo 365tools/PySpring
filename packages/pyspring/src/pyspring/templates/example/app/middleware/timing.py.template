@@ -1,0 +1,56 @@
+"""
+性能计时中间件 - 教学示例
+
+❗❗❗ 本文件仅供学习参考 ❗❗❗
+
+框架的 RequestLoggingMiddleware 已经包含了请求耗时统计功能，
+此文件仅作为教学示例，展示如何实现慢请求告警等自定义逻辑。
+
+---
+
+框架日志示例（已包含耗时）：
+```
+✅ 127.0.0.1 - "POST /api/auth/login" 200 - 耗时: 0.123s
+⚠️ 127.0.0.1 - "POST /api/slow" 200 - 耗时: 2.456s  # 慢请求
+```
+
+如果需要更复杂的性能监控（如 APM 集成），可以参考本示例自定义中间件。
+
+---
+
+下面的代码仅作为教学示例：
+"""
+import time
+from fastapi import Request
+from pyspring.core.log.instance import logger
+
+
+# 慢请求阈值（秒）
+SLOW_REQUEST_THRESHOLD = 1.0
+
+
+async def timing_middleware(request: Request, call_next):
+    """
+    性能计时中间件
+    
+    监控请求处理时间，对慢请求发出告警
+    """
+    start_time = time.time()
+    
+    response = await call_next(request)
+    
+    process_time = time.time() - start_time
+    
+    # 慢请求告警
+    if process_time > SLOW_REQUEST_THRESHOLD:
+        logger.warning(
+            f"⏱️ 慢请求告警",
+            extra={
+                "method": request.method,
+                "url": str(request.url),
+                "process_time": f"{process_time:.3f}s",
+                "threshold": f"{SLOW_REQUEST_THRESHOLD}s"
+            }
+        )
+    
+    return response

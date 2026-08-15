@@ -1,0 +1,183 @@
+"""
+缓存服务
+
+展示：
+1. Redis 集成
+2. 缓存模式
+3. 生命周期管理
+"""
+from typing import Optional, Any
+import json
+
+from pyspring.core.ioc.annotations import Component
+from pyspring.core.ioc.interfaces import ILifecycle
+from pyspring.core.log.instance import logger
+
+try:
+    import redis.asyncio as redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    logger.warning("⚠️ redis 未安装，使用内存缓存")
+
+
+@Component
+class CacheService(ILifecycle):
+    """
+    缓存服务
+    
+    支持：
+    - Redis（如果已安装）
+    - 内存缓存（降级方案）
+    """
+    
+    def __init__(self):
+        self.redis_client: Optional[redis.Redis] = None
+        self.memory_cache: dict = {}
+        self.use_redis = False
+        logger.info("📦 创建 CacheService 实例")
+    
+    # ========================================================================
+    # 生命周期方法
+    # ========================================================================
+    
+    async def on_startup(self) -> None:
+        """启动时连接 Redis"""
+        logger.info("🚀 CacheService 启动初始化...")
+        
+        if REDIS_AVAILABLE:
+            try:
+                # 连接 Redis
+                self.redis_client = redis.Redis(
+                    host='localhost',
+                    port=6379,
+                    db=0,
+                    decode_responses=True
+                )
+                
+                # 测试连接
+                await self.redis_client.ping()
+                self.use_redis = True
+                logger.info("✅ Redis 连接成功")
+                
+            except Exception as e:
+                logger.warning(f"⚠️ Redis 连接失败，使用内存缓存: {e}")
+                self.use_redis = False
+        else:
+            logger.info("ℹ️ 使用内存缓存")
+        
+        logger.info("✅ CacheService 启动初始化完成")
+    
+    async def on_shutdown(self) -> None:
+        """关闭时断开连接"""
+        logger.info("👋 CacheService 关闭处理...")
+        
+        if self.redis_client:
+            await self.redis_client.close()
+            logger.info("✅ Redis 连接已关闭")
+        
+        self.memory_cache.clear()
+        logger.info("✅ 内存缓存已清空")
+        logger.info("✅ CacheService 关闭处理完成")
+    
+    # ========================================================================
+    # 缓存操作
+    # ========================================================================
+    
+    async def get(self, key: str) -> Optional[Any]:
+        """
+        获取缓存值
+        
+        Args:
+            key: 缓存键
+        
+        Returns:
+            缓存值，不存在返回 None
+        """
+        if self.use_redis and self.redis_client:
+            value = await self.redis_client.get(key)
+            if value:
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    return value
+            return None
+        else:
+            return self.memory_cache.get(key)
+    
+    async def set(self, key: str, value: Any, ttl: Optional[int] = None) -> bool:
+        """
+        设置缓存值
+        
+        Args:
+            key: 缓存键
+            value: 缓存值
+            ttl: 过期时间（秒），None 表示永不过期
+        
+        Returns:
+            是否设置成功
+        """
+        if self.use_redis and self.redis_client:
+            json_value = json.dumps(value) if not isinstance(value, str) else value
+            await self.redis_client.set(key, json_value, ex=ttl)
+            return True
+        else:
+            self.memory_cache[key] = value
+            # 注意：内存缓存不支持 TTL
+            return True
+    
+    async def delete(self, key: str) -> bool:
+        """
+        删除缓存
+        
+        Args:
+            key: 缓存键
+        
+        Returns:
+            是否删除成功
+        """
+        if self.use_redis and self.redis_client:
+            await self.redis_client.delete(key)
+            return True
+        else:
+            if key in self.memory_cache:
+                del self.memory_cache[key]
+            return True
+    
+    async def exists(self, key: str) -> bool:
+        """
+        检查缓存是否存在
+        
+        Args:
+            key: 缓存键
+        
+        Returns:
+            是否存在
+        """
+        if self.use_redis and self.redis_client:
+            return bool(await self.redis_client.exists(key))
+        else:
+            return key in self.memory_cache
+    
+    async def clear_pattern(self, pattern: str) -> int:
+        """
+        清除匹配模式的缓存
+        
+        Args:
+            pattern: 模式（如 "user:*"）
+        
+        Returns:
+            删除的键数量
+        """
+        if self.use_redis and self.redis_client:
+            keys = await self.redis_client.keys(pattern)
+            if keys:
+                await self.redis_client.delete(*keys)
+            return len(keys)
+        else:
+            # 内存缓存简单实现
+            import fnmatch
+            keys_to_delete = [k for k in self.memory_cache.keys() if fnmatch.fnmatch(k, pattern)]
+            for key in keys_to_delete:
+                del self.memory_cache[key]
+            return len(keys_to_delete)

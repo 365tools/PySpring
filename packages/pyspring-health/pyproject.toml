@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyspring-health"
+version = "0.0.1"
+authors = [
+  { name="Yingchun", email="allureyc@gmail.com" },
+]
+description = "Health check starter for PySpring framework."
+readme = "README.md"
+requires-python = ">=3.14"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "loguru>=0.7.3",
+    "pyspring-core",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[project.entry-points."pyspring.starters"]
+pyspring-health = "pyspring.health.autoconfigure:load"
+
+[tool.uv]
+package = true
+
+[project.urls]
+"Homepage" = "https://github.com/365tools/PySpring"
+"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["pyspring.health*"]
+namespaces = true
+exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
+
+[tool.setuptools.package-data]
+"pyspring.health" = [
+    "py.typed",
+]
+
+[tool.setuptools.exclude-package-data]
+"pyspring.health" = [
+    "**/*.pyc",
+    "**/__pycache__",
+]

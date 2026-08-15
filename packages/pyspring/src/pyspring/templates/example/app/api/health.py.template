@@ -1,0 +1,51 @@
+"""健康检查端点"""
+from datetime import datetime
+
+from fastapi import APIRouter, Depends
+from fastapi.responses import JSONResponse
+from pyspring.core.ioc.context import Inject
+from pyspring.web.core.response import Response
+
+from app.services.health_check_service import HealthCheckService
+
+
+router = APIRouter()
+
+
+@router.get("/health")
+async def health_check(
+    health_service: HealthCheckService = Depends(lambda: Inject(HealthCheckService))
+) -> JSONResponse:
+    """
+    健康检查端点
+    
+    检查应用各组件状态：
+    - 数据库连接
+    - Redis连接
+    - IOC容器状态
+    """
+    status = await health_service.check_all()
+    
+    return Response.success({
+        "status": "healthy" if status["overall"] else "unhealthy",
+        "timestamp": datetime.now().isoformat(),
+        "checks": status
+    })
+
+
+@router.get("/ready")
+async def readiness_check() -> JSONResponse:
+    """就绪检查"""
+    return Response.success({
+        "ready": True,
+        "timestamp": datetime.now().isoformat()
+    })
+
+
+@router.get("/live")
+async def liveness_check() -> JSONResponse:
+    """存活检查"""
+    return Response.success({
+        "alive": True,
+        "timestamp": datetime.now().isoformat()
+    })

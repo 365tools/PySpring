@@ -1,0 +1,96 @@
+"""
+请求日志中间件 - 教学示例
+
+❗❗❗ 本文件仅供学习参考 ❗❗❗
+
+本项目已使用框架的 RequestLoggingMiddleware（见 main.py），
+此文件仅作为教学示例，展示如何编写自定义中间件。
+
+---
+
+框架版本 vs 自定义版本对比：
+
+| 特性 | 本文件（教学） | 框架版本 ✅ |
+|------|-------------|-----------|
+| Trace ID 支持 | ❌ 简单 UUID | ✅ 分布式追踪 |
+| 异常捕获 | ❌ 无 | ✅ 集成 GlobalExceptionHandler |
+| 日志分级 | ❌ 全部 INFO | ✅ 根据状态码自动选择 |
+| Emoji 标识 | ❌ 固定 🔵🟢 | ✅ 🎢✅⚠️❌🚨 |
+| 异常堆栈 | ❌ 无 | ✅ 自动记录 |
+| ContextVar 隔离 | ❌ 无 | ✅ 多线程安全 |
+
+框架版本位置：
+`pyspring.core.log.providers.loguru.middleware.request.RequestLoggingMiddleware`
+
+使用方法（已在 main.py 中配置）：
+```python
+from pyspring.core.log.providers.loguru.middleware.request import RequestLoggingMiddleware
+
+app.add_middleware(RequestLoggingMiddleware)
+```
+
+---
+
+下面的代码仅作为教学示例：
+"""
+import time
+import uuid
+from fastapi import Request
+from pyspring.core.log.instance import logger
+
+
+async def request_logging_middleware(request: Request, call_next):
+    """
+    简化版请求日志中间件（教学示例）
+    
+    ⚠️ 生产环境推荐使用框架的 RequestLoggingMiddleware
+    
+    记录每个请求的：
+    - 请求方法和路径
+    - 处理时间
+    - 响应状态码
+    
+    缺点（相比框架版本）：
+    - ❌ 没有 Trace ID 支持
+    - ❌ 没有异常捕获
+    - ❌ 日志格式不统一
+    - ❌ 没有根据状态码分级
+    """
+    # 生成简单的请求 ID（仅时间戳，不支持分布式追踪）
+    request_id = str(uuid.uuid4())[:8]
+    
+    # 记录请求开始
+    client_ip = request.client.host if request.client else "unknown"
+    logger.info(
+        f"🔵 请求开始: {request.method} {request.url.path}",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "client": client_ip
+        }
+    )
+    
+    # 执行请求
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    
+    # 记录请求完成
+    logger.info(
+        f"🟢 请求完成: {request.method} {request.url.path} {response.status_code} - {process_time:.3f}s",
+        extra={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "status_code": response.status_code,
+            "process_time": f"{process_time:.3f}s"
+        }
+    )
+    
+    # 添加自定义响应头
+    response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time"] = f"{process_time:.3f}"
+    
+    return response
+

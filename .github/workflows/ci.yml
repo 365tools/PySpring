@@ -1,0 +1,46 @@
+name: Python Code Quality Check
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # 3.15 尚未在 GitHub Actions setup-python 中可用（Ubuntu 24.04）
+        # 项目 requires-python = ">=3.14"，测试最低支持版本 3.14
+        python-version: ["3.14"]
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: ⚡ Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: 📦 Install workspace (all packages + dev)
+        run: |
+          uv sync --all-packages --extra dev
+
+      - name: 🔧 Install ruff
+        run: |
+          uv tool install ruff
+
+      - name: 🧹 Lint with ruff
+        run: |
+          uv run ruff check packages/ --select=E,F,I,N,W --ignore=E501
+          echo "✅ Ruff check done"
+
+      - name: 🧪 Run tests
+        run: |
+          uv run pytest tests/ -v
+          echo "✅ All tests passed"

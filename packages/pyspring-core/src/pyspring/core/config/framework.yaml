@@ -1,0 +1,24 @@
+# PySpring Framework Core Configuration
+#
+# This is the framework-level configuration file.
+# DO NOT modify this file unless you are developing the PySpring framework itself.
+#
+# Framework components are automatically loaded before user components,
+# ensuring proper dependency injection order.
+
+framework:
+  # 框架包扫描已迁移至 AutoConfiguration 声明式装配（entry point: pyspring.starters）。
+  # 每个 starter 通过 pyspring.autoconfigure.declaration 声明其扫描包，
+  # 由 AutoConfigurationLoader 自动收集，实现即插即用。
+  # 此文件不再承载 scan_packages 集中扫描配置。
+  
+  # Component auto-configuration (kept for reference)
+  auto_configuration:
+    enabled: true
+
+  # Logging
+  logging:
+    # Framework-level logging (distinct from user application logging)
+    level: INFO
+    show_startup_info: true
+    show_component_registration: false
