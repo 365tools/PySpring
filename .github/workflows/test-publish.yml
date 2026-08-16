@@ -150,7 +150,7 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: 🚀 Create Pre-release (composite action)
-        uses: ./.github/actions/create-release
+        uses: 365tools/actions/create-release@main
         with:
           version: ${{ needs.test-and-publish.outputs.version }}
           prerelease: "true"

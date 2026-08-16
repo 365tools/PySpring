@@ -216,7 +216,7 @@ jobs:
           path: dist/
 
       - name: 🚀 Create Release (composite action)
-        uses: ./.github/actions/create-release
+        uses: 365tools/actions/create-release@main
         with:
           version: ${{ needs.build-and-test.outputs.version }}
           prerelease: "false"
