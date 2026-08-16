@@ -110,7 +110,7 @@ class AopIntegration:
         # 尝试从容器获取
         try:
             return self.container.get_by_type(aspect_type)
-        except:
+        except Exception:
             # 如果容器中没有，尝试直接实例化
             try:
                 return aspect_type()

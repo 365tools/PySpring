@@ -9,10 +9,15 @@ from pyspring.core.ioc.context import ApplicationContext
 from pyspring.core.ioc.interfaces.core import IManaged
 from pyspring.core.ioc.lifecycle.initializer import IStartupInitializer
 from pyspring.core.log.instance import logger
-from pyspring.security.authentication.contracts.request_auth import IRequestAuthenticationProvider
-from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
-from .chain import AuthenticationChain
+from pyspring.security.authentication.contracts.request_auth import (
+    IRequestAuthenticationProvider,
+)
+from pyspring.security.authentication.services.context_validator import (
+    SecurityContextManagerService,
+)
+
 from ..contracts.validator import ISecurityContextValidator
+from .chain import AuthenticationChain
 
 
 @Component
@@ -74,7 +79,7 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
                 if not authentication_providers:
                     authentication_providers = container.get_all_instances_of(IRequestAuthenticationProvider)
                     logger.debug(f"[Debug] 从IoC容器扫描到 {len(authentication_providers)} 个认证提供者")
-                
+
                 if authentication_providers:
                     self.auth_chain.register_providers(authentication_providers)
                     logger.info(f"[Success] 注册了 {len(authentication_providers)} 个认证提供者: "

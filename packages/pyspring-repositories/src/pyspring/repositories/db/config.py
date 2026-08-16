@@ -8,7 +8,6 @@ from typing import ClassVar
 
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
-
 from pyspring.core.abstracts.config import ConfigSection
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
@@ -18,7 +17,7 @@ class DatabasePoolConfig(ConfigSection):
     """数据库连接池配置"""
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "database.pool"
-    
+
     model_config = SettingsConfigDict(extra='ignore')
 
     size: int = Field(default=5, ge=1, le=100, description="连接池大小")
@@ -68,7 +67,7 @@ class SQLiteConfig(ConfigSection):
     """SQLite配置"""
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "database.sqlite"
-    
+
     model_config = SettingsConfigDict(extra='ignore')
 
     database: str = Field(default="data/app.db", description="数据库文件路径")

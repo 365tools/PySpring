@@ -9,7 +9,6 @@ from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.ioc.interfaces.core import IManaged

@@ -5,14 +5,13 @@
 """
 
 from fastapi import Request
-
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.ioc.interfaces.core import IManaged
 from pyspring.core.log.instance import logger
 from pyspring.security.authentication.contracts.request_auth import (
     IRequestAuthenticationProvider,
-    RequestAuthenticationResult
+    RequestAuthenticationResult,
 )
 from pyspring.security.authentication.infrastructure.path_matcher import PathMatcher
 from pyspring.security.core.config.loader import SecurityConfigManager

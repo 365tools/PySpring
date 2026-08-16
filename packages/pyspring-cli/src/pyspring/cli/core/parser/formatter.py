@@ -89,7 +89,7 @@ class GroupedHelpFormatter(SortedHelpFormatter):
                     visible_remaining.append(name)
 
             if visible_remaining:
-                parts.append(f'\nOther Commands:\n')
+                parts.append('\nOther Commands:\n')
                 for name in visible_remaining:
                     help_str = help_lookup.get(name, '')
                     parts.append(f'  {name:<{width}} {help_str}\n')

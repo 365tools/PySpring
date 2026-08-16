@@ -1,11 +1,11 @@
-from .ops.uv.core import (
-    setup_uv_env,
-    rebuild_uv_env,
-    install_pyspring,
-    show_uv_status,
-    print_activation_hint
-)
 from ..core.commands.base import BaseCommand, CommandArg
+from .ops.uv.core import (
+    install_pyspring,
+    print_activation_hint,
+    rebuild_uv_env,
+    setup_uv_env,
+    show_uv_status,
+)
 
 
 class UvSetupCommand(BaseCommand):

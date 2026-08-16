@@ -1,11 +1,14 @@
 import os
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any
+from typing import Any, Dict, List
 
 from pyspring.cli.core.ui.console import (
-    print_title, print_issue,
-    print_summary, print_info
+    print_info,
+    print_issue,
+    print_summary,
+    print_title,
 )
+
 from ....core.utils.filesystem import find_files
 
 

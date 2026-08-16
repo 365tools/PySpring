@@ -74,7 +74,7 @@ class MigrationInitializer(IStartupInitializer):
         框架各 starter 的 ORM 表由各自负责注册到 Base.metadata（例如通过 AutoConfiguration
         导入表定义）。此处仅确认已注册的表已就绪，不再反向依赖任何具体 starter。
         """
-        logger.debug(f"ℹ️ 框架模型由各 Starter 自行注册到 Base.metadata")
+        logger.debug("ℹ️ 框架模型由各 Starter 自行注册到 Base.metadata")
         return True
 
     @staticmethod
@@ -180,9 +180,13 @@ class MigrationInitializer(IStartupInitializer):
         """
         try:
             from pyspring.repositories.db.models.common.define import (
-                BaseUserTable, BaseRoleTable, BasePermissionTable,
-                BaseUserRoleTable, BaseRolePermissionTable,
-                BaseTokenBlacklistTable, BaseRefreshTokenTable
+                BasePermissionTable,
+                BaseRefreshTokenTable,
+                BaseRolePermissionTable,
+                BaseRoleTable,
+                BaseTokenBlacklistTable,
+                BaseUserRoleTable,
+                BaseUserTable,
             )
             abstract_bases = (
                 BaseUserTable, BaseRoleTable, BasePermissionTable,
@@ -256,7 +260,7 @@ class MigrationInitializer(IStartupInitializer):
             async with engine.begin() as conn:
                 await conn.run_sync(Base.metadata.create_all)
 
-            logger.debug(f"✅ 数据库表创建完成")
+            logger.debug("✅ 数据库表创建完成")
             return True
 
         except Exception as e:
@@ -298,7 +302,7 @@ class MigrationInitializer(IStartupInitializer):
 
             logger.debug("✅ 初始数据脚本执行完成")
             return True
-            
+
         except Exception as e:
             logger.warning(f"⚠️ 执行 SQL 脚本失败: {e}")
             return True  # SQL 脚本失败不影响整体初始化

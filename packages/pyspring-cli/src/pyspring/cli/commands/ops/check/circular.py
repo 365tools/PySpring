@@ -4,9 +4,10 @@ Circular Dependency Checker using AST
 import ast
 import os
 from collections import defaultdict
-from typing import Dict, Set, Optional, List
+from typing import Dict, List, Optional, Set
 
-from pyspring.cli.core.ui.console import print_title, print_info
+from pyspring.cli.core.ui.console import print_info, print_title
+
 from .base import BaseChecker
 
 
@@ -163,7 +164,7 @@ def run_check_circular(args):
     target = getattr(args, 'path', '.')
     checker = CircularChecker(target)
     success = checker.run()
-    
+
     if not success:
         print()
         print_title("Next Steps")

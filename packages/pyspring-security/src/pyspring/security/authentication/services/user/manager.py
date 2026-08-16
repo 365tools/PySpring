@@ -4,21 +4,25 @@
 提供用户信息的查询、更新、删除等操作
 使用最新的IOC和日志框架
 """
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from pyspring.core.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
-from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
+from pyspring.security.authentication.contracts.response import (
+    Permission,
+    Role,
+    User,
+    UserInfo,
+)
 from pyspring.security.authentication.contracts.token import ITokenService
 from pyspring.security.authentication.contracts.user import IUserManagerService
 from pyspring.security.authentication.infrastructure.context import AuthContext
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class DefaultUserManagerService(IUserManagerService):
@@ -154,7 +158,7 @@ class DefaultUserManagerService(IUserManagerService):
                 user_id = int(str(user_id_raw))
                 if user_id <= 0:
                     raise ValueError("Invalid user_id")
-            except (ValueError, TypeError) as e:
+            except (ValueError, TypeError):
                 logger.warning(f"[Security] 无效的user_id格式: {user_id_raw}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,

@@ -15,11 +15,16 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Any, List, Dict, Optional
+from typing import Any, List, Optional
 
 from pyspring.cli.core.ui.console import (
-    print_title, print_info, print_error, print_warning,
-    print_issue, print_section, print_success,
+    print_error,
+    print_info,
+    print_issue,
+    print_section,
+    print_success,
+    print_title,
+    print_warning,
 )
 
 

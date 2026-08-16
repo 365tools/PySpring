@@ -13,11 +13,11 @@ IOC 注解包
 """
 
 # 导入所有装饰器，确保向后兼容
-from pyspring.core.ioc.annotations.component import Component, Service, Repository
+from pyspring.core.ioc.annotations.component import Component, Repository, Service
 from pyspring.core.ioc.annotations.conditional import ConditionalOnMissingBean
-from pyspring.core.ioc.annotations.configuration import Configuration, Bean
-from pyspring.core.ioc.annotations.modifiers import Primary, Lazy
-from pyspring.core.ioc.annotations.scope import Singleton, Prototype
+from pyspring.core.ioc.annotations.configuration import Bean, Configuration
+from pyspring.core.ioc.annotations.modifiers import Lazy, Primary
+from pyspring.core.ioc.annotations.scope import Prototype, Singleton
 
 __all__ = [
     # 组件装饰器

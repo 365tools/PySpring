@@ -13,13 +13,12 @@ from __future__ import annotations
 import asyncio
 from typing import Any, cast, override
 
+from pyspring.core.log.instance import logger
 from sqlalchemy import text
 from sqlalchemy.engine import CursorResult, Row
-from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
-from pyspring.core.log.instance import logger
 from .service import IDBService
-
 
 # SQLAlchemy 动态行数据：字段为任意类型（数据库值），统一用 dict[str, object] 表达异构键值。
 RowData = dict[str, object]

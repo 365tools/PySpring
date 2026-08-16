@@ -5,10 +5,11 @@
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.log.instance import logger
+
 from .config import DatabaseConfig
+from .providers.mysql.services.service import MysqlService
 from .providers.postgres.services.service import PostgresService
 from .providers.sqlite.services.service import SqliteService
-from .providers.mysql.services.service import MysqlService
 from .service import IDBService
 
 
@@ -27,7 +28,7 @@ class DBServiceFactory:
         self.config: DatabaseConfig = database_config
         self._service: (IDBService) | None = None
         self._service_type: (str) | None = None
-        
+
         # 注册所有支持的服务创建器（使用 lambda 实现延迟加载）
         self._service_creators = {
             "sqlite": lambda: self._create_sqlite_service(),

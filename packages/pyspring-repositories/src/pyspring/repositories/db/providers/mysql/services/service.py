@@ -1,15 +1,14 @@
 '''
 MySQL 数据库服务实现
 '''
-import asyncio
-from typing import Any, Union, cast
-
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import CursorResult
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession
-from sqlalchemy.pool import QueuePool
+from typing import Any, cast
 
 from pyspring.core.log.instance import logger
+from sqlalchemy import text
+from sqlalchemy.engine import CursorResult
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
+from sqlalchemy.pool import QueuePool
+
 from ....service import IDBService
 
 
@@ -26,10 +25,10 @@ class MysqlService(IDBService):
         self.config = config
         self._engine: (AsyncEngine) | None = None
         self._connected = False
-        
+
         try:
             mysql_config = getattr(config, 'mysql', None)
-            
+
             # 初始化连接池配置
             if mysql_config:
                 pool_config = mysql_config.pool
@@ -52,16 +51,16 @@ class MysqlService(IDBService):
                 user = mysql_config.user or ""
                 password = f":{mysql_config.password}" if mysql_config.password else ""
                 auth_part = f"{user}{password}@" if user else ""
-                
+
                 # 构建连接字符串，包含连接池参数
                 connection_string = (
                     f"mysql+asyncmy://{auth_part}{mysql_config.host}:{mysql_config.port}/"
                     f"{mysql_config.database}?charset={mysql_config.charset}"
                 )
-                
+
                 # 从配置中获取连接池参数
                 pool_config = mysql_config.pool
-                
+
                 self._engine = create_async_engine(
                     connection_string,
                     poolclass=QueuePool,
@@ -72,10 +71,10 @@ class MysqlService(IDBService):
                     pool_timeout=pool_config.pool_timeout,
                     echo=pool_config.echo
                 )
-            
+
             logger.info("✅ MySQL 服务初始化完成")
             self._connected = True
-            
+
         except ImportError as e:
             logger.error(f"❌ MySQL 驱动未安装，无法使用 MySQL 服务: {e}")
             self._connected = False
@@ -179,13 +178,13 @@ class MysqlService(IDBService):
             await self._engine.dispose()
             self._connected = False
             logger.info("[MySQL] 连接已关闭")
-    
+
     async def engine(self):
         '''获取数据库引擎'''
         if not self._engine:
             raise RuntimeError("MySQL 服务未初始化")
         return self._engine
-    
+
     async def session(self):
         '''获取数据库会话'''
         if not self._engine:
@@ -196,7 +195,7 @@ class MysqlService(IDBService):
             expire_on_commit=False
         )
         return session_factory()
-    
+
     async def insert(self, table: str, data: dict[str, Any]) -> Any:
         '''插入数据'''
         from sqlalchemy import text
@@ -204,7 +203,7 @@ class MysqlService(IDBService):
             columns = ", ".join(data.keys())
             placeholders = ", ".join([f":{key}" for key in data.keys()])
             query = f"INSERT INTO {table} ({columns}) VALUES ({placeholders})"
-            
+
             async with AsyncSession(self._engine) as session:
                 async with session.begin():
                     result = await session.execute(text(query), data)

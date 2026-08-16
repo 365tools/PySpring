@@ -12,13 +12,14 @@ PySpring Security 模块 ORM 表定义
 """
 
 from pyspring.repositories.db.models.common.define import (
-    BaseUserTable,
-    BaseRoleTable,
     BasePermissionTable,
+    BaseRefreshTokenTable,
+    BaseRolePermissionTable,
+    BaseRoleTable,
+    BaseTokenBlacklistTable,
     BaseUserRoleTable,
-    BaseRolePermissionTable, BaseTokenBlacklistTable, BaseRefreshTokenTable
+    BaseUserTable,
 )
-
 
 # ============================================================
 # 用户、角色、权限表

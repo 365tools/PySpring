@@ -6,9 +6,8 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
-from pydantic import BaseModel, Field, EmailStr, model_validator, ConfigDict
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from pyspring.core.ioc.interfaces.core import IManaged
-
 
 # ==================== 数据结构模型 ====================
 

@@ -1,6 +1,11 @@
 """
 PySpring Check Command
 """
+from ..core.commands.base import BaseCommand, CommandArg
+from ..core.parser.formatter import SortedHelpFormatter
+from ..core.ui.console import print_error, print_title
+from ..core.ui.help import print_friendly_subcommand_help
+from ..core.ui.report import print_check_summary
 from .ops.check.basedpyright import run_check_basedpyright
 from .ops.check.circular import run_check_circular
 from .ops.check.diagnose import run as run_diagnose_check
@@ -11,11 +16,6 @@ from .ops.check.imports.validate import run_validate_imports
 from .ops.check.lift import run_lift_imports
 from .ops.check.refactor import run_check_refactor
 from .ops.check.references import run_check_references
-from ..core.commands.base import BaseCommand, CommandArg
-from ..core.parser.formatter import SortedHelpFormatter
-from ..core.ui.console import print_title, print_error
-from ..core.ui.help import print_friendly_subcommand_help
-from ..core.ui.report import print_check_summary
 
 # Shared descriptions for CLI help and summary
 CHECK_DESCRIPTIONS = {

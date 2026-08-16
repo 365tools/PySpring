@@ -4,7 +4,7 @@
 维护所有已注册服务的信息
 """
 from dataclasses import dataclass, field
-from typing import Set, Callable, Any
+from typing import Any, Callable, Set
 
 from pyspring.core.ioc.annotations.scope import Scope
 
@@ -64,19 +64,19 @@ class ServiceRegistry:
         """
         import inspect
         from typing import Protocol
-        
+
         # 检查是否是抽象基类
         if inspect.isabstract(base_type):
             return True
-        
+
         # 检查是否是Protocol
         if getattr(base_type, '_is_protocol', False):
             return True
-        
+
         # 检查是否是 typing.Protocol
         if base_type is Protocol:
             return True
-        
+
         # 检查是否是 ABC 的子类（Abstract Base Classes）
         try:
             import abc
@@ -85,7 +85,7 @@ class ServiceRegistry:
                 return hasattr(base_type, '__abstractmethods__') and len(base_type.__abstractmethods__) > 0
         except (TypeError, AttributeError):
             pass
-        
+
         return False
 
     def register(self, definition: ServiceDefinition):
@@ -124,7 +124,6 @@ class ServiceRegistry:
 
     def _register_interface_mapping(self, impl_type: type):
         """注册接口到实现的映射"""
-        import inspect
 
         # 遍历所有基类（跳过自己）
         for base in impl_type.__mro__[1:]:
@@ -166,7 +165,7 @@ class ServiceRegistry:
             except TypeError:
                 # issubclass 可能抛异常（如果类型不是类）
                 continue
-        
+
         return None
 
     def get_implementations(self, interface_type: type) -> list[ServiceDefinition]:

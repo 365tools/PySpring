@@ -1,16 +1,19 @@
-from typing import Optional, List
 
 from fastapi import HTTPException, status
-
 from pyspring.core.ioc.annotations import ConditionalOnMissingBean
 from pyspring.core.log.instance import logger
 from pyspring.security.authentication.contracts.constant import RevokeTokenReason
 from pyspring.security.authentication.contracts.flow import ILoginService
 from pyspring.security.authentication.contracts.login import ILoginProvider
 from pyspring.security.authentication.contracts.response import IResponseBuilder
-from pyspring.security.authentication.contracts.token import ITokenPayloadBuilder, ITokenService
+from pyspring.security.authentication.contracts.token import (
+    ITokenPayloadBuilder,
+    ITokenService,
+)
 from pyspring.security.authentication.contracts.user import IUserProvider
-from pyspring.security.authentication.services.context_validator import SecurityContextManagerService
+from pyspring.security.authentication.services.context_validator import (
+    SecurityContextManagerService,
+)
 
 
 @ConditionalOnMissingBean(ILoginService)

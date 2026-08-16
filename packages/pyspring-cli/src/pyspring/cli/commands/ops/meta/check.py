@@ -4,7 +4,13 @@ import pkgutil
 from typing import List, Type
 
 from pyspring.cli.core.commands.base import BaseCommand, CommandArg
-from pyspring.cli.core.ui.console import print_title, print_success, print_error, print_section, Colors
+from pyspring.cli.core.ui.console import (
+    Colors,
+    print_error,
+    print_section,
+    print_success,
+    print_title,
+)
 from pyspring.cli.core.utils.logging import suppress_logs
 
 
@@ -114,7 +120,7 @@ def _validate_and_print_command(cmd_class: Type[BaseCommand], errors: List[str],
     help_text = getattr(cmd_class, 'help', "No help provided")
 
     # Print Command Line
-    # Root level usually doesn't need indentation if it's the very first text, 
+    # Root level usually doesn't need indentation if it's the very first text,
     # but here we follow the tree structure.
     print(f"{prefix}{connector}{display_name} : {help_text}")
 

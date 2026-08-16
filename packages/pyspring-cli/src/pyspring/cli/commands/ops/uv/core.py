@@ -162,7 +162,7 @@ def install_pyspring(dev_mode=False):
     """仅安装依赖"""
     # Windows 文件锁检查 (跳过模式)
     try_skip_self = False
-    
+
     if check_windows_lock_issue():
         print("\n\033[93m⚠ Windows File Lock Detected\033[0m")
         print("   You are running from the virtual environment you are trying to update.")
@@ -384,11 +384,11 @@ print(json.dumps(result))
             print(f"   File:      {data['file']}")
 
         if data.get('editable'):
-            print(f"   Mode:      ✅ EDITABLE")
+            print("   Mode:      ✅ EDITABLE")
             if data.get('url'):
                 print(f"   Source:    {data['url']}")
         else:
-            print(f"   Mode:      Standard")
+            print("   Mode:      Standard")
 
     except Exception as e:
         print(f"❌ Error inspecting module: {e}")
@@ -406,7 +406,7 @@ def show_uv_status(module_name=None):
         try:
             if sys.executable.lower().startswith(str(venv_path.absolute()).lower()):
                 is_active = True
-        except:
+        except Exception:
             pass
 
         if is_active:

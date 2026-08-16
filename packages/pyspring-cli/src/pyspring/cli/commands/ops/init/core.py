@@ -8,15 +8,25 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, cast
 
-from pyspring.cli.core.ui.console import Colors, print_header, print_success, print_info, print_warning, print_error, print_title
+from pyspring.cli.core.ui.console import (
+    Colors,
+    print_error,
+    print_header,
+    print_info,
+    print_success,
+    print_title,
+    print_warning,
+)
 from pyspring.cli.core.ui.help import print_standard_command_help
 from sqlalchemy import create_engine
 from sqlalchemy.schema import CreateTable, Table
 
-from .keygen import generate_jwt_secret, generate_encryption_key
+from .keygen import generate_encryption_key, generate_jwt_secret
 from .templates import (
-    ENV_FILE_CONTENT, POSTGRES_INIT_SCRIPT, SQLITE_INIT_SCRIPT,
-    DB_README_CONTENT
+    DB_README_CONTENT,
+    ENV_FILE_CONTENT,
+    POSTGRES_INIT_SCRIPT,
+    SQLITE_INIT_SCRIPT,
 )
 
 
@@ -271,7 +281,7 @@ def create_main_file(target_dir: Path, force: bool = False):
     template_path = get_template_dir() / "app" / "main.py.template"
 
     if not template_path.exists():
-        print_error(f"Template file not found: app/main.py.template")
+        print_error("Template file not found: app/main.py.template")
         return
 
     # Copy content directly
@@ -292,7 +302,7 @@ def create_pyproject_toml(target_dir: Path, force: bool = False):
     template_path = get_template_dir() / "project" / "pyproject.toml.template"
 
     if not template_path.exists():
-        print_error(f"Template file not found: project/pyproject.toml.template")
+        print_error("Template file not found: project/pyproject.toml.template")
         return
 
     # Read template and replace placeholders
@@ -335,7 +345,7 @@ def create_gitignore(target_dir: Path, force: bool = False):
     template_path = get_template_dir() / "project" / ".gitignore.template"
 
     if not template_path.exists():
-        print_error(f"Template file not found: project/.gitignore.template")
+        print_error("Template file not found: project/.gitignore.template")
         return
 
     # Copy content directly
@@ -368,7 +378,7 @@ def copy_template_dir_recursive(src_dir: Path, dst_dir: Path, force: bool = Fals
             # 默认覆盖已存在的文件
             if target_path.exists():
                 print_info(f"Overwriting: {target_path}")
-            
+
             # 创建目标目录
             target_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -681,15 +691,15 @@ def init_project(
 
     # Next steps hints
     print_title("Next Steps")
-    print(f"  1. Setup Environment: pyspring uv setup --dev")
+    print("  1. Setup Environment: pyspring uv setup --dev")
     print(f"  2. Check and modify configurations: {config_dir}")
     print(f"  3. Check and modify environment variables: {target_path / '.env'}")
-    print(f"  4. Initialize database: Execute SQL scripts in scripts/db/")
-    print(f"  5. Start application: uv run python main.py")
+    print("  4. Initialize database: Execute SQL scripts in scripts/db/")
+    print("  5. Start application: uv run python main.py")
 
     print_title("Database Initialization")
-    print(f"  PostgreSQL: psql -U user -d dbname -f scripts/db/init_postgresql.sql")
-    print(f"  SQLite:     sqlite3 data/app.db < scripts/db/init_sqlite.sql")
+    print("  PostgreSQL: psql -U user -d dbname -f scripts/db/init_postgresql.sql")
+    print("  SQLite:     sqlite3 data/app.db < scripts/db/init_sqlite.sql")
 
     print_title("Important Notices")
     print(f"  {Colors.WARNING}• Do NOT commit .env file to version control{Colors.ENDC}")
@@ -698,10 +708,10 @@ def init_project(
     print(f"  {Colors.WARNING}• Create database before initializing schema{Colors.ENDC}")
 
     print_title("Documentation Reference")
-    print(f"  • Quick Start: https://github.com/365tools/PySpring/docs/")
-    print(f"  • Auth Config: https://github.com/365tools/PySpring/docs/SECURITY_CONFIG_GUIDE.md")
-    print(f"  • JWT Encryption: https://github.com/365tools/PySpring/docs/JWT_ENCRYPTION_GUIDE.md")
-    print(f"  • Database Config: https://github.com/365tools/PySpring/docs/REPOSITORIES_CONFIG_GUIDE.md")
+    print("  • Quick Start: https://github.com/365tools/PySpring/docs/")
+    print("  • Auth Config: https://github.com/365tools/PySpring/docs/SECURITY_CONFIG_GUIDE.md")
+    print("  • JWT Encryption: https://github.com/365tools/PySpring/docs/JWT_ENCRYPTION_GUIDE.md")
+    print("  • Database Config: https://github.com/365tools/PySpring/docs/REPOSITORIES_CONFIG_GUIDE.md")
 
     print()
 

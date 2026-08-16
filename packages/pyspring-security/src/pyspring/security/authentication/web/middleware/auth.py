@@ -6,10 +6,12 @@
 """
 from typing import Any, Callable
 
-from fastapi import Request, Response, status, HTTPException
+from fastapi import HTTPException, Request, Response, status
 from pyspring.core.ioc.context import ApplicationContext
 from pyspring.core.log.instance import logger
-from pyspring.security.authentication.contracts.request_auth import RequestAuthenticationResult
+from pyspring.security.authentication.contracts.request_auth import (
+    RequestAuthenticationResult,
+)
 from pyspring.security.authentication.contracts.user import IUserProvider
 from pyspring.security.authentication.infrastructure.chain import AuthenticationChain
 from pyspring.security.authentication.infrastructure.context import AuthContext
@@ -120,7 +122,9 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 AuthContext.set_current_user(user)
 
                 try:
-                    from pyspring.security.authorization.contracts.role import IRoleProvider
+                    from pyspring.security.authorization.contracts.role import (
+                        IRoleProvider,
+                    )
 
                     role_provider = ApplicationContext.get_instance().get_by_type(IRoleProvider)
                     user_roles = await role_provider.get_user_roles(user.user_id)

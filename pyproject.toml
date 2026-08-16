@@ -55,3 +55,18 @@ markers = [
     "slow: slow-running tests (e.g. basedpyright full type-check)",
 ]
 
+[tool.ruff]
+line-length = 120
+target-version = "py314"
+
+[tool.ruff.lint]
+# E: pycodestyle 错误, F: Pyflakes（真实 bug）, I: isort（导入排序）
+# 不含 N（pep8-naming）——项目刻意用类名命名变量（如 UserTable/RoleTable）
+#     对标 Spring 风格，命名规则会误报
+# 不含 W（whitespace）——尾随空格等风格噪音不阻塞 CI
+select = ["E", "F", "I"]
+ignore = [
+    "E501",  # 行过长（项目用 120 列，部分 docstring/示例超长）
+    "E701",  # 单行 if（如 `if x: return y`）是可读的紧凑惯用法
+]
+

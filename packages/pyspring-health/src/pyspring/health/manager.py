@@ -7,7 +7,7 @@ from typing import Set, cast
 
 from loguru import logger
 
-from .indicator import HealthIndicator, HealthCheckResult, HealthStatus
+from .indicator import HealthCheckResult, HealthIndicator, HealthStatus
 
 
 class HealthCheckManager:

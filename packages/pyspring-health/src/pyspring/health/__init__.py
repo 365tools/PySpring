@@ -4,7 +4,7 @@
 零依赖，独立安装即可用。
 """
 
-from pyspring.health.indicator import HealthIndicator, HealthStatus, HealthCheckResult
+from pyspring.health.indicator import HealthCheckResult, HealthIndicator, HealthStatus
 from pyspring.health.manager import HealthCheckManager
 
 __all__ = [

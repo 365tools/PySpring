@@ -3,7 +3,7 @@
 
 定义用于配置类和Bean工厂方法的装饰器：Configuration, Bean
 """
-from typing import TypeVar, Callable, Union
+from typing import Callable, TypeVar, Union
 
 T = TypeVar('T')
 

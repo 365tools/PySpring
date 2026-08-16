@@ -8,7 +8,7 @@ from typing import Any
 
 from pyspring.core.context.registry import ContextRegistry
 
-from ..config.patcher import set_context_vars_definitions, _CONTEXT_VARS_DEFINITIONS
+from ..config.patcher import _CONTEXT_VARS_DEFINITIONS, set_context_vars_definitions
 
 
 class ContextResolver:

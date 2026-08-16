@@ -3,7 +3,7 @@ Help System Utilities
 """
 import argparse
 import sys
-from typing import List, Tuple, Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .console import Colors, print_title
 
@@ -95,7 +95,7 @@ def print_friendly_subcommand_help(action, prog_name=None):
 
     print_standard_command_help(
         title=None,
-        description=f"  Missing command. Please specify one of the following:",
+        description="  Missing command. Please specify one of the following:",
         usage=[],  # No usage section for this simple error prompt
         subcommands=subcommands,
         tips=tips

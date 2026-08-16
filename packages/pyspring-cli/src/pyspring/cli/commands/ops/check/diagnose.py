@@ -7,7 +7,11 @@ import sys
 
 import pyspring
 from pyspring.cli.core.ui.console import (
-    print_title, print_error, print_warning, print_info, Colors
+    Colors,
+    print_error,
+    print_info,
+    print_title,
+    print_warning,
 )
 
 
@@ -88,7 +92,7 @@ def check_import_ability():
         else:
             path: list[str] | None = getattr(pyspring, "__path__", None)
             location = path[0] if path else None
-        print(f"   [OK] PySpring package is importable")
+        print("   [OK] PySpring package is importable")
         print(f"      Location: {location}")
         return True
     except Exception as e:

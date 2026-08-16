@@ -1,11 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+from pyspring.core.ioc.interfaces.core import IManaged
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession
-
-from pyspring.core.ioc.interfaces.core import IManaged
-
 
 # 数据库行数据：字段为任意类型（数据库值），用 dict[str, object] 表达异构键值。
 RowData = dict[str, object]

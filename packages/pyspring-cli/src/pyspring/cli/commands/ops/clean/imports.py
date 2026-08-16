@@ -5,7 +5,13 @@ import ast
 import os
 from typing import List
 
-from pyspring.cli.core.ui.console import print_success, print_title, print_file_header, print_issue, print_summary
+from pyspring.cli.core.ui.console import (
+    print_file_header,
+    print_issue,
+    print_success,
+    print_summary,
+    print_title,
+)
 
 
 class UnusedImportVisitor(ast.NodeVisitor):
@@ -92,7 +98,7 @@ def remove_unused_imports_in_file(file_path: str, verbose: bool = False) -> int:
     removed_count = 0
 
     # Convert 1-based lineno to 0-based index
-    unused_indices = {l - 1 for l in unused_lines}
+    unused_indices = {line - 1 for line in unused_lines}
 
     for idx, content in enumerate(lines):
         if idx in unused_indices:

@@ -8,13 +8,13 @@ import json
 from typing import Any
 
 import redis.asyncio as redis
-from redis.asyncio.connection import ConnectionPool
-
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.log.instance import logger
-from ..interfaces.service import IRedisService
+from redis.asyncio.connection import ConnectionPool
+
 from ....config import CacheConfig
+from ..interfaces.service import IRedisService
 
 
 @Component

@@ -5,7 +5,6 @@
 from typing import Any
 
 import yaml
-
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.ioc.interfaces.core import IManaged
@@ -43,7 +42,7 @@ class RepositoriesConfigManager(IManaged):
                 with open(config_path, 'r', encoding='utf-8') as f:
                     config = yaml.safe_load(f) or {}
                     return config
-            except Exception as e:
+            except Exception:
                 # Silent failure, use default config
                 pass
 

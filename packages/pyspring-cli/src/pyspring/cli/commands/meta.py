@@ -1,5 +1,5 @@
-from .ops.meta.check import CliCheckCommand
 from ..core.commands.base import BaseCommand
+from .ops.meta.check import CliCheckCommand
 
 
 class MetaCommand(BaseCommand):

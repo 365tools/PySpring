@@ -10,9 +10,8 @@
 """
 from typing import Any
 
-from fastapi import Request, HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pyspring.core.ioc.context import ApplicationContext
 from pyspring.core.log.instance import logger
 from pyspring.security.authorization.contracts.permission import IPermissionService
@@ -202,6 +201,7 @@ async def get_current_user_from_token(
     try:
         # 延迟导入避免循环依赖
         from pyspring.core.ioc.context import ApplicationContext
+
         from ...contracts.token import ITokenService
         from ...contracts.user import IUserManagerService
 
@@ -370,8 +370,7 @@ def token_auth_dependency(auto_error: bool = True):
         async def test(user: CurrentUser):
             return {"user": user}
     """
-    security = HTTPBearer(auto_error=auto_error)
-
+    # 注：这里不使用 HTTPBearer 实例，认证凭据直接通过 credentials 参数传入
     async def _get_user(
             credentials: (HTTPAuthorizationCredentials) | None = None
     ) -> (Any) | None:
@@ -458,7 +457,7 @@ def permission_dependency(permission: str, auto_error: bool = True):
             # 提取user_id
             user_id = getattr(user, 'id', None) or getattr(user, 'user_id', None)
             if not user_id:
-                logger.error(f"[permission_dependency] 用户对象缺少ID字段")
+                logger.error("[permission_dependency] 用户对象缺少ID字段")
                 if auto_error:
                     raise HTTPException(500, detail="Invalid user object")
                 return None
@@ -542,7 +541,7 @@ def role_dependency(role: str, auto_error: bool = True):
             # 提取user_id
             user_id = getattr(user, 'id', None) or getattr(user, 'user_id', None)
             if not user_id:
-                logger.error(f"[role_dependency] 用户对象缺少ID字段")
+                logger.error("[role_dependency] 用户对象缺少ID字段")
                 if auto_error:
                     raise HTTPException(500, detail="Invalid user object")
                 return None

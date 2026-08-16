@@ -4,7 +4,7 @@
 定义用于标记组件的装饰器：Component, Service, Repository
 这些是语义化的装饰器，用于不同的应用层。
 """
-from typing import TypeVar, Callable, Union, overload
+from typing import Callable, TypeVar, Union, overload
 
 T = TypeVar('T')
 

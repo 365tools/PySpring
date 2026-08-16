@@ -4,7 +4,6 @@ JWT认证配置模型
 包含JWT相关的配置类
 """
 from pydantic import Field
-
 from pyspring.core.abstracts.config import ConfigSection
 
 

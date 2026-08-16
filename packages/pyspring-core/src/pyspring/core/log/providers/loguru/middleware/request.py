@@ -11,12 +11,12 @@ from contextvars import ContextVar
 from typing import Any
 
 from fastapi import Request, Response
+from pyspring.core.abstracts.exceptions import AppError
+from pyspring.core.config_manager import ConfigManager
+from pyspring.core.log.instance import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 
-from pyspring.core.config_manager import ConfigManager
-from pyspring.core.abstracts.exceptions import AppError
-from pyspring.core.log.instance import logger
 from ..utils.trace_context import set_trace_id
 
 REQUEST_ID_CTX: ContextVar[str | None] = ContextVar("request_id", default=None)
@@ -38,7 +38,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         # 读取配置
         app_config = ConfigManager.load_config('application', use_cache=True)
         log_config = ConfigManager.load_config('logging', use_cache=True)
-        
+
         self._include_trace_in_response = app_config.get('web', {}).get('error', {}).get('include_trace', False)
 
         # HTTP 详细日志配置
@@ -186,7 +186,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                             body_bytes = b"".join(body_chunks)
 
                             # 重新创建响应（因为body_iterator已被消费）
-                            from starlette.responses import Response as StarletteResponse
+                            from starlette.responses import (
+                                Response as StarletteResponse,
+                            )
                             response = StarletteResponse(
                                 content=body_bytes,
                                 status_code=response.status_code,

@@ -4,7 +4,6 @@
 通用的日志配置类，可在不同项目中复用。
 """
 from pydantic import Field
-
 from pyspring.core.abstracts.config import ConfigSection
 
 

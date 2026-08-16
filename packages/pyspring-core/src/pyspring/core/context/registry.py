@@ -17,7 +17,7 @@ class ContextRegistry:
     2. 链路追踪/APM：统一获取当前上下文状态
     3. 上下文传播：在线程/任务切换时辅助传播上下文
     """
-    
+
     # 存储注册的变量: key -> (context_var, default_value)
     _registry: dict[str, tuple[ContextVar[object], Any]] = {}
     _lock = threading.Lock()
@@ -51,7 +51,7 @@ class ContextRegistry:
         snapshot = {}
         with cls._lock:
             items = cls._registry.items()
-        
+
         for key, (var, default) in items:
             try:
                 val = var.get()

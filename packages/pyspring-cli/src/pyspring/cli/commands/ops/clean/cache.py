@@ -5,7 +5,7 @@ import os
 import shutil
 from pathlib import Path
 
-from pyspring.cli.core.ui.console import print_info, print_success, print_error
+from pyspring.cli.core.ui.console import print_error, print_info, print_success
 
 
 def clean_project_cache(verbose: bool = False):
@@ -37,7 +37,7 @@ def clean_project_cache(verbose: bool = False):
 
     # Use os.walk for performance
     for root, dirs, files in os.walk(cwd):
-        # Filter dirs in-place to recurse into them? 
+        # Filter dirs in-place to recurse into them?
         # Actually we want to find recursive_targets and delete them.
         # If we delete a dir, we must remove it from 'dirs' so walk doesn't try to enter it.
 

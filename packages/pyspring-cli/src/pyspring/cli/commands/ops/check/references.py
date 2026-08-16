@@ -8,10 +8,11 @@ import re
 import shutil
 import subprocess
 import sys
-from typing import Optional, List, Set, Tuple, Counter
+from typing import Counter, List, Optional, Set, Tuple
 
 from pyspring.cli.core.ui.console import Colors
 from pyspring.cli.core.utils.filesystem import DEFAULT_IGNORES
+
 from .base import BaseChecker
 
 # --- Knowledge Base for Auto-Fix ---
@@ -137,7 +138,7 @@ class UnresolvedVisitor(ast.NodeVisitor):
     def __init__(self, global_defs: Set[str] | None = None):
         self.current_scope = Scope()
         self.global_defs = global_defs or set()
-        
+
         # Add builtins to global scope
         for b in BUILTINS:
             self.current_scope.define(b)
@@ -437,7 +438,6 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
     insert_idx = 0
     if len(lines) > 0 and (lines[0].startswith('"""') or lines[0].startswith("'''")):
         # Simple heuristic to skip docstring
-        in_docstring = True
         for d_idx, d_line in enumerate(lines):
             if d_idx == 0: continue
             if '"""' in d_line or "'''" in d_line:
@@ -489,7 +489,7 @@ class ReferencesChecker(BaseChecker):
                 for name, line, col in unresolved:
                     if name not in KNOWN_IMPORTS:
                         self.add_issue(file_path, line, f"Cannot auto-fix unresolved reference '{name}' -> Manual correction required", level='warning')
-        
+
         return True
 
     def post_check(self, files: List[str], **kwargs):
@@ -513,7 +513,7 @@ class ReferencesChecker(BaseChecker):
                 mypy_cmd = ["mypy"]
             else:
                 if self.total_issues == 0:
-                    print(f"\n   ℹ Tip: Install 'mypy' (pip install mypy) for deeper attribute analysis.")
+                    print("\n   ℹ Tip: Install 'mypy' (pip install mypy) for deeper attribute analysis.")
                 return
 
         print(f"\n   Running deep analysis with Mypy... (target: {self.target_path})")
@@ -592,7 +592,7 @@ class ReferencesChecker(BaseChecker):
         # Categorization Rules
         # Map category name -> list of codes or pattern matching function
         category_counts = Counter()
-        
+
         count = 0
         if result and result.stdout:
             for line in result.stdout.splitlines():
@@ -651,7 +651,7 @@ class ReferencesChecker(BaseChecker):
 
                     try:
                         file_path = os.path.abspath(rel_path)
-                    except:
+                    except Exception:
                         continue
 
                     # Only report issues within the target directory or src

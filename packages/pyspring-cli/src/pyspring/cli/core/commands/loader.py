@@ -4,8 +4,8 @@ import logging
 import pkgutil
 import sys
 
-from .base import BaseCommand
 from ..utils.logging import suppress_logs
+from .base import BaseCommand
 
 
 def load_commands(subparsers, package_path='pyspring.cli.commands'):

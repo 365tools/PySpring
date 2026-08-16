@@ -1,7 +1,7 @@
 """启动初始化器管理"""
 from abc import ABC, abstractmethod
 
-from pyspring.core.ioc.interfaces.core import IManaged, ILifecycle
+from pyspring.core.ioc.interfaces.core import ILifecycle, IManaged
 from pyspring.core.log.instance import logger
 
 

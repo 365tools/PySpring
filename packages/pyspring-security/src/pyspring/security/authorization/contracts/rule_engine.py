@@ -3,8 +3,8 @@
 定义规则引擎的标准接口
 """
 from abc import ABC, abstractmethod
-from typing import Any
 from enum import Enum
+from typing import Any
 
 
 class EvaluationResult(Enum):
@@ -16,7 +16,7 @@ class EvaluationResult(Enum):
 
 class IRule(ABC):
     """规则接口"""
-    
+
     @abstractmethod
     async def evaluate(self, user_id: Any, resource: str, action: str, context: dict[str, Any]) -> EvaluationResult:
         """
@@ -32,7 +32,7 @@ class IRule(ABC):
             EvaluationResult: 规则评估结果
         """
         pass
-    
+
     @abstractmethod
     def get_name(self) -> str:
         """获取规则名称"""
@@ -41,7 +41,7 @@ class IRule(ABC):
 
 class IRuleEngine(ABC):
     """规则引擎接口"""
-    
+
     @abstractmethod
     async def evaluate(self, user_id: Any, resource: str, action: str, context: dict[str, Any] | None = None) -> bool:
         """
@@ -61,7 +61,7 @@ class IRuleEngine(ABC):
 
 class IRuleProvider(ABC):
     """规则提供者接口"""
-    
+
     @abstractmethod
     async def get_rules_for_resource(self, resource: str) -> list[IRule]:
         """

@@ -4,7 +4,7 @@ PySpring CLI Key Generation
 import secrets
 
 try:
-    from cryptography.fernet import Fernet
+    from cryptography.fernet import Fernet  # noqa: F401  # 特性检测：导入成功即表示 cryptography 可用
 
     has_crypto = True
 except ImportError:
