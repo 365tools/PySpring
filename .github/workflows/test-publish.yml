@@ -154,10 +154,15 @@ jobs:
         run: |
           VERSION="${{ needs.test-and-publish.outputs.version }}"
           # 提取从 `## [SECTION]`（可带 ` - 日期` 后缀）到下一个 `## [` 之间的内容
+          # 注意：awk 正则中 `[` `]` 是字符类元字符，必须转义为 `\[` `\]`，否则
+          # `[0.0.1]` 会被解释为单字符类（如 `## 0.0.1`），匹配失败导致提取为空
           extract() {
-            awk -v s="## [$1]" 'BEGIN{found=0; buf=""} 
-              /^## \[/ { if (found) exit; if ($0 ~ ("^" s "( |$)")) found=1; next } 
-              found { buf = buf $0 "\n" } 
+            s="## [${1}]"
+            printf '%s\n' "$s" | awk '{gsub(/\[/, "\\["); gsub(/\]/, "\\]"); print}' > "/tmp/_extract_sec"
+            s=$(cat "/tmp/_extract_sec")
+            awk -v s="$s" 'BEGIN{found=0; buf=""}
+              /^## \[/ { if (found) exit; if ($0 ~ ("^" s "( |$)")) found=1; next }
+              found { buf = buf $0 "\n" }
               END { printf "%s", buf }' CHANGELOG.md
           }
           # 判断内容是否含"有效变更"：排除说明(>)、标题(#)、分隔线(---)、空行、占位符
