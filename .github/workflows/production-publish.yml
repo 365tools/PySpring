@@ -215,13 +215,26 @@ jobs:
           name: python-package
           path: dist/
 
-      - name: 📝 Extract changelog
+      - name: 📝 Extract changelog (multi-level fallback)
         id: changelog
         run: |
-          # 从 CHANGELOG.md 提取当前版本的更新内容
+          # 从 CHANGELOG.md 提取当前版本的更新内容（多级 fallback）
           VERSION=${{ needs.build-and-test.outputs.version }}
+          extract() {
+            # 提取从 `## [SECTION]`（可带 ` - 日期` 后缀）到下一个 `## [` 之间的内容
+            awk -v s="## [$1]" 'BEGIN{found=0; buf=""} 
+              /^## \[/ { if (found) exit; if ($0 ~ ("^" s "( |$)")) found=1; next } 
+              found { buf = buf $0 "\n" } 
+              END { printf "%s", buf }' CHANGELOG.md
+          }
           if [ -f CHANGELOG.md ]; then
-            CHANGES=$(sed -n "/## \[$VERSION\]/,/## \[/p" CHANGELOG.md | sed '$d' | tail -n +2)
+            # 1) 优先取精确版本号章节
+            CHANGES=$(extract "$VERSION")
+            # 2) 取不到则取 [Unreleased]（累积的未发版改动）
+            if [ -z "$CHANGES" ]; then
+              CHANGES=$(extract "Unreleased")
+            fi
+            # 3) 都没有则用默认文案（不报错）
             if [ -z "$CHANGES" ]; then
               CHANGES="Release version $VERSION"
             fi
