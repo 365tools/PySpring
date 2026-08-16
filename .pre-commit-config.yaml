@@ -1,0 +1,28 @@
+# PySpring pre-commit 配置
+#
+# 安装：pre-commit install --hook-type pre-push
+# 手动运行：pre-commit run --all-files
+# 说明：push 前会自动运行 ruff 与 pytest，阻断不规范的代码。
+#
+# 注：ruff 使用 local hook（本地 uv 环境），避免从 GitHub 下载 hook 环境
+# （部分环境无法访问 github.com 会导致 hook 初始化失败）。
+
+repos:
+  # 本地 hook：ruff 静态检查（读取根 pyproject.toml 的 [tool.ruff] 配置）
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff check
+        entry: uv tool run ruff check
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      # 本地 hook：运行完整测试（uv workspace）
+      - id: pytest
+        name: pytest
+        entry: uv run pytest tests/ -m "not slow"
+        language: system
+        types: [python]
+        pass_filenames: false
+        verbose: true
