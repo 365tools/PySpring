@@ -122,7 +122,7 @@ def print_recursive_help(parser, file=None):
 
     def _walk_actions(current_parser):
         # Iterate over all actions in the parser
-        for action in current_parser._actions:  # noqa
+        for action in current_parser._actions:
             # Check if the action is a subparser action (contains subcommands)
             if isinstance(action, argparse._SubParsersAction):
                 # Retrieve the mapping of command names to their parsers

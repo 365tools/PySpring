@@ -6,13 +6,12 @@ pyspring-security：安全模块测试
 - BCrypt 密码编码器（哈希/校验）
 - 认证/授权接口契约
 """
-import pytest
 
-from pyspring.security.authentication.contracts.config import JWTConfig, AuthenticationConfig
-from pyspring.security.authentication.contracts.password import IPasswordEncoder
-from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
-from pyspring.security.authentication.contracts.token import ITokenService
+from pyspring.security.authentication.contracts.config import AuthenticationConfig, JWTConfig
 from pyspring.security.authentication.contracts.login import ILoginProvider
+from pyspring.security.authentication.contracts.password import IPasswordEncoder
+from pyspring.security.authentication.contracts.token import ITokenService
+from pyspring.security.authentication.providers.password.bcrypt import BCryptPasswordEncoder
 
 
 class TestJWTConfig:

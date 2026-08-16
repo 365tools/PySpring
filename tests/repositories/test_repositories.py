@@ -7,11 +7,10 @@ pyspring-repositories：数据访问层测试
 - DB/Cache 服务接口契约
 """
 import pytest
-
+from pyspring.repositories.cache.config import CacheConfig
+from pyspring.repositories.cache.service import ICacheService
 from pyspring.repositories.db.config import DatabaseConfig, DatabasePoolConfig, SQLiteConfig
 from pyspring.repositories.db.service import IDBService
-from pyspring.repositories.cache.config import CacheConfig, RedisConfig, MemoryConfig
-from pyspring.repositories.cache.service import ICacheService
 
 
 class TestDatabaseConfig:

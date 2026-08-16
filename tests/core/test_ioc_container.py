@@ -4,10 +4,9 @@ pyspring-core：IoC 容器测试
 验证容器扫描、获取、按类型获取等核心能力。
 Bean 注册通过扫描 @Component/@Service 装饰类完成。
 """
-import pytest
-
 from abc import ABC, abstractmethod
 
+import pytest
 from pyspring.core.ioc.annotations.component import Component, Service
 from pyspring.core.ioc.container.container import Container
 

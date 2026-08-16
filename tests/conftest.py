@@ -8,6 +8,7 @@ pyspring-repositories / pyspring-security），均通过 uv workspace 以 editab
 import copy
 import os
 import sys
+
 import pytest
 
 # 确保所有包的 src 目录在 python path（editable 安装下通常已覆盖，此处兜底）
@@ -18,9 +19,9 @@ for _pkg in ['pyspring', 'pyspring-core', 'pyspring-health', 'pyspring-web',
     if os.path.isdir(_src) and _src not in sys.path:
         sys.path.insert(0, _src)
 
+from pyspring.core.ioc.context import ApplicationContext
 from pyspring.core.log.providers.loguru.config.manager import LoggingConfigManager
 from pyspring.core.log.providers.loguru.services.service import LoguruService
-from pyspring.core.ioc.context import ApplicationContext
 
 
 @pytest.fixture(scope="session", autouse=True)

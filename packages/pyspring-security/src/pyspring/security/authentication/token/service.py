@@ -331,7 +331,7 @@ class TokenService(ITokenService):
                 query = select(RefreshTokenTable).where(
                     and_(
                         RefreshTokenTable.user_id == user_id,  # UUID 字符串
-                        RefreshTokenTable.is_revoked == False  # noqa: E712  # SQLAlchemy 布尔列比较需显式 ==
+                        RefreshTokenTable.is_revoked.is_(False)
                     )
                 )
                 result = await db_session.execute(query)
