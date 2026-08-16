@@ -216,10 +216,11 @@ jobs:
           path: dist/
 
       - name: 🚀 Create Release (composite action)
-        uses: 365tools/actions/create-release@main
+        uses: Eavelabs/actions/release-notes@main
         with:
           version: ${{ needs.build-and-test.outputs.version }}
           prerelease: "false"
+          release_name: "PySpring"
           release_name_suffix: ""
           fallback_text: "Release version"
           files: |

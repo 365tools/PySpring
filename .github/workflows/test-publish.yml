@@ -150,10 +150,11 @@ jobs:
           echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: 🚀 Create Pre-release (composite action)
-        uses: 365tools/actions/create-release@main
+        uses: Eavelabs/actions/release-notes@main
         with:
           version: ${{ needs.test-and-publish.outputs.version }}
           prerelease: "true"
+          release_name: "PySpring"
           release_name_suffix: " (Test)"
           fallback_text: "Test 环境发布版本"
           extra_body: |
