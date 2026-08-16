@@ -74,4 +74,7 @@ ignore = [
 # __init__.py 的 re-export（from .x import Y）是 Python 标准模式：
 # 通过 import_package() 动态导出符号，静态的 F401 未使用导入属于误报。
 "__init__.py" = ["F401"]
+# tests/conftest.py 需在动态 sys.path 设置（editable 安装兜底）之后才能 import
+# pyspring 包，因此 E402（import 不在顶部）是合理的，无法避免。
+"tests/conftest.py" = ["E402"]
 

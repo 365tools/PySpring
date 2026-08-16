@@ -4,7 +4,6 @@ CLI 集成测试：环境与工具命令（install / setup / rebuild / templates
 install/setup/rebuild 会重新安装环境（慢 + 有副作用），这里验证其命令可加载；
 templates-sync 在隔离项目中验证实际同步功能。
 """
-import os
 
 import pytest
 

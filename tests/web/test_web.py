@@ -8,9 +8,7 @@ pyspring-web：统一响应测试
 """
 import json
 
-import pytest
-
-from pyspring.web.core.response import Response, HttpResponse
+from pyspring.web.core.response import HttpResponse, Response
 
 
 class TestResponseSuccess:

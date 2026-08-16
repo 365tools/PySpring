@@ -3,7 +3,6 @@ CLI 集成测试：核心用户命令（check / clean / status / security / cach
 
 这些命令在隔离的临时项目中执行，验证基本功能。
 """
-import os
 
 import pytest
 

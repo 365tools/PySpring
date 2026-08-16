@@ -9,9 +9,7 @@ pyspring-health：健康检查测试
 """
 import asyncio
 
-import pytest
-
-from pyspring.health import HealthCheckManager, HealthIndicator, HealthStatus, HealthCheckResult
+from pyspring.health import HealthCheckManager, HealthCheckResult, HealthIndicator, HealthStatus
 
 
 class DummyContainer:

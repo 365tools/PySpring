@@ -35,7 +35,7 @@ def _run_cli(args, cwd, env, timeout=120):
         return r.returncode, (r.stdout or "") + (r.stderr or "")
     except subprocess.TimeoutExpired:
         return "TIMEOUT", ""
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return "ERROR", str(exc)
 
 
