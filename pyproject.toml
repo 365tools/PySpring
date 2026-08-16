@@ -50,9 +50,6 @@ pyspring-security = { workspace = true }
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
-# 保留临时目录，避免 pytest 会话结束时的批量清理触发
-# CodeBuddy safe-delete 保护（在 pre-push hook 等非交互场景会阻断 git push）
-tmp_path_retention_policy = "all"
 addopts = ["-n", "auto"]
 markers = [
     "slow: slow-running tests (e.g. basedpyright full type-check)",
