@@ -403,8 +403,6 @@ class DependencyResolver:
                 return frozenset()
             elif origin is type(None):
                 return None
-            elif origin == (getattr(__builtins__, 'tuple', None) or tuple):  # typing.Tuple  # noqa: E721
-                return ()
             elif hasattr(origin, '__origin__'):  # 更多泛型类型
                 # 对于其他泛型类型，尝试返回其原始类型的空实例
                 if hasattr(origin, '__call__'):
