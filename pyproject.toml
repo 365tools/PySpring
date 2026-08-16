@@ -70,3 +70,8 @@ ignore = [
     "E701",  # 单行 if（如 `if x: return y`）是可读的紧凑惯用法
 ]
 
+[tool.ruff.lint.per-file-ignores]
+# __init__.py 的 re-export（from .x import Y）是 Python 标准模式：
+# 通过 import_package() 动态导出符号，静态的 F401 未使用导入属于误报。
+"__init__.py" = ["F401"]
+
