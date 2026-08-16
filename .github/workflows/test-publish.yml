@@ -153,21 +153,34 @@ jobs:
         id: changelog
         run: |
           VERSION="${{ needs.test-and-publish.outputs.version }}"
+          # 提取从 `## [SECTION]`（可带 ` - 日期` 后缀）到下一个 `## [` 之间的内容
           extract() {
-            # 提取从 `## [SECTION]`（可带 ` - 日期` 后缀）到下一个 `## [` 之间的内容
             awk -v s="## [$1]" 'BEGIN{found=0; buf=""} 
               /^## \[/ { if (found) exit; if ($0 ~ ("^" s "( |$)")) found=1; next } 
               found { buf = buf $0 "\n" } 
               END { printf "%s", buf }' CHANGELOG.md
           }
+          # 判断内容是否含"有效变更"：排除说明(>)、标题(#)、分隔线(---)、空行、占位符
+          has_content() {
+            echo "$1" | grep -v '^[[:space:]]*$' | grep -v '^#' | grep -v '^>' \
+              | grep -v '^---' | grep -v '（待补充）' | grep -q .
+          }
           if [ -f CHANGELOG.md ]; then
             # 1) 优先取精确版本号章节
             CHANGES=$(extract "$VERSION")
-            # 2) 取不到则取 [Unreleased]（累积的未发版改动）
+            # 2) 取 [Unreleased] 累积的未发版改动（若含有效变更）
             if [ -z "$CHANGES" ]; then
-              CHANGES=$(extract "Unreleased")
+              UNREL=$(extract "Unreleased")
+              if has_content "$UNREL"; then CHANGES="$UNREL"; fi
             fi
-            # 3) 都没有则用默认文案（不报错）
+            # 3) Unreleased 无有效变更 -> 取下一个有实际内容的版本章节（如 [0.0.1]）
+            if [ -z "$CHANGES" ]; then
+              for SEC in $(awk '/^## \[/ && $0 !~ /Unreleased/ {gsub(/^## \[/,""); gsub(/\].*$/,""); print}' CHANGELOG.md); do
+                C=$(extract "$SEC")
+                if has_content "$C"; then CHANGES="$C"; break; fi
+              done
+            fi
+            # 4) 都没有则用默认文案（不报错）
             if [ -z "$CHANGES" ]; then
               CHANGES="Test 环境发布版本 $VERSION。"
             fi
