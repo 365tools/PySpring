@@ -41,8 +41,8 @@ class DBConnectionInitializer(IStartupInitializer):
         """
         try:
             # 触发调用链：Initializer → Manager → Factory（全异步）
-            # Factory 会进行 ping 检测和自动降级
-            provider = await self.db_manager.provider()
+            # Factory 会进行 ping 检测和自动降级；返回值 provider 无需使用
+            await self.db_manager.provider()
 
             logger.info("✅ 数据库服务已就绪")
             return True

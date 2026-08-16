@@ -3,9 +3,10 @@ Refactor Imports Checker
 """
 import ast
 import os
-from typing import Optional, List
+from typing import List, Optional
 
 from pyspring.cli.core.ui.console import print_info
+
 from .base import BaseChecker
 
 

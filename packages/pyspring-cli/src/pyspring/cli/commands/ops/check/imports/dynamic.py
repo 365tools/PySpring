@@ -7,6 +7,16 @@ import sys
 import warnings
 from typing import Generator
 
+from pyspring.cli.core.ui.console import (
+    print_error,
+    print_file_header,
+    print_info,
+    print_issue,
+    print_standard_import_tips,
+    print_summary,
+    print_title,
+)
+
 from .....core.utils.filesystem import get_ignore_list, is_ignored
 from .....core.utils.logging import suppress_logs
 
@@ -15,10 +25,6 @@ PYSPRING_LOG_PATTERNS = [
     r"⚙️ Loguru日志系统统配置完成",
     r"\[SecurityConfigManager\] 已加载配置文件"
 ]
-from pyspring.cli.core.ui.console import (
-    print_title, print_file_header, print_issue, print_summary,
-    print_error, print_info, print_standard_import_tips
-)
 
 
 def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list[str] | None = None) -> Generator[str, None, None]:
@@ -131,7 +137,7 @@ def run_check_import(args):
     # Also suppress warnings (like Pydantic V1 deprecation)
     with suppress_logs(PYSPRING_LOG_PATTERNS), warnings.catch_warnings():
         warnings.simplefilter("ignore")  # Ignore all warnings during scan
-        
+
         for i, module_name in enumerate(modules, 1):
             try:
                 importlib.import_module(module_name)
@@ -162,7 +168,7 @@ def run_check_import(args):
                         if os.path.exists(candidate):
                             full_path = candidate
                             break
-                except:
+                except Exception:
                     full_path = "Unknown file"
 
                 lineno = "0"
@@ -176,7 +182,7 @@ def run_check_import(args):
                             if frame_file == target_file:
                                 lineno = str(tb.tb_lineno)
                             tb = tb.tb_next
-                    except:
+                    except Exception:
                         pass
 
                 failed_modules.append((module_name, str(e), full_path, lineno))

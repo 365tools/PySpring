@@ -6,12 +6,17 @@
 from __future__ import annotations
 
 from typing import Any, Callable
+
 from pyspring.core.ioc.context import ApplicationContext
 from pyspring.core.log.instance import logger
-from pyspring.security.authentication.contracts.request_auth import IRequestAuthenticationProvider
+from pyspring.security.authentication.contracts.request_auth import (
+    IRequestAuthenticationProvider,
+)
 from pyspring.security.authentication.contracts.token import ITokenService
 from pyspring.security.authentication.infrastructure.chain import AuthenticationChain
-from pyspring.security.authentication.providers.auth.jwt import JWTRequestAuthenticationProvider
+from pyspring.security.authentication.providers.auth.jwt import (
+    JWTRequestAuthenticationProvider,
+)
 from pyspring.security.core.config.loader import SecurityConfigManager
 
 
@@ -73,7 +78,9 @@ class AuthProviderFactory:
                 # 懒加载 TokenManagerService，避免在 Bean 注册阶段触发依赖
                 token_manager = ApplicationContext.get_instance().get_by_type(ITokenService)
             # 获取SecurityEntityConfiguration
-            from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
+            from pyspring.security.authentication.config.entity import (
+                SecurityEntityConfiguration,
+            )
             security_config = ApplicationContext.get_instance().get_by_type(SecurityEntityConfiguration)
             return provider_class(str(provider_name), provider_config, token_manager, security_config)
 
@@ -113,7 +120,7 @@ class AuthProviderFactory:
         if config_manager is None:
             logger.error("[Factory] SecurityConfigManager 未提供且无法从容器获取")
             return []
-        
+
         providers_config = config_manager.get_providers_config()
 
         logger.debug(f"[Factory] 从配置中加载了 {len(providers_config)} 个认证提供者配置")

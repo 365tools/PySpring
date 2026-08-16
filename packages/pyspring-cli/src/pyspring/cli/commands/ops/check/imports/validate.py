@@ -8,14 +8,16 @@ import sys
 from typing import List
 
 from pyspring.cli.core.ui.console import (
-    print_error
+    get_terminal_width,
+    print_error,
+    print_standard_import_tips,
 )
-from pyspring.cli.core.ui.console import print_standard_import_tips, get_terminal_width
-from pyspring.cli.core.utils.code import get_indentation, apply_indentation
+from pyspring.cli.core.utils.code import apply_indentation, get_indentation
+
+from ..base import BaseChecker
 from .dynamic import run_check_import as run_dynamic_check
 from .indexer import ProjectIndexer
-from .static import is_module_available, check_relative_import_exists
-from ..base import BaseChecker
+from .static import check_relative_import_exists, is_module_available
 
 
 class BrokenImportVisitor(ast.NodeVisitor):
@@ -276,7 +278,7 @@ def run_validate_imports(args):
         checker = StaticImportChecker(target_path)
         if not checker.run(fix=do_fix):
             success = False
-        
+
         if should_run_dynamic:
             width = get_terminal_width()
             print("\n" + "-" * width + "\n")

@@ -8,12 +8,11 @@ JWT 请求认证提供者
 from typing import Any
 
 from fastapi import Request
-
 from pyspring.core.log.instance import logger
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.request_auth import (
     IRequestAuthenticationProvider,
-    RequestAuthenticationResult
+    RequestAuthenticationResult,
 )
 from pyspring.security.authentication.contracts.token import ITokenService
 

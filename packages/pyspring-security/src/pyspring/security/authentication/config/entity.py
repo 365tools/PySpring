@@ -1,21 +1,33 @@
 
 from pyspring.core.config_manager import ConfigManager
 from pyspring.core.ioc.annotations import Component, ConditionalOnMissingBean
+
 # ORM Models
 from pyspring.repositories.db.models.common.define import (
-    BaseUserTable, BaseRoleTable, BasePermissionTable,
-    BaseUserRoleTable, BaseRolePermissionTable
+    BasePermissionTable,
+    BaseRolePermissionTable,
+    BaseRoleTable,
+    BaseUserRoleTable,
+    BaseUserTable,
 )
+
 # Pydantic Schemas
-from pyspring.security.authentication.contracts.request import (
-    LoginRequest
-)
+from pyspring.security.authentication.contracts.request import LoginRequest
 from pyspring.security.authentication.contracts.response import (
-    LoginResponse, TokenResponse, LogoutResponse, UserInfo, User, Role, Permission
+    LoginResponse,
+    LogoutResponse,
+    Permission,
+    Role,
+    TokenResponse,
+    User,
+    UserInfo,
 )
 from pyspring.security.orm.tables import (
-    UserTable, RoleTable, PermissionTable,
-    UserRoleTable, RolePermissionTable
+    PermissionTable,
+    RolePermissionTable,
+    RoleTable,
+    UserRoleTable,
+    UserTable,
 )
 
 

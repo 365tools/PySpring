@@ -4,9 +4,18 @@ Import Lifting Logic
 import ast
 import os
 from collections import defaultdict, deque
-from typing import Dict, Set, Optional
+from typing import Dict, Optional, Set
 
-from pyspring.cli.core.ui.console import print_title, print_file_header, print_issue, print_summary, print_info, print_warning, print_success
+from pyspring.cli.core.ui.console import (
+    print_file_header,
+    print_info,
+    print_issue,
+    print_success,
+    print_summary,
+    print_title,
+    print_warning,
+)
+
 from ....core.utils.filesystem import get_ignore_list
 
 

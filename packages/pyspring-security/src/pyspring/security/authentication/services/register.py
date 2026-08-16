@@ -1,16 +1,20 @@
 from typing import Any
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from pyspring.core.ioc.annotations import ConditionalOnMissingBean
 from pyspring.core.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.flow import IRegisterService
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
-from pyspring.security.authentication.contracts.response import UserInfo, User, Role, Permission
+from pyspring.security.authentication.contracts.response import (
+    Permission,
+    Role,
+    User,
+    UserInfo,
+)
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 @ConditionalOnMissingBean(IRegisterService)
@@ -154,7 +158,7 @@ class DefaultRegisterService(IRegisterService):
                     field_value = getattr(user, field_name, None)
                     if field_value is not None:
                         user_data[field_name] = field_value
-        
+
         # 创建用户数据库对象
         db_user = self.component.user_orm_model(**user_data)
 
@@ -198,7 +202,7 @@ class DefaultRegisterService(IRegisterService):
         )
         session.add(user_role)
         logger.info(f"[Success] 为新用户分配默认角色: {default_role_code}")
-    
+
     async def _assign_roles(self, session: AsyncSession, user: Any, roles: list[Role]) -> None:
         """
         为用户分配角色（仅供管理员使用）

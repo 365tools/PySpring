@@ -4,7 +4,7 @@
 定义用于修饰组件行为的装饰器：Primary, Lazy
 这些装饰器通常与其他组件装饰器组合使用。
 """
-from typing import TypeVar, Callable, Union
+from typing import Callable, TypeVar, Union
 
 T = TypeVar('T')
 

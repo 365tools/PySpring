@@ -3,16 +3,24 @@
 
 使用最新的IOC框架，配置所有默认的认证组件
 """
-from pyspring.core.ioc.annotations import Configuration, Bean, ConditionalOnMissingBean
+from pyspring.core.ioc.annotations import Bean, ConditionalOnMissingBean, Configuration
 from pyspring.core.log.instance import logger
+
 # 导入配置和工厂
 # 导入接口
 from pyspring.security.authentication.contracts.login import ILoginProvider
-from pyspring.security.authentication.contracts.request_auth import IRequestAuthenticationProvider
+from pyspring.security.authentication.contracts.request_auth import (
+    IRequestAuthenticationProvider,
+)
 from pyspring.security.authentication.contracts.token import ITokenService
-from pyspring.security.authentication.factories.auth_provider.factory import AuthProviderFactory
+from pyspring.security.authentication.factories.auth_provider.factory import (
+    AuthProviderFactory,
+)
+
 # 导入默认实现
-from pyspring.security.authentication.providers.login.password import DefaultPasswordLoginProvider
+from pyspring.security.authentication.providers.login.password import (
+    DefaultPasswordLoginProvider,
+)
 from pyspring.security.core.config.loader import SecurityConfigManager
 
 

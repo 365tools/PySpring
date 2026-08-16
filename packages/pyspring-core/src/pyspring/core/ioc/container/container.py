@@ -8,8 +8,8 @@ from typing import Any, Callable
 
 from pyspring.core.ioc.annotations.scope import Scope, get_scope
 from pyspring.core.ioc.interfaces.core import ILifecycle
-from pyspring.core.ioc.registry.registry import ServiceRegistry, ServiceDefinition
-from pyspring.core.ioc.scanner.scanner import ComponentScanner, ComponentMetadata
+from pyspring.core.ioc.registry.registry import ServiceDefinition, ServiceRegistry
+from pyspring.core.ioc.scanner.scanner import ComponentMetadata, ComponentScanner
 from pyspring.core.log.instance import logger
 
 
@@ -89,7 +89,7 @@ class Container:
             logger.debug(f"已跳过 {skipped_count} 个被替换的条件组件\n")
 
         # 3. 注册组件
-        logger.debug(f"📝 注册组件...")
+        logger.debug("📝 注册组件...")
         for cls, metadata in components.items():
             self._register_component(metadata)
 
@@ -284,10 +284,10 @@ class Container:
         # 检查循环依赖
         if name in self._instantiation_stack:
             raise RuntimeError(f"检测到循环依赖: {' -> '.join(self._instantiation_stack)} -> {name}")
-        
+
         # 将当前服务加入实例化栈
         self._instantiation_stack.append(name)
-        
+
         try:
             # 如果是Bean，直接调用工厂
             if service_def.is_bean:
@@ -312,7 +312,7 @@ class Container:
         except Exception as e:
             logger.error(f"服务实例化失败 {name}: {str(e)}")
             raise
-        
+
         finally:
             # 从实例化栈中移除当前服务
             if self._instantiation_stack and self._instantiation_stack[-1] == name:
@@ -385,7 +385,7 @@ class Container:
             from pyspring.core.ioc.lifecycle.initializer import IStartupInitializer
             if isinstance(service, IStartupInitializer):
                 continue
-                
+
             try:
                 await service.on_startup()
                 logger.debug(f"  ✅ {service.__class__.__name__}")
@@ -407,7 +407,7 @@ class Container:
             from pyspring.core.ioc.lifecycle.shutdown import IShutdownHandler
             if isinstance(service, IShutdownHandler):
                 continue
-                
+
             try:
                 await service.on_shutdown()
                 logger.debug(f"  ✅ {service.__class__.__name__}")

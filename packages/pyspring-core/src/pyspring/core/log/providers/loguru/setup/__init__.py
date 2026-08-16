@@ -45,7 +45,7 @@ class ConfiguratorFacade:
         # 检查是否禁用日志（用于CLI兼容层等场景）
         if os.environ.get('PYSPRING_DISABLE_LOGGING') == '1':
             return
-        
+
         # 重入保护
         if cls._is_setting_up:
             return
@@ -61,6 +61,7 @@ class ConfiguratorFacade:
             if time_diff < 1.0:
                 # 即使跳过，也要确保project_root被初始化
                 from pyspring.core.log.core.utils import detect_project_root
+
                 from ..config.patcher import set_project_root
                 project_root = detect_project_root()
                 set_project_root(project_root)
@@ -74,6 +75,7 @@ class ConfiguratorFacade:
 
             # 1. 初始化项目根目录（必须最先执行，供patcher使用）
             from pyspring.core.log.core.utils import detect_project_root
+
             from ..config.patcher import set_project_root
             project_root = detect_project_root()
             set_project_root(project_root)

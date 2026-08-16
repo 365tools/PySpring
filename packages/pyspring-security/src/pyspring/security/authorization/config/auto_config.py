@@ -3,16 +3,20 @@
 
 参考authentication模块的结构，使用IOC框架配置授权组件
 """
-from pyspring.core.ioc.annotations import Configuration, Bean, ConditionalOnMissingBean
+from pyspring.core.ioc.annotations import Bean, ConditionalOnMissingBean, Configuration
 from pyspring.core.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authorization.contracts.permission import IPermissionService
 from pyspring.security.authorization.contracts.role import IRoleProvider
 from pyspring.security.authorization.contracts.rule import IPathPermissionProvider
-from pyspring.security.authorization.providers.permission.default import DefaultPermissionService
+from pyspring.security.authorization.providers.permission.default import (
+    DefaultPermissionService,
+)
 from pyspring.security.authorization.providers.role.database import DefaultRoleProvider
-from pyspring.security.authorization.providers.rule.config import DefaultPathPermissionProvider
+from pyspring.security.authorization.providers.rule.config import (
+    DefaultPathPermissionProvider,
+)
 from pyspring.security.core.config.loader import SecurityConfigManager
 
 

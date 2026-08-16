@@ -3,12 +3,19 @@ import os
 import sys
 from typing import List
 
-from pyspring.cli.core.ui.console import get_terminal_width
-from pyspring.cli.core.ui.console import print_warning, print_info, print_success, print_fix, Colors
-from .indexer import ProjectIndexer
-from .validate import is_module_available
+from pyspring.cli.core.ui.console import (
+    Colors,
+    get_terminal_width,
+    print_fix,
+    print_info,
+    print_success,
+    print_warning,
+)
+
 from ..base import BaseChecker
 from ..references import scan_file
+from .indexer import ProjectIndexer
+from .validate import is_module_available
 
 
 class ImportResetVisitor(ast.NodeVisitor):

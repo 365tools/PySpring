@@ -4,7 +4,7 @@
 定义用于条件注册的装饰器：ConditionalOnMissingBean
 这些装饰器用于实现条件化的组件注册。
 """
-from typing import TypeVar, Callable
+from typing import Callable, TypeVar
 
 T = TypeVar('T')
 

@@ -1,11 +1,10 @@
 from typing import Any
 
-from sqlalchemy import select
-
 from pyspring.core.ioc.annotations import ConditionalOnMissingBean
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.config.entity import SecurityEntityConfiguration
 from pyspring.security.authentication.contracts.user import IUserProvider
+from sqlalchemy import select
 
 
 @ConditionalOnMissingBean(IUserProvider)

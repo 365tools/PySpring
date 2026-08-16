@@ -1,7 +1,7 @@
-from .ops.clean.cache import clean_project_cache
-from .ops.clean.imports import run_clean_imports
 from ..core.commands.base import BaseCommand, CommandArg
 from ..core.parser.formatter import SortedHelpFormatter
+from .ops.clean.cache import clean_project_cache
+from .ops.clean.imports import run_clean_imports
 
 
 class CleanCacheCommand(BaseCommand):

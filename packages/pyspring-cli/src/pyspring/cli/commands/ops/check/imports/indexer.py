@@ -17,7 +17,7 @@ class SymbolVisitor(ast.NodeVisitor):
     def visit_ClassDef(self, node):
         self.definitions.append(node.name)
         # We don't visit inner classes/functions to keep it top-level
-        # self.generic_visit(node) 
+        # self.generic_visit(node)
 
     def visit_FunctionDef(self, node):
         self.definitions.append(node.name)

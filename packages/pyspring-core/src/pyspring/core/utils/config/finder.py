@@ -5,7 +5,6 @@
 from pathlib import Path
 
 
-
 def detect_project_root(start_from: (Path) | None = None) -> Path:
     """
     检测项目根目录

@@ -4,10 +4,9 @@
 提供细粒度的权限和角色检查装饰器
 """
 from functools import wraps
-from typing import Callable, Union, Any
+from typing import Any, Callable, Union
 
 from fastapi import HTTPException, Request
-
 from pyspring.core.ioc.context import ApplicationContext
 from pyspring.core.log.instance import logger
 from pyspring.security.authorization.contracts.permission import IPermissionService

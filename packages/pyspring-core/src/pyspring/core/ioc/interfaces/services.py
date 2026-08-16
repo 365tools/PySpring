@@ -3,7 +3,7 @@
 
 这些接口仅供特定类型的服务使用，不是所有服务都需要实现。
 """
-from typing import Protocol, Any, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @runtime_checkable

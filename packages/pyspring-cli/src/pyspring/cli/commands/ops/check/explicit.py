@@ -10,10 +10,11 @@ import ast
 import os
 from typing import Optional
 
-from pyspring.cli.core.utils.code import get_indentation, apply_indentation
+from pyspring.cli.core.utils.code import apply_indentation, get_indentation
+
+from ....core.utils.filesystem import get_ignore_list
 from .base import BaseChecker
 from .imports.static import find_symbol_in_package
-from ....core.utils.filesystem import get_ignore_list
 
 
 def import_range(start, end):
@@ -199,7 +200,7 @@ class ExplicitImportChecker(BaseChecker):
 
                 # Capture original indentation from the first line of the block
                 indentation = get_indentation(lines[start])
-                
+
                 orig_text = " | ".join(lines[start:end])
                 new_text = " | ".join(rep['new_lines'])
 

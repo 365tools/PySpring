@@ -7,7 +7,6 @@ import os
 from typing import Any
 
 import yaml
-
 from pyspring.core.ioc.annotations.scope import Scope
 from pyspring.core.log.instance import logger
 

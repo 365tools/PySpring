@@ -4,17 +4,18 @@ JWT Token 生成器实现
 使用最新的IOC框架，负责生成和解析JWT Token
 """
 import uuid
-from datetime import datetime, timedelta, UTC
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from jose import JWTError, jwt
-
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.log.instance import logger
 from pyspring.security.authentication.contracts.config import JWTConfig
 from pyspring.security.authentication.contracts.token import ITokenGenerator
-from pyspring.security.authentication.infrastructure.crypto.encryption import JWTEncryptionManager
+from pyspring.security.authentication.infrastructure.crypto.encryption import (
+    JWTEncryptionManager,
+)
 from pyspring.security.core.config.loader import SecurityConfigManager
 
 

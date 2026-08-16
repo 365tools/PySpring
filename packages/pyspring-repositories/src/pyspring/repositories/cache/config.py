@@ -8,7 +8,6 @@ from typing import ClassVar
 
 from pydantic import Field
 from pydantic_settings import SettingsConfigDict
-
 from pyspring.core.abstracts.config import ConfigSection
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton

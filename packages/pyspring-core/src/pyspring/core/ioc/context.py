@@ -90,7 +90,7 @@ class ApplicationContext:
         # 如果既没有配置文件也没有包列表，报错
         if not config_file and not base_packages:
             raise ValueError("必须提供 base_packages 或 config_file 中的至少一个")
-        
+
         return instance
 
     @classmethod

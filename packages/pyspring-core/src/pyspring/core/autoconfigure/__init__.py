@@ -9,10 +9,13 @@
 - 未引入的 starter 完全不参与扫描，不影响核心功能。
 """
 
-from pyspring.core.autoconfigure.loader import AutoConfiguration, AutoConfigurationLoader
 from pyspring.core.autoconfigure.declaration import (
     StarterDeclaration,
     load_starter_declaration,
+)
+from pyspring.core.autoconfigure.loader import (
+    AutoConfiguration,
+    AutoConfigurationLoader,
 )
 
 __all__ = [

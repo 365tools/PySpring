@@ -5,10 +5,11 @@
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.log.instance import logger
+
 from .config import CacheConfig
+from .providers.memcached.services.service import MemcachedService
 from .providers.memory.services.service import MemoryService
 from .providers.redis.services.service import RedisService
-from .providers.memcached.services.service import MemcachedService
 from .service import ICacheService
 
 
@@ -27,7 +28,7 @@ class CacheServiceFactory:
         self.config: CacheConfig = cache_config
         self._service: (ICacheService) | None = None
         self._service_type: (str) | None = None
-        
+
         # 注册所有支持的服务创建器（使用 lambda 实现延迟加载）
         self._service_creators = {
             "redis": lambda: self._create_redis_service(),

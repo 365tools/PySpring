@@ -6,21 +6,21 @@
 import sys
 import traceback
 from pathlib import Path
-from typing import Any, Callable, Awaitable
+from typing import Any, Awaitable, Callable
 
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
-from pyspring.core.config_manager import ConfigManager
 from pyspring.core.abstracts.exceptions import AppError
+from pyspring.core.config_manager import ConfigManager
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.conditional import ConditionalOnMissingBean
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.log.instance import logger
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from ..core.response import HttpResponse, Response
 from .base import IExceptionHandler
-from ..core.response import Response, HttpResponse
 
 
 @Component
@@ -148,7 +148,7 @@ class GlobalExceptionHandler(IExceptionHandler):
                 except ValueError:
                     # 不在项目根路径下，跳过
                     pass
-                
+
                 tb_iter = tb_iter.tb_next
 
             if project_frames:
@@ -238,7 +238,7 @@ class GlobalExceptionHandler(IExceptionHandler):
                 f"Method: {request.method} | "
                 f"Detail: {detail}"
             )
-        
+
         return self.to_http_error_response(
             exc,
             message=detail,
@@ -259,7 +259,7 @@ class GlobalExceptionHandler(IExceptionHandler):
                     f"Method: {request.method} | "
                     f"Errors: {len(exc.errors())} \n{exc}"
                 )
-                
+
                 for error in exc.errors():
                     # 过滤敏感信息：不返回完整的 input 数据
                     error_input = error.get("input")
@@ -276,7 +276,7 @@ class GlobalExceptionHandler(IExceptionHandler):
                         safe_input = error_input
                     else:
                         safe_input = "<complex object>"
-                    
+
                     validation_errors.append({
                         "field": ".".join(str(loc) for loc in error.get("loc", [])),
                         "message": error.get("msg"),

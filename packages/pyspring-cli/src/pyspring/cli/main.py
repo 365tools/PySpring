@@ -1,9 +1,9 @@
 """
 PySpring CLI Main Entry Point
 """
-import sys
-import os
 import io
+import os
+import sys
 
 from .core.commands.loader import load_commands
 from .core.parser.custom import FriendlyArgumentParser
@@ -21,31 +21,30 @@ def _should_show_banner():
     """
     if len(sys.argv) < 2:
         return True
-    
+
     # 不显示 Banner 的命令
     skip_commands = {'-h', '-v', '--version', 'init', 'diagnose', 'check', 'clean', 'uv'}
-    
+
     # 检查是否是帮助或版本查询
     if sys.argv[1] in {'-h', '--help', '-v', '--version'}:
         return False
-    
+
     # 检查是否是特定命令
     if sys.argv[1] in skip_commands:
         return False
-    
+
     return True
 
 
 def _print_banner():
     """打印 Banner"""
     try:
+        # 获取 Python 版本
+        import platform
         from importlib import metadata
 
         from ._version import __version__
         from .banner import get_banner
-
-        # 获取 Python 版本
-        import platform
         python_version = platform.python_version()
 
         # 获取 FastAPI 版本（可选，失败则显示占位）
@@ -76,12 +75,12 @@ def main():
     for _stream in (sys.stdout, sys.stderr):
         if isinstance(_stream, io.TextIOWrapper):
             _stream.reconfigure(encoding="utf-8")
-    
-    
+
+
     # 显示 Banner (如果环境变量未禁用)
     if _should_show_banner() and not os.getenv('PYSPRING_NO_BANNER'):
         _print_banner()
-    
+
     parser = FriendlyArgumentParser(
         prog='pyspring',
         description='PySpring Framework Command Line Interface',

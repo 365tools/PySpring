@@ -1,7 +1,7 @@
 """
 Reporting Utilities
 """
-from typing import List, Tuple, Dict
+from typing import Dict, List, Tuple
 
 from .console import Colors, print_section, print_success, print_warning
 
@@ -41,7 +41,7 @@ def print_check_summary(results: List[Tuple[str, bool]], fix_commands: Dict[str,
                     fix_suffix = fix_commands[name]
                     print(f"      Fix:   pyspring check {name} {fix_suffix}")
                 else:
-                    print(f"      Fix:   Manual resolution required")
+                    print("      Fix:   Manual resolution required")
 
     # Add final separator for clean UI
     print()

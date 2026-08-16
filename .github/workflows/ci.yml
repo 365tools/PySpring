@@ -37,7 +37,8 @@ jobs:
 
       - name: 🧹 Lint with ruff
         run: |
-          uv run ruff check packages/ --select=E,F,I,N,W --ignore=E501
+          # 读取根 pyproject.toml 的 [tool.ruff] 配置（E/F/I/N，不含 W 风格噪音）
+          uv run ruff check packages/
           echo "✅ Ruff check done"
 
       - name: 🧪 Run tests

@@ -1,5 +1,5 @@
-from .ops.security.encryption import generate_encryption_key
 from ..core.commands.base import BaseCommand
+from .ops.security.encryption import generate_encryption_key
 
 
 class GenerateKeyCommand(BaseCommand):

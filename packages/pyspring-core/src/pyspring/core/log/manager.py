@@ -5,6 +5,7 @@
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.ioc.interfaces.core import IManaged
+
 from .core.interface import ILoggerService
 from .providers.loguru.services.service import LoguruService
 

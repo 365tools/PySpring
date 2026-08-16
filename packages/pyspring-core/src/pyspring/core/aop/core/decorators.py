@@ -1,4 +1,4 @@
-from .models import Before, After, Around
+from .models import After, Around, Before
 
 
 def aspect(cls):

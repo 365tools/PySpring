@@ -3,7 +3,8 @@ PySpring Encoding Checker Command
 """
 from typing import Optional, Tuple
 
-from pyspring.cli.core.ui.console import print_title, print_success
+from pyspring.cli.core.ui.console import print_success, print_title
+
 from .base import BaseChecker
 
 

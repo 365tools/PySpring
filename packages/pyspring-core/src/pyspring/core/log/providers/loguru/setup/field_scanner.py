@@ -6,7 +6,7 @@
 import re
 from typing import Any, Set
 
-from ..config.patcher import set_auto_injected_defaults, _CONTEXT_VARS_DEFINITIONS
+from ..config.patcher import _CONTEXT_VARS_DEFINITIONS, set_auto_injected_defaults
 
 
 class FieldScanner:

@@ -76,7 +76,7 @@ def find_files(root_dir: str, extensions: List[str] | None = None) -> List[str]:
     """
     found_files = []
     # Always get ignores relative to the directory being scanned, OR current working dir
-    # We prefer the root being scanned to catch nested ignore files if needed, 
+    # We prefer the root being scanned to catch nested ignore files if needed,
     # but for simplicity we stick to global ignores + root.
     ignored = get_ignore_list(root_dir)
 
@@ -89,7 +89,7 @@ def find_files(root_dir: str, extensions: List[str] | None = None) -> List[str]:
         filename = os.path.basename(abs_root)
         if is_ignored(filename, ignored):
             return []
-             
+
         if extensions:
             _, ext = os.path.splitext(abs_root)
             if ext.lower() in extensions:
@@ -113,7 +113,7 @@ def find_files(root_dir: str, extensions: List[str] | None = None) -> List[str]:
         for file in files:
             if is_ignored(file, ignored):
                 continue
-                
+
             if extensions:
                 _, ext = os.path.splitext(file)
                 if ext.lower() not in extensions:

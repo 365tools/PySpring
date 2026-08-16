@@ -3,8 +3,8 @@ PySpring CLI Init Command Registration
 """
 import argparse
 
-from .ops.init.core import run
 from ..core.commands.base import BaseCommand, CommandArg
+from .ops.init.core import run
 
 
 class InitCommand(BaseCommand):

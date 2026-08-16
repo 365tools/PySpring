@@ -148,9 +148,9 @@ def get_banner(style: str = "modern", **kwargs: str) -> str:
         "gradient": BANNER_GRADIENT,
         "compact": BANNER_COMPACT,
     }
-    
+
     template = banners.get(style, BANNER_MODERN)
-    
+
     # 默认版本信息（version 为 CLI 自身版本，来自统一入口）
     defaults = {
         "version": __version__,
@@ -158,7 +158,7 @@ def get_banner(style: str = "modern", **kwargs: str) -> str:
         "fastapi_version": "0.104+",
     }
     defaults.update(kwargs)
-    
+
     return template.format(**defaults)
 
 
@@ -178,9 +178,9 @@ if __name__ == "__main__":
     print("\n" + "=" * 75)
     print("PySpring Banner 风格预览")
     print("=" * 75 + "\n")
-    
+
     styles = ["modern", "simple", "spring", "minimal", "colored", "gradient", "compact"]
-    
+
     for style in styles:
         print(f"\n【{style.upper()}】风格:\n")
         # version 省略时自动使用 _version.__version__（CLI 自身版本）

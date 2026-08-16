@@ -5,7 +5,9 @@ from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.ioc.interfaces.core import IManaged
 from pyspring.core.log.instance import logger
-from pyspring.security.authentication.contracts.validator import ISecurityContextValidator
+from pyspring.security.authentication.contracts.validator import (
+    ISecurityContextValidator,
+)
 
 
 @dataclass

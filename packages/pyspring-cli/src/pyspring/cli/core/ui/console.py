@@ -94,15 +94,13 @@ def print_issue(line: str, message: str, file_path: Optional[str] = None, level:
     # Format: Icon  Message   Location
     # We pad message to align locations somewhat, but not strictly to avoid huge gaps
 
-    location = f"{file_path}:{line}" if file_path else f"Line {line}"
-
     # Clean output: [Icon] [Location] Message
-    # This puts the clickable link at the start (some terminals like this) 
+    # This puts the clickable link at the start (some terminals like this)
     # OR at the end. VSCode likes "path:line: ... " or " ... path:line"
 
     # Try a standard linter format optimized for readability
     #   [X] path/to/file.py:10: Module not found
-    
+
     if file_path:
         print(f"  {color}{icon} {file_path}:{line}{Colors.ENDC} {message}")
     else:

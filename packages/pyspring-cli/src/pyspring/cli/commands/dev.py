@@ -1,7 +1,7 @@
+from ..core.commands.base import BaseCommand, CommandArg
 from .ops.dev.exports import sync_exports
 from .ops.dev.sync import sync_templates
 from .ops.dev.verify import verify_pyproject
-from ..core.commands.base import BaseCommand, CommandArg
 
 
 class SyncTemplatesCommand(BaseCommand):

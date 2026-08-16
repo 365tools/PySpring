@@ -1,8 +1,14 @@
 import ast
 import os
-from typing import List, Tuple, Optional, cast
+from typing import List, Optional, Tuple
 
-from pyspring.cli.core.ui.console import print_error, print_info, print_title, print_issue, print_summary
+from pyspring.cli.core.ui.console import (
+    print_error,
+    print_info,
+    print_issue,
+    print_summary,
+    print_title,
+)
 
 
 def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]:
@@ -30,7 +36,7 @@ def get_defined_symbols(file_path: str) -> Tuple[List[str], Optional[List[str]]]
                     if isinstance(node.value, (ast.List, ast.Tuple)):
                         # Use a local list with strict typing
                         temp_exports: List[str] = []
-                        
+
                         for elt in node.value.elts:
                             if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
                                 temp_exports.append(elt.value)
@@ -375,7 +381,7 @@ def process_fixed_recursive(target_path: str) -> int:
     with open(init_path, 'w', encoding='utf-8') as f:
         f.write(content)
 
-    # print_file_header(init_path) # Too verbose if recursive? 
+    # print_file_header(init_path) # Too verbose if recursive?
     # Let's just print a success issue
     print_issue("1", "Updated Explicit Exports", init_path, level='success')
     return updated_count + 1

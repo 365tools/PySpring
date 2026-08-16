@@ -23,15 +23,15 @@ async def delete_order(order_id: int):
 """
 from pyspring.security.authorization.config import AuthorizationConfiguration
 from pyspring.security.authorization.contracts import (
+    IPathPermissionProvider,
     IPermissionService,
     IRoleProvider,
-    IPathPermissionProvider
 )
 from pyspring.security.authorization.decorators import (
+    require_all_permissions,
+    require_any_permission,
     require_permission,
     require_role,
-    require_any_permission,
-    require_all_permissions
 )
 
 __all__ = [

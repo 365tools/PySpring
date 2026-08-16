@@ -11,7 +11,11 @@ from dataclasses import dataclass, field
 from typing import Set
 
 from pyspring.core.ioc.interfaces.core import IManaged
-from pyspring.core.ioc.scanner.config import ScanConfig, DEFAULT_SCAN_CONFIG, is_lifecycle_component
+from pyspring.core.ioc.scanner.config import (
+    DEFAULT_SCAN_CONFIG,
+    ScanConfig,
+    is_lifecycle_component,
+)
 from pyspring.core.log.instance import logger
 
 
@@ -51,7 +55,7 @@ class ComponentScanner:
         self.config = config or DEFAULT_SCAN_CONFIG
         self.scanned_components: dict[type, ComponentMetadata] = {}
         self.scanned_modules: Set[str] = set()
-        
+
         # 性能优化：缓存已处理的类信息
         self._processed_classes_cache: dict[str, bool] = {}
 
@@ -82,13 +86,13 @@ class ComponentScanner:
         logger.debug(f"✅ 组件扫描完成，发现 {len(self.scanned_components)} 个组件")
 
         # 阶段 2: 构建类型映射表
-        logger.debug(f"🔍 构建类型映射表...")
+        logger.debug("🔍 构建类型映射表...")
         self._build_type_mappings()
 
         # 阶段 3: 检测替换关系
-        logger.debug(f"🔍 检测组件替换关系...")
+        logger.debug("🔍 检测组件替换关系...")
         self._detect_replacements()
-        
+
         return self.scanned_components
 
     def _scan_package(self, package_name: str):
@@ -175,11 +179,11 @@ class ComponentScanner:
         class_key = f"{cls.__module__}.{cls.__name__}"
         if class_key in self._processed_classes_cache:
             return self._processed_classes_cache[class_key]
-        
+
         # 1. 检查是否是Protocol（接口定义）
         if getattr(cls, '_is_protocol', False):
             result = False
-        
+
         # 2. 检查是否是抽象类（有未实现的抽象方法）
         elif not self.config.scan_abstract:
             if self._is_unimplemented_abstract_class(cls):
@@ -209,7 +213,7 @@ class ComponentScanner:
                 else:
                     # 5. 检查是否有组件标记
                     result = self._is_component(cls)
-        
+
         # 缓存结果
         self._processed_classes_cache[class_key] = result
         return result
@@ -307,7 +311,7 @@ class ComponentScanner:
             conditional_type = getattr(comp_type, "__pyspring_conditional_on_missing_bean__", None)
             if conditional_type is not None:
                 # 如果未指定类型或指定为 object，使用组件自身类型
-                if conditional_type is None or conditional_type == object:
+                if conditional_type is None or conditional_type is object:
                     conditional_type = comp_type
 
                 # 记录条件组件映射
@@ -350,7 +354,7 @@ class ComponentScanner:
 
         if replacement_count > 0:
             logger.debug(f"✅ 检测到 {replacement_count} 个组件替换")
-    
+
     @staticmethod
     def _generate_name(service_type: type) -> str:
         """生成组件名称（类名转snake_case）"""

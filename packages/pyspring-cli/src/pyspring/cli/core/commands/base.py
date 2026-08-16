@@ -1,7 +1,7 @@
 import argparse
 from abc import ABC
 from dataclasses import dataclass
-from typing import List, Union, Any, Type, Dict, Optional
+from typing import Any, Dict, List, Optional, Type, Union
 
 
 @dataclass
@@ -131,7 +131,7 @@ class BaseCommand(ABC):
         # If a subcommand is chosen, its func is executed.
         # If no subcommand is chosen, we want the parent logic or help.
 
-        # We set a default func for the parent parser. 
+        # We set a default func for the parent parser.
         # CAUTION: If a subcommand is selected, argparse overwrites 'func'.
         # So this default only triggers if NO subcommand is matched.
         parser.set_defaults(func=lambda args: cls._dispatch(args, instance))

@@ -5,7 +5,7 @@
 """
 import re
 from dataclasses import dataclass, field
-from typing import Set, Pattern
+from typing import Pattern, Set
 
 
 @dataclass

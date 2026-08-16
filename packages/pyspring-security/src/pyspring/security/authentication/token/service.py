@@ -4,10 +4,8 @@
 使用策略模式，支持多种 Token 类型
 职责明确：编排 Token 生成器、黑名单、存储服务
 """
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from typing import Any
-
-from sqlalchemy import select, and_
 
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
@@ -16,9 +14,15 @@ from pyspring.core.log.instance import logger
 from pyspring.repositories.cache.manager import CacheManagerService
 from pyspring.repositories.db.manager import DBManagerService
 from pyspring.security.authentication.contracts.constant import RevokeTokenReason
-from pyspring.security.authentication.contracts.token import ITokenService, ITokenGenerator
-from pyspring.security.authentication.factories.token_generator.factory import TokenGeneratorFactory
-from pyspring.security.orm.tables import TokenBlacklistTable, RefreshTokenTable
+from pyspring.security.authentication.contracts.token import (
+    ITokenGenerator,
+    ITokenService,
+)
+from pyspring.security.authentication.factories.token_generator.factory import (
+    TokenGeneratorFactory,
+)
+from pyspring.security.orm.tables import RefreshTokenTable, TokenBlacklistTable
+from sqlalchemy import and_, select
 
 
 @Component
@@ -142,17 +146,17 @@ class TokenService(ITokenService):
                 )
                 session.add(refresh_record)
                 await session.commit()
-                logger.debug(f"[TokenService] Refresh Token 已持久化到数据库")
+                logger.debug("[TokenService] Refresh Token 已持久化到数据库")
 
             # 4.2 写入 Redis
             try:
                 refresh_key = f"token:refresh:{user_id}:{refresh_token[:16]}"
                 await self.cache.set(refresh_key, refresh_token, ex=7 * 24 * 3600)
-                logger.debug(f"[TokenService] Refresh Token 已写入Redis")
+                logger.debug("[TokenService] Refresh Token 已写入Redis")
             except Exception as e:
                 logger.warning(f"[TokenService] Redis写入失败（数据库已保存）: {e}")
 
-            logger.info(f"[TokenService] 创建 Refresh Token (两级存储)")
+            logger.info("[TokenService] 创建 Refresh Token (两级存储)")
             return refresh_token
 
         except Exception as e:
@@ -289,7 +293,7 @@ class TokenService(ITokenService):
                 )
                 session.add(blacklist_record)
                 await session.commit()
-                logger.debug(f"[TokenService] Token黑名单已持久化")
+                logger.debug("[TokenService] Token黑名单已持久化")
 
             # 3.2 Redis缓存
             try:
@@ -327,7 +331,7 @@ class TokenService(ITokenService):
                 query = select(RefreshTokenTable).where(
                     and_(
                         RefreshTokenTable.user_id == user_id,  # UUID 字符串
-                        RefreshTokenTable.is_revoked == False
+                        RefreshTokenTable.is_revoked == False  # noqa: E712  # SQLAlchemy 布尔列比较需显式 ==
                     )
                 )
                 result = await db_session.execute(query)

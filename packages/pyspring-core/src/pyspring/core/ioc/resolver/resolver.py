@@ -4,11 +4,11 @@
 负责解析服务之间的依赖关系，支持类型提示、命名注入和集合注入。
 """
 import inspect
-from typing import Any, get_type_hints, get_origin, get_args
-from dataclasses import dataclass
-from ..registry.registry import ServiceRegistry, ServiceDefinition
+from typing import Any, get_args, get_origin, get_type_hints
+
 from ...log.instance import logger
 from ..dependency import DependencyInfo
+from ..registry.registry import ServiceDefinition, ServiceRegistry
 
 
 # 特殊标记：表示应该使用参数的默认值
@@ -73,34 +73,34 @@ class DependencyResolver:
         """
         # 获取构造函数参数类型
         init_signature = get_type_hints(service_def.service_type.__init__)
-        
+
         # 获取构造函数的签名（用于获取默认值）
         sig = inspect.signature(service_def.service_type.__init__)
-        
+
         # 移除self参数
         if 'return' in init_signature:
             del init_signature['return']
         if 'self' in init_signature:
             del init_signature['self']
-            
+
         dependencies = {}
         for param_name, param_type in init_signature.items():
             # 获取参数的默认值
             param = sig.parameters[param_name]
             has_default = param is not None and param.default != inspect.Parameter.empty
-            
+
             dep_info = self._create_dependency_info(service_def, param_name, param_type)
-            
+
             # 尝试解析依赖，传入是否有默认值的信息
             resolved_value = self._resolve_dependency(dep_info, container, service_def.name, has_default)
-            
+
             # 如果返回了特殊标记表示"使用默认值"，则跳过此参数
             if resolved_value is _USE_DEFAULT_VALUE:
                 logger.debug(f"📌 参数 '{param_name}' 使用构造函数默认值: {param.default}")
                 continue
-                
+
             dependencies[param_name] = resolved_value
-            
+
         return dependencies
 
     def _create_dependency_info(self, service_def, param_name: str, param_type: type) -> DependencyInfo:
@@ -130,7 +130,7 @@ class DependencyResolver:
                     is_list=True,
                     element_type=element_type
                 )
-        
+
         # 检查是否有@inject注解
         annotations = getattr(service_def.service_type, '__annotations__', {})
         inject_config = annotations.get(f"_{param_name}_inject", None)
@@ -141,7 +141,7 @@ class DependencyResolver:
                 service_name=inject_config.service_name,
                 qualifier=inject_config.qualifier
             )
-            
+
         # 默认按类型查找
         # 使用类型名称生成服务名称
         service_name = self._generate_service_name(param_type)
@@ -179,7 +179,6 @@ class DependencyResolver:
             param_name = service_name.split(":", 1)[1]
 
             # 获取List的元素类型
-            origin = get_origin(dep_info.param_type)
             type_args = get_args(dep_info.param_type)
 
             if type_args:
@@ -214,32 +213,32 @@ class DependencyResolver:
                 import typing
                 if dep_info.param_type is typing.Any:
                     return None
-                
+
                 # 检查是否是 Optional 类型
                 if self._is_optional_type(dep_info.param_type):
                     return None
-                
+
                 # 尝试获取内置类型默认值
                 builtin_default = self._get_builtin_type_default(dep_info.param_type)
-                
+
                 # 🔑 关键修改：如果参数有默认值，且是基本类型，则使用构造函数的默认值而不是类型的默认值
                 if builtin_default is not None and has_default:
                     # 返回特殊标记，表示应该使用构造函数的默认值
                     return _USE_DEFAULT_VALUE
-                
+
                 if builtin_default is not None:
                     # 没有默认值时，才使用类型的默认值
                     return builtin_default
-                
+
                 # 尝试处理泛型类型
                 generic_default = self._get_generic_type_default(dep_info.param_type)
                 if generic_default is not None:
                     return generic_default
-                
+
                 # 对于其他无法处理的类型，如果有默认值则使用默认值
                 if has_default:
                     return _USE_DEFAULT_VALUE
-                
+
                 # Fail-fast：无法解析的依赖（无默认值、非 Optional/Any/内置）直接报错，
                 # 避免静默注入 None 掩盖配置错误（符合 Spring 的 fail-fast 语义）
                 raise ValueError(
@@ -269,7 +268,7 @@ class DependencyResolver:
                         return True
             except Exception:
                 pass
-            
+
         # 检查新的联合类型语法 (如 str | None)
         try:
             if hasattr(param_type, '__args__'):
@@ -278,7 +277,7 @@ class DependencyResolver:
                     return True
         except Exception:
             pass
-            
+
         # 检查新语法的联合类型 (T | None)，通过字符串表示
         type_str = str(param_type)
         if '|' in type_str and 'None' in type_str:
@@ -286,9 +285,9 @@ class DependencyResolver:
             parts = [part.strip() for part in type_str.split('|')]
             if len(parts) == 2 and 'None' in parts:
                 return True
-            
+
         return False
-        
+
     def _get_builtin_type_default(self, param_type: type):
         """
         获取内置类型的默认值
@@ -315,11 +314,11 @@ class DependencyResolver:
             frozenset: frozenset(),
             type: type,
         }
-            
+
         # 检查是否是内置类型
         if param_type in builtin_defaults:
             return builtin_defaults[param_type]
-            
+
         # 检查是否是typing模块的特殊类型
         import typing
         # 检查 typing.Any 类型 - 这是最重要的检查
@@ -331,14 +330,14 @@ class DependencyResolver:
             return None
         elif param_type is type(None):
             return None
-            
+
         # 检查是否是Optional类型
         if self._is_optional_type(param_type):
             return None
-            
+
         # 不是内置类型
         return None
-    
+
     def _get_generic_type_default(self, param_type: type):
         """
         获取泛型类型的默认值
@@ -355,12 +354,12 @@ class DependencyResolver:
             return None
         elif getattr(param_type, '__name__', None) == 'Any' or str(param_type).endswith('.Any'):
             return None  # 其他 Any 类型的变体
-        
+
         # 检查是否是Optional类型 (Union[X, None] 或 X | None)
         if hasattr(param_type, '__origin__'):
             try:
                 param_origin = getattr(param_type, '__origin__', None)
-                
+
                 # 检查是否是 Union 类型 (适用于 Optional[T] = Union[T, None])
                 if param_origin is getattr(typing, 'Union', None):
                     args = get_args(param_type)
@@ -369,7 +368,7 @@ class DependencyResolver:
                         return None
             except Exception:
                 pass
-        
+
         # 检查是否是新的联合类型语法 (如 str | None)
         try:
             if hasattr(param_type, '__args__'):
@@ -379,7 +378,7 @@ class DependencyResolver:
                     return None
         except Exception:
             pass
-        
+
         # 检查是否是新语法的联合类型 (T | None)，通过字符串表示
         type_str = str(param_type)
         if '|' in type_str and 'None' in type_str:
@@ -387,24 +386,24 @@ class DependencyResolver:
             parts = [part.strip() for part in type_str.split('|')]
             if len(parts) == 2 and 'None' in parts:
                 return None  # 视为 object | None 类型
-        
+
         # 检查是否是泛型类型
         origin = get_origin(param_type)
         if origin is not None:
             # 处理常见的泛型类型
-            if origin == list:
+            if origin is list:
                 return []
-            elif origin == dict:
+            elif origin is dict:
                 return {}
-            elif origin == tuple:
+            elif origin is tuple:
                 return ()
-            elif origin == set:
+            elif origin is set:
                 return set()
-            elif origin == frozenset:
+            elif origin is frozenset:
                 return frozenset()
-            elif origin == type(None):
+            elif origin is type(None):
                 return None
-            elif origin == (getattr(__builtins__, 'tuple', None) or tuple):  # typing.Tuple
+            elif origin == (getattr(__builtins__, 'tuple', None) or tuple):  # typing.Tuple  # noqa: E721
                 return ()
             elif hasattr(origin, '__origin__'):  # 更多泛型类型
                 # 对于其他泛型类型，尝试返回其原始类型的空实例
@@ -413,7 +412,7 @@ class DependencyResolver:
                         return origin()
                     except Exception:
                         pass
-        
 
-        
+
+
         return None

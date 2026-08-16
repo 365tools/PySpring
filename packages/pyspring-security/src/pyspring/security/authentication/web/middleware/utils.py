@@ -6,7 +6,7 @@
 
 from typing import Any
 
-from fastapi import Request, HTTPException, status
+from fastapi import HTTPException, Request, status
 
 
 class AuthUtils:
