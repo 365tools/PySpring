@@ -215,66 +215,16 @@ jobs:
           name: python-package
           path: dist/
 
-      - name: 📝 Extract changelog (multi-level fallback)
-        id: changelog
-        run: |
-          # 从 CHANGELOG.md 提取当前版本的更新内容（多级 fallback）
-          VERSION=${{ needs.build-and-test.outputs.version }}
-          # 提取从 `## [SECTION]`（可带 ` - 日期` 后缀）到下一个 `## [` 之间的内容。
-          # 用 awk 的 index() 做"字符串匹配"（非正则），避免版本号中的 `[` `]` `.`
-          # 被当作正则元字符（此前的正则方案在多层转义后丢失，导致提取为空）。
-          extract() {
-            awk -v sec="$1" 'BEGIN{found=0; buf=""; pfx="## [" sec "]"}
-              /^## \[/ {
-                if (found) exit
-                if (index($0, pfx) == 1) {
-                  r = substr($0, length(pfx)+1, 1)
-                  if (r == "" || r == " ") found=1
-                }
-                next
-              }
-              found { buf = buf $0 "\n" }
-              END { printf "%s", buf }' CHANGELOG.md
-          }
-          # 判断内容是否含"有效变更"：排除说明(>)、标题(#)、分隔线(---)、空行、占位符
-          has_content() {
-            echo "$1" | grep -v '^[[:space:]]*$' | grep -v '^#' | grep -v '^>' \
-              | grep -v '^---' | grep -v '（待补充）' | grep -q .
-          }
-          if [ -f CHANGELOG.md ]; then
-            # 1) 优先取精确版本号章节
-            CHANGES=$(extract "$VERSION")
-            # 2) 取 [Unreleased] 累积的未发版改动（若含有效变更）
-            if [ -z "$CHANGES" ]; then
-              UNREL=$(extract "Unreleased")
-              if has_content "$UNREL"; then CHANGES="$UNREL"; fi
-            fi
-            # 3) Unreleased 无有效变更 -> 取下一个有实际内容的版本章节
-            if [ -z "$CHANGES" ]; then
-              for SEC in $(awk '/^## \[/ && $0 !~ /Unreleased/ {gsub(/^## \[/,""); gsub(/\].*$/,""); print}' CHANGELOG.md); do
-                C=$(extract "$SEC")
-                if has_content "$C"; then CHANGES="$C"; break; fi
-              done
-            fi
-            # 4) 都没有则用默认文案（不报错）
-            if [ -z "$CHANGES" ]; then
-              CHANGES="Release version $VERSION"
-            fi
-            echo "changes<<EOF" >> $GITHUB_OUTPUT
-            echo "$CHANGES" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "changes=Release version $VERSION" >> $GITHUB_OUTPUT
-          fi
-
-      - name: 🚀 Create Release
-        uses: softprops/action-gh-release@v1
+      - name: 🚀 Create Release (composite action)
+        uses: ./.github/actions/create-release
         with:
-          body: |
-            ## PySpring v${{ needs.build-and-test.outputs.version }}
-
-            ${{ steps.changelog.outputs.changes }}
-
+          version: ${{ needs.build-and-test.outputs.version }}
+          prerelease: "false"
+          release_name_suffix: ""
+          fallback_text: "Release version"
+          files: |
+            dist/*
+          extra_body: |
             ### 📦 安装方式
 
             ```bash
@@ -292,7 +242,5 @@ jobs:
             - [PyPI 包](https://pypi.org/project/pyspring/${{ needs.build-and-test.outputs.version }}/)
             - [文档](https://github.com/365tools/PySpring/tree/main/docs)
             - [更新日志](https://github.com/365tools/PySpring/blob/main/CHANGELOG.md)
-          files: |
-            dist/*
-          draft: false
-          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
