@@ -2,13 +2,10 @@
 PySpring CLI Key Generation
 """
 import secrets
+from importlib.util import find_spec
 
-try:
-    from cryptography.fernet import Fernet  # noqa: F401  # 特性检测：导入成功即表示 cryptography 可用
-
-    has_crypto = True
-except ImportError:
-    has_crypto = False
+# 特性检测：仅检查 cryptography 模块是否可用，避免为检测而导入 Fernet
+has_crypto = find_spec("cryptography") is not None
 
 
 def generate_jwt_secret() -> str:
