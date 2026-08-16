@@ -19,7 +19,8 @@
     "packages/pyspring-cli/src",
     "packages/pyspring/src"
   ],
-  "pythonVersion": "3.12",
+  "pythonVersion": "3.14",
   "typeCheckingMode": "standard",
-  "reportMissingImports": true
+  "reportMissingImports": true,
+  "reportUnsupportedDunderAll": "none"
 }
