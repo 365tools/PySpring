@@ -1,6 +1,7 @@
 """
 认证系统启动初始化器
 """
+
 import traceback
 
 from pyspring.core.ioc.annotations.component import Component
@@ -25,21 +26,18 @@ from .chain import AuthenticationChain
 class AuthenticationInitializer(IStartupInitializer, IManaged):
     """
     认证系统启动初始化器（由IOC容器管理单例）
-    
+
     在应用启动时自动执行，负责：
     1. 收集 IoC 容器中所有可用的认证提供者，并注册到认证链。
     2. 收集 IoC 容器中所有可用的安全上下文验证器，并注册到安全上下文管理器。
     """
 
     def __init__(
-            self,
-            auth_chain: AuthenticationChain,
-            context_manager: SecurityContextManagerService,
-            enabled: bool = True
+        self, auth_chain: AuthenticationChain, context_manager: SecurityContextManagerService, enabled: bool = True
     ):
         """
         初始化（移除List注入，改为在initialize()中动态获取，避免循环依赖）
-        
+
         Args:
             auth_chain: 认证链管理器
             context_manager: 安全上下文管理器
@@ -53,7 +51,7 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
     async def initialize(self) -> bool:
         """
         初始化认证系统（动态获取依赖，避免循环依赖）
-        
+
         Returns:
             是否初始化成功
         """
@@ -73,7 +71,9 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
                 authentication_providers = None
                 if container.container.has("authentication_providers"):
                     authentication_providers = container.get("authentication_providers")
-                    logger.debug(f"[Debug] 从@Bean获取到 {len(authentication_providers) if authentication_providers else 0} 个认证提供者")
+                    logger.debug(
+                        f"[Debug] 从@Bean获取到 {len(authentication_providers) if authentication_providers else 0} 个认证提供者"
+                    )
 
                 # 降级：从IoC容器中查找所有IRequestAuthenticationProvider实现
                 if not authentication_providers:
@@ -82,8 +82,10 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
 
                 if authentication_providers:
                     self.auth_chain.register_providers(authentication_providers)
-                    logger.info(f"[Success] 注册了 {len(authentication_providers)} 个认证提供者: "
-                                 f"{[p.__class__.__name__ for p in authentication_providers]}")
+                    logger.info(
+                        f"[Success] 注册了 {len(authentication_providers)} 个认证提供者: "
+                        f"{[p.__class__.__name__ for p in authentication_providers]}"
+                    )
                 else:
                     logger.debug("[Debug] 未发现任何认证提供者（如果不使用认证功能，这是正常的）")
             except Exception as e:
@@ -95,7 +97,9 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
                 if validators:
                     for v in validators:
                         self.context_manager.register(v)
-                    logger.debug(f"[Debug] 自动注册了 {len(validators)} 个安全上下文验证器: {[v.__class__.__name__ for v in validators]}")
+                    logger.debug(
+                        f"[Debug] 自动注册了 {len(validators)} 个安全上下文验证器: {[v.__class__.__name__ for v in validators]}"
+                    )
                 else:
                     logger.debug("[Debug] 未发现自定义安全上下文验证器")
             except Exception as e:
@@ -113,7 +117,7 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
     def get_priority(self) -> int:
         """
         获取初始化器优先级
-        
+
         Returns:
             优先级（数字越小越先执行）
             认证系统需要在其他系统之前初始化，所以优先级设为 10
@@ -123,11 +127,11 @@ class AuthenticationInitializer(IStartupInitializer, IManaged):
     def get_name(self) -> str:
         """
         获取初始化器名称
-        
+
         Returns:
             初始化器名称
         """
         return "AuthenticationInitializer"
 
 
-__all__ = ['AuthenticationInitializer']
+__all__ = ["AuthenticationInitializer"]

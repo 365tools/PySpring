@@ -1,6 +1,7 @@
 """
 Static AST-based Import Checker Utilities
 """
+
 import ast
 import importlib.machinery
 import importlib.util
@@ -21,7 +22,7 @@ def is_module_available(module_name: str, sys_path: list[str]) -> bool:
 
     # 3. Use importlib machinery to search recursively
     try:
-        parts = module_name.split('.')
+        parts = module_name.split(".")
         current_path = sys_path
 
         for i, part in enumerate(parts):
@@ -40,7 +41,7 @@ def is_module_available(module_name: str, sys_path: list[str]) -> bool:
                 return False
 
         return True
-    except (ValueError, ImportError, AttributeError):
+    except ValueError, ImportError, AttributeError:
         return False
 
 
@@ -60,15 +61,15 @@ def check_relative_import_exists(file_path: str, module_name: str, level: int) -
 
     # Convert dot-notation module name to path components
     # e.g. "sub.mod" -> "sub/mod"
-    rel_path_components = module_name.split('.')
+    rel_path_components = module_name.split(".")
     path_without_ext = os.path.join(target_dir, *rel_path_components)
 
     # Check 1: path/to/module.py
-    if os.path.exists(path_without_ext + '.py'):
+    if os.path.exists(path_without_ext + ".py"):
         return True
 
     # Check 2: path/to/module/__init__.py
-    if os.path.exists(os.path.join(path_without_ext, '__init__.py')):
+    if os.path.exists(os.path.join(path_without_ext, "__init__.py")):
         return True
 
     return False
@@ -107,12 +108,12 @@ def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
         #    continue
 
         for file in files:
-            if file == '__init__.py' or not file.endswith('.py'):
+            if file == "__init__.py" or not file.endswith(".py"):
                 continue
 
             file_path = str(os.path.join(root, file))
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 # Perform quick string check first
@@ -128,7 +129,7 @@ def find_symbol_in_package(package_dir: str, symbol: str) -> List[str]:
                     rel_dir = os.path.relpath(root, package_dir)
                     module_name = file[:-3]
 
-                    if rel_dir == '.':
+                    if rel_dir == ".":
                         full_module = module_name
                     else:
                         # Convert path separators to dots for subpackages

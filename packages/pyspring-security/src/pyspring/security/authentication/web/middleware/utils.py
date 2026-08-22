@@ -30,10 +30,7 @@ class AuthUtils:
         """
         user_id = getattr(request.state, "user_id", None)
         if user_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="未找到用户信息，请重新登录"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="未找到用户信息，请重新登录")
         return user_id
 
     @staticmethod
@@ -118,10 +115,7 @@ class AuthUtils:
             HTTPException: 如果用户没有该角色
         """
         if not AuthUtils.has_role(request, role):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"此操作需要 '{role}' 角色"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"此操作需要 '{role}' 角色")
 
     @staticmethod
     def require_any_role(request: Request, roles: list[str]):
@@ -137,6 +131,5 @@ class AuthUtils:
         """
         if not AuthUtils.has_any_role(request, roles):
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"此操作需要以下角色之一: {', '.join(roles)}"
+                status_code=status.HTTP_403_FORBIDDEN, detail=f"此操作需要以下角色之一: {', '.join(roles)}"
             )

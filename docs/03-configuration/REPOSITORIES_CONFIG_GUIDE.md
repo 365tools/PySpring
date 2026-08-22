@@ -434,8 +434,8 @@ db_config = config_manager.get_database_config()
 print(f"数据库类型: {db_config['type']}")
 
 # 使用点号路径获取配置
-redis_host = config_manager.get('cache.redis.host')
-postgres_pool_size = config_manager.get('database.postgresql.pool.size')
+redis_host = config_manager.get("cache.redis.host")
+postgres_pool_size = config_manager.get("database.postgresql.pool.size")
 ```
 
 ---

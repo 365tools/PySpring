@@ -5,6 +5,7 @@
 
 class RevokeTokenReason:
     """撤销令牌原因"""
+
     # 用户重新登录
     USER_LOGIN = "用户重新登录"
     # 用户登出

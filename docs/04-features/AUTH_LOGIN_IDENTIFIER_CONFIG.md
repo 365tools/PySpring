@@ -26,7 +26,7 @@ authentication:
 如果未指定 `identifier_fields`，框架使用以下默认值：
 
 ```python
-identifier_fields = ['username', 'email', 'user_id']
+identifier_fields = ["username", "email", "user_id"]
 ```
 
 ## 工作原理
@@ -143,8 +143,10 @@ CREATE TABLE pyspring_user (
 ```python
 from pydantic import BaseModel, Field
 
+
 class LoginRequest(BaseModel):
     """登录请求"""
+
     identifier: str = Field(..., description="登录标识符（用户名/邮箱/手机号等）")
     password: str = Field(..., min_length=6, description="用户密码")
 ```
@@ -156,26 +158,25 @@ class LoginRequest(BaseModel):
 ```python
 # src/pyspring/security/authentication/providers/user/database.py
 
+
 async def get_user_by_identifier(self, identifier: str) -> Optional[UserInfo]:
     """
     根据标识符获取用户（支持多字段匹配）
     """
     # 从配置获取标识字段列表
     identifier_fields = self.component.identifier_fields
-    
+
     # 动态构建查询条件
     conditions = []
     for field_name in identifier_fields:
         if hasattr(UserTable, field_name):
-            conditions.append(
-                getattr(UserTable, field_name) == identifier
-            )
-    
+            conditions.append(getattr(UserTable, field_name) == identifier)
+
     # 执行查询
     stmt = select(UserTable).where(or_(*conditions))
     result = await session.execute(stmt)
     user = result.scalar_one_or_none()
-    
+
     return user
 ```
 
@@ -322,14 +323,10 @@ A: identifier字段本身是中性的，错误消息可以国际化：
 
 ```python
 # i18n/zh_CN.json
-{
-  "auth.invalid_credentials": "用户名或密码错误"
-}
+{"auth.invalid_credentials": "用户名或密码错误"}
 
 # i18n/en_US.json
-{
-  "auth.invalid_credentials": "Invalid credentials"
-}
+{"auth.invalid_credentials": "Invalid credentials"}
 ```
 
 ## 总结

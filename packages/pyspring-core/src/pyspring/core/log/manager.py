@@ -15,10 +15,11 @@ from .providers.loguru.services.service import LoguruService
 class LogManager(IManaged):
     """
     日志管理器 - 负责管理日志服务的具体实现
-    
+
     使用新IOC框架管理生命周期
     通过配置文件自动选择日志实现，无需手动切换
     """
+
     _implementation: (ILoggerService) | None = None
     _provider_registry: dict[str, type[ILoggerService]] = {
         "loguru": LoguruService,
@@ -31,9 +32,9 @@ class LogManager(IManaged):
     def _register_provider(cls, name: str, provider_cls: type[ILoggerService]):
         """
         【内部方法】注册日志提供者
-        
+
         仅供框架内部使用，不对外暴露
-        
+
         Args:
             name: 提供者名称（如 'loguru', 'stdlib', 'structlog'）
             provider_cls: 实现了 ILoggerService 的类
@@ -44,20 +45,17 @@ class LogManager(IManaged):
     def configure_provider(cls, provider_name: str):
         """
         【内部方法】配置日志提供者
-        
+
         由配置管理器调用，不建议业务代码直接调用
-        
+
         Args:
             provider_name: 提供者名称（如 'loguru', 'stdlib', 'structlog'）
-        
+
         Raises:
             ValueError: 提供者未注册时抛出
         """
         if provider_name not in cls._provider_registry:
-            raise ValueError(
-                f"日志提供者 '{provider_name}' 未注册。"
-                f"可用提供者: {list(cls._provider_registry.keys())}"
-            )
+            raise ValueError(f"日志提供者 '{provider_name}' 未注册。可用提供者: {list(cls._provider_registry.keys())}")
         cls._configured_provider = provider_name
         # 重置实例，以便下次调用 get_logger 时重新创建
         cls._implementation = None
@@ -66,7 +64,7 @@ class LogManager(IManaged):
     def get_logger(cls) -> ILoggerService:
         """
         获取当前配置的日志服务实例
-        
+
         Returns:
             ILoggerService: 日志服务实例
         """

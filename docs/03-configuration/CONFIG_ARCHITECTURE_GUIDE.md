@@ -65,6 +65,7 @@
 ```python
 from pyspring.security.core.config.loader import SecurityConfigManager
 
+
 # ✅ 正确使用 ConfigManager
 def _load_config(self):
     self._config = ConfigManager.load_config("security")
@@ -75,6 +76,7 @@ def _load_config(self):
 ```python
 from pyspring.repositories.base.config.loader import RepositoriesConfigManager
 
+
 # ✅ 正确使用 ConfigManager
 def _load_config(self) -> Dict[str, Any]:
     config = ConfigManager.load_config("database")
@@ -84,6 +86,7 @@ def _load_config(self) -> Dict[str, Any]:
 
 ```python
 from pyspring.log.providers.loguru.config.manager import LoggingConfigManager
+
 
 # ✅ 正确使用 ConfigManager
 def _load_config(self) -> Dict[str, Any]:

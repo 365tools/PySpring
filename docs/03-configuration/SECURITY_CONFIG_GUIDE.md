@@ -507,33 +507,26 @@ from typing import Optional, Any
 from fastapi import Request
 from pyspring.security.auth.providers.base import BaseAuthProvider, AuthenticationResult
 
+
 class CustomAuthProvider(BaseAuthProvider):
     """自定义认证提供者"""
-    
+
     async def extract_credentials(self, request: Request) -> Optional[Any]:
         """从请求中提取凭证"""
         # 例如：从自定义 Header 提取
         custom_token = request.headers.get("X-Custom-Auth")
         return custom_token
-    
+
     async def validate_credentials(self, credentials: Any) -> AuthenticationResult:
         """验证凭证"""
         # 实现自定义验证逻辑
         if self.verify_custom_token(credentials):
             return AuthenticationResult(
-                success=True,
-                user_id="user123",
-                username="custom_user",
-                roles=["custom_role"],
-                provider_name=self.name
+                success=True, user_id="user123", username="custom_user", roles=["custom_role"], provider_name=self.name
             )
         else:
-            return AuthenticationResult(
-                success=False,
-                error_message="自定义认证失败",
-                provider_name=self.name
-            )
-    
+            return AuthenticationResult(success=False, error_message="自定义认证失败", provider_name=self.name)
+
     def verify_custom_token(self, token: str) -> bool:
         """自定义 Token 验证逻辑"""
         # 实现您的验证逻辑
@@ -547,8 +540,7 @@ from src.pyspring.security.auth.factory import AuthenticationInitializer
 
 # 注册自定义提供者类型
 AuthenticationInitializer.register_custom_provider(
-    provider_type="CustomAuthProvider",
-    provider_class=CustomAuthProvider
+    provider_type="CustomAuthProvider", provider_class=CustomAuthProvider
 )
 ```
 
@@ -573,9 +565,7 @@ providers:
 from src.pyspring.security.auth.factory import AuthenticationInitializer
 
 # 注册自定义提供者
-AuthenticationInitializer.register_custom_provider(
-    "CustomAuthProvider", CustomAuthProvider
-)
+AuthenticationInitializer.register_custom_provider("CustomAuthProvider", CustomAuthProvider)
 
 # 初始化认证系统
 AuthenticationInitializer.initialize(token_manager)
@@ -874,7 +864,7 @@ auth_chain_manager.get_chain().reload_whitelist()
 ```python
 class CustomAuthenticationMiddleware(AuthenticationMiddleware):
     """自定义错误响应"""
-    
+
     @staticmethod
     def create_error_response(status_code: int, message: str, detail: str = None):
         return JSONResponse(
@@ -884,8 +874,8 @@ class CustomAuthenticationMiddleware(AuthenticationMiddleware):
                 "error_code": f"AUTH_{status_code}",
                 "message": message,
                 "detail": detail,
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         )
 ```
 

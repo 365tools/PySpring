@@ -165,6 +165,7 @@ $env:JWT_ENCRYPTION_KEY="vQ8eZ7J_Xk2mN9pL0oR6uY4tH1sA3bC5dF7gE8iW9jK="
 
 ```python
 from cryptography.fernet import Fernet
+
 key = Fernet.generate_key()
 print(key.decode())
 ```
@@ -523,7 +524,8 @@ cat config/security.yaml | grep -A 5 encryption
 ```python
 # 使用性能分析工具
 import cProfile
-cProfile.run('token_manager.create_access_token(...)')
+
+cProfile.run("token_manager.create_access_token(...)")
 
 # 检查是否使用了 AES-GCM（比 Fernet 慢）
 # 建议使用 Fernet

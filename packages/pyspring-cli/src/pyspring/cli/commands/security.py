@@ -15,6 +15,4 @@ class SecurityCommand(BaseCommand):
     help = "Manage security configurations and encryption keys"
     description = "Security utilities for PySpring"
 
-    subcommands = [
-        GenerateKeyCommand
-    ]
+    subcommands = [GenerateKeyCommand]

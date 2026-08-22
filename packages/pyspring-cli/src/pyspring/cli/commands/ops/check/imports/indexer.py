@@ -2,6 +2,7 @@
 Symbol Indexer for Python Projects
 Scans a directory tree and builds a mapping of Symbol Name -> Module Path.
 """
+
 import ast
 import os
 from collections import defaultdict
@@ -37,7 +38,7 @@ class ProjectIndexer:
         """Convert file path to dotted module path"""
         # Try to find relative path from likely source roots
         candidates = [self.root_dir]
-        src_dir = os.path.join(self.root_dir, 'src')
+        src_dir = os.path.join(self.root_dir, "src")
         if os.path.exists(src_dir):
             candidates.insert(0, src_dir)
 
@@ -52,16 +53,16 @@ class ProjectIndexer:
             return ""
 
         # Remove extension
-        if best_rel.endswith('.py'):
+        if best_rel.endswith(".py"):
             best_rel = best_rel[:-3]
 
         # Handle __init__
-        if best_rel.endswith('__init__'):
+        if best_rel.endswith("__init__"):
             best_rel = best_rel[:-9]  # remove \__init__ or /__init__
             if best_rel.endswith(os.sep):
                 best_rel = best_rel[:-1]
 
-        return best_rel.replace(os.path.sep, '.')
+        return best_rel.replace(os.path.sep, ".")
 
     def index_path(self, path: str, prefix: str = ""):
         """Explicitly index a specific directory or package"""
@@ -73,22 +74,24 @@ class ProjectIndexer:
 
         for root, dirs, files in os.walk(path):
             # Same filtering
-            dirs[:] = [d for d in dirs if d not in ignored and not d.startswith('.')]
+            dirs[:] = [d for d in dirs if d not in ignored and not d.startswith(".")]
 
             for file in files:
-                if not file.endswith('.py'):
+                if not file.endswith(".py"):
                     continue
 
                 file_path = os.path.join(root, file)
 
                 # Calculate module path relative to 'path'
                 rel = os.path.relpath(file_path, path)
-                if rel.endswith('.py'): rel = rel[:-3]
-                if rel.endswith('__init__'):
+                if rel.endswith(".py"):
+                    rel = rel[:-3]
+                if rel.endswith("__init__"):
                     rel = rel[:-9]
-                    if rel.endswith(os.sep): rel = rel[:-1]
+                    if rel.endswith(os.sep):
+                        rel = rel[:-1]
 
-                mod_path = rel.replace(os.path.sep, '.')
+                mod_path = rel.replace(os.path.sep, ".")
 
                 # Apply prefix
                 if prefix:
@@ -100,7 +103,7 @@ class ProjectIndexer:
                     final_mod = mod_path
 
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         source = f.read()
 
                     tree = ast.parse(source, filename=file_path)
@@ -123,10 +126,10 @@ class ProjectIndexer:
 
         # 1. Standard Project Scan
         for root, dirs, files in os.walk(self.root_dir):
-            dirs[:] = [d for d in dirs if d not in ignored and not d.startswith('.')]
+            dirs[:] = [d for d in dirs if d not in ignored and not d.startswith(".")]
 
             for file in files:
-                if not file.endswith('.py'):
+                if not file.endswith(".py"):
                     continue
 
                 file_path = os.path.join(root, file)
@@ -136,7 +139,7 @@ class ProjectIndexer:
                     continue
 
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         source = f.read()
 
                     tree = ast.parse(source, filename=file_path)

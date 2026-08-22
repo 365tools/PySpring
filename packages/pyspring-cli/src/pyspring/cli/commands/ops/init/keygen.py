@@ -1,6 +1,7 @@
 """
 PySpring CLI Key Generation
 """
+
 import secrets
 from importlib.util import find_spec
 
@@ -17,5 +18,6 @@ def generate_encryption_key() -> str:
     """Generate JWT encryption key"""
     if has_crypto:
         from cryptography.fernet import Fernet
-        return Fernet.generate_key().decode('utf-8')
+
+        return Fernet.generate_key().decode("utf-8")
     return ""

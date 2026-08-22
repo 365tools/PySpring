@@ -3,6 +3,7 @@
 
 负责扫描指定包路径，发现所有需要被IOC管理的组件
 """
+
 import importlib
 import inspect
 import pkgutil
@@ -22,6 +23,7 @@ from pyspring.core.log.instance import logger
 @dataclass
 class ComponentMetadata:
     """组件元数据"""
+
     cls: type  # 类型
     name: str  # 组件名称
     module: str  # 所属模块
@@ -43,7 +45,7 @@ class ComponentMetadata:
 class ComponentScanner:
     """
     组件扫描器
-    
+
     职责：
     1. 扫描指定包路径下的所有模块
     2. 识别需要被IOC管理的组件
@@ -66,14 +68,14 @@ class ComponentScanner:
     def scan(self, base_packages: list[str]) -> dict[type, ComponentMetadata]:
         """
         扫描指定的包路径（两阶段扫描）
-        
+
         阶段1: 扫描所有组件
         阶段2: 构建类型映射表
         阶段3: 检测替换关系
-        
+
         Args:
             base_packages: 要扫描的包路径列表
-            
+
         Returns:
             发现的组件字典 {类型: 元数据}
         """
@@ -102,11 +104,9 @@ class ComponentScanner:
             package = importlib.import_module(package_name)
 
             # 递归扫描子包
-            if hasattr(package, '__path__'):
+            if hasattr(package, "__path__"):
                 for importer, modname, ispkg in pkgutil.walk_packages(
-                        path=package.__path__,
-                        prefix=package.__name__ + '.',
-                        onerror=lambda x: None
+                    path=package.__path__, prefix=package.__name__ + ".", onerror=lambda x: None
                 ):
                     # 检查是否应该扫描
                     if not self.config.should_scan_package(modname):
@@ -181,7 +181,7 @@ class ComponentScanner:
             return self._processed_classes_cache[class_key]
 
         # 1. 检查是否是Protocol（接口定义）
-        if getattr(cls, '_is_protocol', False):
+        if getattr(cls, "_is_protocol", False):
             result = False
 
         # 2. 检查是否是抽象类（有未实现的抽象方法）
@@ -221,15 +221,15 @@ class ComponentScanner:
     def _is_unimplemented_abstract_class(self, cls: type) -> bool:
         """
         检查是否是未实现的抽象类
-        
+
         Args:
             cls: 待检查的类
-            
+
         Returns:
             如果是未实现的抽象类则返回True，否则返回False
         """
         # 检查是否存在未实现的抽象方法
-        abstract_methods = getattr(cls, '__abstractmethods__', None)
+        abstract_methods = getattr(cls, "__abstractmethods__", None)
         return abstract_methods is not None and len(abstract_methods) > 0
 
     def _is_component(self, cls: type) -> bool:
@@ -246,7 +246,7 @@ class ComponentScanner:
         try:
             if IManaged in cls.__mro__:
                 return True
-        except (TypeError, AttributeError):
+        except TypeError, AttributeError:
             pass
 
         return False
@@ -277,7 +277,7 @@ class ComponentScanner:
                 is_configuration=is_configuration,
                 is_primary=is_primary,
                 is_lazy=is_lazy,
-                bean_methods=bean_methods
+                bean_methods=bean_methods,
             )
 
         except Exception as e:
@@ -359,10 +359,11 @@ class ComponentScanner:
     def _generate_name(service_type: type) -> str:
         """生成组件名称（类名转snake_case）"""
         import re
+
         name = service_type.__name__
         # CamelCase -> snake_case
-        name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+        name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
         return name
 
 
-__all__ = ['ComponentScanner', 'ComponentMetadata']
+__all__ = ["ComponentScanner", "ComponentMetadata"]

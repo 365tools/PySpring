@@ -12,6 +12,7 @@
 class UserService:
     def __init__(self, notif_service: NotificationService): ...
 
+
 # Service B 依赖 A
 @Service
 class NotificationService:
@@ -58,7 +59,7 @@ class UserService:
 
     def register(self):
         # 运行时延迟获取
-        notif_service = self.container.get('notification_service')
+        notif_service = self.container.get("notification_service")
         notif_service.send(...)
 ```
 

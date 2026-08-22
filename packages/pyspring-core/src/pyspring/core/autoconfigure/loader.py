@@ -122,7 +122,7 @@ class AutoConfigurationLoader:
             module = importlib.import_module(module_path)
             config_cls = getattr(module, attr, None)
             return config_cls if isinstance(config_cls, type) else None
-        except (ImportError, AttributeError):
+        except ImportError, AttributeError:
             return None
 
     def _iter_entry_points(self) -> Iterable[metadata.EntryPoint]:
@@ -144,7 +144,7 @@ class AutoConfigurationLoader:
         loader: Callable[[], Any] | None = None
         try:
             loader = entry_point.load()
-        except (ImportError, AttributeError):
+        except ImportError, AttributeError:
             loader = None
 
         if loader is None:

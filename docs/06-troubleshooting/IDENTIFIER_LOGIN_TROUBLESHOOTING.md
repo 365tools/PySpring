@@ -114,8 +114,9 @@ from pyspring.repositories.db.models.common.define import BaseUserTable
 
 class User(BaseUserTable):
     """自定义用户模型"""
+
     __tablename__ = "users"  # 实际表名：{prefix}_users
-    
+
     username = Column(String(50), unique=True, index=True, nullable=False)
     phone = Column(String(20), nullable=True)
 ```
@@ -179,13 +180,12 @@ authentication:
 
 ```python
 # ❌ 错误：没有装饰器，扫描器无法识别
-class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
-    ...
+class CustomSecurityEntityConfiguration(SecurityEntityConfiguration): ...
+
 
 # ✅ 正确
 @Component
-class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
-    ...
+class CustomSecurityEntityConfiguration(SecurityEntityConfiguration): ...
 ```
 
 ### 错误 2：import 路径错误
@@ -241,7 +241,7 @@ user_model = entity_config.user_orm_model
 identifier = "admin@example.com"
 
 conditions = []
-for field_name in ['username', 'email', 'user_id']:
+for field_name in ["username", "email", "user_id"]:
     if hasattr(user_model, field_name):
         field = getattr(user_model, field_name)
         conditions.append(field == identifier)

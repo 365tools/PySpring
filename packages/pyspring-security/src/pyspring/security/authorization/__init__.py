@@ -21,6 +21,7 @@ async def delete_order(order_id: int):
     ...
 ```
 """
+
 from pyspring.security.authorization.config import AuthorizationConfiguration
 from pyspring.security.authorization.contracts import (
     IPathPermissionProvider,
@@ -36,16 +37,14 @@ from pyspring.security.authorization.decorators import (
 
 __all__ = [
     # 配置
-    'AuthorizationConfiguration',
-
+    "AuthorizationConfiguration",
     # 接口
-    'IPermissionService',
-    'IRoleProvider',
-    'IPathPermissionProvider',
-
+    "IPermissionService",
+    "IRoleProvider",
+    "IPathPermissionProvider",
     # 装饰器
-    'require_permission',
-    'require_role',
-    'require_any_permission',
-    'require_all_permissions',
+    "require_permission",
+    "require_role",
+    "require_any_permission",
+    "require_all_permissions",
 ]

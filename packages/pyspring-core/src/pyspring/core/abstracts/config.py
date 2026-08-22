@@ -4,6 +4,7 @@
 定义配置系统的核心基类。
 完全通用，不包含任何业务逻辑。
 """
+
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -11,18 +12,18 @@ import yaml
 from pydantic_settings import BaseSettings
 
 # 类型变量
-TConfig = TypeVar('TConfig', bound=BaseSettings)
+TConfig = TypeVar("TConfig", bound=BaseSettings)
 
 
 class ConfigSection(BaseSettings):
     """
     配置节基类
-    
+
     所有配置节都应该继承此类，提供Pydantic的所有功能。
     支持从 YAML 文件自动加载配置。
-    
+
     配置优先级：环境变量 > YAML 文件 > Field 默认值
-    
+
     使用示例：
         @Component
         @Singleton
@@ -31,14 +32,14 @@ class ConfigSection(BaseSettings):
                 yaml_config_file="config/repositories.yaml",
                 yaml_config_key="cache"
             )
-            
+
             type: str = Field(default="memory")
     """
 
     def __init__(self, **data: Any):
         """
         初始化配置节，支持 YAML 自动加载
-        
+
         优先级：环境变量 > YAML > data 参数 > Field 默认值
         """
         # 获取 YAML 配置
@@ -56,19 +57,19 @@ class ConfigSection(BaseSettings):
     def _load_yaml_config(self) -> (dict[str, Any]) | None:
         """
         从 YAML 文件加载配置
-        
+
         Returns:
             (dict[str, Any]) | None: YAML 配置数据，如果未配置或加载失败则返回 None
         """
         # 优先从类属性读取，然后从 model_config 读取
-        yaml_file = getattr(self.__class__, 'yaml_config_file', None)
-        yaml_key = getattr(self.__class__, 'yaml_config_key', None)
+        yaml_file = getattr(self.__class__, "yaml_config_file", None)
+        yaml_key = getattr(self.__class__, "yaml_config_key", None)
 
         if not yaml_file:
             # 兼容旧方式：从 model_config 读取
-            model_config = getattr(self, 'model_config', {})
-            yaml_file = model_config.get('yaml_config_file')
-            yaml_key = model_config.get('yaml_config_key')
+            model_config = getattr(self, "model_config", {})
+            yaml_file = model_config.get("yaml_config_file")
+            yaml_key = model_config.get("yaml_config_key")
 
         if not yaml_file:
             return None
@@ -80,12 +81,12 @@ class ConfigSection(BaseSettings):
                 return None
 
             # 加载 YAML
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 yaml_data = yaml.safe_load(f)
 
             # 提取指定 key
             if yaml_key:
-                for key in yaml_key.split('.'):
+                for key in yaml_key.split("."):
                     yaml_data = yaml_data.get(key, {})
                     if not yaml_data:
                         return None
@@ -100,10 +101,10 @@ class ConfigSection(BaseSettings):
     def _find_config_file(relative_path: str) -> (Path) | None:
         """
         查找配置文件（从当前目录向上搜索）
-        
+
         Args:
             relative_path: 相对路径，如 "config/repositories.yaml"
-            
+
         Returns:
             (Path) | None: 配置文件路径，如果未找到则返回 None
         """
@@ -138,7 +139,7 @@ class ConfigSection(BaseSettings):
     def to_dict(self) -> dict[str, Any]:
         """
         转换为字典
-        
+
         Returns:
             dict[str, Any]: 配置字典
         """

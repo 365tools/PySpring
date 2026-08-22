@@ -31,7 +31,7 @@ app = FastAPI()
 # 注册认证中间件（全局）
 app.add_middleware(
     AuthenticationMiddleware,
-    enable_role_check=True  # 启用角色检查
+    enable_role_check=True,  # 启用角色检查
 )
 ```
 
@@ -62,14 +62,15 @@ from fastapi import APIRouter, Request
 
 router = APIRouter(prefix="/api/user")
 
+
 @router.get("/profile")
 async def get_profile(request: Request):
     """获取当前用户资料"""
     return {
-        "user_id": request.state.user_id,          # 用户 ID
-        "email": request.state.user_email,         # 用户邮箱
-        "roles": request.state.user_roles,         # 用户角色列表
-        "permissions": request.state.user_permissions  # 用户权限列表
+        "user_id": request.state.user_id,  # 用户 ID
+        "email": request.state.user_email,  # 用户邮箱
+        "roles": request.state.user_roles,  # 用户角色列表
+        "permissions": request.state.user_permissions,  # 用户权限列表
     }
 ```
 
@@ -81,21 +82,17 @@ from pyspring.security.authentication.infrastructure.context import AuthContext
 
 router = APIRouter(prefix="/api/user")
 
+
 @router.get("/info")
 async def get_user_info():
     """获取当前认证用户信息"""
     user_context = AuthContext.get_current_user()
-    
+
     if not user_context or not user_context.user:
         return {"error": "User not authenticated"}
-    
+
     user = user_context.user
-    return {
-        "id": user.id,
-        "username": user.username,
-        "email": user.email,
-        "roles": user_context.roles
-    }
+    return {"id": user.id, "username": user.username, "email": user.email, "roles": user_context.roles}
 ```
 
 ---
@@ -112,17 +109,20 @@ from pyspring.security.authorization import require_permission
 
 router = APIRouter(prefix="/api/users")
 
+
 @router.get("")
 @require_permission("user:read")
 async def list_users(request: Request):
     """需要 user:read 权限才能访问"""
     return {"users": [...]}
 
+
 @router.post("")
 @require_permission("user:create")
 async def create_user(request: Request, username: str):
     """需要 user:create 权限才能访问"""
     return {"message": "User created"}
+
 
 @router.delete("/{user_id}")
 @require_permission("user:delete")
@@ -136,6 +136,7 @@ async def delete_user(request: Request, user_id: int):
 ```python
 from pyspring.security.authorization import require_any_permission
 
+
 @router.get("/admin-or-manager")
 @require_any_permission("admin:*", "manager:*")
 async def privileged_action(request: Request):
@@ -147,6 +148,7 @@ async def privileged_action(request: Request):
 
 ```python
 from pyspring.security.authorization import require_all_permissions
+
 
 @router.post("/sensitive-operation")
 @require_all_permissions("user:read", "user:write", "user:delete")
@@ -160,12 +162,14 @@ async def sensitive_operation(request: Request):
 ```python
 from pyspring.security.authorization import require_permission
 
+
 # 方式 A: 任意权限（默认 require_all=False）
 @router.get("/option-a")
 @require_permission(["admin:*", "manager:*"], require_all=False)
 async def any_permission_example(request: Request):
     """拥有 admin:* 或 manager:* 任一权限即可"""
     return {"access": "granted"}
+
 
 # 方式 B: 所有权限（require_all=True）
 @router.post("/option-b")
@@ -197,11 +201,13 @@ from pyspring.security.authorization import require_role
 
 router = APIRouter(prefix="/api/admin")
 
+
 @router.get("/dashboard")
 @require_role("admin")
 async def admin_dashboard(request: Request):
     """只有 admin 角色可以访问"""
     return {"dashboard": "admin data"}
+
 
 @router.post("/settings")
 @require_role(["admin", "super_admin"], require_all=False)
@@ -215,12 +221,14 @@ async def modify_settings(request: Request):
 ```python
 from pyspring.security.authorization import require_role
 
+
 # 任意角色（OR）
 @router.get("/managers")
 @require_role(["admin", "manager", "team_lead"], require_all=False)
 async def manager_action(request: Request):
     """拥有 admin、manager 或 team_lead 任一角色即可"""
     return {"access": "granted"}
+
 
 # 所有角色（AND）- 较少使用
 @router.get("/super-restricted")
@@ -257,11 +265,7 @@ async def custom_permission_check(request: Request):
     has_read = await permission_service.has_permission(user_id, "user:read")
     has_write = await permission_service.has_permission(user_id, "user:write")
 
-    return {
-        "user_id": user_id,
-        "can_read": has_read,
-        "can_write": has_write
-    }
+    return {"user_id": user_id, "can_read": has_read, "can_write": has_write}
 ```
 
 ### 2. 动态权限检查
@@ -282,6 +286,7 @@ async def dynamic_action(request: Request, resource_id: int):
     # 动态检查
     if not await permission_service.has_permission(user_id, required_permission):
         from fastapi import HTTPException
+
         raise HTTPException(status_code=403, detail=f"Permission denied: {required_permission}")
 
     return {"message": f"Action on resource {resource_id} completed"}
@@ -295,11 +300,7 @@ async def dynamic_action(request: Request, resource_id: int):
 
 ```python
 from fastapi import APIRouter, Request, HTTPException
-from pyspring.security.authorization import (
-    require_permission,
-    require_any_permission,
-    require_all_permissions
-)
+from pyspring.security.authorization import require_permission, require_any_permission, require_all_permissions
 
 router = APIRouter(prefix="/api/users", tags=["Users"])
 
@@ -308,12 +309,7 @@ router = APIRouter(prefix="/api/users", tags=["Users"])
 @require_permission("user:read")
 async def list_users(request: Request):
     """查询用户列表 - 需要 user:read 权限"""
-    return {
-        "users": [
-            {"id": 1, "username": "alice"},
-            {"id": 2, "username": "bob"}
-        ]
-    }
+    return {"users": [{"id": 1, "username": "alice"}, {"id": 2, "username": "bob"}]}
 
 
 @router.get("/{user_id}")
@@ -327,20 +323,14 @@ async def get_user(request: Request, user_id: int):
 @require_all_permissions("user:read", "user:create")
 async def create_user(request: Request, username: str, email: str):
     """创建用户 - 需要 user:read 和 user:create 权限"""
-    return {
-        "message": "User created",
-        "user": {"username": username, "email": email}
-    }
+    return {"message": "User created", "user": {"username": username, "email": email}}
 
 
 @router.put("/{user_id}")
 @require_permission("user:update")
 async def update_user(request: Request, user_id: int, username: str):
     """更新用户 - 需要 user:update 权限"""
-    return {
-        "message": "User updated",
-        "user": {"id": user_id, "username": username}
-    }
+    return {"message": "User updated", "user": {"id": user_id, "username": username}}
 
 
 @router.delete("/{user_id}")
@@ -370,11 +360,7 @@ router = APIRouter(prefix="/api/admin", tags=["Admin"])
 @require_role("admin")
 async def get_dashboard(request: Request):
     """管理后台首页 - 需要 admin 角色"""
-    return {
-        "total_users": 1000,
-        "active_users": 850,
-        "total_orders": 5000
-    }
+    return {"total_users": 1000, "active_users": 850, "total_orders": 5000}
 
 
 @router.get("/logs")
@@ -413,12 +399,7 @@ router = APIRouter(prefix="/api/orders", tags=["Orders"])
 async def list_orders(request: Request):
     """查询订单列表"""
     user_id = request.state.user_id
-    return {
-        "orders": [
-            {"id": 1, "user_id": user_id, "total": 100.0},
-            {"id": 2, "user_id": user_id, "total": 200.0}
-        ]
-    }
+    return {"orders": [{"id": 1, "user_id": user_id, "total": 100.0}, {"id": 2, "user_id": user_id, "total": 200.0}]}
 
 
 @router.get("/{order_id}")
@@ -447,9 +428,7 @@ async def get_order(request: Request, order_id: int):
 async def cancel_order(request: Request, order_id: int):
     """取消订单"""
     user = AuthContext.get_current_user()
-    return {
-        "message": f"Order {order_id} cancelled by {user.user.email if user and user.user else 'unknown'}"
-    }
+    return {"message": f"Order {order_id} cancelled by {user.user.email if user and user.user else 'unknown'}"}
 ```
 
 ---
@@ -461,7 +440,7 @@ async def cancel_order(request: Request, order_id: int):
 装饰器从下往上执行，路由装饰器应该放在最上面：
 
 ```python
-@router.get("/example")           # ✅ 路由装饰器在最上面
+@router.get("/example")  # ✅ 路由装饰器在最上面
 @require_permission("user:read")  # ✅ 权限装饰器在下面
 async def example(request: Request):
     return {"data": "..."}
@@ -478,6 +457,7 @@ async def example(request: Request):
 async def example(request: Request):
     return {"data": "..."}
 
+
 # ❌ 错误：缺少 Request 参数
 @router.get("/example")
 @require_permission("user:read")
@@ -491,16 +471,17 @@ async def example():  # 缺少 request 参数
 
 ```python
 # 推荐
-"user:read"      # 读取用户
-"user:write"     # 写入用户
-"user:delete"    # 删除用户
-"admin:*"        # 管理员所有权限
-"order:create"   # 创建订单
+"user:read"  # 读取用户
+
+"user:write"  # 写入用户
+"user:delete"  # 删除用户
+"admin:*"  # 管理员所有权限
+"order:create"  # 创建订单
 "report:export"  # 导出报表
 
 # 不推荐
-"readUser"       # 驼峰命名不够清晰
-"user_read"      # 下划线不如冒号清晰
+"readUser"  # 驼峰命名不够清晰
+"user_read"  # 下划线不如冒号清晰
 ```
 
 ### 4. 异常处理
@@ -528,9 +509,10 @@ async def example(request: Request):
 ```python
 from pyspring.security.authorization import require_permission, require_role
 
+
 @router.post("/super-admin-action")
-@require_role("super_admin")                # 必须是 super_admin 角色
-@require_permission("system:critical")      # 同时需要 system:critical 权限
+@require_role("super_admin")  # 必须是 super_admin 角色
+@require_permission("system:critical")  # 同时需要 system:critical 权限
 async def super_admin_action(request: Request):
     """超级管理员的关键操作"""
     return {"message": "Critical action completed"}

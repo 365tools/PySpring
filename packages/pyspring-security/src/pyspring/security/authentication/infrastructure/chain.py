@@ -25,7 +25,7 @@ class AuthenticationChain(IManaged):
     def __init__(self, config_manager: SecurityConfigManager):
         """
         初始化认证链
-        
+
         Args:
             config_manager: 安全配置管理器（通过IOC注入）
         """
@@ -41,7 +41,7 @@ class AuthenticationChain(IManaged):
     def register_provider(self, provider: IRequestAuthenticationProvider):
         """
         注册认证提供者
-        
+
         Args:
             provider: 认证提供者实例
         """
@@ -55,7 +55,7 @@ class AuthenticationChain(IManaged):
     def register_providers(self, providers: list[IRequestAuthenticationProvider]):
         """
         批量注册认证提供者
-        
+
         Args:
             providers: 认证提供者列表
         """
@@ -72,10 +72,10 @@ class AuthenticationChain(IManaged):
     def is_public_path(self, path: str) -> bool:
         """
         检查路径是否在白名单中
-        
+
         Args:
             path: 请求路径
-            
+
         Returns:
             bool: 是否为公开路径（无需认证）
         """
@@ -84,33 +84,26 @@ class AuthenticationChain(IManaged):
     async def authenticate(self, request: Request) -> RequestAuthenticationResult:
         """
         执行认证链
-        
+
         按优先级顺序执行所有启用的认证提供者，直到：
         1. 某个提供者认证成功 -> 返回成功结果
         2. 所有提供者都失败 -> 返回失败结果
-        
+
         Args:
             request: FastAPI Request 对象
-            
+
         Returns:
             RequestAuthenticationResult: 认证结果
         """
         if not self.providers:
             logger.warning("[Warning]  没有可用的认证提供者")
-            return RequestAuthenticationResult(
-                success=False,
-                error_message="未配置认证提供者",
-                provider_name="system"
-            )
+            return RequestAuthenticationResult(success=False, error_message="未配置认证提供者", provider_name="system")
 
         # 检查是否为公开路径
         path = request.url.path
         if self.is_public_path(path):
             logger.debug(f"[Success] 公开路径，跳过认证: {path}")
-            return RequestAuthenticationResult(
-                success=True,
-                provider_name="whitelist"
-            )
+            return RequestAuthenticationResult(success=True, provider_name="whitelist")
 
         # 收集所有失败信息
         failures: list[str] = []
@@ -139,9 +132,7 @@ class AuthenticationChain(IManaged):
         logger.warning(f"[Error] 所有认证提供者都失败: {error_summary}")
 
         return RequestAuthenticationResult(
-            success=False,
-            error_message=f"认证失败: {error_summary}",
-            provider_name="chain"
+            success=False, error_message=f"认证失败: {error_summary}", provider_name="chain"
         )
 
     def get_provider_count(self) -> int:

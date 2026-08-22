@@ -26,10 +26,11 @@ import os
 import sys
 
 # 标识 CLI 模式，让日志系统保持静默
-os.environ['PYSPRING_CLI_MODE'] = '1'
+os.environ["PYSPRING_CLI_MODE"] = "1"
 
 # 在导入任何 PySpring 模块之前，先禁用 loguru 的默认输出
 from loguru import logger
+
 logger.remove()  # 移除所有默认 handler
 logger.add(sys.stderr, level="ERROR", format="<red>Error:</red> {message}")
 
@@ -52,11 +53,11 @@ from .core.commands.loader import load_commands
 ```python
 def _setup_logging(self):
     # 检查是否在 CLI 模式下运行
-    is_cli_mode = os.environ.get('PYSPRING_CLI_MODE') == '1'
-    
+    is_cli_mode = os.environ.get("PYSPRING_CLI_MODE") == "1"
+
     # 移除默认处理器
     _loguru.remove()
-    
+
     # CLI 模式下：只在出现 WARNING 及以上级别时才输出
     if is_cli_mode:
         _loguru.add(
@@ -65,10 +66,10 @@ def _setup_logging(self):
             level="WARNING",
             colorize=True,
             backtrace=False,
-            diagnose=False
+            diagnose=False,
         )
         return  # 跳过其他配置
-    
+
     # 非 CLI 模式：正常加载配置
     # ...
 ```
@@ -127,11 +128,10 @@ import os
 
 ```python
 # 未来可以实现
-parser.add_argument('--verbose', '-v', action='store_true', 
-                    help='Enable verbose logging')
+parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
 
 if not args.verbose:
-    os.environ['PYSPRING_CLI_MODE'] = '1'
+    os.environ["PYSPRING_CLI_MODE"] = "1"
 ```
 
 ## 相关文件

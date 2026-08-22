@@ -3,6 +3,7 @@ CLI 集成测试：分析/诊断命令（imports-* / references / basedpyright�
 
 这些命令对 packages/ 源码做只读分析（imports-unused 除外，单独测试）。
 """
+
 import pytest
 
 
@@ -29,6 +30,7 @@ def test_basedpyright(cli):
     """basedpyright 应对核心包做类型检查（慢命令）。"""
     rc, out = cli(
         ["basedpyright", "packages/pyspring-core/src/pyspring/core/ioc"],
-        cwd=".", timeout=300,
+        cwd=".",
+        timeout=300,
     )
     assert rc in (0, 1, 2), f"basedpyright failed: {out[:300]}"

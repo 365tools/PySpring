@@ -3,6 +3,7 @@ Template File Synchronization Script
 
 Used to synchronize configuration files from the PySpring root directory to the templates directory.
 """
+
 import shutil
 from pathlib import Path
 
@@ -52,7 +53,7 @@ def sync_templates(args):
         target_path = templates_dir / target_name
 
         if not source_path.exists():
-            print_issue("0", f"Source file not found: {source_name}", level='error')
+            print_issue("0", f"Source file not found: {source_name}", level="error")
             issues_count += 1
             continue
 
@@ -62,10 +63,10 @@ def sync_templates(args):
 
             # Get file size
             size = target_path.stat().st_size
-            print_issue("1", f"{source_name} -> {target_name} ({size:,} bytes)", str(target_path), level='success')
+            print_issue("1", f"{source_name} -> {target_name} ({size:,} bytes)", str(target_path), level="success")
             synced_count += 1
         except Exception as e:
-            print_issue("0", f"Sync failed: {e}", str(target_path), level='error')
+            print_issue("0", f"Sync failed: {e}", str(target_path), level="error")
             issues_count += 1
 
     print_info(f"Template directory: {templates_dir}")

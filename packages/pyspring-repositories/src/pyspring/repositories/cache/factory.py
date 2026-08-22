@@ -21,7 +21,7 @@ class CacheServiceFactory:
     def __init__(self, cache_config: CacheConfig):
         """
         通过 IOC 注入配置
-        
+
         Args:
             cache_config: CacheConfig 实例（自动注入）
         """
@@ -39,7 +39,7 @@ class CacheServiceFactory:
     async def get_service(self) -> ICacheService:
         """
         根据配置返回正确的缓存服务（单例模式）
-        
+
         Returns:
             ICacheService: Redis 或 Memory 实现
         """
@@ -81,7 +81,7 @@ class CacheServiceFactory:
     async def _try_redis_or_memcached_or_fallback(self) -> ICacheService:
         """
         尝试连接 Redis，失败则降级到 Memcached，再失败则降级到内存缓存
-        
+
         策略：
         1. 检查 Redis 配置完整性
         2. 创建 Redis 服务并执行 ping 测试
@@ -89,7 +89,7 @@ class CacheServiceFactory:
         4. Redis 测试失败：尝试 Memcached
         5. Memcached 测试成功：返回 Memcached
         6. Memcached 测试失败：降级到内存缓存
-        
+
         Returns:
             ICacheService: Redis、Memcached 或 Memory 服务（已测试可用）
         """
@@ -123,13 +123,13 @@ class CacheServiceFactory:
     async def _try_memcached_or_fallback(self) -> ICacheService:
         """
         尝试连接 Memcached，失败则降级到内存缓存
-        
+
         策略：
         1. 检查 Memcached 配置完整性
         2. 创建 Memcached 服务并执行 ping 测试
         3. 测试成功：返回 Memcached
         4. 测试失败或配置不完整：降级到内存缓存
-        
+
         Returns:
             ICacheService: Memcached 或 Memory 服务（已测试可用）
         """

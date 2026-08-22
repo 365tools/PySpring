@@ -29,8 +29,7 @@ from pyspring.core.ioc.annotations.component import Component
 
 
 @Component
-class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
-    ...
+class CustomPasswordLoginProvider(DefaultPasswordLoginProvider): ...
 ```
 
 **app/services/custom_register_service.py**:
@@ -38,9 +37,9 @@ class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
 ```python
 from pyspring.core.ioc.annotations.component import Component
 
+
 @Component
-class CustomRegisterService(DefaultRegisterService):
-    ...
+class CustomRegisterService(DefaultRegisterService): ...
 ```
 
 ### 步骤3：重新安装框架

@@ -214,7 +214,7 @@ from pyspring.core.ioc import ApplicationContext
 async def lifespan(app: FastAPI):
     # 初始化 ApplicationContext，自动加载 config/ 下的配置
     ctx = ApplicationContext.initialize(
-        base_packages=['your_app']  # 扫描你的包
+        base_packages=["your_app"]  # 扫描你的包
     )
 
     await ctx.container.initialize_lifecycle_services()
@@ -235,49 +235,49 @@ app = FastAPI(lifespan=lifespan)
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class DatabaseSettings(BaseSettings):
     """数据库配置"""
+
     host: str = "localhost"
     port: int = 5432
     name: str = "myapp"
     username: str = "postgres"
     password: str = Field(default="", env="DB_PASSWORD")
     pool_size: int = 10
-    
+
     model_config = SettingsConfigDict(
         env_prefix="DB_",  # 环境变量前缀
         env_file=".env",
-        env_file_encoding="utf-8"
+        env_file_encoding="utf-8",
     )
+
 
 class RedisSettings(BaseSettings):
     """Redis 配置"""
+
     host: str = "localhost"
     port: int = 6379
     db: int = 0
     ttl: int = 3600
-    
-    model_config = SettingsConfigDict(
-        env_prefix="REDIS_",
-        env_file=".env"
-    )
+
+    model_config = SettingsConfigDict(env_prefix="REDIS_", env_file=".env")
+
 
 class AppSettings(BaseSettings):
     """应用主配置"""
+
     name: str = "MyApp"
     version: str = "1.0.0"
     environment: str = "development"
     debug: bool = False
-    
+
     # 嵌套配置
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     redis: RedisSettings = Field(default_factory=RedisSettings)
-    
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False
-    )
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
+
 
 # 全局配置实例（单例）
 settings = AppSettings()
@@ -310,13 +310,14 @@ class DatabaseService:
 ```python
 from pyspring.core.configuration.loader import ConfigLoader
 
+
 class MyService:
     def __init__(self):
         loader = ConfigLoader()
-        
+
         # 加载 YAML 配置
         app_config = loader.load_yaml(loader.project_root / "config" / "application.yaml")
-        
+
         self.db_host = app_config.get("database", {}).get("host", "localhost")
         self.db_port = app_config.get("database", {}).get("port", 5432)
 ```
@@ -343,18 +344,14 @@ class AppConfiguration:
             "database": settings.database.name,
             "username": settings.database.username,
             "password": settings.database.password,
-            "pool_size": settings.database.pool_size
+            "pool_size": settings.database.pool_size,
         }
 
     @Bean()
     @Singleton
     def redis_config(self) -> dict:
         """Redis 配置 Bean"""
-        return {
-            "host": settings.redis.host,
-            "port": settings.redis.port,
-            "db": settings.redis.db
-        }
+        return {"host": settings.redis.host, "port": settings.redis.port, "db": settings.redis.db}
 
 
 # 服务中注入使用
@@ -460,23 +457,24 @@ import os
 import yaml
 from pathlib import Path
 
+
 def load_config():
     config_dir = Path("config")
-    
+
     # 加载基础配置
     with open(config_dir / "application.yaml") as f:
         config = yaml.safe_load(f)
-    
+
     # 根据环境加载覆盖配置
     env = os.getenv("ENV", "development")
     env_config_file = config_dir / f"application-{env}.yaml"
-    
+
     if env_config_file.exists():
         with open(env_config_file) as f:
             env_config = yaml.safe_load(f)
             # 深度合并配置
             config.update(env_config)
-    
+
     return config
 ```
 
@@ -531,7 +529,7 @@ async def lifespan(app: FastAPI):
     # 1. 初始化 ApplicationContext
     # 自动从 config/ 目录加载所有配置文件
     app_context = ApplicationContext.initialize(
-        base_packages=['magic']  # 扫描你的包
+        base_packages=["magic"]  # 扫描你的包
     )
 
     # 2. 初始化生命周期服务
@@ -547,10 +545,7 @@ async def lifespan(app: FastAPI):
     logger.info("✅ 应用已关闭")
 
 
-app = FastAPI(
-    title="My FastAPI App",
-    lifespan=lifespan
-)
+app = FastAPI(title="My FastAPI App", lifespan=lifespan)
 
 
 @app.get("/")
@@ -569,28 +564,27 @@ if __name__ == "__main__":
 ```python
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     """应用配置"""
+
     app_name: str = "My FastAPI App"
     app_version: str = "1.0.0"
     environment: str = "development"
-    
+
     # 数据库
     db_host: str = "localhost"
     db_port: int = 5432
     db_name: str = "myapp"
     db_user: str = "postgres"
     db_password: str = ""
-    
+
     # Redis
     redis_host: str = "localhost"
     redis_port: int = 6379
-    
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=False
-    )
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", case_sensitive=False)
+
 
 settings = Settings()
 ```

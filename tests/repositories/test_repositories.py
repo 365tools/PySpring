@@ -6,6 +6,7 @@ pyspring-repositories：数据访问层测试
 - 缓存配置模型
 - DB/Cache 服务接口契约
 """
+
 import pytest
 from pyspring.repositories.cache.config import CacheConfig
 from pyspring.repositories.cache.service import ICacheService
@@ -59,6 +60,7 @@ class TestCacheConfig:
 
 class MockDBService(IDBService):
     """mock DB 服务实现，验证接口契约"""
+
     async def execute(self, query, params=None):
         return None
 
@@ -105,6 +107,7 @@ class TestDBInterfaceContract:
 
 class MockCacheService(ICacheService):
     """mock 缓存服务实现，验证接口契约"""
+
     def __init__(self):
         self._store = {}
 

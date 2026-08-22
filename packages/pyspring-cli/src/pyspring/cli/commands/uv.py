@@ -12,8 +12,8 @@ class UvSetupCommand(BaseCommand):
     name = "setup"
     help = "Initialize environment and install dependencies"
     arguments = [
-        CommandArg('--dev', action='store_true', help='Install development dependencies'),
-        CommandArg('--rebuild', action='store_true', help='Recreate existing environment')
+        CommandArg("--dev", action="store_true", help="Install development dependencies"),
+        CommandArg("--rebuild", action="store_true", help="Recreate existing environment"),
     ]
 
     def run(self, args):
@@ -31,9 +31,7 @@ class UvRebuildCommand(BaseCommand):
 class UvInstallCommand(BaseCommand):
     name = "install"
     help = "Install project dependencies to environment"
-    arguments = [
-        CommandArg('--dev', action='store_true', help='Install development dependencies')
-    ]
+    arguments = [CommandArg("--dev", action="store_true", help="Install development dependencies")]
 
     def run(self, args):
         install_pyspring(dev_mode=args.dev)
@@ -44,13 +42,7 @@ class UvInstallCommand(BaseCommand):
 class UvStatusCommand(BaseCommand):
     name = "status"
     help = "Display environment configuration status"
-    arguments = [
-        CommandArg(
-            "module",
-            nargs="?",
-            help="Show detailed information for a specific module"
-        )
-    ]
+    arguments = [CommandArg("module", nargs="?", help="Show detailed information for a specific module")]
 
     def run(self, args):
         show_uv_status(args.module)
@@ -61,9 +53,4 @@ class UvCommand(BaseCommand):
     help = "Manage UV environment and dependencies"
     description = "Manage uv virtual environment lifecycle"
 
-    subcommands = [
-        UvSetupCommand,
-        UvRebuildCommand,
-        UvInstallCommand,
-        UvStatusCommand
-    ]
+    subcommands = [UvSetupCommand, UvRebuildCommand, UvInstallCommand, UvStatusCommand]

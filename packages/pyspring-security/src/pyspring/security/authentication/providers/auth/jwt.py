@@ -20,7 +20,7 @@ from pyspring.security.authentication.contracts.token import ITokenService
 class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
     """
     JWT 请求认证提供者
-    
+
     【设计说明】
     - 继承接口：IRequestAuthenticationProvider
     - 职责：从 HTTP 请求中提取并验证 JWT Token
@@ -28,11 +28,16 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
     - 验证逻辑：委托给 TokenManagerService
     """
 
-    def __init__(self, name: str, config: dict[str, Any], token_manager: ITokenService,
-                 security_config: SecurityEntityConfiguration):
+    def __init__(
+        self,
+        name: str,
+        config: dict[str, Any],
+        token_manager: ITokenService,
+        security_config: SecurityEntityConfiguration,
+    ):
         """
         初始化 JWT 认证提供者
-        
+
         Args:
             name: 提供者名称
             config: 提供者配置
@@ -52,15 +57,15 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
     async def authenticate(self, request: Request) -> RequestAuthenticationResult:
         """
         执行请求认证逻辑 (实现接口方法)
-        
+
         【认证流程】
         1. 提取 Token：从 Header/Cookie/Query 提取
         2. 验证 Token：委托给 TokenManagerService
         3. 返回结果：包含用户身份信息
-        
+
         Args:
             request: FastAPI Request 对象
-            
+
         Returns:
             RequestAuthenticationResult: 认证结果
         """
@@ -73,15 +78,15 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
     async def extract_credentials(self, request: Request) -> (str) | None:
         """
         从请求中提取 JWT Token
-        
+
         按照配置的优先级顺序提取：
         1. header: Authorization: Bearer <token>
         2. cookie: access_token=<token>
         3. query: ?token=<token>
-        
+
         Args:
             request: FastAPI Request 对象
-            
+
         Returns:
             (str) | None: JWT Token 字符串，未找到返回 None
         """
@@ -113,10 +118,10 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
     async def validate_credentials(self, credentials: str) -> RequestAuthenticationResult:
         """
         验证 JWT Token
-        
+
         Args:
             credentials: JWT Token 字符串
-            
+
         Returns:
             RequestAuthenticationResult: 认证结果
         """
@@ -126,9 +131,7 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
 
             if payload is None:
                 return RequestAuthenticationResult(
-                    success=False,
-                    error_message="Token 无效或已过期",
-                    provider_name=self.name
+                    success=False, error_message="Token 无效或已过期", provider_name=self.name
                 )
 
             # 提取用户信息
@@ -163,13 +166,11 @@ class JWTRequestAuthenticationProvider(IRequestAuthenticationProvider):
                 roles=roles,
                 user_info=user_info,  # 动态用户信息
                 extra_data=payload,
-                provider_name=self.name
+                provider_name=self.name,
             )
 
         except Exception as e:
             logger.error(f"[Error] JWT 验证失败: {e}")
             return RequestAuthenticationResult(
-                success=False,
-                error_message=f"Token 验证失败: {str(e)}",
-                provider_name=self.name
+                success=False, error_message=f"Token 验证失败: {str(e)}", provider_name=self.name
             )

@@ -26,7 +26,7 @@ class TokenGeneratorFactory:
     def register_generator_type(cls, generator_type: str, generator_class: type[ITokenGenerator]):
         """
         注册自定义 Token 生成器类型
-        
+
         Args:
             generator_type: 生成器类型名称
             generator_class: 生成器类
@@ -38,20 +38,18 @@ class TokenGeneratorFactory:
     def create_generator(cls, generator_type: str = "JWT") -> ITokenGenerator:
         """
         创建 Token 生成器实例
-        
+
         Args:
             generator_type: 生成器类型（默认 JWT）
-            
+
         Returns:
             ITokenGenerator: Token 生成器实例
-            
+
         Raises:
             ValueError: 未知的生成器类型
         """
         if generator_type not in cls._generator_registry:
-            logger.warning(
-                f"[TokenGenFactory] 未知的生成器类型: {generator_type}, 使用默认 JWT"
-            )
+            logger.warning(f"[TokenGenFactory] 未知的生成器类型: {generator_type}, 使用默认 JWT")
             generator_type = "JWT"
 
         generator_class = cls._generator_registry[generator_type]

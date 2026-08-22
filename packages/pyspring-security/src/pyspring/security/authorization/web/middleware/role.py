@@ -1,4 +1,3 @@
-
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from pyspring.core.log.instance import logger
@@ -13,10 +12,12 @@ class RoleCheckMiddleware:
     角色验证中间件 (Refactored)
     """
 
-    def __init__(self,
-                 permission_service: IPermissionService,
-                 path_provider: IPathPermissionProvider,
-                 enable_role_check: bool = True):
+    def __init__(
+        self,
+        permission_service: IPermissionService,
+        path_provider: IPathPermissionProvider,
+        enable_role_check: bool = True,
+    ):
         self.permission_service = permission_service
         self.path_provider = path_provider
         self.enable_role_check = enable_role_check
@@ -53,8 +54,9 @@ class RoleCheckMiddleware:
                     HttpResponse(
                         code=status.HTTP_403_FORBIDDEN,
                         message="权限不足",
-                        data=f"此操作需要以下角色之一: {', '.join(required_roles)}"
-                    ))
+                        data=f"此操作需要以下角色之一: {', '.join(required_roles)}",
+                    )
+                )
             logger.debug(f"[Success] 角色验证通过: {path}")
             return True
         return False

@@ -3,6 +3,7 @@
 
 根据配置动态创建认证提供者实例
 """
+
 from __future__ import annotations
 
 from typing import Any, Callable
@@ -35,7 +36,7 @@ class AuthProviderFactory:
     def register_provider_type(cls, provider_type: str, provider_class: type[IRequestAuthenticationProvider]):
         """
         注册自定义认证提供者类型
-        
+
         Args:
             provider_type: 提供者类型名称（与配置文件中的 type 字段对应）
             provider_class: 提供者类
@@ -45,22 +46,19 @@ class AuthProviderFactory:
 
     @classmethod
     def create_provider(
-            cls,
-            provider_config: dict[str, Any],
-            token_manager: (ITokenService) | None = None,
-            **kwargs
+        cls, provider_config: dict[str, Any], token_manager: (ITokenService) | None = None, **kwargs
     ) -> IRequestAuthenticationProvider:
         """
         根据配置创建认证提供者实例
-        
+
         Args:
             provider_config: 提供者配置（从 security.yaml 读取）
             token_manager: Token 管理服务（JWT 提供者需要）
             **kwargs: 其他依赖服务
-            
+
         Returns:
             IRequestAuthenticationProvider: 认证提供者实例
-            
+
         Raises:
             ValueError: 未知的提供者类型
         """
@@ -81,6 +79,7 @@ class AuthProviderFactory:
             from pyspring.security.authentication.config.entity import (
                 SecurityEntityConfiguration,
             )
+
             security_config = ApplicationContext.get_instance().get_by_type(SecurityEntityConfiguration)
             return provider_class(str(provider_name), provider_config, token_manager, security_config)
 
@@ -93,19 +92,16 @@ class AuthProviderFactory:
 
     @classmethod
     def create_providers_from_config(
-            cls,
-            token_manager: (ITokenService) | None = None,
-            config_manager: SecurityConfigManager | None = None,
-            **kwargs
+        cls, token_manager: (ITokenService) | None = None, config_manager: SecurityConfigManager | None = None, **kwargs
     ) -> list[IRequestAuthenticationProvider]:
         """
         从配置文件创建所有认证提供者
-        
+
         Args:
             token_manager: Token 管理服务
             config_manager: 安全配置管理器（可选，如未提供则从容器获取）
             **kwargs: 其他依赖服务
-            
+
         Returns:
             list[IRequestAuthenticationProvider]: 认证提供者列表
         """
@@ -132,20 +128,16 @@ class AuthProviderFactory:
         failed_providers: list[Any] = []  # 记录失败的提供者
 
         for provider_config in providers_config:
-            provider_name = provider_config.get('name')
-            provider_type = provider_config.get('type')
-            enabled = provider_config.get('enabled', True)
+            provider_name = provider_config.get("name")
+            provider_type = provider_config.get("type")
+            enabled = provider_config.get("enabled", True)
 
             if not enabled:
                 logger.debug(f"[Factory] 跳过已禁用的认证提供者: {provider_name} ({provider_type})")
                 continue
 
             try:
-                provider = cls.create_provider(
-                    provider_config,
-                    token_manager=token_manager,
-                    **kwargs
-                )
+                provider = cls.create_provider(provider_config, token_manager=token_manager, **kwargs)
                 providers.append(provider)
                 logger.info(f"[Success] 创建认证提供者: {provider.get_name()} ({provider_type})")
             except ValueError as e:
@@ -171,23 +163,20 @@ class AuthProviderFactory:
 class AuthProviderFactoryHelper:
     """
     认证提供者工厂辅助类
-    
+
     提供便捷的静态方法来初始化认证系统
     """
 
     @staticmethod
-    def initialize_authentication_system(
-            token_manager: ITokenService,
-            **kwargs
-    ) -> None:
+    def initialize_authentication_system(token_manager: ITokenService, **kwargs) -> None:
         """
         初始化认证系统
-        
+
         步骤：
         1. 从配置文件读取提供者配置
         2. 创建所有认证提供者实例
         3. 注册认证链
-        
+
         Args:
             token_manager: Token 管理服务
             **kwargs: 其他依赖服务
@@ -197,10 +186,7 @@ class AuthProviderFactoryHelper:
         logger.info("[Init] 开始初始化认证提供者")
 
         # 1. 创建提供者
-        providers = AuthProviderFactory.create_providers_from_config(
-            token_manager=token_manager,
-            **kwargs
-        )
+        providers = AuthProviderFactory.create_providers_from_config(token_manager=token_manager, **kwargs)
 
         if not providers:
             logger.warning("[Warning] 未创建任何认证提供者，使用默认配置")
@@ -210,15 +196,9 @@ class AuthProviderFactoryHelper:
                 "type": "JWTAuthProvider",
                 "enabled": True,
                 "priority": 1,
-                "config": {
-                    "token_sources": ["header", "cookie", "query"],
-                    "token_prefix": "Bearer"
-                }
+                "config": {"token_sources": ["header", "cookie", "query"], "token_prefix": "Bearer"},
             }
-            default_provider = AuthProviderFactory.create_provider(
-                default_config,
-                token_manager=token_manager
-            )
+            default_provider = AuthProviderFactory.create_provider(default_config, token_manager=token_manager)
             providers.append(default_provider)
 
         # 2. 注册到认证链（通过 IoC 容器获取）
@@ -232,7 +212,7 @@ class AuthProviderFactoryHelper:
     def register_custom_provider(provider_type: str, provider_class: type[IRequestAuthenticationProvider]):
         """
         注册自定义认证提供者
-        
+
         Args:
             provider_type: 提供者类型名称
             provider_class: 提供者类

@@ -95,11 +95,12 @@ A: 如果你的项目中同时存在以下文件：
 ```python
 from pyspring.core.ioc.annotations import Component
 
+
 @Component
 class MyService:
     def __init__(self, dependency: SomeDependency):
         self.dependency = dependency
-    
+
     async def do_something(self):
         # 业务逻辑
         pass

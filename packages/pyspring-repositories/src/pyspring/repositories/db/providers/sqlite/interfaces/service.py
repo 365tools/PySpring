@@ -7,4 +7,5 @@ class ISqliteService(IDBService, ABC):
     """
     SQLite服务接口
     """
+
     pass

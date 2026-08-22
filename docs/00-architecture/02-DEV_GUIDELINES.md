@@ -110,12 +110,12 @@ class IAuthProvider(ABC):
     @abstractmethod
     def authenticate(self, credentials: dict) -> AuthResult: ...
 
+
 # impl/auth_provider_default.py
 @Service
 @ConditionalOnMissingBean(IAuthProvider)
 class AuthProviderDefault(IAuthProvider):
-    def authenticate(self, credentials: dict) -> AuthResult:
-        ...  # 默认实现
+    def authenticate(self, credentials: dict) -> AuthResult: ...  # 默认实现
 ```
 
 ### 3.2 可替换规则

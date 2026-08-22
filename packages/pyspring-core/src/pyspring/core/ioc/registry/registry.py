@@ -3,6 +3,7 @@
 
 维护所有已注册服务的信息
 """
+
 from dataclasses import dataclass, field
 from typing import Any, Callable, Set
 
@@ -12,6 +13,7 @@ from pyspring.core.ioc.annotations.scope import Scope
 @dataclass
 class ServiceDefinition:
     """服务定义"""
+
     name: str  # 服务名称
     service_type: type  # 服务类型
     scope: Scope  # 作用域
@@ -32,7 +34,7 @@ class ServiceDefinition:
 class ServiceRegistry:
     """
     服务注册表
-    
+
     职责：
     1. 维护所有已注册服务的定义
     2. 提供服务查询功能
@@ -55,10 +57,10 @@ class ServiceRegistry:
     def _is_interface_type(self, base_type: type) -> bool:
         """
         判断是否是接口类型
-        
+
         Args:
             base_type: 待检查的类型
-            
+
         Returns:
             是否是接口类型
         """
@@ -70,7 +72,7 @@ class ServiceRegistry:
             return True
 
         # 检查是否是Protocol
-        if getattr(base_type, '_is_protocol', False):
+        if getattr(base_type, "_is_protocol", False):
             return True
 
         # 检查是否是 typing.Protocol
@@ -80,10 +82,11 @@ class ServiceRegistry:
         # 检查是否是 ABC 的子类（Abstract Base Classes）
         try:
             import abc
+
             if issubclass(base_type, abc.ABC):
                 # 额外检查是否确实有抽象方法
-                return hasattr(base_type, '__abstractmethods__') and len(base_type.__abstractmethods__) > 0
-        except (TypeError, AttributeError):
+                return hasattr(base_type, "__abstractmethods__") and len(base_type.__abstractmethods__) > 0
+        except TypeError, AttributeError:
             pass
 
         return False
@@ -91,7 +94,7 @@ class ServiceRegistry:
     def register(self, definition: ServiceDefinition):
         """
         注册服务
-        
+
         Args:
             definition: 服务定义
         """
@@ -107,10 +110,12 @@ class ServiceRegistry:
             # 如果新的是Bean，旧的是普通组件，则Bean优先（覆盖）
             elif definition.is_bean and not existing.is_bean:
                 from pyspring.core.log.instance import logger
+
                 logger.debug(f"📝 Bean覆盖组件注册: '{name}' (组件 → Bean)")
                 pass  # 继续注册，Bean覆盖组件
             else:
                 from pyspring.core.log.instance import logger
+
                 logger.warning(f"⚠️ 服务 '{name}' 重复注册: {existing.service_type.__name__} → {service_type.__name__}")
                 raise ValueError(f"服务 '{name}' 已注册: {existing.service_type}")
 
@@ -142,7 +147,7 @@ class ServiceRegistry:
     def get_by_type(self, service_type: type) -> (ServiceDefinition) | None:
         """
         根据类型获取服务定义
-        
+
         支持继承查询：
         - 精确类型匹配：直接返回
         - 未找到：查找是否有子类被注册（父类被子类替换的场景）
@@ -157,8 +162,7 @@ class ServiceRegistry:
         for definition in self._services.values():
             # 检查是否是子类（且不是自己）
             try:
-                if (definition.service_type != service_type and
-                        issubclass(definition.service_type, service_type)):
+                if definition.service_type != service_type and issubclass(definition.service_type, service_type):
                     # 找到了一个子类，返回它
                     # 注意：如果有多个子类，返回第一个（一般场景下应该只有一个）
                     return definition
@@ -224,4 +228,4 @@ class ServiceRegistry:
         self._registered_names.clear()
 
 
-__all__ = ['ServiceRegistry', 'ServiceDefinition']
+__all__ = ["ServiceRegistry", "ServiceDefinition"]

@@ -90,12 +90,10 @@ class PostgresService(BaseAsyncDBService, IPostgresService):
                 pool_timeout=self._pool_timeout,
                 pool_pre_ping=self._pool_pre_ping,
             )
-            self._session_factory = async_sessionmaker(
-                self._engine,
-                class_=AsyncSession,
-                expire_on_commit=False
+            self._session_factory = async_sessionmaker(self._engine, class_=AsyncSession, expire_on_commit=False)
+            logger.debug(
+                f"PostgreSQL connection pool created (pool_size={self._pool_size}, max_overflow={self._max_overflow})"
             )
-            logger.debug(f"PostgreSQL connection pool created (pool_size={self._pool_size}, max_overflow={self._max_overflow})")
         except Exception as e:
             logger.error(f"❌ Failed to initialize Postgres engine (check asyncpg installation): {e}")
             raise e

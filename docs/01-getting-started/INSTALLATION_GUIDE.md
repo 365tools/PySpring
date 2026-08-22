@@ -93,12 +93,15 @@ config_manager.load_config("config")
 ApplicationContext.initialize(base_packages=["app"])
 container = ApplicationContext.initialize(base_packages=["app"]).container
 
+
 @app.get("/")
 async def root():
     return {"message": "Hello PySpring!"}
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 

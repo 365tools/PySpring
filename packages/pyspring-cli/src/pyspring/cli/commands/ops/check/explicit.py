@@ -6,6 +6,7 @@ when the Symbol is not explicitly defined in package/__init__.py but exists in p
 This conversion helps resolve issues where IDEs (like PyCharm/VSCode) fail to recognize symbols
 when dealing with dynamic imports or incomplete __init__ files.
 """
+
 import ast
 import os
 from typing import Optional
@@ -19,7 +20,8 @@ from .imports.static import find_symbol_in_package
 
 def import_range(start, end):
     """Format line number range"""
-    if start == end: return str(start)
+    if start == end:
+        return str(start)
     return f"{start}-{end}"
 
 
@@ -44,7 +46,7 @@ class ImportExpander(ast.NodeVisitor):
 
         # Now append module part
         if module_name:
-            parts = module_name.split('.')
+            parts = module_name.split(".")
             target_dir = os.path.join(target_dir, *parts)
 
         return target_dir
@@ -63,16 +65,16 @@ class ImportExpander(ast.NodeVisitor):
             # 尝试检查如果是绝对导入，是否存在于项目根目录相对路径
             if node.level == 0 and node.module:
                 # 启发式：尝试从根目录解析
-                abs_path = os.path.join(self.root_path, *node.module.split('.'))
+                abs_path = os.path.join(self.root_path, *node.module.split("."))
                 if os.path.isdir(abs_path):
                     target_path = abs_path
                 else:
                     # 尝试 src 目录 (针对 src-layout 项目)
-                    src_abs_path = os.path.join(self.root_path, 'src', *node.module.split('.'))
+                    src_abs_path = os.path.join(self.root_path, "src", *node.module.split("."))
                     if os.path.isdir(src_abs_path):
                         target_path = src_abs_path
 
-        if target_path and os.path.isdir(target_path) and os.path.exists(os.path.join(target_path, '__init__.py')):
+        if target_path and os.path.isdir(target_path) and os.path.exists(os.path.join(target_path, "__init__.py")):
             # Check if target_path is ignored
             ignored_set = get_ignore_list(self.root_path)
             # Normalize path for checking
@@ -83,7 +85,7 @@ class ImportExpander(ast.NodeVisitor):
             # We also check for hidden directories starting with '.' which are implicitly ignored
             should_ignore = False
             for part in parts:
-                if part in ignored_set or (part.startswith('.') and part != '.' and part != '..'):
+                if part in ignored_set or (part.startswith(".") and part != "." and part != ".."):
                     # Only ignore if it is not current/parent dir marker
                     should_ignore = True
                     break
@@ -96,7 +98,8 @@ class ImportExpander(ast.NodeVisitor):
             names_to_rewrite = []  # (name, alias, sub_mod)
 
             for alias in node.names:
-                if alias.name == '*': continue
+                if alias.name == "*":
+                    continue
                 found_modules = find_symbol_in_package(target_path, alias.name)
 
                 if not found_modules:
@@ -124,7 +127,8 @@ class ImportExpander(ast.NodeVisitor):
                     found = False
                     for r_name, r_as, r_mod in names_to_rewrite:
                         if r_name == name:
-                            if r_mod not in import_groups: import_groups[r_mod] = []
+                            if r_mod not in import_groups:
+                                import_groups[r_mod] = []
                             import_groups[r_mod].append((name, asname))
                             found = True
                             break
@@ -150,11 +154,13 @@ class ImportExpander(ast.NodeVisitor):
                     # 例如 .package.sub
                     new_lines.append(f"from {base_mod}.{sub_mod} import {imp_str}")
 
-                self.replacements.append({
-                    'lineno': node.lineno,
-                    'end_lineno': getattr(node, 'end_lineno', node.lineno),
-                    'new_lines': new_lines
-                })
+                self.replacements.append(
+                    {
+                        "lineno": node.lineno,
+                        "end_lineno": getattr(node, "end_lineno", node.lineno),
+                        "new_lines": new_lines,
+                    }
+                )
 
 
 class ExplicitImportChecker(BaseChecker):
@@ -163,12 +169,12 @@ class ExplicitImportChecker(BaseChecker):
         return "Explicit Import Expansion"
 
     def __init__(self, target_path):
-        super().__init__(target_path, ['.py'])
+        super().__init__(target_path, [".py"])
         self.root_path = os.getcwd()
 
     def check_file(self, file_path: str, fix: bool = False, **kwargs) -> bool:
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
             tree = ast.parse(content)
         except Exception:
@@ -181,46 +187,48 @@ class ExplicitImportChecker(BaseChecker):
 
         if expander.warnings and fix:
             for w in expander.warnings:
-                self.add_issue(file_path, 0, f"{w} -> Manual resolution required", level='error')
+                self.add_issue(file_path, 0, f"{w} -> Manual resolution required", level="error")
 
         if expander.replacements:
             has_issues = True
-            expander.replacements.sort(key=lambda x: x['lineno'], reverse=True)
+            expander.replacements.sort(key=lambda x: x["lineno"], reverse=True)
             lines = content.splitlines()
 
             file_modifications = False
 
             for rep in expander.replacements:
-                start = rep['lineno'] - 1
-                end = rep['end_lineno']
+                start = rep["lineno"] - 1
+                end = rep["end_lineno"]
 
                 # Handling safe slice
-                if start < 0: start = 0
-                if end > len(lines): end = len(lines)
+                if start < 0:
+                    start = 0
+                if end > len(lines):
+                    end = len(lines)
 
                 # Capture original indentation from the first line of the block
                 indentation = get_indentation(lines[start])
 
                 orig_text = " | ".join(lines[start:end])
-                new_text = " | ".join(rep['new_lines'])
+                new_text = " | ".join(rep["new_lines"])
 
                 msg = f"Implicit import -> Explicit: {orig_text.strip()} => {new_text}"
 
                 if fix:
                     # Apply indentation to new lines
-                    fixed_new_lines = apply_indentation(rep['new_lines'], indentation)
+                    fixed_new_lines = apply_indentation(rep["new_lines"], indentation)
                     lines[start:end] = fixed_new_lines
                     file_modifications = True
-                    self.record_fix(file_path, rep['lineno'], f"{msg} -> Fixed")
+                    self.record_fix(file_path, rep["lineno"], f"{msg} -> Fixed")
                 else:
-                    self.add_issue(file_path, rep['lineno'], msg, level='warning')
+                    self.add_issue(file_path, rep["lineno"], msg, level="warning")
 
             if fix and file_modifications:
                 try:
-                    with open(file_path, 'w', encoding='utf-8') as f:
-                        f.write('\n'.join(lines))
+                    with open(file_path, "w", encoding="utf-8") as f:
+                        f.write("\n".join(lines))
                 except Exception as e:
-                    self.add_issue(file_path, 0, f"Error saving file: {e}", level='error')
+                    self.add_issue(file_path, 0, f"Error saving file: {e}", level="error")
 
         else:
             # If no replacements found but issues might exist (e.g. only warnings or not found)
@@ -232,6 +240,6 @@ class ExplicitImportChecker(BaseChecker):
 
 
 def run_check_explicit_imports(args):
-    target_path = getattr(args, 'path', '.')
+    target_path = getattr(args, "path", ".")
     checker = ExplicitImportChecker(target_path)
     return checker.run(fix=args.fix)

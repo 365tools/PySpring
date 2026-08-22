@@ -3,6 +3,7 @@
 
 参考authentication模块的结构，使用IOC框架配置授权组件
 """
+
 from pyspring.core.ioc.annotations import Bean, ConditionalOnMissingBean, Configuration
 from pyspring.core.log.instance import logger
 from pyspring.repositories.db.manager import DBManagerService
@@ -24,12 +25,12 @@ from pyspring.security.core.config.loader import SecurityConfigManager
 class AuthorizationConfiguration:
     """
     PySpring 安全模块(授权部分)的默认自动配置
-    
+
     架构设计：
     - IRoleProvider: 角色提供者，负责查询用户角色和角色权限
     - IPathPermissionProvider: 路径规则提供者，负责URL路径权限映射
     - IPermissionService: 权限服务，负责权限判定逻辑
-    
+
     用户可以通过实现接口并注册@Bean来替换默认实现
     """
 
@@ -40,17 +41,15 @@ class AuthorizationConfiguration:
     @Bean
     @ConditionalOnMissingBean(IRoleProvider)
     def default_role_provider(
-            self,
-            db_manager: DBManagerService,
-            component: SecurityEntityConfiguration
+        self, db_manager: DBManagerService, component: SecurityEntityConfiguration
     ) -> IRoleProvider:
         """
         注册默认的角色提供者（基于数据库）
-        
+
         Args:
             db_manager: 数据库管理服务
             component: 安全实体配置（提供ORM模型）
-            
+
         Returns:
             IRoleProvider: 角色提供者实例
         """
@@ -59,16 +58,13 @@ class AuthorizationConfiguration:
 
     @Bean
     @ConditionalOnMissingBean(IPathPermissionProvider)
-    def default_path_permission_provider(
-            self,
-            config_manager: SecurityConfigManager
-    ) -> IPathPermissionProvider:
+    def default_path_permission_provider(self, config_manager: SecurityConfigManager) -> IPathPermissionProvider:
         """
         注册默认的路径权限规则提供者（基于配置文件）
-        
+
         Args:
             config_manager: 安全配置管理器
-            
+
         Returns:
             IPathPermissionProvider: 路径规则提供者实例
         """
@@ -77,16 +73,13 @@ class AuthorizationConfiguration:
 
     @Bean
     @ConditionalOnMissingBean(IPermissionService)
-    def default_permission_service(
-            self,
-            role_provider: IRoleProvider
-    ) -> IPermissionService:
+    def default_permission_service(self, role_provider: IRoleProvider) -> IPermissionService:
         """
         注册默认的权限服务
-        
+
         Args:
             role_provider: 角色提供者（用于查询用户角色和权限）
-            
+
         Returns:
             IPermissionService: 权限服务实例
         """

@@ -100,10 +100,11 @@ from sqlalchemy import select
 # 导入自定义用户模型
 from app.config.security_config import CustomUser
 
+
 class CustomRegisterService(IRegisterService):
     """
     用户自定义的注册服务
-    
+
     扩展点：
     - 自定义字段处理（username, phone）
     - 自定义验证规则（密码强度、黑名单检查）
@@ -111,8 +112,9 @@ class CustomRegisterService(IRegisterService):
     - 集成第三方服务
     """
 
-    def __init__(self, db: DBManagerService, component: SecurityEntityConfiguration,
-                 password_encoder: IPasswordEncoder):
+    def __init__(
+        self, db: DBManagerService, component: SecurityEntityConfiguration, password_encoder: IPasswordEncoder
+    ):
         self.db = db
         self.component = component
         self.password_encoder = password_encoder
@@ -146,9 +148,7 @@ class CustomRegisterService(IRegisterService):
     async def _validate_user(self, session, user: User):
         """自定义验证逻辑"""
         # 检查邮箱是否已存在
-        result = await session.execute(
-            select(CustomUser).where(CustomUser.email == user.email)
-        )
+        result = await session.execute(select(CustomUser).where(CustomUser.email == user.email))
         if result.scalar_one_or_none():
             raise ValueError(f"邮箱已被注册: {user.email}")
 
@@ -164,10 +164,10 @@ class CustomRegisterService(IRegisterService):
             user_id=user.user_id or user.email,
             email=user.email,
             password=hashed_password,
-            username=getattr(user, 'username', user.user_id),  # 自定义字段
-           phone=getattr(user, 'phone', None),  # 自定义字段
+            username=getattr(user, "username", user.user_id),  # 自定义字段
+            phone=getattr(user, "phone", None),  # 自定义字段
             active=True,
-            creator="system"
+            creator="system",
         )
         session.add(db_user)
         await session.flush()
@@ -186,8 +186,7 @@ class CustomRegisterServiceConfiguration:
 
     @Bean()  # 关键：通过 @Bean() 注册
     def custom_register_service(
-            self, db: DBManagerService, component: SecurityEntityConfiguration,
-            password_encoder: IPasswordEncoder
+        self, db: DBManagerService, component: SecurityEntityConfiguration, password_encoder: IPasswordEncoder
     ) -> IRegisterService:
         """
         框架会自动检测到用户提供了 IRegisterService 实现
@@ -204,15 +203,16 @@ class CustomRegisterServiceConfiguration:
 # app/api/auth.py
 from pyspring.security.authentication.contracts.flow import IRegisterService
 
+
 @router.post("/register")
 async def register(
-        request: RegisterRequest,
-        register_service: IRegisterService = Depends(lambda: Inject(IRegisterService))
-        # ↑ 注入接口，框架自动提供用户的 CustomRegisterService 实现
+    request: RegisterRequest,
+    register_service: IRegisterService = Depends(lambda: Inject(IRegisterService)),
+    # ↑ 注入接口，框架自动提供用户的 CustomRegisterService 实现
 ):
     """
     用户注册
-    
+
     关键点：
     - 注入的是 IRegisterService 接口（面向接口编程）
     - 实际实例是 CustomRegisterService（用户自定义）
@@ -223,9 +223,9 @@ async def register(
             user_id=request.username,
             email=request.email,
             password=request.password,  # 明文，服务自动加密
-           username=request.username  # 自定义字段
+            username=request.username,  # 自定义字段
         ),
-        roles=[Role(code="USER", name="普通用户", status=True)]
+        roles=[Role(code="USER", name="普通用户", status=True)],
     )
 
     # 调用的是用户自定义的 CustomRegisterService.register()
@@ -256,8 +256,7 @@ IoC 容器查找 IRegisterService 实现
 # app/database/initializer.py
 @Component
 class DatabaseInitializer(IStartupInitializer):
-
-   def __init__(self, register_service: IRegisterService):
+    def __init__(self, register_service: IRegisterService):
         """
         注入的是用户的 CustomRegisterService
         （框架通过 @ConditionalOnMissingBean 自动选择）
@@ -265,16 +264,16 @@ class DatabaseInitializer(IStartupInitializer):
         super().__init__(enabled=True)
         self.register_service = register_service
 
-   async def _seed_initial_data(self):
+    async def _seed_initial_data(self):
         """使用自定义注册服务创建管理员"""
         user_request = UserInfo(
             user=User(
                 user_id="admin",
                 email="admin@example.com",
                 password="admin123",
-                username="admin"  # 自定义字段
+                username="admin",  # 自定义字段
             ),
-            roles=[Role(code="ADMIN", name="管理员", status=True)]
+            roles=[Role(code="ADMIN", name="管理员", status=True)],
         )
 
         # 调用用户自定义的 CustomRegisterService
@@ -294,6 +293,7 @@ class DatabaseInitializer(IStartupInitializer):
 # app/config/security_config.py
 from pyspring.security.authentication.contracts.password import IPasswordEncoder
 
+
 class CustomPasswordEncoder(IPasswordEncoder):
     """自定义密码加密器（使用 Argon2）"""
 
@@ -305,6 +305,7 @@ class CustomPasswordEncoder(IPasswordEncoder):
 
     def verify(self, raw_password: str, hashed_password: str) -> bool:
         return self.pwd_context.verify(raw_password, hashed_password)
+
 
 @Configuration
 class CustomPasswordConfiguration:
@@ -334,6 +335,7 @@ class SmsLoginProvider(ILoginProvider):
         # 4. 返回用户ID
 
         return user_id
+
 
 @Configuration
 class SmsLoginConfiguration:
@@ -410,8 +412,11 @@ class CustomRegisterServiceConfiguration:
 
 4. **利用框架依赖注入**
    ```python
-   def __init__(self, db: DBManagerService,  # 框架自动注入
-                password_encoder: IPasswordEncoder):  # 自动注入（可被用户覆盖）
+   def __init__(
+       self,
+       db: DBManagerService,  # 框架自动注入
+       password_encoder: IPasswordEncoder,
+   ):  # 自动注入（可被用户覆盖）
        pass
    ```
 
@@ -422,7 +427,8 @@ class CustomRegisterServiceConfiguration:
    # ❌ 错误
    def __init__(self, service: DefaultRegisterService):
        pass
-   
+
+
    # ✅ 正确
    def __init__(self, service: IRegisterService):
        pass
@@ -445,10 +451,12 @@ class CustomRegisterServiceConfiguration:
    # ❌ 错误：容器会混乱
    @Bean()
    def service1() -> IRegisterService: ...
-   
+
+
    @Bean()
    def service2() -> IRegisterService: ...
-   
+
+
    # ✅ 正确：使用命名
    @Bean(name="custom")
    def custom_service() -> IRegisterService: ...
@@ -493,8 +501,7 @@ A: 是的，必须实现接口的所有抽象方法。参考：
 ```python
 # src/pyspring/security/authentication/services/register.py
 class DefaultRegisterService(IRegisterService):
-    async def register(self, request: UserInfo) -> UserInfo:
-        ...
+    async def register(self, request: UserInfo) -> UserInfo: ...
 ```
 
 ### Q5: Bean 是单例还是多例？

@@ -3,6 +3,7 @@
 
 提供统一的 ContextVar 注册与管理机制，供日志、认证、APM 等模块共享使用。
 """
+
 import threading
 from contextvars import ContextVar
 from typing import Any
@@ -11,7 +12,7 @@ from typing import Any
 class ContextRegistry:
     """
     全局上下文注册表
-    
+
     用于集中管理应用中的所有 ContextVar，主要用途：
     1. 日志系统自动注入：自动将注册的变量值注入到日志 extra 中
     2. 链路追踪/APM：统一获取当前上下文状态
@@ -26,7 +27,7 @@ class ContextRegistry:
     def register(cls, key: str, context_var: ContextVar[object], default: Any = None) -> None:
         """
         注册一个上下文变量
-        
+
         Args:
             key: 标识符 (也是日志 extra 中的字段名)
             context_var: ContextVar 对象

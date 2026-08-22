@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 @dataclass
 class CommandArg:
     """Represents a command line argument"""
+
     flags: Union[str, List[str]]  # e.g. "path" or ["-f", "--force"]
     help: str = ""
     default: Any = None
@@ -20,44 +21,45 @@ class CommandArg:
 
     def add_to_parser(self, parser):
         args = [self.flags] if isinstance(self.flags, str) else self.flags
-        kwargs: Dict[str, Any] = {'help': self.help}
+        kwargs: Dict[str, Any] = {"help": self.help}
 
         if self.action:
-            kwargs['action'] = self.action
+            kwargs["action"] = self.action
 
         if self.default is not None:
-            kwargs['default'] = self.default
+            kwargs["default"] = self.default
 
         if self.required:
-            kwargs['required'] = True
+            kwargs["required"] = True
 
         if self.nargs is not None:
-            kwargs['nargs'] = self.nargs
+            kwargs["nargs"] = self.nargs
 
         if self.choices:
-            kwargs['choices'] = self.choices
+            kwargs["choices"] = self.choices
 
         if self.metavar:
-            kwargs['metavar'] = self.metavar
+            kwargs["metavar"] = self.metavar
 
         if self.dest:
-            kwargs['dest'] = self.dest
+            kwargs["dest"] = self.dest
 
         # Only add type if it's not a flag that doesn't take values
-        if self.action not in ['store_true', 'store_false', 'count', 'help']:
+        if self.action not in ["store_true", "store_false", "count", "help"]:
             if self.type:
-                kwargs['type'] = self.type
+                kwargs["type"] = self.type
 
         parser.add_argument(*args, **kwargs)
 
 
 class BaseCommand(ABC):
     """Base class for all PySpring CLI commands"""
+
     name: Optional[str] = None
     help: Optional[str] = None
     description: Optional[str] = None
     arguments: List[CommandArg] = []
-    subcommands: List[Type['BaseCommand']] = []
+    subcommands: List[Type["BaseCommand"]] = []
 
     # Custom formatter class for argparse
     formatter_class = argparse.HelpFormatter
@@ -67,16 +69,18 @@ class BaseCommand(ABC):
 
     def run(self, args: argparse.Namespace):
         """Main execution logic"""
-        if hasattr(self, '_subparsers_action'):
+        if hasattr(self, "_subparsers_action"):
             from ..ui.help import print_friendly_subcommand_help
+
             print_friendly_subcommand_help(self._subparsers_action, prog_name=f"pyspring {self.name}")
         else:
             print(f"Command {self.name} not implemented.")
 
     def print_help(self):
         """Print help for this command"""
-        if hasattr(self, '_subparsers_action'):
+        if hasattr(self, "_subparsers_action"):
             from ..ui.help import print_friendly_subcommand_help
+
             # TODO: Decouple 'pyspring' name
             print_friendly_subcommand_help(self._subparsers_action, prog_name=f"pyspring {self.name}")
 
@@ -87,10 +91,7 @@ class BaseCommand(ABC):
             raise ValueError(f"Command {cls.__name__} must have a name")
 
         parser = subparsers.add_parser(
-            cls.name,
-            help=cls.help,
-            description=cls.description or cls.help,
-            formatter_class=cls.formatter_class
+            cls.name, help=cls.help, description=cls.description or cls.help, formatter_class=cls.formatter_class
         )
 
         # Add arguments
@@ -117,7 +118,7 @@ class BaseCommand(ABC):
             title="Available Commands",
             dest=sub_dest,
             required=False,  # We allow parent command to run if no subcommand provided
-            metavar='<command>'
+            metavar="<command>",
         )
 
         # Store action for help printing

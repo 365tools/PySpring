@@ -20,7 +20,7 @@ class OutputFilter:
     def write(self, data):
         # Fast path for suppressing everything
         for p in self.patterns:
-            if p.pattern == r'.*':
+            if p.pattern == r".*":
                 return len(data) if data else 0
 
         if any(p.search(data) for p in self.patterns):
@@ -38,7 +38,7 @@ class OutputFilter:
 def suppress_logs(patterns: List[str] | None = None):
     """
     Intercept and suppress specific log output matching patterns.
-    
+
     Args:
         patterns: List of regex strings to suppress.
     """

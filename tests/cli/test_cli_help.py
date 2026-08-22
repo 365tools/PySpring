@@ -3,15 +3,36 @@ CLI 集成测试：验证所有命令可加载并显示帮助。
 
 确保每个命令都正确注册且能解析参数（返回码 0 + 包含 usage）。
 """
+
 import pytest
 
 ALL_COMMANDS = [
-    "uv", "init", "check", "clean", "security",
-    "dev", "meta",
-    "basedpyright", "cache", "config-verify", "diagnose", "encoding",
-    "gen-key", "imports-circular", "imports-explicit", "imports-lift",
-    "imports-refactor", "imports-reset", "imports-unused", "imports-validate",
-    "init-sync", "install", "rebuild", "references", "setup", "status",
+    "uv",
+    "init",
+    "check",
+    "clean",
+    "security",
+    "dev",
+    "meta",
+    "basedpyright",
+    "cache",
+    "config-verify",
+    "diagnose",
+    "encoding",
+    "gen-key",
+    "imports-circular",
+    "imports-explicit",
+    "imports-lift",
+    "imports-refactor",
+    "imports-reset",
+    "imports-unused",
+    "imports-validate",
+    "init-sync",
+    "install",
+    "rebuild",
+    "references",
+    "setup",
+    "status",
     "templates-sync",
 ]
 

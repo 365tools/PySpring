@@ -21,7 +21,7 @@ class DBServiceFactory:
     def __init__(self, database_config: DatabaseConfig):
         """
         通过 IOC 注入配置
-        
+
         Args:
             database_config: DatabaseConfig 实例（自动注入）
         """
@@ -39,7 +39,7 @@ class DBServiceFactory:
     async def get_service(self) -> IDBService:
         """
         根据配置返回正确的数据库服务（单例模式）
-        
+
         Returns:
             IDBService: SQLite 或 PostgreSQL 实现
         """
@@ -81,7 +81,7 @@ class DBServiceFactory:
     async def _try_postgres_or_mysql_or_fallback(self) -> IDBService:
         """
         尝试连接 PostgreSQL，失败则降级到 MySQL，再失败则降级到 SQLite
-        
+
         策略：
         1. 检查 PostgreSQL 配置完整性
         2. 创建 PostgreSQL 服务并执行 ping 测试
@@ -89,7 +89,7 @@ class DBServiceFactory:
         4. PostgreSQL 测试失败：尝试 MySQL
         5. MySQL 测试成功：返回 MySQL
         6. MySQL 测试失败：降级到 SQLite
-        
+
         Returns:
             IDBService: PostgreSQL、MySQL 或 SQLite 服务（已测试可用）
         """
@@ -122,13 +122,13 @@ class DBServiceFactory:
     async def _try_mysql_or_fallback(self) -> IDBService:
         """
         尝试连接 MySQL，失败则降级到 SQLite
-        
+
         策略：
         1. 检查 MySQL 配置完整性
         2. 创建 MySQL 服务并执行 ping 测试
         3. 测试成功：返回 MySQL
         4. 测试失败或配置不完整：降级到 SQLite
-        
+
         Returns:
             IDBService: MySQL 或 SQLite 服务（已测试可用）
         """

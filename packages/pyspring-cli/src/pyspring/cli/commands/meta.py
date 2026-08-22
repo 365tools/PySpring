@@ -6,6 +6,4 @@ class MetaCommand(BaseCommand):
     name = "meta"
     help = "Meta-utilities for PySpring CLI itself"
 
-    subcommands = [
-        CliCheckCommand
-    ]
+    subcommands = [CliCheckCommand]

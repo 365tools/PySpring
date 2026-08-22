@@ -5,6 +5,7 @@ PySpring 多包架构测试配置
 pyspring-repositories / pyspring-security），均通过 uv workspace 以 editable
 方式安装，测试可直接 import。
 """
+
 import copy
 import os
 import sys
@@ -12,10 +13,17 @@ import sys
 import pytest
 
 # 确保所有包的 src 目录在 python path（editable 安装下通常已覆盖，此处兜底）
-_PACKAGES_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../packages'))
-for _pkg in ['pyspring', 'pyspring-core', 'pyspring-health', 'pyspring-web',
-             'pyspring-repositories', 'pyspring-security', 'pyspring-cli']:
-    _src = os.path.join(_PACKAGES_ROOT, _pkg, 'src')
+_PACKAGES_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../packages"))
+for _pkg in [
+    "pyspring",
+    "pyspring-core",
+    "pyspring-health",
+    "pyspring-web",
+    "pyspring-repositories",
+    "pyspring-security",
+    "pyspring-cli",
+]:
+    _src = os.path.join(_PACKAGES_ROOT, _pkg, "src")
     if os.path.isdir(_src) and _src not in sys.path:
         sys.path.insert(0, _src)
 
@@ -31,11 +39,11 @@ def disable_loguru_enqueue():
 
     def patched_get(self, key, default=None):
         value = original_get(self, key, default)
-        if key == 'logging' and isinstance(value, dict):
+        if key == "logging" and isinstance(value, dict):
             value = copy.deepcopy(value)
-            if 'advanced' not in value:
-                value['advanced'] = {}
-            value['advanced']['enqueue'] = False
+            if "advanced" not in value:
+                value["advanced"] = {}
+            value["advanced"]["enqueue"] = False
         return value
 
     LoggingConfigManager.get = patched_get

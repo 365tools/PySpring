@@ -122,7 +122,7 @@ BANNER_COMPACT = """
 def get_banner(style: str = "modern", **kwargs: str) -> str:
     """
     获取指定风格的 Banner
-    
+
     Args:
         style: Banner 风格，可选值：
                - "modern": 现代风格（推荐）
@@ -133,7 +133,7 @@ def get_banner(style: str = "modern", **kwargs: str) -> str:
                - "gradient": 渐变风格
                - "compact": 紧凑风格
         **kwargs: Banner 中的变量替换，如 version, python_version, fastapi_version
-    
+
     Returns:
         格式化后的 Banner 字符串
     """
@@ -165,7 +165,7 @@ def get_banner(style: str = "modern", **kwargs: str) -> str:
 def print_banner(style: str = "modern", **kwargs: str) -> None:
     """
     打印 Banner 到控制台
-    
+
     Args:
         style: Banner 风格
         **kwargs: Banner 中的变量替换

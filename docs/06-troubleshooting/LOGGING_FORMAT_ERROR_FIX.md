@@ -66,18 +66,18 @@ def add_custom_fields(record):
     # 确保 extra 字典存在
     if "extra" not in record:
         record["extra"] = {}
-    
+
     # 添加缺失的字段
     if "file_relative" not in record["extra"]:
         try:
             record["extra"]["file_relative"] = record["file"].name
-        except (AttributeError, KeyError):
+        except AttributeError, KeyError:
             record["extra"]["file_relative"] = "unknown"
-    
+
     # 添加其他自定义字段
     if "session_id" not in record["extra"]:
         record["extra"]["session_id"] = "no-session"
-    
+
     return record
 ```
 
@@ -213,19 +213,12 @@ logger.bind(session_id="sess_abc123").info("User action")
 # 输出: 2026-01-23 10:30:45 | INFO | sess_abc123 |  |  | User action
 
 # 绑定多个字段
-bound_logger = logger.bind(
-    session_id="sess_abc123",
-    user_id="user_456",
-    request_id="req_789"
-)
+bound_logger = logger.bind(session_id="sess_abc123", user_id="user_456", request_id="req_789")
 bound_logger.info("User action")
 # 输出: 2026-01-23 10:30:45 | INFO | sess_abc123 | req_789 | user_456 | User action
 
 # 甚至可以使用自定义字段
-logger.bind(
-    my_custom_field="custom_value",
-    another_field="another_value"
-).info("Custom log")
+logger.bind(my_custom_field="custom_value", another_field="another_value").info("Custom log")
 # 输出: 2026-01-23 10:30:45 | INFO | custom_value | another_value | Custom log
 ```
 
@@ -329,9 +322,7 @@ custom_logger.info("Message 2")  # 所有日志都会包含 my_field
 # Web 请求中使用
 def handle_request(request):
     request_logger = logger.bind(
-        request_id=request.id,
-        user_id=request.user.id if request.user else "anonymous",
-        ip_address=request.client.host
+        request_id=request.id, user_id=request.user.id if request.user else "anonymous", ip_address=request.client.host
     )
     request_logger.info("Processing request")
     # ... 业务逻辑

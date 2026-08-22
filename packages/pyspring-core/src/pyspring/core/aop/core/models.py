@@ -17,6 +17,7 @@ class JoinPoint:
 
 class Aspect:
     """切面基类"""
+
     pass
 
 

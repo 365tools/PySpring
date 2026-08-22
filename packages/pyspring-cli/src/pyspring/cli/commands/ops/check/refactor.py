@@ -1,6 +1,7 @@
 """
 Refactor Imports Checker
 """
+
 import ast
 import os
 from typing import List, Optional
@@ -11,13 +12,13 @@ from .base import BaseChecker
 
 
 class RefactorImportsChecker(BaseChecker):
-    def __init__(self, target_path: str, mode: Optional[str] = 'absolute', level: int = 2):
-        super().__init__(target_path, ['.py'])
+    def __init__(self, target_path: str, mode: Optional[str] = "absolute", level: int = 2):
+        super().__init__(target_path, [".py"])
         self.mode = mode
         self.max_dots = level  # Maximum number of dots allowed (1=., 2=.., etc)
 
         # Stats for analysis
-        self.stats = {'absolute': 0, 'relative': 0, 'mixed_files': 0}
+        self.stats = {"absolute": 0, "relative": 0, "mixed_files": 0}
         self.current_file_has_absolute = False
         self.current_file_has_relative = False
 
@@ -34,29 +35,33 @@ class RefactorImportsChecker(BaseChecker):
     def _find_src_root(self, path: str) -> str:
         abs_path = os.path.abspath(path)
         parts = abs_path.split(os.sep)
-        if 'src' in parts:
-            src_idx = parts.index('src')
-            return os.sep.join(parts[:src_idx + 1])
+        if "src" in parts:
+            src_idx = parts.index("src")
+            return os.sep.join(parts[: src_idx + 1])
         # Fallback to current working directory or path itself if it looks like root
-        if os.path.isdir(os.path.join(abs_path, 'src')):
-            return os.path.join(abs_path, 'src')
+        if os.path.isdir(os.path.join(abs_path, "src")):
+            return os.path.join(abs_path, "src")
         return abs_path
 
     def _get_project_root_package(self, src_path: str) -> str:
         """
         Determine the base package name from src path.
         """
-        if src_path.endswith('src'):
+        if src_path.endswith("src"):
             try:
-                items = [d for d in os.listdir(src_path) if os.path.isdir(os.path.join(src_path, d)) and not d.startswith('.')]
-                if 'pyspring' in items:
-                    return 'pyspring'
+                items = [
+                    d
+                    for d in os.listdir(src_path)
+                    if os.path.isdir(os.path.join(src_path, d)) and not d.startswith(".")
+                ]
+                if "pyspring" in items:
+                    return "pyspring"
                 # If only one directory, assume it is the package
                 if len(items) == 1:
                     return items[0]
             except OSError:
                 pass
-        return 'pyspring'  # Default fallback
+        return "pyspring"  # Default fallback
 
     def get_package_of_file(self, file_path: str) -> str:
         """Return the dotted package name containing the file."""
@@ -64,12 +69,12 @@ class RefactorImportsChecker(BaseChecker):
         dir_path = os.path.dirname(abs_file)
 
         if not dir_path.startswith(self.src_root):
-            return ''
+            return ""
 
         rel = os.path.relpath(dir_path, self.src_root)
-        if rel == '.':
-            return ''
-        return rel.replace(os.path.sep, '.')
+        if rel == ".":
+            return ""
+        return rel.replace(os.path.sep, ".")
 
     def to_relative(self, base_pkg: str, target_pkg: str) -> Optional[str]:
         """
@@ -78,8 +83,8 @@ class RefactorImportsChecker(BaseChecker):
         if not base_pkg or not target_pkg:
             return None
 
-        base_parts = base_pkg.split('.')
-        target_parts = target_pkg.split('.')
+        base_parts = base_pkg.split(".")
+        target_parts = target_pkg.split(".")
 
         # Find common prefix
         i = 0
@@ -110,10 +115,10 @@ class RefactorImportsChecker(BaseChecker):
 
     def check_file(self, file_path: str, fix: bool = False, **kwargs) -> bool:
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             tree = ast.parse("".join(lines), filename=file_path)
-        except (SyntaxError, UnicodeDecodeError):
+        except SyntaxError, UnicodeDecodeError:
             return False
 
         current_pkg = self.get_package_of_file(file_path)
@@ -130,19 +135,19 @@ class RefactorImportsChecker(BaseChecker):
                 module = node.module
                 level = node.level if node.level is not None else 0
 
-                if module == '__future__':
+                if module == "__future__":
                     continue
 
                 full_module_name = None
 
                 if level == 0 and module:
                     # Absolute import
-                    if module.startswith(self.root_pkg + '.') or module == self.root_pkg:
+                    if module.startswith(self.root_pkg + ".") or module == self.root_pkg:
                         full_module_name = module
                 elif level > 0:
                     # Relative import
                     # Resolve to absolute to check validity/necessity
-                    curr_parts = current_pkg.split('.') if current_pkg else []
+                    curr_parts = current_pkg.split(".") if current_pkg else []
 
                     if level - 1 > len(curr_parts):
                         continue  # Cannot resolve
@@ -150,7 +155,7 @@ class RefactorImportsChecker(BaseChecker):
                     if level == 1:
                         base = curr_parts
                     else:
-                        base = curr_parts[:-(level - 1)]
+                        base = curr_parts[: -(level - 1)]
 
                     if module:
                         full_module_name = ".".join(base + [module]) if base else module
@@ -161,15 +166,15 @@ class RefactorImportsChecker(BaseChecker):
                     continue
 
                 # Check if internal
-                if not (full_module_name.startswith(self.root_pkg + '.') or full_module_name == self.root_pkg):
+                if not (full_module_name.startswith(self.root_pkg + ".") or full_module_name == self.root_pkg):
                     continue
 
                 # --- Analysis Stats ---
                 if level == 0:
-                    self.stats['absolute'] += 1
+                    self.stats["absolute"] += 1
                     self.current_file_has_absolute = True
                 else:
-                    self.stats['relative'] += 1
+                    self.stats["relative"] += 1
                     self.current_file_has_relative = True
 
                 if self.mode is None:
@@ -178,7 +183,7 @@ class RefactorImportsChecker(BaseChecker):
                 # Proposed Change
                 new_module_part = None
 
-                if self.mode == 'relative':
+                if self.mode == "relative":
                     # Try convert to relative (Absolute -> Relative) OR Optimize/Standardize (Relative -> Relative)
                     # Determine desired relative path first
                     rel = self.to_relative(current_pkg, full_module_name)
@@ -201,7 +206,7 @@ class RefactorImportsChecker(BaseChecker):
                             # Convert to absolute
                             new_module_part = full_module_name
 
-                elif self.mode == 'absolute':
+                elif self.mode == "absolute":
                     if level > 0:
                         # Convert to absolute
                         new_module_part = full_module_name
@@ -218,7 +223,7 @@ class RefactorImportsChecker(BaseChecker):
                     # Construction of new line (simple regex-like replacement)
                     new_line = None
 
-                    if self.mode == 'relative':
+                    if self.mode == "relative":
                         # from full.path import X
                         prefix = f"from {module}"
                         if prefix in old_line:
@@ -231,7 +236,7 @@ class RefactorImportsChecker(BaseChecker):
                             if search_frag in old_line:
                                 new_line = old_line.replace(search_frag, f"from {new_module_part}", 1)
 
-                    elif self.mode == 'absolute':
+                    elif self.mode == "absolute":
                         # from . import X or from .sub import X
                         dots = "." * level
                         search_frag = f"from {dots}{module}" if module else f"from {dots}"
@@ -249,22 +254,22 @@ class RefactorImportsChecker(BaseChecker):
                             self.record_fix(file_path, node.lineno, f"{issue_msg} -> Fixed")
                             edits.append(True)
                         else:
-                            self.add_issue(file_path, node.lineno, issue_msg, level='info')
+                            self.add_issue(file_path, node.lineno, issue_msg, level="info")
                         issues_found = True
 
         # Track mixed files
         if self.current_file_has_absolute and self.current_file_has_relative:
-            self.stats['mixed_files'] += 1
+            self.stats["mixed_files"] += 1
 
         if self.mode is None:
             return False  # No issues reported in analysis mode
 
         if fix and edits:
             try:
-                with open(file_path, 'w', encoding='utf-8') as f:
+                with open(file_path, "w", encoding="utf-8") as f:
                     f.writelines(lines)
             except Exception as e:
-                self.add_issue(file_path, 0, f"Error saving file: {e}", level='error')
+                self.add_issue(file_path, 0, f"Error saving file: {e}", level="error")
 
         return issues_found
 
@@ -274,9 +279,9 @@ class RefactorImportsChecker(BaseChecker):
 
         print_info(f"Analyzed {self.files_checked_count} file(s).")
 
-        abs_count = self.stats['absolute']
-        rel_count = self.stats['relative']
-        mixed = self.stats['mixed_files']
+        abs_count = self.stats["absolute"]
+        rel_count = self.stats["relative"]
+        mixed = self.stats["mixed_files"]
         total = abs_count + rel_count
 
         print("\nImport Style Statistics:")
@@ -300,18 +305,18 @@ class RefactorImportsChecker(BaseChecker):
 
 
 def run_check_refactor(args):
-    target_path = getattr(args, 'path', '.')
+    target_path = getattr(args, "path", ".")
 
-    to_relative = getattr(args, 'to_relative', False)
-    to_absolute = getattr(args, 'to_absolute', False)
+    to_relative = getattr(args, "to_relative", False)
+    to_absolute = getattr(args, "to_absolute", False)
 
     mode = None
     if to_relative:
-        mode = 'relative'
+        mode = "relative"
     elif to_absolute:
-        mode = 'absolute'
+        mode = "absolute"
 
-    level = int(getattr(args, 'level', 2))
+    level = int(getattr(args, "level", 2))
 
     checker = RefactorImportsChecker(target_path, mode=mode, level=level)
     return checker.run(fix=args.fix)

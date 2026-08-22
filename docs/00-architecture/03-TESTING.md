@@ -95,9 +95,9 @@ def cli_env(tmp_path):
 ```python
 import pytest
 
+
 @pytest.mark.slow
-def test_basedpyright():
-    ...
+def test_basedpyright(): ...
 ```
 
 ```bash

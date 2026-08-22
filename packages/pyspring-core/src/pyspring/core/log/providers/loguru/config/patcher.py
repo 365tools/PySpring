@@ -4,6 +4,7 @@
 在日志记录产生时，动态注入上下文变量和缺失字段的默认值。
 支持多进程环境，替代之前的 filter 副作用方案。
 """
+
 import importlib
 from contextvars import ContextVar
 from pathlib import Path
@@ -47,10 +48,10 @@ def set_context_vars_definitions(definitions: list[tuple[str, str, Any]]):
 def global_record_patcher(record):
     """
     全局 Loguru Patcher
-    
+
     用于在日志记录产生时，动态注入上下文变量和缺失字段的默认值。
     替代之前的 filter 副作用方案，更稳健且支持多进程。
-    
+
     Args:
         record: Loguru 日志记录对象
     """
@@ -66,7 +67,7 @@ def global_record_patcher(record):
             else:
                 # 回退到完整文件名（包含扩展名）
                 record["extra"]["file_relative"] = path_obj.name
-        except (ValueError, AttributeError):
+        except ValueError, AttributeError:
             # 最终回退到完整文件名
             record["extra"]["file_relative"] = Path(record["file"].path).name
 
@@ -88,7 +89,7 @@ def global_record_patcher(record):
         for key, var_path, default_val in _CONTEXT_VARS_DEFINITIONS:
             try:
                 if var_path:
-                    module_name, var_name = var_path.rsplit('.', 1)
+                    module_name, var_name = var_path.rsplit(".", 1)
                     module = importlib.import_module(module_name)
                     ctx_var = getattr(module, var_name)
                     temp.append((key, ctx_var, default_val))
@@ -102,7 +103,7 @@ def global_record_patcher(record):
         if key not in record["extra"]:
             try:
                 val = ctx_var.get()
-            except (LookupError, AttributeError):
+            except LookupError, AttributeError:
                 val = None
             record["extra"][key] = val if val is not None else default_val
 

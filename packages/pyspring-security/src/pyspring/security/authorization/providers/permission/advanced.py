@@ -2,6 +2,7 @@
 高级权限服务
 结合缓存、规则引擎和传统权限检查的综合权限服务
 """
+
 from typing import Any
 
 from pyspring.core.log.instance import logger
@@ -28,11 +29,11 @@ class AdvancedPermissionService(IPermissionService):
         role_provider: IRoleProvider,
         rule_engine: IRuleEngine | None = None,
         cache: CacheManagerService | None = None,
-        cache_ttl: int = 300
+        cache_ttl: int = 300,
     ):
         """
         初始化高级权限服务
-        
+
         Args:
             role_provider: 角色提供者
             rule_engine: 规则引擎（可选）
@@ -53,7 +54,7 @@ class AdvancedPermissionService(IPermissionService):
     async def has_permission(self, user_id: Any, permission: str) -> bool:
         """
         检查用户是否拥有权限
-        
+
         评估顺序：
         1. 本地缓存
         2. 分布式缓存
@@ -87,14 +88,13 @@ class AdvancedPermissionService(IPermissionService):
         # 4. 规则引擎检查（如果有规则引擎）
         if self.rule_engine:
             try:
-                context = {
-                    "permission": permission,
-                    "timestamp": self._get_current_timestamp()
-                }
+                context = {"permission": permission, "timestamp": self._get_current_timestamp()}
                 rule_result = await self.rule_engine.evaluate(user_id, resource, action, context)
                 if rule_result is not None:
                     self._update_both_caches(local_key, cache_key, rule_result)
-                    logger.debug(f"[AdvancedPermissionService] 规则引擎评估: user={user_id}, perm={permission}, result={rule_result}")
+                    logger.debug(
+                        f"[AdvancedPermissionService] 规则引擎评估: user={user_id}, perm={permission}, result={rule_result}"
+                    )
                     return rule_result
             except Exception as e:
                 logger.warning(f"[AdvancedPermissionService] 规则引擎评估失败: {e}")
@@ -109,7 +109,7 @@ class AdvancedPermissionService(IPermissionService):
     async def has_role(self, user_id: Any, role: str) -> bool:
         """
         检查用户是否拥有角色
-        
+
         评估顺序：
         1. 本地缓存
         2. 分布式缓存
@@ -152,13 +152,13 @@ class AdvancedPermissionService(IPermissionService):
     def _parse_permission(self, permission: str) -> tuple[str, str]:
         """
         解析权限字符串为资源和动作
-        
+
         Args:
             permission: 权限字符串，格式如 'user:read', 'article:create'
-            
+
         Returns: tuple[Any, ...]: (resource, action)
         """
-        parts = permission.split(':', 1)
+        parts = permission.split(":", 1)
         if len(parts) >= 2:
             return parts[0], parts[1]
         else:
@@ -167,6 +167,7 @@ class AdvancedPermissionService(IPermissionService):
     def _check_local_cache(self, key: str) -> bool | None:
         """检查本地缓存（未命中返回 None）"""
         import time
+
         current_time = time.time()
 
         if key in self._local_cache:
@@ -184,6 +185,7 @@ class AdvancedPermissionService(IPermissionService):
     def _update_local_cache(self, key: str, value: bool):
         """更新本地缓存"""
         import time
+
         self._local_cache[key] = value
         self._cache_timestamps[key] = time.time()
 
@@ -194,6 +196,7 @@ class AdvancedPermissionService(IPermissionService):
         if self.cache and distributed_key:
             try:
                 import asyncio
+
                 # 使用异步任务更新分布式缓存，避免阻塞
                 asyncio.create_task(self._async_update_cache(distributed_key, value))
             except Exception as e:
@@ -211,12 +214,13 @@ class AdvancedPermissionService(IPermissionService):
     def _get_current_timestamp(self) -> int:
         """获取当前时间戳"""
         import time
+
         return int(time.time())
 
     async def invalidate_user_cache(self, user_id: Any):
         """
         使用户的所有缓存失效
-        
+
         Args:
             user_id: 用户ID
         """
@@ -252,23 +256,17 @@ class AdvancedPermissionService(IPermissionService):
 
 # 便捷的工厂方法
 def create_advanced_permission_service(
-    role_provider: IRoleProvider,
-    rule_engine: IRuleEngine | None = None,
-    cache: CacheManagerService | None = None
+    role_provider: IRoleProvider, rule_engine: IRuleEngine | None = None, cache: CacheManagerService | None = None
 ) -> AdvancedPermissionService:
     """
     创建高级权限服务的便捷方法
-    
+
     Args:
         role_provider: 角色提供者
         rule_engine: 规则引擎
         cache: 缓存服务
-        
+
     Returns:
         AdvancedPermissionService: 高级权限服务实例
     """
-    return AdvancedPermissionService(
-        role_provider=role_provider,
-        rule_engine=rule_engine,
-        cache=cache
-    )
+    return AdvancedPermissionService(role_provider=role_provider, rule_engine=rule_engine, cache=cache)

@@ -1,6 +1,7 @@
 """
 Check for unresolved references and optionally fix them.
 """
+
 import ast
 import builtins
 import os
@@ -50,12 +51,10 @@ KNOWN_IMPORTS = {
     "io": "import io",
     "csv": "import csv",
     "contextlib": "import contextlib",
-
     # 3rd Party
     "text": "from sqlalchemy import text",
     "create_engine": "from sqlalchemy import create_engine",
     "exclude": "from sqlalchemy.sql.expression import exclude",
-
     # Typing Types (Common)
     "List": "from typing import List",
     "Dict": "from typing import Dict",
@@ -76,7 +75,6 @@ KNOWN_IMPORTS = {
     "cast": "from typing import cast",
     "overload": "from typing import overload",
     "NoReturn": "from typing import NoReturn",
-
     # Pathlib
     "Path": "from pathlib import Path",
 }
@@ -87,7 +85,7 @@ BUILTINS = set(dir(builtins))
 class Scope:
     """Scope Management"""
 
-    def __init__(self, parent: Optional['Scope'] = None, is_class_scope: bool = False, is_function_scope: bool = False):
+    def __init__(self, parent: Optional["Scope"] = None, is_class_scope: bool = False, is_function_scope: bool = False):
         self.parent = parent
         self.defined: Set[str] = set()
         self.is_class_scope = is_class_scope
@@ -121,6 +119,7 @@ class Scope:
 
 class GlobalDefCollector(ast.NodeVisitor):
     """Collects top-level function and class definitions (for forward reference support)"""
+
     def __init__(self):
         self.defined = set()
 
@@ -144,7 +143,7 @@ class UnresolvedVisitor(ast.NodeVisitor):
             self.current_scope.define(b)
 
         # Add special module variables
-        for special in ['__file__', '__path__', '__name__', '__doc__', '__package__']:
+        for special in ["__file__", "__path__", "__name__", "__doc__", "__package__"]:
             self.current_scope.define(special)
 
         self.unresolved: List[Tuple[str, int, int]] = []  # (name, lineno, col_offset)
@@ -160,15 +159,19 @@ class UnresolvedVisitor(ast.NodeVisitor):
         for default in node.args.defaults:
             self.visit(default)
         for default in node.args.kw_defaults:
-            if default: self.visit(default)
+            if default:
+                self.visit(default)
 
         # 3. Visit Annotations (Outer Scope)
         if node.returns:
             self.visit(node.returns)
-        for arg in node.args.args + getattr(node.args, 'posonlyargs', []) + getattr(node.args, 'kwonlyargs', []):
-            if arg.annotation: self.visit(arg.annotation)
-        if node.args.vararg and node.args.vararg.annotation: self.visit(node.args.vararg.annotation)
-        if node.args.kwarg and node.args.kwarg.annotation: self.visit(node.args.kwarg.annotation)
+        for arg in node.args.args + getattr(node.args, "posonlyargs", []) + getattr(node.args, "kwonlyargs", []):
+            if arg.annotation:
+                self.visit(arg.annotation)
+        if node.args.vararg and node.args.vararg.annotation:
+            self.visit(node.args.vararg.annotation)
+        if node.args.kwarg and node.args.kwarg.annotation:
+            self.visit(node.args.kwarg.annotation)
 
         # Enter New Scope
         prev_scope = self.current_scope
@@ -177,16 +180,18 @@ class UnresolvedVisitor(ast.NodeVisitor):
         # Define Arguments (Inner Scope)
         all_args = []
         all_args.extend(node.args.args)
-        if hasattr(node.args, 'posonlyargs'):
+        if hasattr(node.args, "posonlyargs"):
             all_args.extend(node.args.posonlyargs)
-        if hasattr(node.args, 'kwonlyargs'):
+        if hasattr(node.args, "kwonlyargs"):
             all_args.extend(node.args.kwonlyargs)
 
         for arg in all_args:
             self.current_scope.define(arg.arg)
 
-        if node.args.vararg: self.current_scope.define(node.args.vararg.arg)
-        if node.args.kwarg: self.current_scope.define(node.args.kwarg.arg)
+        if node.args.vararg:
+            self.current_scope.define(node.args.vararg.arg)
+        if node.args.kwarg:
+            self.current_scope.define(node.args.kwarg.arg)
 
         # Visit Body (Inner Scope)
         for stmt in node.body:
@@ -225,7 +230,8 @@ class UnresolvedVisitor(ast.NodeVisitor):
         for default in node.args.defaults:
             self.visit(default)
         for default in node.args.kw_defaults:
-            if default: self.visit(default)
+            if default:
+                self.visit(default)
 
         prev_scope = self.current_scope
         self.current_scope = Scope(parent=prev_scope, is_function_scope=True)
@@ -233,24 +239,28 @@ class UnresolvedVisitor(ast.NodeVisitor):
         for arg in node.args.args:
             self.current_scope.define(arg.arg)
         # add other args types if Lambda supports them (it does)
-        if hasattr(node.args, 'posonlyargs'):
-            for arg in node.args.posonlyargs: self.current_scope.define(arg.arg)
-        if hasattr(node.args, 'kwonlyargs'):
-            for arg in node.args.kwonlyargs: self.current_scope.define(arg.arg)
-        if node.args.vararg: self.current_scope.define(node.args.vararg.arg)
-        if node.args.kwarg: self.current_scope.define(node.args.kwarg.arg)
+        if hasattr(node.args, "posonlyargs"):
+            for arg in node.args.posonlyargs:
+                self.current_scope.define(arg.arg)
+        if hasattr(node.args, "kwonlyargs"):
+            for arg in node.args.kwonlyargs:
+                self.current_scope.define(arg.arg)
+        if node.args.vararg:
+            self.current_scope.define(node.args.vararg.arg)
+        if node.args.kwarg:
+            self.current_scope.define(node.args.kwarg.arg)
 
         self.visit(node.body)
         self.current_scope = prev_scope
 
     def visit_Import(self, node):
         for alias in node.names:
-            name = alias.asname if alias.asname else alias.name.split('.')[0]
+            name = alias.asname if alias.asname else alias.name.split(".")[0]
             self.current_scope.define(name)
 
     def visit_ImportFrom(self, node):
         for alias in node.names:
-            if alias.name == '*':
+            if alias.name == "*":
                 self.current_scope.star_imported = True
             else:
                 name = alias.asname if alias.asname else alias.name
@@ -302,9 +312,12 @@ class UnresolvedVisitor(ast.NodeVisitor):
         self.current_scope = Scope(parent=prev_scope)
         for generator in node.generators:
             self.visit(generator)
-        if hasattr(node, 'elt'): self.visit(node.elt)
-        if hasattr(node, 'key'): self.visit(node.key)
-        if hasattr(node, 'value'): self.visit(node.value)
+        if hasattr(node, "elt"):
+            self.visit(node.elt)
+        if hasattr(node, "key"):
+            self.visit(node.key)
+        if hasattr(node, "value"):
+            self.visit(node.value)
         self.current_scope = prev_scope
 
     def visit_comprehension(self, node):
@@ -315,7 +328,7 @@ class UnresolvedVisitor(ast.NodeVisitor):
 
 
 def scan_file(file_path: str) -> List[Tuple[str, int, int]]:
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         code = f.read()
 
     try:
@@ -354,7 +367,7 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
     # Use AST to find existing imports and their locations
     existing_imports = {}  # Map import_string -> min_lineno
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             code = f.read()
             tree = ast.parse(code)
 
@@ -365,7 +378,7 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
                     if imp_str not in existing_imports or node.lineno < existing_imports[imp_str]:
                         existing_imports[imp_str] = node.lineno
             elif isinstance(node, ast.ImportFrom):
-                module = node.module or ''
+                module = node.module or ""
                 for alias in node.names:
                     name = alias.name
                     if module:
@@ -378,13 +391,13 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
 
     except SyntaxError:
         # Fallback to text scan if syntax error prevents parsing
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
         # Map import content to line number (1-based)
         existing_imports = {
             line.strip(): idx + 1
             for idx, line in enumerate(lines)
-            if line.strip().startswith('import ') or line.strip().startswith('from ')
+            if line.strip().startswith("import ") or line.strip().startswith("from ")
         }
 
     imports_to_add = []
@@ -408,12 +421,12 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
                 lines_to_remove_candidates.append((existing_line, imp_clean))
 
         if should_add:
-            imports_to_add.append(imp + '\n')
+            imports_to_add.append(imp + "\n")
 
     if not imports_to_add:
         return 0
 
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     # Process removals first
@@ -424,7 +437,7 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
 
         line_content = lines[lineno - 1].strip()
         # Remove comments for comparison
-        line_content_no_comment = line_content.split('#')[0].strip()
+        line_content_no_comment = line_content.split("#")[0].strip()
 
         if line_content_no_comment == imp_content:
             indices_to_drop.add(lineno - 1)
@@ -439,7 +452,8 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
     if len(lines) > 0 and (lines[0].startswith('"""') or lines[0].startswith("'''")):
         # Simple heuristic to skip docstring
         for d_idx, d_line in enumerate(lines):
-            if d_idx == 0: continue
+            if d_idx == 0:
+                continue
             if '"""' in d_line or "'''" in d_line:
                 insert_idx = d_idx + 1
                 break
@@ -452,7 +466,7 @@ def apply_fixes(file_path: str, unresolved: List[Tuple[str, int, int]]) -> int:
     suffix_lines = lines[insert_idx:]
     output_lines: List[str] = prefix_lines + imports_to_add + suffix_lines
 
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         f.writelines(output_lines)
 
     return len(imports_to_add)
@@ -464,7 +478,7 @@ class ReferencesChecker(BaseChecker):
         return "Unresolved References Check"
 
     def __init__(self, target_path):
-        super().__init__(target_path, ['.py'])
+        super().__init__(target_path, [".py"])
 
     def check_file(self, file_path: str, fix: bool = False, **kwargs) -> bool:
         unresolved = scan_file(file_path)
@@ -477,27 +491,29 @@ class ReferencesChecker(BaseChecker):
             msg = f"Unresolved reference '{name}' (col {col})"
             if name in KNOWN_IMPORTS:
                 msg += f" (Fixable: {KNOWN_IMPORTS[name]})"
-            self.add_issue(file_path, line, msg, level='error')
+            self.add_issue(file_path, line, msg, level="error")
 
         if fix:
             applied = apply_fixes(file_path, unresolved)
             if applied:
                 self.resolved_count += applied
-                self.add_issue(file_path, 0, f"Applied {applied} fixes (added imports).", level='success')
+                self.add_issue(file_path, 0, f"Applied {applied} fixes (added imports).", level="success")
             else:
                 # Provide specific feedback for unfixable items
                 for name, line, col in unresolved:
                     if name not in KNOWN_IMPORTS:
-                        self.add_issue(file_path, line, f"Cannot auto-fix unresolved reference '{name}' -> Manual correction required", level='warning')
+                        self.add_issue(
+                            file_path,
+                            line,
+                            f"Cannot auto-fix unresolved reference '{name}' -> Manual correction required",
+                            level="warning",
+                        )
 
         return True
 
     def post_check(self, files: List[str], **kwargs):
         """Run deeper analysis using Mypy if available"""
-        self._run_mypy_check(
-            strict=kwargs.get('strict', False),
-            whitelist=kwargs.get('whitelist')
-        )
+        self._run_mypy_check(strict=kwargs.get("strict", False), whitelist=kwargs.get("whitelist"))
 
     def _run_mypy_check(self, strict: bool = False, whitelist: Optional[str] = None):
         # 1. Check availability
@@ -508,7 +524,7 @@ class ReferencesChecker(BaseChecker):
         try:
             # Quick check shouldn't take long
             subprocess.run(mypy_cmd + ["--version"], capture_output=True, check=True)
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except subprocess.CalledProcessError, FileNotFoundError:
             if shutil.which("mypy"):
                 mypy_cmd = ["mypy"]
             else:
@@ -522,7 +538,7 @@ class ReferencesChecker(BaseChecker):
         env = os.environ.copy()
         # Add src to PYTHONPATH to ensure imports resolve correctly during static analysis
         # especially if not installed in editable mode
-        src_path = os.path.join(os.path.abspath(self.target_path), 'src')
+        src_path = os.path.join(os.path.abspath(self.target_path), "src")
         if os.path.exists(src_path):
             current_pythonpath = env.get("PYTHONPATH", "")
             env["PYTHONPATH"] = f"{src_path}{os.pathsep}{current_pythonpath}"
@@ -530,32 +546,33 @@ class ReferencesChecker(BaseChecker):
         # Construct exclude pattern from DEFAULT_IGNORES
         exclude_patterns = []
         # Ensure we always include these specific ignores even if DEFAULT_IGNORES changes
-        base_ignores = DEFAULT_IGNORES.union({'build', 'dist', 'out', 'examples'})
+        base_ignores = DEFAULT_IGNORES.union({"build", "dist", "out", "examples"})
 
         for ignore in base_ignores:
             # Simple glob conversion for regex
             # Escape dots, then convert start wildcard to regex .*
-            ignore_pattern = re.escape(ignore).replace(r'\*', '.*')
+            ignore_pattern = re.escape(ignore).replace(r"\*", ".*")
             exclude_patterns.append(ignore_pattern)
 
         exclude_regex = f"({'|'.join(exclude_patterns)})"
 
         cmd = mypy_cmd + [
             self.target_path,
-            "--exclude", exclude_regex,
+            "--exclude",
+            exclude_regex,
             "--ignore-missing-imports",
             "--no-error-summary",
             "--no-color",
             "--show-column-numbers",
             "--check-untyped-defs",
-            "--soft-error-limit=-1"
+            "--soft-error-limit=-1",
         ]
 
         # Spinner Logic
         stop_spinner = False
 
         def spinner_task():
-            chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+            chars = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
             idx = 0
             while not stop_spinner:
                 sys.stdout.write(f"\r   {chars[idx]} Analyzing...")
@@ -571,7 +588,7 @@ class ReferencesChecker(BaseChecker):
         result = None
         try:
             # Enforce utf-8 to avoid encoding issues
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', env=env)
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", env=env)
         except Exception as e:
             stop_spinner = True
             t.join()
@@ -587,7 +604,7 @@ class ReferencesChecker(BaseChecker):
 
         allowed_categories = None
         if whitelist:
-            allowed_categories = set(c.strip() for c in whitelist.split('|'))
+            allowed_categories = set(c.strip() for c in whitelist.split("|"))
 
         # Categorization Rules
         # Map category name -> list of codes or pattern matching function
@@ -597,7 +614,8 @@ class ReferencesChecker(BaseChecker):
         if result and result.stdout:
             for line in result.stdout.splitlines():
                 line = line.strip()
-                if not line: continue
+                if not line:
+                    continue
 
                 # Check for fatal errors first
                 if "error:" in line and not pattern.match(line):
@@ -608,12 +626,12 @@ class ReferencesChecker(BaseChecker):
                 match = pattern.match(line)
                 if match:
                     rel_path, lineno, msg, code = match.groups()
-                    code = code or 'misc'  # Default code if missing
+                    code = code or "misc"  # Default code if missing
 
                     category = None
 
                     # 1. Attribute Errors
-                    if code == 'attr-defined':
+                    if code == "attr-defined":
                         category = "Attribute Error"
 
                     # 2. Static Method Detection (Custom User Request)
@@ -621,7 +639,11 @@ class ReferencesChecker(BaseChecker):
                         category = "Static Method"
 
                     # 3. Type Mismatches
-                    elif code in ('arg-type', 'assignment', 'return-value', 'list-item', 'dict-item', 'index', 'operator') or "Expected type" in msg:
+                    elif (
+                        code
+                        in ("arg-type", "assignment", "return-value", "list-item", "dict-item", "index", "operator")
+                        or "Expected type" in msg
+                    ):
                         category = "Type Mismatch"
 
                     # 4. Async/Sync Mismatches
@@ -630,15 +652,15 @@ class ReferencesChecker(BaseChecker):
                         category = "Type Mismatch (Async)"
 
                     # 5. Deprecations
-                    elif "Deprecated" in msg or code == 'deprecation':
+                    elif "Deprecated" in msg or code == "deprecation":
                         category = "Deprecation"
 
                     # 6. Syntax / Regex / Escape
-                    elif "Redundant character escape" in msg or code in ('valid-type', 'syntax', 'regex'):
+                    elif "Redundant character escape" in msg or code in ("valid-type", "syntax", "regex"):
                         category = "Syntax/Regex"
 
                     # 7. Unused Arguments/Variables
-                    elif "not used" in msg or code in ('unused-argument', 'unused-ignore'):
+                    elif "not used" in msg or code in ("unused-argument", "unused-ignore"):
                         category = "Unused Code"
 
                     # Skip if not in our interested categories
@@ -659,7 +681,7 @@ class ReferencesChecker(BaseChecker):
                     if not file_path.startswith(os.path.abspath(self.target_path)):
                         continue
 
-                    self.add_issue(file_path, int(lineno), f"[{category}] {msg}", level='error')
+                    self.add_issue(file_path, int(lineno), f"[{category}] {msg}", level="error")
                     category_counts[category] += 1
 
                     if file_path not in self._issues:
@@ -679,12 +701,10 @@ class ReferencesChecker(BaseChecker):
             print("   ✅ Mypy analysis completed. No critical issues found.")
 
 
-
-
 def run_check_references(args):
-    target = getattr(args, 'path', '.')
-    strict = getattr(args, 'strict', False)
-    whitelist = getattr(args, 'whitelist', None)
+    target = getattr(args, "path", ".")
+    strict = getattr(args, "strict", False)
+    whitelist = getattr(args, "whitelist", None)
 
     checker = ReferencesChecker(target)
     return checker.run(fix=args.fix, strict=strict, whitelist=whitelist)

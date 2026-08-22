@@ -3,32 +3,33 @@
 
 定义用于配置类和Bean工厂方法的装饰器：Configuration, Bean
 """
+
 from typing import Callable, TypeVar, Union
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 def Configuration(cls: (type[T]) | None = None) -> Union[type[T], Callable[[type[T]], type[T]]]:
     """
     配置类装饰器
-    
+
     标记一个类为配置类，其中的 @Bean 方法将被扫描和注册。
-    
+
     支持两种使用方式：
     1. 不带括号：@Configuration
     2. 带括号：@Configuration()
-    
+
     使用场景：
     - 定义Bean的工厂类
     - 集中管理应用配置
-    
+
     示例：
         @Configuration
         class DatabaseConfig:
             @Bean
             def data_source(self) -> DataSource:
                 return PostgresDataSource()
-            
+
             @Bean
             def session_factory(self, data_source: DataSource) -> SessionFactory:
                 return SessionFactory(data_source)
@@ -48,44 +49,44 @@ def Configuration(cls: (type[T]) | None = None) -> Union[type[T], Callable[[type
 
 
 def Bean(
-        func_or_name: (Callable[..., T] | str) | None = None,
-        *,
-        name: (str) | None = None,
-        init_method: (str) | None = None,
-        destroy_method: (str) | None = None
+    func_or_name: (Callable[..., T] | str) | None = None,
+    *,
+    name: (str) | None = None,
+    init_method: (str) | None = None,
+    destroy_method: (str) | None = None,
 ) -> Callable[[Callable[..., T]], Callable[..., T]] | Callable[..., T]:
     """
     Bean方法装饰器（支持有参和无参两种用法）
-    
+
     标记配置类中的方法为Bean工厂方法。
-    
+
     用法1: 无参数（像@staticmethod一样）:
         @Bean
         def data_source(self) -> DataSource:
             return PostgresDataSource()
-    
+
     用法2: 带参数:
         @Bean(name="custom_cache")
         def cache_service(self) -> ICacheService:
             return RedisCache()
-    
+
     Args:
         func_or_name: 如果直接装饰函数，这是函数对象；如果带参数调用，这是name参数
         name: Bean名称（可选，默认使用方法名）
         init_method: 初始化方法名（可选）
         destroy_method: 销毁方法名（可选）
-    
+
     示例：
         @Configuration
         class AppConfig:
             @Bean  # 无括号
             def data_source(self) -> DataSource:
                 return PostgresDataSource()
-            
+
             @Bean()  # 空括号
             def another_source(self) -> DataSource:
                 return MySQLDataSource()
-            
+
             @Bean(name="custom_cache")  # 带参数
             def cache_service(self) -> ICacheService:
                 return RedisCache()
@@ -119,6 +120,6 @@ def Bean(
 
 
 __all__ = [
-    'Configuration',
-    'Bean',
+    "Configuration",
+    "Bean",
 ]

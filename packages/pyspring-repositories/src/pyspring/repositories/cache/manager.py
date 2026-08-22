@@ -3,6 +3,7 @@
 
 管理缓存服务提供者，支持 Redis 和内存缓存
 """
+
 from typing import Awaitable, Callable, cast
 
 from pyspring.core.ioc.annotations.component import Component
@@ -19,14 +20,14 @@ from .service import ICacheService
 class CacheManagerService(IManaged):
     """
     缓存管理服务（由 IOC 容器管理单例）
-    
+
     通过 CacheServiceFactory 获取已验证的缓存实例
     """
 
     def __init__(self, cache_service_factory: CacheServiceFactory):
         """
         通过 IOC 注入工厂
-        
+
         Args:
             cache_service_factory: CacheServiceFactory 实例（自动注入）
         """
@@ -36,9 +37,9 @@ class CacheManagerService(IManaged):
     async def provider(self) -> ICacheService:
         """
         获取缓存服务（Factory 内部已实现单例）
-        
+
         Factory 已完成连接检测和降级，返回已验证的实例
-        
+
         Returns:
             ICacheService: Redis 或 Memory 实现
         """
@@ -68,7 +69,7 @@ class CacheManagerService(IManaged):
     async def scan(self, *args, **kwargs) -> tuple[int, list[str]]:
         """扫描缓存键（如果支持）"""
         provider = await self.provider()
-        scan = getattr(provider, 'scan', None)
+        scan = getattr(provider, "scan", None)
         if callable(scan):
             scan_fn = cast(Callable[..., Awaitable[tuple[int, list[str]]]], scan)
             result = await scan_fn(*args, **kwargs)
@@ -88,7 +89,7 @@ class CacheManagerService(IManaged):
         """关闭缓存连接"""
         provider_instance = await self.provider()
         if provider_instance:
-            close = getattr(provider_instance, 'close', None)
+            close = getattr(provider_instance, "close", None)
             if callable(close):
                 close_fn = cast(Callable[..., Awaitable[object]], close)
                 try:
@@ -96,7 +97,7 @@ class CacheManagerService(IManaged):
                     logger.debug(f"CacheManager: {provider_instance.__class__.__name__} closed")
                 except Exception as e:
                     logger.error(f"Failed to close {provider_instance.__class__.__name__}: {e}")
-            elif hasattr(provider_instance, 'clear'):
+            elif hasattr(provider_instance, "clear"):
                 try:
                     await provider_instance.clear()
                     logger.debug(f"CacheManager: {provider_instance.__class__.__name__} cleared")

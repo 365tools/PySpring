@@ -111,6 +111,7 @@ config_manager.load_config("config")
 container = ServiceContainer()
 container.register_all()
 
+
 @app.get("/")
 async def root():
     return {"message": "Hello PySpring!"}
@@ -122,13 +123,9 @@ async def root():
 @app.post("/api/auth/login")
 async def login(username: str, password: str):
     from pyspring.security.auth.impl.login import LoginService
-    
+
     login_service = container.get(LoginService)
-    result = await login_service.login(
-        user_id="1",
-        username=username,
-        roles=["admin"]
-    )
+    result = await login_service.login(user_id="1", username=username, roles=["admin"])
     return result
 ```
 
@@ -141,10 +138,9 @@ from fastapi import Depends
 # 添加中间件
 app.add_middleware(AuthMiddleware)
 
+
 @app.get("/api/user/profile")
-async def get_profile(
-    current_user: dict = Depends(AuthMiddleware.get_current_user)
-):
+async def get_profile(current_user: dict = Depends(AuthMiddleware.get_current_user)):
     return {"user": current_user}
 ```
 
@@ -169,10 +165,11 @@ async def get_data():
 @app.get("/api/cache/{key}")
 async def get_cache(key: str):
     from pyspring.repositories.cache.service import CacheService
-    
+
     cache_service = container.get(CacheService)
     value = await cache_service.get(key)
     return {"value": value}
+
 
 @app.post("/api/cache/{key}")
 async def set_cache(key: str, value: str):

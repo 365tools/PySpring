@@ -3,6 +3,7 @@
 
 用于描述服务依赖的各种信息
 """
+
 from dataclasses import dataclass
 from typing import Any, Type
 
@@ -11,9 +12,10 @@ from typing import Any, Type
 class DependencyInfo:
     """
     依赖信息
-    
+
     描述一个服务依赖的各种属性
     """
+
     param_name: str  # 参数名称
     param_type: type  # 参数类型
     service_name: str  # 服务名称（空字符串表示按类型查找）

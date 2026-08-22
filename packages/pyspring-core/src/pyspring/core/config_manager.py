@@ -6,6 +6,7 @@ PySpring 配置管理器
 - 不依赖 pyspring.log（LogManager -> ioc -> config_manager，会形成循环依赖）
 - 使用 Python 标准库 logging 记录诊断信息，零外部依赖，不污染 stderr
 """
+
 import copy
 import logging
 import os
@@ -24,7 +25,7 @@ _DEBUG_CONFIG = os.getenv("PYSPRING_DEBUG_CONFIG", "false").lower() == "true"
 class ConfigManager:
     """
     配置管理器，负责加载和合并配置
-    
+
     配置加载顺序（后面的覆盖前面的）：
     1. 框架默认配置 (src/pyspring/config/defaults/)
     2. 用户项目配置 (user_project/config/)
@@ -41,22 +42,19 @@ class ConfigManager:
 
     @classmethod
     def load_config(
-            cls,
-            config_name: str,
-            user_config_dir: (str) | None = None,
-            use_cache: bool = True
+        cls, config_name: str, user_config_dir: (str) | None = None, use_cache: bool = True
     ) -> dict[str, Any]:
         """
         加载配置文件
-        
+
         Args:
             config_name: 配置文件名（不含扩展名），如 'security', 'database', 'logging'
             user_config_dir: 用户项目配置目录，默认为 'config/'
             use_cache: 是否使用缓存
-            
+
         Returns:
             合并后的配置字典
-            
+
         Example:
             >>> config = ConfigManager.load_config('security')
             >>> jwt_expire = config['authentication']['jwt']['access_token_expire']
@@ -98,7 +96,7 @@ class ConfigManager:
             return {}
 
         try:
-            with open(defaults_file, 'r', encoding='utf-8') as f:
+            with open(defaults_file, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
             if _DEBUG_CONFIG:
                 logger.debug("✅ 已加载框架默认配置: %s <- %s", config_name, defaults_file)
@@ -109,11 +107,7 @@ class ConfigManager:
             return {}
 
     @classmethod
-    def _load_user_config(
-            cls,
-            config_name: str,
-            user_config_dir: (str) | None = None
-    ) -> dict[str, Any]:
+    def _load_user_config(cls, config_name: str, user_config_dir: (str) | None = None) -> dict[str, Any]:
         """加载用户项目配置"""
         if user_config_dir is None:
             user_config_dir = "config"
@@ -131,12 +125,13 @@ class ConfigManager:
             logger.debug(
                 "📝 用户配置不存在（使用框架默认值）: %s "
                 "（可创建 %s.yaml 自定义，候选位置：./config、./、../config、../）",
-                user_config_file, config_name,
+                user_config_file,
+                config_name,
             )
             return {}
 
         try:
-            with open(user_config_file, 'r', encoding='utf-8') as f:
+            with open(user_config_file, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f) or {}
             logger.debug("✅ 已加载用户配置: %s <- %s", config_name, user_config_file)
             return config
@@ -144,7 +139,9 @@ class ConfigManager:
             # 加载失败时降级为框架默认值；诊断信息走标准库 logging（debug 级，不打扰用户）
             logger.debug(
                 "⚠️ 加载用户配置失败，使用框架默认值: %s (%s), 错误: %s",
-                config_name, user_config_file, e,
+                config_name,
+                user_config_file,
+                e,
             )
             return {}
 
@@ -153,7 +150,7 @@ class ConfigManager:
         """
         深度合并两个字典
         override 中的值会覆盖 base 中的值
-        
+
         **重要**: None 值会被忽略，不会覆盖框架默认值
         这允许用户配置中使用 null 而不破坏框架默认配置
         """
@@ -178,7 +175,7 @@ class ConfigManager:
     def _apply_env_overrides(cls, config: dict[str, Any], config_name: str) -> dict[str, Any]:
         """
         应用环境变量覆盖
-        
+
         环境变量命名规则：
         - security.yaml: JWT_SECRET_KEY, JWT_ENCRYPTION_KEY
         - repositories.yaml: POSTGRES_PASSWORD, MYSQL_PASSWORD, REDIS_PASSWORD

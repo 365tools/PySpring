@@ -79,7 +79,7 @@ container:
 from pyspring.core.ioc import ApplicationContext
 
 # 初始化应用上下文，替代原来的 manager.register_all_services()
-app_context = ApplicationContext.initialize(base_packages=['your_app.services'])
+app_context = ApplicationContext.initialize(base_packages=["your_app.services"])
 ```
 
 ### 2. 使用自定义配置
@@ -100,10 +100,7 @@ scan:
 from pyspring.core.ioc import ApplicationContext
 
 # 初始化应用上下文，自动加载配置文件
-app_context = ApplicationContext.initialize(
-    base_packages=['your_app.services'],
-    config_file='config/container.yaml'
-)
+app_context = ApplicationContext.initialize(base_packages=["your_app.services"], config_file="config/container.yaml")
 ```
 
 ### 3. 获取配置信息

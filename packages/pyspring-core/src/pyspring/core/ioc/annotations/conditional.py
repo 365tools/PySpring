@@ -4,14 +4,13 @@
 定义用于条件注册的装饰器：ConditionalOnMissingBean
 这些装饰器用于实现条件化的组件注册。
 """
+
 from typing import Callable, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
-def ConditionalOnMissingBean(
-        target_or_type: type | None = None
-) -> Callable[[T], T]:
+def ConditionalOnMissingBean(target_or_type: type | None = None) -> Callable[[T], T]:
     """
     条件Bean装饰器（仅当指定类型的Bean不存在时，才注册此Bean/组件）。
 
@@ -65,5 +64,5 @@ def ConditionalOnMissingBean(
 
 
 __all__ = [
-    'ConditionalOnMissingBean',
+    "ConditionalOnMissingBean",
 ]

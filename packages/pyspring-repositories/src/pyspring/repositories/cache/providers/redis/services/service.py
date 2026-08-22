@@ -1,6 +1,7 @@
 """
 Redis 缓存服务实现
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -25,7 +26,7 @@ class RedisService(IRedisService):
     def __init__(self, cache_config: CacheConfig):
         """
         通过 IOC 注入配置
-        
+
         Args:
             cache_config: CacheConfig 实例（自动注入）
         """
@@ -57,7 +58,7 @@ class RedisService(IRedisService):
             max_connections=self.max_connections,
             socket_keepalive=self.socket_keepalive,
             socket_connect_timeout=self.socket_connect_timeout,
-            retry_on_timeout=self.retry_on_timeout
+            retry_on_timeout=self.retry_on_timeout,
         )
         self._redis_client: redis.Redis = redis.Redis(connection_pool=self._connection_pool)
 
@@ -144,20 +145,14 @@ class RedisService(IRedisService):
         """关闭 Redis 连接池，释放所有连接"""
         try:
             try:
-                await asyncio.wait_for(
-                    self._redis_client.aclose(),
-                    timeout=3.0
-                )
+                await asyncio.wait_for(self._redis_client.aclose(), timeout=3.0)
             except asyncio.TimeoutError:
                 logger.warning("Redis 客户端关闭超时")
             except Exception as e:
                 logger.warning(f"Redis 客户端关闭异常: {e}")
 
             try:
-                await asyncio.wait_for(
-                    self._connection_pool.disconnect(),
-                    timeout=3.0
-                )
+                await asyncio.wait_for(self._connection_pool.disconnect(), timeout=3.0)
             except asyncio.TimeoutError:
                 logger.warning("Redis 连接池断开超时，强制关闭")
                 try:

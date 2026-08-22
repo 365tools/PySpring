@@ -1,6 +1,7 @@
 """
 代理生成器，用于创建 AOP 代理对象
 """
+
 import functools
 import re
 from typing import Any, Callable, TypedDict
@@ -8,6 +9,7 @@ from typing import Any, Callable, TypedDict
 
 class _Advice(TypedDict):
     """AOP advice 结构：{'type': 'before'/'around'/'after', 'func': 回调, 'pointcut': 切点}"""
+
     type: str
     func: Callable[..., object]
     pointcut: str
@@ -25,7 +27,7 @@ class AopProxy:
         attr = getattr(self._target, name)
 
         # 如果不是方法，直接返回
-        if not callable(attr) or name.startswith('_'):
+        if not callable(attr) or name.startswith("_"):
             return attr
 
         # 生成包装方法
@@ -36,20 +38,20 @@ class AopProxy:
         def wrapper(*args, **kwargs):
             # 1. Before Advice
             for advice in self._advices:
-                if advice['type'] == 'before' and self._match(advice['pointcut'], method_name):
-                    advice['func'](self._target, method_name, args, kwargs)
+                if advice["type"] == "before" and self._match(advice["pointcut"], method_name):
+                    advice["func"](self._target, method_name, args, kwargs)
 
             result = None
             try:
                 # 2. Around & Execution
                 executed = False
                 for advice in self._advices:
-                    if advice['type'] == 'around' and self._match(advice['pointcut'], method_name):
+                    if advice["type"] == "around" and self._match(advice["pointcut"], method_name):
                         # Around 通知需要接收 proceed 回调
                         def proceed():
                             return original_method(*args, **kwargs)
 
-                        result = advice['func'](proceed, self._target, method_name, args, kwargs)
+                        result = advice["func"](proceed, self._target, method_name, args, kwargs)
                         executed = True
                         break  # 只执行第一个匹配的 around
 
@@ -62,8 +64,8 @@ class AopProxy:
 
             # 4. After Advice
             for advice in self._advices:
-                if advice['type'] == 'after' and self._match(advice['pointcut'], method_name):
-                    advice['func'](self._target, method_name, result)
+                if advice["type"] == "after" and self._match(advice["pointcut"], method_name):
+                    advice["func"](self._target, method_name, result)
 
             return result
 

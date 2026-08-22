@@ -11,6 +11,7 @@ from typing import Any
 
 class HealthStatus(str, Enum):
     """健康状态枚举"""
+
     UP = "UP"  # 健康
     DOWN = "DOWN"  # 不健康
     UNKNOWN = "UNKNOWN"  # 未知
@@ -20,6 +21,7 @@ class HealthStatus(str, Enum):
 @dataclass
 class HealthCheckResult:
     """健康检查结果"""
+
     status: HealthStatus
     name: str
     details: dict[str, Any] = field(default_factory=dict)
@@ -40,15 +42,15 @@ class HealthCheckResult:
 class HealthIndicator(ABC):
     """
     健康检查指标抽象基类
-    
+
     实现此接口的类将被自动发现并执行健康检查
-    
+
     Example:
         @Component
         class DatabaseHealthIndicator(HealthIndicator):
             def name(self) -> str:
                 return "database"
-            
+
             async def check(self) -> HealthCheckResult:
                 try:
                     # 检查数据库连接
@@ -69,7 +71,7 @@ class HealthIndicator(ABC):
     def name(self) -> str:
         """
         健康检查指标名称
-        
+
         Returns:
             指标名称，如 "database", "cache", "disk" 等
         """
@@ -79,7 +81,7 @@ class HealthIndicator(ABC):
     async def check(self) -> HealthCheckResult:
         """
         执行健康检查（异步方法）
-        
+
         Returns:
             HealthCheckResult: 健康检查结果
         """
@@ -88,7 +90,7 @@ class HealthIndicator(ABC):
     def order(self) -> int:
         """
         检查执行顺序（数字越小越先执行）
-        
+
         Returns:
             执行顺序，默认为0
         """

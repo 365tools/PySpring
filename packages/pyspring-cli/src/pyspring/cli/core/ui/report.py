@@ -1,6 +1,7 @@
 """
 Reporting Utilities
 """
+
 from typing import Dict, List, Tuple
 
 from .console import Colors, print_section, print_success, print_warning
@@ -9,7 +10,7 @@ from .console import Colors, print_section, print_success, print_warning
 def print_check_summary(results: List[Tuple[str, bool]], fix_commands: Dict[str, str]):
     """
     Print a summary table of check results and actionable fixes.
-    
+
     Args:
         results: List of (check_name, passed_boolean)
         fix_commands: Dict of {check_name: fix_command_suffix}
@@ -21,7 +22,8 @@ def print_check_summary(results: List[Tuple[str, bool]], fix_commands: Dict[str,
     all_passed = True
     for name, success in results:
         status = f"{Colors.OKGREEN}✅ PASS{Colors.ENDC}" if success else f"{Colors.FAIL}❌ ISSUES{Colors.ENDC}"
-        if not success: all_passed = False
+        if not success:
+            all_passed = False
         print(f"{name:<20} : {status}")
 
     print("-" * 70)

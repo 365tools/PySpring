@@ -87,11 +87,7 @@ from pyspring.config_manager import ConfigManager
 config = ConfigManager.load_config("security")
 
 # 便捷函数
-from pyspring.config_manager import (
-    load_security_config,
-    load_repositories_config,
-    load_logging_config
-)
+from pyspring.config_manager import load_security_config, load_repositories_config, load_logging_config
 
 security_config = load_security_config()
 repositories_config = load_repositories_config()

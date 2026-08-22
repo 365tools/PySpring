@@ -1,6 +1,7 @@
 """
 PySpring Environment Checker
 """
+
 import os
 import subprocess
 import sys
@@ -22,9 +23,7 @@ def check_python_info():
     print(f"   Current Working Directory: {os.getcwd()}")
 
     # Check venv
-    in_venv = hasattr(sys, 'real_prefix') or (
-            hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix
-    )
+    in_venv = hasattr(sys, "real_prefix") or (hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix)
     print(f"   In Virtual Environment: {'[OK] Yes' if in_venv else '[X] No'}")
     if in_venv:
         print(f"   Virtual Env Path: {sys.prefix}")
@@ -36,25 +35,24 @@ def check_pyspring_installation():
     # Use pip show
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "pip", "show", "pyspring"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            [sys.executable, "-m", "pip", "show", "pyspring"], capture_output=True, text=True, timeout=5
         )
         if result.returncode == 0:
             print("   [OK] PySpring is installed")
-            output_lines = result.stdout.split('\n')
+            output_lines = result.stdout.split("\n")
             is_editable = False
             for line in output_lines:
-                if 'Editable project location:' in line:
+                if "Editable project location:" in line:
                     is_editable = True
                     print(f"      {line}")
-                elif any(key in line for key in ['Version:', 'Location:']):
+                elif any(key in line for key in ["Version:", "Location:"]):
                     print(f"      {line}")
 
             if not is_editable:
                 print(f"      {Colors.OKCYAN}[i] Note: Runing in standard (copy) mode.{Colors.ENDC}")
-                print(f"      {Colors.OKCYAN}  For local development, verify you installed with '-e' or 'editable=true'.{Colors.ENDC}")
+                print(
+                    f"      {Colors.OKCYAN}  For local development, verify you installed with '-e' or 'editable=true'.{Colors.ENDC}"
+                )
         else:
             print("   [X] PySpring is NOT installed")
             print("\n      Tip: Please run: pip install pyspring")
@@ -71,7 +69,7 @@ def check_path_issues():
     print(f"   PYTHONPATH includes CWD: {'[OK] Yes' if cwd in sys_path or '' in sys_path else '[X] No'}")
 
     # Check for src folder
-    src_path = os.path.join(cwd, 'src')
+    src_path = os.path.join(cwd, "src")
     if os.path.exists(src_path):
         print(f"   src directory found at: {src_path}")
         if src_path not in sys_path:

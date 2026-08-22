@@ -13,7 +13,7 @@ class IPathPermissionProvider(IManaged, ABC):
     def get_path_rules(self) -> dict[str, list[str]]:
         """
         获取路径规则
-        
+
         Returns:
             dict[str, list[str]]: 路径 -> 所需角色/权限列表 的映射
             例如: {"/api/admin/": ["admin"], "/api/user/": ["user", "admin"]}

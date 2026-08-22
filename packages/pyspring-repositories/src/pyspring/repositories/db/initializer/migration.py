@@ -7,6 +7,7 @@
 2. 可选使用 SQL 脚本补充初始数据
 3. 支持表名前缀自定义
 """
+
 import importlib
 import sys
 from pathlib import Path
@@ -25,18 +26,18 @@ from ..manager import DBManagerService
 class MigrationInitializer(IStartupInitializer):
     """
     数据库表结构初始化器 (Migration)
-    
+
     功能：
     1. 优先使用 ORM 模型自动创建表（Base.metadata.create_all）
     2. 支持框架内置模型 + 用户自定义模型
     3. 支持表名前缀配置（项目名称+表名）
     4. 可选使用 SQL 脚本补充初始数据
-    
+
     策略：
     - 框架内置模型：pyspring.security.orm.tables
     - 用户模型：自动扫描项目的 app/models 或 models 目录
     - 表名前缀：可通过配置自定义（默认无前缀）
-    
+
     注意：
     - 依赖 ConnectionInitializer 先执行完成（需要数据库连接已建立）
     - 自动从 IoC 容器获取 DBManagerService
@@ -81,7 +82,7 @@ class MigrationInitializer(IStartupInitializer):
     def _load_user_models() -> bool:
         """
         加载用户项目的 ORM 模型
-        
+
         搜索 app/models 或 models 目录，自动导入所有 Python 模块
         """
         try:
@@ -89,8 +90,8 @@ class MigrationInitializer(IStartupInitializer):
 
             # 可能的模型目录
             possible_dirs = [
-                project_root / 'app' / 'models',
-                project_root / 'models',
+                project_root / "app" / "models",
+                project_root / "models",
             ]
 
             models_dir = None
@@ -111,13 +112,13 @@ class MigrationInitializer(IStartupInitializer):
 
             # 导入所有 Python 文件
             loaded_count = 0
-            for py_file in models_dir.glob('*.py'):
-                if py_file.name.startswith('_'):
+            for py_file in models_dir.glob("*.py"):
+                if py_file.name.startswith("_"):
                     continue
 
                 try:
                     # 构建模块路径
-                    if 'app/models' in str(models_dir) or 'app\\models' in str(models_dir):
+                    if "app/models" in str(models_dir) or "app\\models" in str(models_dir):
                         module_name = f"app.models.{py_file.stem}"
                     else:
                         module_name = f"models.{py_file.stem}"
@@ -188,17 +189,22 @@ class MigrationInitializer(IStartupInitializer):
                 BaseUserRoleTable,
                 BaseUserTable,
             )
+
             abstract_bases = (
-                BaseUserTable, BaseRoleTable, BasePermissionTable,
-                BaseUserRoleTable, BaseRolePermissionTable,
-                BaseTokenBlacklistTable, BaseRefreshTokenTable,
+                BaseUserTable,
+                BaseRoleTable,
+                BasePermissionTable,
+                BaseUserRoleTable,
+                BaseRolePermissionTable,
+                BaseTokenBlacklistTable,
+                BaseRefreshTokenTable,
             )
 
             # 收集所有表及其抽象基类（动态识别，不依赖具体 starter 表类）
             tables_by_base = {}
             for table_name, table in list(Base.metadata.tables.items()):
                 for mapper in Base.registry.mappers:
-                    local_table_name = getattr(mapper.local_table, 'name', None)
+                    local_table_name = getattr(mapper.local_table, "name", None)
                     if local_table_name and local_table_name == table.name:
                         orm_class = mapper.class_
                         for base_class in abstract_bases:
@@ -210,14 +216,16 @@ class MigrationInitializer(IStartupInitializer):
             removed_count = 0
             for base_class, tables in tables_by_base.items():
                 if len(tables) > 1:
-                    framework_tables = [t for t in tables if t[0].startswith('pyspring_')]
-                    user_tables = [t for t in tables if not t[0].startswith('pyspring_')]
+                    framework_tables = [t for t in tables if t[0].startswith("pyspring_")]
+                    user_tables = [t for t in tables if not t[0].startswith("pyspring_")]
                     if user_tables and framework_tables:
                         for fw_table_name, _ in framework_tables:
                             if fw_table_name in Base.metadata.tables:
                                 Base.metadata.remove(Base.metadata.tables[fw_table_name])
                                 removed_count += 1
-                                logger.debug(f"   🔄 检测到用户自定义表 {user_tables[0][0]}，移除框架默认表 {fw_table_name}")
+                                logger.debug(
+                                    f"   🔄 检测到用户自定义表 {user_tables[0][0]}，移除框架默认表 {fw_table_name}"
+                                )
 
             if removed_count > 0:
                 logger.debug(f"✅ 移除冲突的框架默认表: {removed_count} 个")
@@ -244,7 +252,7 @@ class MigrationInitializer(IStartupInitializer):
 
                 # 应用表名前缀
                 init_config = self.config_manager.get_database_initialization_config()
-                table_prefix = init_config.get('table_prefix')
+                table_prefix = init_config.get("table_prefix")
                 if table_prefix:
                     MigrationInitializer._apply_table_prefix(table_prefix)
 
@@ -266,20 +274,21 @@ class MigrationInitializer(IStartupInitializer):
         except Exception as e:
             logger.error(f"❌ 创建数据库表失败: {e}")
             import traceback
+
             logger.error(traceback.format_exc())
             return False
 
     async def _execute_sql_script(self) -> bool:
         """
         可选：执行 SQL 脚本补充初始数据
-        
+
         查找优先级：
         1. 用户项目 scripts/db/init_data.sql
         2. 跳过（SQL 脚本是可选的）
         """
         try:
             project_root = Path.cwd()
-            sql_file = project_root / 'scripts' / 'db' / 'init_data.sql'
+            sql_file = project_root / "scripts" / "db" / "init_data.sql"
 
             if not sql_file.exists():
                 logger.debug("ℹ️ 未找到 init_data.sql，跳过")
@@ -288,16 +297,16 @@ class MigrationInitializer(IStartupInitializer):
             logger.debug(f"📝 执行初始数据脚本: {sql_file}")
 
             # 读取并执行
-            sql_content = sql_file.read_text(encoding='utf-8')
+            sql_content = sql_file.read_text(encoding="utf-8")
             db_service = await self._get_db_service()
             engine = await db_service.engine()
 
             async with engine.begin() as conn:
                 # 简单分割语句（以分号分隔）
-                statements = [s.strip() for s in sql_content.split(';') if s.strip()]
+                statements = [s.strip() for s in sql_content.split(";") if s.strip()]
 
                 for stmt in statements:
-                    if stmt and not stmt.startswith('--'):
+                    if stmt and not stmt.startswith("--"):
                         await conn.execute(text(stmt))
 
             logger.debug("✅ 初始数据脚本执行完成")
@@ -310,13 +319,13 @@ class MigrationInitializer(IStartupInitializer):
     async def initialize(self) -> bool:
         """
         执行数据库表结构初始化
-        
+
         Returns:
             bool: 初始化是否成功
         """
         init_config = self.config_manager.get_database_initialization_config()
 
-        if not init_config.get('enabled', False):
+        if not init_config.get("enabled", False):
             logger.debug("⏭️  数据库初始化已禁用")
             return True
 
@@ -329,7 +338,7 @@ class MigrationInitializer(IStartupInitializer):
             return False
 
         # 2. 可选执行 SQL 脚本（补充初始数据）
-        use_sql_script = init_config.get('use_sql_script', False)
+        use_sql_script = init_config.get("use_sql_script", False)
         if use_sql_script:
             await self._execute_sql_script()
 

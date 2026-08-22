@@ -33,7 +33,7 @@ log_mgr = LoggingConfigManager()  # 自动加载 logging.yaml
 2. **手动加载代码重复**
    ```python
    # 每个模块都有类似代码
-   with open('config/xxx.yaml') as f:
+   with open("config/xxx.yaml") as f:
        config = yaml.safe_load(f)
    ```
 
@@ -62,19 +62,19 @@ from typing import Any, Dict, Optional, TypeVar
 import yaml
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-TConfig = TypeVar('TConfig', bound=BaseSettings)
+TConfig = TypeVar("TConfig", bound=BaseSettings)
 
 
 class ConfigSection(BaseSettings):
     """
     配置节基类
-    
+
     支持多源配置加载（优先级从高到低）：
     1. 环境变量（如 CACHE__TYPE=redis）
     2. .env 文件
     3. YAML 文件（通过 yaml_config_file 指定）
     4. Field 默认值
-    
+
     使用示例：
         @Component
         @Singleton
@@ -83,20 +83,16 @@ class ConfigSection(BaseSettings):
                 yaml_config_file="config/repositories.yaml",  # YAML 文件路径
                 yaml_config_key="cache",  # YAML 中的键路径
             )
-            
+
             type: str = Field(default="memory")
     """
-    
-    model_config = SettingsConfigDict(
-        env_nested_delimiter="__",
-        case_sensitive=False,
-        extra="ignore"
-    )
-    
+
+    model_config = SettingsConfigDict(env_nested_delimiter="__", case_sensitive=False, extra="ignore")
+
     def __init__(self, **kwargs):
         """
         初始化配置，自动加载 YAML
-        
+
         加载顺序：
         1. 尝试加载 YAML 配置
         2. 合并传入的 kwargs
@@ -104,54 +100,54 @@ class ConfigSection(BaseSettings):
         """
         # 1. 加载 YAML 配置
         yaml_data = self._load_yaml_config()
-        
+
         # 2. 合并 YAML 数据和传入的 kwargs
         merged_data = {**yaml_data, **kwargs}
-        
+
         # 3. 调用 Pydantic 的初始化（环境变量自动覆盖）
         super().__init__(**merged_data)
-    
+
     def _load_yaml_config(self) -> Dict[str, Any]:
         """
         从 YAML 文件加载配置
-        
+
         Returns:
             配置字典
         """
         config = self.model_config
-        
+
         # 获取 YAML 文件路径
-        yaml_file = config.get('yaml_config_file')
+        yaml_file = config.get("yaml_config_file")
         if not yaml_file:
             return {}
-        
+
         # 获取 YAML 键路径（如 "cache.redis"）
-        yaml_key = config.get('yaml_config_key', '')
-        
+        yaml_key = config.get("yaml_config_key", "")
+
         # 加载 YAML
         yaml_path = self._find_yaml_file(yaml_file)
         if not yaml_path or not yaml_path.exists():
             return {}
-        
+
         try:
-            with open(yaml_path, 'r', encoding='utf-8') as f:
+            with open(yaml_path, "r", encoding="utf-8") as f:
                 yaml_data = yaml.safe_load(f) or {}
-            
+
             # 提取指定键的数据
             if yaml_key:
-                for key in yaml_key.split('.'):
+                for key in yaml_key.split("."):
                     yaml_data = yaml_data.get(key, {})
-            
+
             return yaml_data if isinstance(yaml_data, dict) else {}
-        
+
         except Exception:
             return {}
-    
+
     @staticmethod
     def _find_yaml_file(filename: str) -> Optional[Path]:
         """
         查找 YAML 文件
-        
+
         搜索路径（优先级从高到低）：
         1. 当前工作目录
         2. config/ 目录
@@ -162,13 +158,13 @@ class ConfigSection(BaseSettings):
             Path.cwd() / "config" / Path(filename).name,
             Path(__file__).parent.parent.parent / "config" / Path(filename).name,
         ]
-        
+
         for path in search_paths:
             if path.exists():
                 return path
-        
+
         return None
-    
+
     def validate(self) -> bool:
         """验证配置"""
         try:
@@ -176,7 +172,7 @@ class ConfigSection(BaseSettings):
             return True
         except Exception:
             return False
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """转换为字典"""
         return self.model_dump()
@@ -199,13 +195,14 @@ from pydantic_settings import SettingsConfigDict
 class CacheConfig(ConfigSection):
     """
     缓存配置（由IOC管理）
-    
+
     配置加载优先级（从高到低）：
     1. 环境变量：CACHE__TYPE=redis
     2. .env 文件：CACHE__TYPE=redis
     3. YAML 文件：config/repositories.yaml 中的 cache 节点
     4. 默认值：Field(default="memory")
     """
+
     model_config = SettingsConfigDict(
         # 指定 YAML 文件路径
         yaml_config_file="config/repositories.yaml",
@@ -216,7 +213,7 @@ class CacheConfig(ConfigSection):
         env_nested_delimiter="__",
         env_file=".env",
     )
-    
+
     type: str = Field(default="memory", description="缓存类型：redis、memory")
     redis: RedisConfig = Field(default_factory=RedisConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
@@ -275,59 +272,55 @@ from typing import Type, TypeVar, Dict, Any
 import yaml
 from pydantic_settings import BaseSettings
 
-T = TypeVar('T', bound=BaseSettings)
+T = TypeVar("T", bound=BaseSettings)
 
 
 class ConfigFactory:
     """
     配置工厂
-    
+
     负责从 YAML + 环境变量创建配置对象
     """
-    
+
     @staticmethod
-    def create(
-        config_cls: Type[T],
-        yaml_file: str,
-        yaml_key: str = ""
-    ) -> T:
+    def create(config_cls: Type[T], yaml_file: str, yaml_key: str = "") -> T:
         """
         创建配置对象
-        
+
         Args:
             config_cls: 配置类
             yaml_file: YAML 文件路径
             yaml_key: YAML 中的键路径（如 "cache.redis"）
-        
+
         Returns:
             配置实例
         """
         # 1. 加载 YAML
         yaml_data = ConfigFactory._load_yaml(yaml_file, yaml_key)
-        
+
         # 2. 创建配置对象（环境变量自动覆盖）
         return config_cls(**yaml_data)
-    
+
     @staticmethod
     def _load_yaml(filename: str, key_path: str) -> Dict[str, Any]:
         """加载 YAML 配置"""
         yaml_path = ConfigFactory._find_file(filename)
         if not yaml_path or not yaml_path.exists():
             return {}
-        
+
         try:
-            with open(yaml_path, 'r', encoding='utf-8') as f:
+            with open(yaml_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
-            
+
             # 提取指定键
             if key_path:
-                for key in key_path.split('.'):
+                for key in key_path.split("."):
                     data = data.get(key, {})
-            
+
             return data if isinstance(data, dict) else {}
         except Exception:
             return {}
-    
+
     @staticmethod
     def _find_file(filename: str) -> Optional[Path]:
         """查找配置文件"""
@@ -355,19 +348,15 @@ from .config import CacheConfig
 @Configuration
 class CacheConfigProvider:
     """配置提供者"""
-    
+
     @Bean
     def cache_config(self) -> CacheConfig:
         """
         创建 CacheConfig Bean
-        
+
         自动从 YAML + 环境变量加载
         """
-        return ConfigFactory.create(
-            CacheConfig,
-            yaml_file="config/repositories.yaml",
-            yaml_key="cache"
-        )
+        return ConfigFactory.create(CacheConfig, yaml_file="config/repositories.yaml", yaml_key="cache")
 ```
 
 ---
@@ -419,6 +408,7 @@ class CacheConfigProvider:
 ```python
 # repositories/cache/config.py
 
+
 @Component
 @Singleton
 class CacheConfig(ConfigSection):
@@ -427,7 +417,7 @@ class CacheConfig(ConfigSection):
         yaml_config_key="cache",
         env_prefix="CACHE__",
     )
-    
+
     type: str = Field(default="memory")
     redis: RedisConfig = Field(default_factory=RedisConfig)
 ```

@@ -26,7 +26,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """
     请求日志中间件 - 确保正确的日志顺序
     同时在请求作用域内注入trace_id(ContextVar)，便于所有日志包含统一调用链标识
-    
+
     支持详细日志配置：
     - logging.http.log_request_headers: 记录请求头
     - logging.http.log_request_body: 记录请求体
@@ -36,36 +36,34 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: ASGIApp):
         super().__init__(app)
         # 读取配置
-        app_config = ConfigManager.load_config('application', use_cache=True)
-        log_config = ConfigManager.load_config('logging', use_cache=True)
+        app_config = ConfigManager.load_config("application", use_cache=True)
+        log_config = ConfigManager.load_config("logging", use_cache=True)
 
-        self._include_trace_in_response = app_config.get('web', {}).get('error', {}).get('include_trace', False)
+        self._include_trace_in_response = app_config.get("web", {}).get("error", {}).get("include_trace", False)
 
         # HTTP 详细日志配置
-        http_config = log_config.get('logging', {}).get('http', {})
-        self._log_request_details = http_config.get('log_request_details', False)
-        self._log_response_details = http_config.get('log_response_details', False)
-        self._log_request_headers = http_config.get('log_request_headers', False)
-        self._log_request_body = http_config.get('log_request_body', False)
-        self._log_response_body = http_config.get('log_response_body', False)
-        self._max_body_length = http_config.get('max_body_length', 1024)
-        self._sensitive_headers = set(h.lower() for h in http_config.get('sensitive_headers', [
-            'authorization', 'cookie', 'x-api-key', 'x-auth-token'
-        ]))
+        http_config = log_config.get("logging", {}).get("http", {})
+        self._log_request_details = http_config.get("log_request_details", False)
+        self._log_response_details = http_config.get("log_response_details", False)
+        self._log_request_headers = http_config.get("log_request_headers", False)
+        self._log_request_body = http_config.get("log_request_body", False)
+        self._log_response_body = http_config.get("log_response_body", False)
+        self._max_body_length = http_config.get("max_body_length", 1024)
+        self._sensitive_headers = set(
+            h.lower()
+            for h in http_config.get("sensitive_headers", ["authorization", "cookie", "x-api-key", "x-auth-token"])
+        )
 
     def _sanitize_headers(self, headers: dict[str, str]) -> dict[str, str]:
         """过滤敏感请求头"""
-        return {
-            k: '***' if k.lower() in self._sensitive_headers else v
-            for k, v in headers.items()
-        }
+        return {k: "***" if k.lower() in self._sensitive_headers else v for k, v in headers.items()}
 
     def _truncate_body(self, body: Any) -> Any:
         """截断过长的请求/响应体"""
         # 如果是字符串，直接截断
         if isinstance(body, str):
             if len(body) > self._max_body_length:
-                return body[:self._max_body_length] + f"... (truncated, total: {len(body)} bytes)"
+                return body[: self._max_body_length] + f"... (truncated, total: {len(body)} bytes)"
             return body
 
         # 如果是字典/列表等JSON对象，先序列化检查长度
@@ -73,7 +71,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             json_str = json.dumps(body, ensure_ascii=False)
             if len(json_str) > self._max_body_length:
                 # 如果太长，返回截断的字符串表示
-                return json_str[:self._max_body_length] + f"... (truncated, total: {len(json_str)} bytes)"
+                return json_str[: self._max_body_length] + f"... (truncated, total: {len(json_str)} bytes)"
             # 否则返回原对象
             return body
 
@@ -91,11 +89,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         url = str(request.url)
 
         # 优先使用 X-Trace-ID 或 X-Request-ID，否则生成新 ID
-        trace_id = (
-                request.headers.get("X-Trace-ID")
-                or request.headers.get("X-Request-ID")
-                or str(uuid.uuid4())
-        )
+        trace_id = request.headers.get("X-Trace-ID") or request.headers.get("X-Request-ID") or str(uuid.uuid4())
 
         # 设置到 ContextVar
         token = REQUEST_ID_CTX.set(trace_id)
@@ -116,12 +110,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 if body_bytes:
                     try:
                         # 尝试解析为JSON对象
-                        body_json = json.loads(body_bytes.decode('utf-8'))
+                        body_json = json.loads(body_bytes.decode("utf-8"))
                         # 直接存储对象，而不是字符串
                         request_details["body"] = self._truncate_body(body_json)
-                    except (json.JSONDecodeError, UnicodeDecodeError):
+                    except json.JSONDecodeError, UnicodeDecodeError:
                         # 非JSON或无法解码，记录原始字节
-                        request_details["body"] = self._truncate_body(body_bytes.decode('utf-8', errors='replace'))
+                        request_details["body"] = self._truncate_body(body_bytes.decode("utf-8", errors="replace"))
             except Exception as e:
                 logger.debug(f"读取请求体失败: {e}")
 
@@ -129,10 +123,10 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         if request_details and (self._log_request_details or self._log_request_headers or self._log_request_body):
             formatted_json = json.dumps(request_details, ensure_ascii=False, indent=2)
             logger.bind(trace_id=trace_id, **request_details).debug(
-                f"🎢 {client_ip} - \"{method} {url}\" - 请求开始\n📥 请求详情:\n{formatted_json}"
+                f'🎢 {client_ip} - "{method} {url}" - 请求开始\n📥 请求详情:\n{formatted_json}'
             )
         else:
-            logger.bind(trace_id=trace_id).info(f"🎢 {client_ip} - \"{method} {url}\" - 请求开始")
+            logger.bind(trace_id=trace_id).info(f'🎢 {client_ip} - "{method} {url}" - 请求开始')
 
         try:
             # 处理请求
@@ -140,8 +134,8 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
             # 设置响应头
             try:
-                response.headers.setdefault('X-Trace-ID', trace_id)
-                response.headers.setdefault('X-Request-ID', trace_id)
+                response.headers.setdefault("X-Trace-ID", trace_id)
+                response.headers.setdefault("X-Request-ID", trace_id)
             except Exception as e:
                 logger.error(f"🚨 {e}")
                 pass
@@ -175,11 +169,11 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                         body_bytes = None
 
                         # 方式1: 直接有body属性（部分响应类型）
-                        if hasattr(response, 'body'):
+                        if hasattr(response, "body"):
                             body_bytes = response.body
                         # 方式2: 有body_iterator（StreamingResponse等）
-                        elif hasattr(response, 'body_iterator'):
-                            body_iterator = getattr(response, 'body_iterator')
+                        elif hasattr(response, "body_iterator"):
+                            body_iterator = getattr(response, "body_iterator")
                             body_chunks = []
                             async for chunk in body_iterator:
                                 body_chunks.append(chunk)
@@ -189,6 +183,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                             from starlette.responses import (
                                 Response as StarletteResponse,
                             )
+
                             response = StarletteResponse(
                                 content=body_bytes,
                                 status_code=response.status_code,
@@ -200,19 +195,21 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                         if body_bytes:
                             raw = bytes(body_bytes)
                             try:
-                                body_json = json.loads(raw.decode('utf-8'))
+                                body_json = json.loads(raw.decode("utf-8"))
                                 response_details["body"] = self._truncate_body(body_json)
-                            except (json.JSONDecodeError, UnicodeDecodeError):
-                                response_details["body"] = self._truncate_body(raw.decode('utf-8', errors='replace'))
+                            except json.JSONDecodeError, UnicodeDecodeError:
+                                response_details["body"] = self._truncate_body(raw.decode("utf-8", errors="replace"))
                     except Exception as e:
                         logger.debug(f"读取响应体失败: {e}")
 
             # 记录请求完成（合并基础信息和响应详情）
             if len(response_details) > 1:  # 有响应详情
                 formatted_json = json.dumps(response_details, ensure_ascii=False, indent=2)
-                log_method(f"{emoji} {client_ip} - \"{method} {url}\" {status_code} - 耗时: {process_time:.3f}s\n📤 响应详情:\n{formatted_json}")
+                log_method(
+                    f'{emoji} {client_ip} - "{method} {url}" {status_code} - 耗时: {process_time:.3f}s\n📤 响应详情:\n{formatted_json}'
+                )
             else:
-                log_method(f"{emoji} {client_ip} - \"{method} {url}\" {status_code} - 耗时: {process_time:.3f}s")
+                log_method(f'{emoji} {client_ip} - "{method} {url}" {status_code} - 耗时: {process_time:.3f}s')
 
             return response
 

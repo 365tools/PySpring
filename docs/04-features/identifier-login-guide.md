@@ -19,21 +19,12 @@
 from pyspring.security.authentication.contracts.request import LoginRequest
 
 # 推荐方式：使用 identifier（统一字段，支持用户名/邮箱/手机号/用户ID）
-request = LoginRequest(
-    identifier="admin@example.com",
-    password="admin123"
-)
+request = LoginRequest(identifier="admin@example.com", password="admin123")
 
 # 也可以直接使用具体字段
-request = LoginRequest(
-    user_id="admin",
-    password="admin123"
-)
+request = LoginRequest(user_id="admin", password="admin123")
 
-request = LoginRequest(
-    email="admin@example.com",
-    password="admin123"
-)
+request = LoginRequest(email="admin@example.com", password="admin123")
 ```
 
 ### 2. 登录标识符字段配置
@@ -144,14 +135,12 @@ from pyspring.security.authentication.contracts.request import LoginRequest
 
 router = APIRouter()
 
+
 @router.post("/login")
-async def login(
-    request: LoginRequest,
-    login_service: ILoginService = Depends(lambda: Inject(ILoginService))
-):
+async def login(request: LoginRequest, login_service: ILoginService = Depends(lambda: Inject(ILoginService))):
     """
     用户登录
-    
+
     请求示例：
     {
         "identifier": "admin@example.com",  # 推荐方式
@@ -177,13 +166,14 @@ from pyspring.repositories.db.models.common.define import BaseUserTable
 class User(BaseUserTable):
     """
     用户模型
-    
+
     继承 BaseUserTable 自动获得：
     - id, user_id, email, password, first_name, last_name
     - uuid, active, deleted, creator, created_time, etc.
     """
+
     __tablename__ = "users"
-    
+
     # 扩展字段
     username = Column(String(50), unique=True, index=True, nullable=False, comment="用户名")
     phone = Column(String(20), unique=True, index=True, nullable=True, comment="手机号")

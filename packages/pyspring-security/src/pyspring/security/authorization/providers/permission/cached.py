@@ -3,6 +3,7 @@
 
 提供权限查询缓存，提升性能
 """
+
 from typing import Any
 
 from pyspring.core.log.instance import logger
@@ -13,12 +14,12 @@ from pyspring.security.authorization.contracts.permission import IPermissionServ
 class CachedPermissionService(IPermissionService):
     """
     缓存权限服务（装饰器模式）
-    
+
     在DefaultPermissionService的基础上添加缓存层
     架构：
     - L1缓存：Redis（快速查询）
     - L2数据源：委托给内部的PermissionService
-    
+
     使用场景：
     - 高并发权限检查
     - 频繁访问的权限判定
@@ -27,7 +28,7 @@ class CachedPermissionService(IPermissionService):
     def __init__(self, delegate: IPermissionService, cache: CacheManagerService, ttl: int = 300):
         """
         初始化缓存权限服务
-        
+
         Args:
             delegate: 实际的权限服务（被装饰的对象）
             cache: 缓存管理服务
@@ -41,16 +42,16 @@ class CachedPermissionService(IPermissionService):
     async def has_permission(self, user_id: Any, permission: str) -> bool:
         """
         检查用户是否拥有权限（带缓存）
-        
+
         策略：
         1. 查询缓存
         2. 缓存未命中时查询数据库
         3. 更新缓存
-        
+
         Args:
             user_id: 用户ID
             permission: 权限字符串
-            
+
         Returns:
             bool: 是否拥有权限
         """
@@ -82,11 +83,11 @@ class CachedPermissionService(IPermissionService):
     async def has_role(self, user_id: Any, role: str) -> bool:
         """
         检查用户是否拥有角色（带缓存）
-        
+
         Args:
             user_id: 用户ID
             role: 角色字符串
-            
+
         Returns:
             bool: 是否拥有角色
         """
@@ -118,11 +119,11 @@ class CachedPermissionService(IPermissionService):
     async def invalidate_user_cache(self, user_id: Any):
         """
         使用户的所有权限缓存失效
-        
+
         使用场景：
         - 用户权限变更时
         - 用户角色变更时
-        
+
         Args:
             user_id: 用户ID
         """

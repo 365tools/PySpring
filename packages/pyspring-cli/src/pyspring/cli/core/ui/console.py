@@ -1,6 +1,7 @@
 """
 PySpring CLI Console Utilities
 """
+
 import shutil
 from typing import Optional
 
@@ -15,15 +16,16 @@ def get_terminal_width(default=80):
 
 class Colors:
     """Terminal Colors"""
-    HEADER = '\033[95m'
-    OKBLUE = '\033[94m'
-    OKCYAN = '\033[96m'
-    OKGREEN = '\033[92m'
-    WARNING = '\033[93m'
-    YELLOW = '\033[93m'
-    FAIL = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
+
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    YELLOW = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
 
 
 def print_section(title: str):
@@ -73,18 +75,18 @@ def print_file_header(file_path: str):
     print(f"\n{Colors.BOLD}[FILE] {file_path}{Colors.ENDC}")
 
 
-def print_issue(line: str, message: str, file_path: Optional[str] = None, level: str = 'error'):
+def print_issue(line: str, message: str, file_path: Optional[str] = None, level: str = "error"):
     """
     Print standard issue format
     Level: 'error', 'warning', 'success', 'info'
     """
-    if level == 'error':
+    if level == "error":
         icon = "[X]"
         color = Colors.FAIL
-    elif level == 'warning':
+    elif level == "warning":
         icon = "[!]"
         color = Colors.YELLOW
-    elif level == 'success':
+    elif level == "success":
         icon = "[OK]"
         color = Colors.OKGREEN
     else:  # info
@@ -140,7 +142,6 @@ def print_standard_import_tips(missing_imports: bool = True):
         print(f"  {Colors.BOLD}{cmd:<35}{Colors.ENDC} : {desc}")
 
     print(f"\n{Colors.OKCYAN}Tip: Use '--fix' with supported commands to apply automated corrections.{Colors.ENDC}")
-
 
 
 def print_summary(total_issues: int, files_count: int = 0, fixed_count: int = 0, fixable: bool = False):

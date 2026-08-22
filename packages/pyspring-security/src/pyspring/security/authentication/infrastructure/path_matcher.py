@@ -2,6 +2,7 @@
 路径匹配工具类
 用于白名单路径匹配
 """
+
 import re
 
 
@@ -12,16 +13,16 @@ class PathMatcher:
     def is_match(path: str, patterns: list[str]) -> bool:
         """
         检查路径是否匹配任意一个模式
-        
+
         支持的模式：
         - 精确匹配: /api/login
         - 前缀匹配: /api/public/*
         - 通配符匹配: /api/*/info
-        
+
         Args:
             path: 请求路径
             patterns: 匹配模式列表
-            
+
         Returns:
             bool: 是否匹配
         """
@@ -34,11 +35,11 @@ class PathMatcher:
     def _match_pattern(path: str, pattern: str) -> bool:
         """
         单个模式匹配
-        
+
         Args:
             path: 请求路径
             pattern: 匹配模式
-            
+
         Returns:
             bool: 是否匹配
         """

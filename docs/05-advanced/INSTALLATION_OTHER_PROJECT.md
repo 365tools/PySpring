@@ -210,7 +210,7 @@ from pyspring.log.loguru.logger import logger
 from pyspring.core.ioc import ApplicationContext
 
 # 初始化 IoC 容器
-app_context = ApplicationContext.initialize(base_packages=['your_app.services'])
+app_context = ApplicationContext.initialize(base_packages=["your_app.services"])
 
 # 使用日志
 logger.info("✅ PySpring 初始化成功")

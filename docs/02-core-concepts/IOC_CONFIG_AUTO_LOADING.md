@@ -11,11 +11,11 @@
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
 
+
 # 方式 2: 初始化器类
 @Component
 class CacheConnectionInitializer:
-    def __init__(self, cache_config: CacheConfig, cache_manager: CacheManagerService):
-        ...
+    def __init__(self, cache_config: CacheConfig, cache_manager: CacheManagerService): ...
 ```
 
 **答案**: **这两个不是二选一，而是配合使用的！**
@@ -106,6 +106,7 @@ class CacheConnectionInitializer:
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
 
+
 # ✅ 配置类必须加 @Singleton
 @Component
 @Singleton  # 全局唯一实例，所有服务共享
@@ -132,6 +133,7 @@ class CacheConfig(ConfigSection):
 @Singleton
 class CacheConfig(ConfigSection):  # ConfigSection 继承 BaseSettings
     """Pydantic 自动支持以下来源"""
+
     type: str = Field(default="memory")
 ```
 
@@ -154,7 +156,7 @@ loader = ConfigLoader()
 yaml_data = loader.load_yaml(Path("config/repositories.yaml"))
 
 # 2. 传递给 Pydantic
-cache_config = CacheConfig(**yaml_data.get('cache', {}))
+cache_config = CacheConfig(**yaml_data.get("cache", {}))
 ```
 
 ---
@@ -170,11 +172,12 @@ cache_config = CacheConfig(**yaml_data.get('cache', {}))
 @Singleton
 class CacheConfig(ConfigSection):
     """配置完全通过环境变量"""
+
     model_config = SettingsConfigDict(
         env_prefix="CACHE__",  # 环境变量前缀
         env_nested_delimiter="__",  # 嵌套分隔符
     )
-    
+
     type: str = Field(default="memory")
     redis: RedisConfig = Field(default_factory=RedisConfig)
 ```
@@ -205,11 +208,12 @@ CACHE__REDIS__PORT=6379
 @Singleton
 class CacheConfig(ConfigSection):
     """YAML 提供默认值，环境变量覆盖"""
+
     model_config = SettingsConfigDict(
         env_prefix="CACHE__",
         env_nested_delimiter="__",
     )
-    
+
     type: str = Field(default="memory")
 ```
 
@@ -239,7 +243,7 @@ CACHE__REDIS__PASSWORD=secret123  # 添加密码（YAML 中没有）
 yaml_data = ConfigLoader().load_yaml("config/repositories.yaml")
 
 # 2. 实例化配置类（Pydantic 自动合并 YAML + 环境变量）
-cache_config = CacheConfig(**yaml_data.get('cache', {}))
+cache_config = CacheConfig(**yaml_data.get("cache", {}))
 
 # 3. IOC 注册为 Singleton
 container.register_singleton(CacheConfig, cache_config)
@@ -270,9 +274,11 @@ class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
     redis: RedisConfig = Field(default_factory=RedisConfig)
 
+
 # 2. IOC 容器扫描时
 # IOC 容器发现 @Component(CacheConfig)，自动调用：
 config = CacheConfig()  # Pydantic 自动从环境变量加载
+
 
 # 3. 业务类注入
 @Component
@@ -310,14 +316,17 @@ class CacheConnectionInitializer:
 @Singleton
 class CacheConfig(ConfigSection):
     """只负责缓存配置"""
+
     type: str = Field(default="memory")
     redis: RedisConfig = Field(default_factory=RedisConfig)
+
 
 # ❌ 不推荐：大而全的配置类
 @Component
 @Singleton
 class AllConfig(ConfigSection):
     """包含所有配置（难维护）"""
+
     cache: CacheConfig
     database: DatabaseConfig
     security: SecurityConfig

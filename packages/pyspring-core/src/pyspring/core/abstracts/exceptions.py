@@ -27,6 +27,7 @@
         payload = e.to_dict()
         # {"type": "AppError", "message": "...", "code": 400, "details": {...}}
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -43,12 +44,12 @@ class AppError(Exception):
     """
 
     def __init__(
-            self,
-            message: str,
-            *,
-            code: int = 400,
-            details: (dict[str, Any]) | None = None,
-            category: (str) | None = None,
+        self,
+        message: str,
+        *,
+        code: int = 400,
+        details: (dict[str, Any]) | None = None,
+        category: (str) | None = None,
     ) -> None:
         super().__init__(message)
         self.code = code
@@ -86,9 +87,4 @@ class CircularDependencyError(AppError):
     """循环依赖异常"""
 
     def __init__(self, message: str, cycle: list[str] | None = None):
-        super().__init__(
-            message,
-            code=500,
-            details={"cycle": cycle} if cycle else None,
-            category="IoC"
-        )
+        super().__init__(message, code=500, details={"cycle": cycle} if cycle else None, category="IoC")

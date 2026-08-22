@@ -10,6 +10,7 @@
 def my_method():
     pass
 
+
 # 自定义装饰器 - 必须加括号？
 @Bean()  # 为什么不能像 @staticmethod 一样？
 def my_bean():
@@ -26,7 +27,9 @@ def my_bean():
 class staticmethod:
     def __init__(self, func):
         self.func = func
+
     # ... 其他方法
+
 
 # 使用时
 @staticmethod  # 直接传入函数对象
@@ -43,7 +46,9 @@ def Bean(name=None):
     def decorator(func):  # 这才是真正的装饰器
         setattr(func, "__pyspring_bean__", True)
         return func
+
     return decorator
+
 
 # 使用时必须调用
 @Bean()  # 必须加括号，返回 decorator
@@ -61,7 +66,7 @@ def Bean(
     *,
     name: Optional[str] = None,
     init_method: Optional[str] = None,
-    destroy_method: Optional[str] = None
+    destroy_method: Optional[str] = None,
 ):
     """
     支持三种用法的智能装饰器：
@@ -69,18 +74,18 @@ def Bean(
     2. @Bean()        - 空括号
     3. @Bean(...)     - 带参数
     """
-    
+
     # 判断：第一个参数是函数 且 没有name参数
     if callable(func_or_name) and name is None:
         # 用法1: @Bean 直接装饰
         func = func_or_name
         setattr(func, "__pyspring_bean__", True)
         return func
-    
+
     # 用法2&3: @Bean() 或 @Bean(name=...)
     # 如果 func_or_name 是字符串，说明是位置参数传入的name
     actual_name = func_or_name if isinstance(func_or_name, str) else name
-    
+
     def decorator(func):
         setattr(func, "__pyspring_bean__", True)
         if actual_name:
@@ -90,7 +95,7 @@ def Bean(
         if destroy_method:
             setattr(func, "__pyspring_destroy_method__", destroy_method)
         return func
-    
+
     return decorator
 ```
 
@@ -139,11 +144,12 @@ else:
 # ❌ 错误：@wraps 会重置自定义属性
 from functools import wraps
 
+
 def decorator(func):
     @wraps(func)  # 这会覆盖我们设置的属性！
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
-    
+
     setattr(wrapper, "__custom__", True)  # 属性会丢失
     return wrapper
 ```
@@ -160,20 +166,21 @@ def decorator(func):
 ```python
 from pyspring.core.ioc.annotations.component import Bean, Configuration
 
+
 @Configuration
 class AppConfig:
     @Bean  # 用法1: 不加括号（像 @staticmethod）
     def simple_bean(self):
         return "simple"
-    
+
     @Bean()  # 用法2: 空括号
     def another_bean(self):
         return "another"
-    
+
     @Bean(name="custom")  # 用法3: 带name参数
     def named_bean(self):
         return "custom"
-    
+
     @Bean(init_method="init", destroy_method="cleanup")  # 用法4: 多个参数
     def lifecycle_bean(self):
         return "lifecycle"
@@ -231,13 +238,19 @@ def Bean(func_or_name=None, *, name=None, init_method=None, destroy_method=None)
 ```python
 # 测试所有用法
 @Bean
-def test1(): pass
+def test1():
+    pass
+
 
 @Bean()
-def test2(): pass
+def test2():
+    pass
+
 
 @Bean(name="custom")
-def test3(): pass
+def test3():
+    pass
+
 
 assert hasattr(test1, "__pyspring_bean__")
 assert hasattr(test2, "__pyspring_bean__")

@@ -1,6 +1,7 @@
 """
 Clean command core logic
 """
+
 import sys
 import traceback
 

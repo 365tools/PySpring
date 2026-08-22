@@ -21,7 +21,7 @@ class BaseChecker(ABC):
     def __init__(self, target_path: str, extensions: List[str] | None = None):
         """
         :param target_path: The root path to scan
-        :param extensions: List of file extensions to process (e.g. ['.py']). 
+        :param extensions: List of file extensions to process (e.g. ['.py']).
                            If None, processes all non-ignored files.
         """
         self.target_path = os.path.abspath(target_path)
@@ -104,10 +104,10 @@ class BaseChecker(ABC):
     def _collect_files(self) -> List[str]:
         return find_files(self.target_path, self.extensions)
 
-    def add_issue(self, file_path: str, line: int, message: str, level: str = 'error'):
+    def add_issue(self, file_path: str, line: int, message: str, level: str = "error"):
         """
-        Register an issue to be printed. 
-        Note: Currently usage prints immediately for CLI feedback, 
+        Register an issue to be printed.
+        Note: Currently usage prints immediately for CLI feedback,
         but we also store it for summary/stats.
         """
         if file_path not in self._issues:
@@ -115,11 +115,7 @@ class BaseChecker(ABC):
             # Skip file header, we print path in issue line for better clickability
             # print_file_header(file_path)
 
-        self._issues[file_path].append({
-            'line': line,
-            'message': message,
-            'level': level
-        })
+        self._issues[file_path].append({"line": line, "message": message, "level": level})
 
         # Immediate Output
         print_issue(str(line), message, file_path, level=level)
@@ -127,7 +123,7 @@ class BaseChecker(ABC):
 
     def record_fix(self, file_path: str, line: int, message: str):
         """Helper to record a successful fix."""
-        self.add_issue(file_path, line, message, level='success')
+        self.add_issue(file_path, line, message, level="success")
         self.resolved_count += 1
 
     def print_report(self, fixable: bool = False):
@@ -136,5 +132,5 @@ class BaseChecker(ABC):
             self.total_issues,
             self.files_with_issues_count,
             self.resolved_count,
-            fixable=fixable and self.total_issues > 0
+            fixable=fixable and self.total_issues > 0,
         )

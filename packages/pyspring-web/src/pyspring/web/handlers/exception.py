@@ -29,22 +29,22 @@ from .base import IExceptionHandler
 class GlobalExceptionHandler(IExceptionHandler):
     """
     全局异常处理器（框架默认实现）
-    
+
     特性：
     - 详细的异常堆栈信息（包含项目相对路径）
     - 区分 HTTPException、ValidationError、通用异常
     - 结构化日志记录
     - 统一的错误响应格式
     - 支持配置是否在响应中返回 traceback（web.error.include_trace）
-    
+
     用户可以继承此类或实现 IExceptionHandler 接口来自定义异常处理逻辑
     """
 
     def __init__(self):
         """初始化全局异常处理器，读取配置"""
         # 读取是否在响应中包含 traceback 的配置（默认 False）
-        app_config = ConfigManager.load_config('application', use_cache=True)
-        self._include_trace_in_response = app_config.get('web', {}).get('error', {}).get('include_trace', False)
+        app_config = ConfigManager.load_config("application", use_cache=True)
+        self._include_trace_in_response = app_config.get("web", {}).get("error", {}).get("include_trace", False)
 
         # 输出配置信息（便于调试）
         logger.debug(f"🔧 GlobalExceptionHandler 配置: include_trace_in_response={self._include_trace_in_response}")
@@ -53,11 +53,11 @@ class GlobalExceptionHandler(IExceptionHandler):
     def _project_root() -> Path:
         """
         智能解析项目根目录
-        
+
         策略：
         1. 尝试从当前工作目录向上查找（优先）
         2. 回退到框架安装路径
-        
+
         这确保在用户项目中运行时，使用用户项目的根目录，
         而不是框架的安装路径
         """
@@ -80,7 +80,7 @@ class GlobalExceptionHandler(IExceptionHandler):
     def _relpath(file_path: str) -> str:
         """
         转换为相对路径
-        
+
         策略：
         1. 尝试相对于项目根
         2. 失败时返回绝对路径（不打印错误日志）
@@ -123,11 +123,13 @@ class GlobalExceptionHandler(IExceptionHandler):
                 tb = tb.tb_next
             if tb:
                 frame = tb.tb_frame
-                error_info.update({
-                    "file_location": GlobalExceptionHandler._relpath(frame.f_code.co_filename),
-                    "line_number": tb.tb_lineno,
-                    "function_name": frame.f_code.co_name,
-                })
+                error_info.update(
+                    {
+                        "file_location": GlobalExceptionHandler._relpath(frame.f_code.co_filename),
+                        "line_number": tb.tb_lineno,
+                        "function_name": frame.f_code.co_name,
+                    }
+                )
 
         # 生成简化调用链（仅保留项目文件，末尾最多3层）
         project_frames = []
@@ -142,7 +144,7 @@ class GlobalExceptionHandler(IExceptionHandler):
                 try:
                     rel_path = file_path.relative_to(project_root)
                     # 排除虚拟环境和第三方库
-                    if not any(part in rel_path.parts for part in ['.venv', 'venv', 'site-packages', 'dist-packages']):
+                    if not any(part in rel_path.parts for part in [".venv", "venv", "site-packages", "dist-packages"]):
                         filename = str(rel_path).replace("\\", "/")
                         project_frames.append(f"{filename}:{tb_iter.tb_lineno} in {f.f_code.co_name}()")
                 except ValueError:
@@ -192,20 +194,30 @@ class GlobalExceptionHandler(IExceptionHandler):
             logger.error(f"📜 完整堆栈信息：\n{info['full_traceback']}")
 
     @staticmethod
-    def _build_http_response_payload(e: Exception, info: dict[str, Any], details: (dict[str, Any]) | None) -> dict[str, Any]:
+    def _build_http_response_payload(
+        e: Exception, info: dict[str, Any], details: (dict[str, Any]) | None
+    ) -> dict[str, Any]:
         payload = {"path": info.get("file_location"), "traceback_summary": info.get("traceback_summary")}
         if details:
             payload.update(details)
         # 若是 AppError，合并其结构
         if isinstance(e, AppError):
-            payload.update({
-                "error": e.to_dict(),
-            })
+            payload.update(
+                {
+                    "error": e.to_dict(),
+                }
+            )
         return payload
 
     @staticmethod
-    def to_http_error_response(e: Exception, *, message: (str) | None = None, status_code: int = 500,
-                               details: (dict[str, Any]) | None = None, include_trace: (bool) | None = None) -> JSONResponse:
+    def to_http_error_response(
+        e: Exception,
+        *,
+        message: (str) | None = None,
+        status_code: int = 500,
+        details: (dict[str, Any]) | None = None,
+        include_trace: (bool) | None = None,
+    ) -> JSONResponse:
         """将异常转为统一 HTTP 错误响应(使用Response.error)"""
         include = include_trace if include_trace is not None else False
         info = GlobalExceptionHandler().format_exception_info(e, details)
@@ -226,17 +238,11 @@ class GlobalExceptionHandler(IExceptionHandler):
         # 根据状态码选择日志级别
         if status_code >= 500:
             logger.error(
-                f"🚨 HTTP异常 [{status_code}] - "
-                f"Path: {request.url.path} | "
-                f"Method: {request.method} | "
-                f"Detail: {detail}"
+                f"🚨 HTTP异常 [{status_code}] - Path: {request.url.path} | Method: {request.method} | Detail: {detail}"
             )
         elif status_code >= 400:
             logger.warning(
-                f"⚠️  HTTP异常 [{status_code}] - "
-                f"Path: {request.url.path} | "
-                f"Method: {request.method} | "
-                f"Detail: {detail}"
+                f"⚠️  HTTP异常 [{status_code}] - Path: {request.url.path} | Method: {request.method} | Detail: {detail}"
             )
 
         return self.to_http_error_response(
@@ -244,7 +250,7 @@ class GlobalExceptionHandler(IExceptionHandler):
             message=detail,
             status_code=status_code,
             details={"path": str(request.url.path), "method": request.method},
-            include_trace=self._include_trace_in_response  # 使用配置
+            include_trace=self._include_trace_in_response,  # 使用配置
         )
 
     async def handle_validation_exception(self, request: Request, exc: Exception) -> JSONResponse:
@@ -277,12 +283,14 @@ class GlobalExceptionHandler(IExceptionHandler):
                     else:
                         safe_input = "<complex object>"
 
-                    validation_errors.append({
-                        "field": ".".join(str(loc) for loc in error.get("loc", [])),
-                        "message": error.get("msg"),
-                        "type": error.get("type"),
-                        "input": safe_input,
-                    })
+                    validation_errors.append(
+                        {
+                            "field": ".".join(str(loc) for loc in error.get("loc", [])),
+                            "message": error.get("msg"),
+                            "type": error.get("type"),
+                            "input": safe_input,
+                        }
+                    )
         except Exception as ee:
             logger.error(f"🚨 格式化验证错误失败: {ee}")
 
@@ -296,20 +304,15 @@ class GlobalExceptionHandler(IExceptionHandler):
             },
         )
         return Response.error(
-            base,
-            exc=exc,
-            include_trace=False,
-            default_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+            base, exc=exc, include_trace=False, default_status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
         )
 
     async def handle_general_exception(self, request: Request, exc: Exception) -> JSONResponse:
         """处理通用异常（所有未被捕获的异常）"""
         # 记录详细日志（始终记录到日志文件，无论配置如何）
-        self.log_exception(exc, context={
-            "path": str(request.url.path),
-            "method": request.method,
-            "url": str(request.url)
-        })
+        self.log_exception(
+            exc, context={"path": str(request.url.path), "method": request.method, "url": str(request.url)}
+        )
 
         # 若业务抛出AppError，可直接使用其code
         status_code = getattr(exc, "code", 500) if isinstance(exc, AppError) else 500
@@ -320,11 +323,12 @@ class GlobalExceptionHandler(IExceptionHandler):
             message=message,
             status_code=status_code,
             details={"path": str(request.url.path), "method": request.method},
-            include_trace=self._include_trace_in_response  # 根据配置决定是否返回堆栈
+            include_trace=self._include_trace_in_response,  # 根据配置决定是否返回堆栈
         )
 
-    def handle_and_return_error(self, e: Exception, context: (dict[str, Any]) | None = None,
-                                default_message: str = "操作失败") -> dict[str, Any]:
+    def handle_and_return_error(
+        self, e: Exception, context: (dict[str, Any]) | None = None, default_message: str = "操作失败"
+    ) -> dict[str, Any]:
         """
         处理异常并返回标准错误对象(通用场景，非HTTP路径)
         """
@@ -338,7 +342,7 @@ class GlobalExceptionHandler(IExceptionHandler):
                 "message": info["error_message"],
                 "location": f"{info['function_name']}() at line {info['line_number']}",
             },
-            "context": context or {}
+            "context": context or {},
         }
         if isinstance(e, AppError):
             body["app_error"] = e.to_dict()
@@ -352,20 +356,20 @@ class GlobalExceptionHandler(IExceptionHandler):
     def register_exception_handlers(app, handler: IExceptionHandler | None = None):
         """
         注册全局异常处理器到 FastAPI 应用
-        
+
         支持自动从 IoC 容器获取异常处理器实例，或使用指定的处理器
-        
+
         Args:
             app: FastAPI 应用实例
             handler: 异常处理器实例（可选）。如果不提供，则从 IoC 容器获取
-            
+
         Returns:
             bool: 是否成功注册
-            
+
         示例：
             # 使用默认处理器（从 IoC 容器自动获取）
             GlobalExceptionHandler.register_exception_handlers(app)
-            
+
             # 使用自定义处理器
             custom_handler = MyExceptionHandler()
             GlobalExceptionHandler.register_exception_handlers(app, handler=custom_handler)
@@ -374,6 +378,7 @@ class GlobalExceptionHandler(IExceptionHandler):
         if handler is None:
             try:
                 from pyspring.core.ioc.context import ApplicationContext
+
                 handler = ApplicationContext.get_instance().get_by_type(IExceptionHandler)
                 logger.info(f"✅ 从 IoC 容器获取异常处理器: {type(handler).__name__}")
             except Exception as e:
@@ -391,6 +396,7 @@ class GlobalExceptionHandler(IExceptionHandler):
 
 
 # 装饰器：自动异常处理(通用)
+
 
 def _wrap_sync(
     func: Callable[..., object],
@@ -462,20 +468,33 @@ def handle_async_exceptions(default_message: str = "操作失败", context_extra
 
 # 针对 FastAPI 路由的便捷装饰器(直接返回JSONResponse)
 
-def handle_http_exceptions(default_message: str = "操作失败", status_code: int = 500, context_extractor=None, include_trace: (bool) | None = None):
+
+def handle_http_exceptions(
+    default_message: str = "操作失败",
+    status_code: int = 500,
+    context_extractor=None,
+    include_trace: (bool) | None = None,
+):
     """同步路由专用装饰器：异常时返回统一 JSONResponse"""
 
     def decorator(func):
         return _wrap_sync(
             func,
-            lambda e, details: GlobalExceptionHandler.to_http_error_response(e, message=default_message, status_code=status_code, details=details, include_trace=include_trace),
+            lambda e, details: GlobalExceptionHandler.to_http_error_response(
+                e, message=default_message, status_code=status_code, details=details, include_trace=include_trace
+            ),
             context_extractor,
         )
 
     return decorator
 
 
-def handle_async_http_exceptions(default_message: str = "操作失败", status_code: int = 500, context_extractor=None, include_trace: (bool) | None = None):
+def handle_async_http_exceptions(
+    default_message: str = "操作失败",
+    status_code: int = 500,
+    context_extractor=None,
+    include_trace: (bool) | None = None,
+):
     """
     异步路由专用装饰器：异常时返回统一JSONResponse
     """
@@ -483,7 +502,9 @@ def handle_async_http_exceptions(default_message: str = "操作失败", status_c
     def decorator(func):
         return _wrap_async(
             func,
-            lambda e, details: GlobalExceptionHandler.to_http_error_response(e, message=default_message, status_code=status_code, details=details, include_trace=include_trace),
+            lambda e, details: GlobalExceptionHandler.to_http_error_response(
+                e, message=default_message, status_code=status_code, details=details, include_trace=include_trace
+            ),
             context_extractor,
         )
 

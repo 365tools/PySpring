@@ -3,6 +3,7 @@ CLI 集成测试：init 命令生成项目。
 
 验证普通 init 和 init --example 都能生成完整项目结构。
 """
+
 import os
 
 
@@ -12,8 +13,14 @@ def test_init_creates_project(cli, project_dir):
     assert rc == 0, f"init failed: {out[:300]}"
 
     expected = [
-        "pyproject.toml", "README.md", "main.py", ".env",
-        "app", "config", "scripts", "tests",
+        "pyproject.toml",
+        "README.md",
+        "main.py",
+        ".env",
+        "app",
+        "config",
+        "scripts",
+        "tests",
     ]
     for name in expected:
         assert os.path.exists(os.path.join(project_dir, name)), f"missing {name}"

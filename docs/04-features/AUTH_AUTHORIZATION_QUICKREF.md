@@ -9,7 +9,6 @@ from pyspring.security.authentication.web.middleware.dependencies import (
     # Token认证
     require_authentication_from_token,  # 强制认证
     get_current_user_from_token,  # 可选认证
-
     # 权限/角色依赖
     permission_dependency,  # 权限检查
     role_dependency,  # 角色检查
@@ -193,9 +192,7 @@ async def delete_user(user_id: int, request: Request):
 ### 依赖函数方式
 
 ```python
-from pyspring.security.authentication.web.middleware.dependencies import (
-    permission_dependency
-)
+from pyspring.security.authentication.web.middleware.dependencies import permission_dependency
 
 UserDelete = Annotated[Any, Depends(permission_dependency("user:delete"))]
 
@@ -213,16 +210,13 @@ async def delete_user(user_id: int, user: UserDelete):
    # permissions.py
    from typing import Annotated, Any
    from fastapi import Depends
-   from pyspring.security.authentication.web.middleware.dependencies import (
-       permission_dependency,
-       role_dependency
-   )
-   
+   from pyspring.security.authentication.web.middleware.dependencies import permission_dependency, role_dependency
+
    # 权限
    UserRead = Annotated[Any, Depends(permission_dependency("user:read"))]
    UserWrite = Annotated[Any, Depends(permission_dependency("user:write"))]
    # ... 更多权限
-   
+
    # 角色
    AdminOnly = Annotated[Any, Depends(role_dependency("admin"))]
    ManagerOnly = Annotated[Any, Depends(role_dependency("manager"))]
@@ -231,19 +225,23 @@ async def delete_user(user_id: int, user: UserDelete):
 2. **在路由中使用**
    ```python
    from .permissions import UserRead, UserWrite, UserDelete, AdminOnly
-   
+
+
    @router.get("/users")
    async def list_users(user: UserRead):
        pass
-   
+
+
    @router.post("/users")
    async def create_user(user: UserWrite):
        pass
-   
+
+
    @router.delete("/users/{id}")
    async def delete_user(id: int, user: UserDelete):
        pass
-   
+
+
    @router.post("/users/{id}/ban")
    async def ban_user(id: int, user: AdminOnly):
        pass

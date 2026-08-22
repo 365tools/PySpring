@@ -85,37 +85,39 @@ app = FastAPI(title="PySpring Application")
 
 db_manager: DBManagerService = None
 
+
 @app.on_event("startup")
 async def startup_event():
     global db_manager
-    
+
     logger.info("🚀 应用启动中...")
-    
+
     # 1. 初始化数据库管理器
     db_manager = DBManagerService()
     db_service = await db_manager.service()
-    
+
     # 2. 创建启动初始化器管理器
     initializer_manager = StartupInitializerManager()
-    
+
     # 3. 注册数据库初始化器
     config_manager = RepositoriesConfigManager()
     init_config = config_manager.get_database_initialization_config()
-    
-    if init_config['enabled']:
+
+    if init_config["enabled"]:
         db_initializer = DatabaseInitializer(
             db_service=db_service,
-            enabled=init_config['enabled'],
-            mode=init_config['mode'],
-            script_path=init_config['script_path'],
-            auto_detect=init_config['auto_detect']
+            enabled=init_config["enabled"],
+            mode=init_config["mode"],
+            script_path=init_config["script_path"],
+            auto_detect=init_config["auto_detect"],
         )
         initializer_manager.register(db_initializer)
-    
+
     # 4. 执行所有初始化器
     await initializer_manager.execute_all(stop_on_failure=True)
-    
+
     logger.info("✅ 应用启动完成")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -203,23 +205,24 @@ script_path: null
 from pyspring.interfaces.IStartupInitializer import IStartupInitializer
 from pyspring.log.loguru.logger import logger
 
+
 class CacheWarmupInitializer(IStartupInitializer):
     """缓存预热初始化器"""
-    
+
     def __init__(self, cache_service, enabled: bool = True):
         super().__init__(enabled)
         self.cache_service = cache_service
-    
+
     def get_name(self) -> str:
         return "CacheWarmupInitializer"
-    
+
     async def initialize(self) -> bool:
         logger.info("🔥 开始缓存预热...")
-        
+
         # 预加载热数据
         await self.cache_service.set("config:version", "1.0.0")
         await self.cache_service.set("config:env", "production")
-        
+
         logger.info("✅ 缓存预热完成")
         return True
 ```
@@ -247,20 +250,21 @@ async def startup_event():
 ```python
 import os
 
+
 @app.on_event("startup")
 async def startup_event():
     env = os.getenv("APP_ENV", "development")
-    
+
     initializer_manager = StartupInitializerManager()
-    
+
     # 数据库初始化
     db_initializer = DatabaseInitializer(
         db_service=db_service,
         enabled=(env == "development"),  # 仅开发环境启用
-        mode="full" if env == "development" else "incremental"
+        mode="full" if env == "development" else "incremental",
     )
     initializer_manager.register(db_initializer)
-    
+
     await initializer_manager.execute_all()
 ```
 

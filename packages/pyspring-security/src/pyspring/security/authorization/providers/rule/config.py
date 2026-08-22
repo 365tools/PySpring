@@ -12,7 +12,7 @@ from pyspring.security.core.config.loader import SecurityConfigManager
 class DefaultPathPermissionProvider(IPathPermissionProvider):
     """
     默认的路径权限规则提供者（基于配置文件）
-    
+
     从security.yaml中读取authorization.role_mappings配置
     格式示例：
     ```yaml
@@ -22,14 +22,14 @@ class DefaultPathPermissionProvider(IPathPermissionProvider):
         "/api/admin/settings": ["admin", "super_admin"]
         "/api/user/profile": ["user"]
     ```
-    
+
     用户可以通过实现IPathPermissionProvider接口并注册@Bean来替换此实现
     """
 
     def __init__(self, config_manager: SecurityConfigManager):
         """
         初始化路径规则提供者
-        
+
         Args:
             config_manager: 安全配置管理器
         """
@@ -40,7 +40,7 @@ class DefaultPathPermissionProvider(IPathPermissionProvider):
     def _load_rules(self):
         """
         从配置文件加载路径权限规则
-        
+
         配置结构：
         authorization.role_mappings (字典格式)
         """
@@ -65,7 +65,7 @@ class DefaultPathPermissionProvider(IPathPermissionProvider):
     def get_path_rules(self) -> dict[str, list[str]]:
         """
         获取路径规则映射
-        
+
         Returns:
             dict[str, list[str]]: 路径 -> 所需角色列表的映射
             例如: {

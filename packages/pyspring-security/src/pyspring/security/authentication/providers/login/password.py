@@ -59,4 +59,3 @@ class DefaultPasswordLoginProvider(ILoginProvider):
             )
 
         return user
-

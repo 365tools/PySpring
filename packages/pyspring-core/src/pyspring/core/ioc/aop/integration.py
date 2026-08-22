@@ -3,6 +3,7 @@ AOP代理集成
 
 为服务自动创建AOP代理
 """
+
 import inspect
 from typing import Any
 
@@ -12,7 +13,7 @@ from pyspring.core.log.instance import logger
 class AopIntegration:
     """
     AOP集成
-    
+
     自动为带有切面的服务创建代理
     """
 
@@ -23,20 +24,20 @@ class AopIntegration:
     def should_create_proxy(self, service_type: type) -> bool:
         """
         判断是否需要为服务创建代理
-        
+
         Args:
             service_type: 服务类型
-            
+
         Returns:
             bool: 是否需要代理
         """
         # 检查类或方法上是否有切面注解
-        if hasattr(service_type, '__pyspring_aspects__'):
+        if hasattr(service_type, "__pyspring_aspects__"):
             return True
 
         # 检查方法上是否有切面
         for name, method in inspect.getmembers(service_type, inspect.isfunction):
-            if hasattr(method, '__pyspring_pointcut__'):
+            if hasattr(method, "__pyspring_pointcut__"):
                 return True
 
         return False
@@ -44,11 +45,11 @@ class AopIntegration:
     def create_proxy(self, target: Any, service_type: type) -> Any:
         """
         为目标对象创建AOP代理
-        
+
         Args:
             target: 目标对象
             service_type: 服务类型
-            
+
         Returns:
             代理对象或原对象
         """
@@ -78,17 +79,17 @@ class AopIntegration:
     def _collect_aspects(self, service_type: type) -> list[Any]:
         """
         收集服务的切面
-        
+
         Args:
             service_type: 服务类型
-            
+
         Returns:
             切面列表
         """
         aspects = []
 
         # 从类注解获取切面
-        if hasattr(service_type, '__pyspring_aspects__'):
+        if hasattr(service_type, "__pyspring_aspects__"):
             aspect_types = service_type.__pyspring_aspects__
             for aspect_type in aspect_types:
                 aspect = self._get_aspect_instance(aspect_type)
@@ -100,10 +101,10 @@ class AopIntegration:
     def _get_aspect_instance(self, aspect_type: type) -> (Any) | None:
         """
         获取切面实例（使用容器管理）
-        
+
         Args:
             aspect_type: 切面类型
-            
+
         Returns:
             切面实例
         """
@@ -119,4 +120,4 @@ class AopIntegration:
                 return None
 
 
-__all__ = ['AopIntegration']
+__all__ = ["AopIntegration"]

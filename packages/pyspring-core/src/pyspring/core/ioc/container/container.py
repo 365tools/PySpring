@@ -3,6 +3,7 @@
 
 清晰、解耦、最佳实践的实现
 """
+
 import inspect
 from typing import Any, Callable
 
@@ -16,12 +17,12 @@ from pyspring.core.log.instance import logger
 class Container:
     """
     IOC容器
-    
+
     新的设计理念：
     1. 职责单一：容器只负责协调，具体工作委托给专门模块
     2. 清晰分层：扫描 -> 注册 -> 解析 -> 实例化
     3. 可扩展：每个模块都可以独立扩展和替换
-    
+
     工作流程：
     1. 扫描阶段（Scanner）：发现所有组件
     2. 注册阶段（Registry）：注册组件定义
@@ -47,6 +48,7 @@ class Container:
         self._aop_integration = None
         if enable_aop:
             from pyspring.core.ioc.aop.integration import AopIntegration
+
             self._aop_integration = AopIntegration(self)
 
         # 循环依赖检测
@@ -60,13 +62,14 @@ class Container:
         if self._resolver is None:
             # 延迟导入解决循环依赖
             from pyspring.core.ioc.resolver.resolver import DependencyResolver
+
             self._resolver = DependencyResolver(self.registry)
         return self._resolver
 
     def scan(self, base_packages: list[str]):
         """
         扫描并注册组件
-        
+
         Args:
             base_packages: 要扫描的包路径列表
         """
@@ -79,10 +82,7 @@ class Container:
         skipped_count = 0
         for cls, metadata in components.items():
             if metadata.replaced_by:
-                logger.info(
-                    f"⏩ 跳过条件组件 {metadata.name} ({cls.__name__}): "
-                    f"已被 {metadata.replaced_by} 替换"
-                )
+                logger.info(f"⏩ 跳过条件组件 {metadata.name} ({cls.__name__}): 已被 {metadata.replaced_by} 替换")
                 skipped_count += 1
 
         if skipped_count > 0:
@@ -117,10 +117,7 @@ class Container:
 
         # 如果当前组件替换了其他组件，输出替换日志（紧接着注册日志）
         if metadata.replaces:
-            logger.info(
-                f"  🔄 组件替换: {metadata.name} ({cls.__name__}) "
-                f"替换 {metadata.replaces}"
-            )
+            logger.info(f"  🔄 组件替换: {metadata.name} ({cls.__name__}) 替换 {metadata.replaces}")
 
         # 创建工厂函数
         def factory():
@@ -136,7 +133,7 @@ class Container:
             is_primary=metadata.is_primary,
             is_conditional=is_conditional,
             replaces=metadata.replaces,  # 🆕 传递替换信息
-            module=metadata.module
+            module=metadata.module,
         )
 
         # 注册
@@ -166,7 +163,7 @@ class Container:
         method = getattr(config_cls, method_name)
 
         # 获取返回类型
-        return_type = method.__annotations__.get('return')
+        return_type = method.__annotations__.get("return")
         if not return_type:
             logger.warning(f"⚠️ Bean方法 {method_name} 缺少返回类型注解")
             return
@@ -208,7 +205,7 @@ class Container:
             factory=bean_factory,
             is_bean=True,
             config_class=config_cls,
-            bean_method=method_name
+            bean_method=method_name,
         )
 
         # 注册
@@ -221,7 +218,7 @@ class Container:
         dependencies = {}
 
         for param_name, param in sig.parameters.items():
-            if param_name == 'self':
+            if param_name == "self":
                 continue
 
             # 尝试通过参数名获取服务
@@ -241,10 +238,10 @@ class Container:
     def get(self, name: str) -> Any:
         """
         获取服务实例
-        
+
         Args:
             name: 服务名称
-            
+
         Returns:
             服务实例
         """
@@ -270,10 +267,10 @@ class Container:
     def _create_instance(self, name: str) -> Any:
         """
         创建服务实例
-        
+
         Args:
             name: 服务名称
-            
+
         Returns:
             服务实例
         """
@@ -340,8 +337,6 @@ class Container:
         """获取某类型的所有实例（get_all_of_type 的语义化别名）"""
         return self.get_all_of_type(service_type)
 
-
-
     def has(self, name: str) -> bool:
         """检查服务是否已注册"""
         return self.registry.has(name)
@@ -349,10 +344,10 @@ class Container:
     def get_service(self, service_type: type) -> Any:
         """
         根据类型获取服务实例（用于HealthCheckManager）
-        
+
         Args:
             service_type: 服务类型
-            
+
         Returns:
             服务实例
         """
@@ -361,7 +356,7 @@ class Container:
     def get_all_registered_types(self) -> list[type]:
         """
         获取所有已注册的服务类型（用于自动发现）
-        
+
         Returns:
             服务类型列表
         """
@@ -373,6 +368,7 @@ class Container:
 
         # 1. 初始化Initializer管理器
         from pyspring.core.ioc.lifecycle.initializer import StartupInitializerManager
+
         self._initializer_manager = StartupInitializerManager(self)
         self._initializer_manager.discover()
 
@@ -383,6 +379,7 @@ class Container:
         for service in self._lifecycle_services:
             # 跳过Initializer（已经执行过）
             from pyspring.core.ioc.lifecycle.initializer import IStartupInitializer
+
             if isinstance(service, IStartupInitializer):
                 continue
 
@@ -398,6 +395,7 @@ class Container:
 
         # 1. 初始化Shutdown管理器
         from pyspring.core.ioc.lifecycle.shutdown import ShutdownHandlerManager
+
         self._shutdown_manager = ShutdownHandlerManager(self)
         self._shutdown_manager.discover()
 
@@ -405,6 +403,7 @@ class Container:
         for service in reversed(self._lifecycle_services):  # 反向关闭
             # 跳过ShutdownHandler（最后执行）
             from pyspring.core.ioc.lifecycle.shutdown import IShutdownHandler
+
             if isinstance(service, IShutdownHandler):
                 continue
 
@@ -421,8 +420,9 @@ class Container:
     def _generate_name(service_type: type) -> str:
         """生成服务名称（CamelCase -> snake_case）"""
         import re
+
         name = service_type.__name__
-        name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+        name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
         return name
 
 
@@ -431,4 +431,4 @@ def get_container_class():
     return Container
 
 
-__all__ = ['Container', 'get_container_class']
+__all__ = ["Container", "get_container_class"]

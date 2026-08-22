@@ -8,6 +8,7 @@ from sqlalchemy import inspect, text
 
 注意: 数据库引擎和会话管理统一由 DBManagerService 负责
 """
+
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 from pyspring.core.ioc.interfaces.core import IManaged
@@ -22,19 +23,20 @@ from sqlalchemy import inspect, text
 
 # ==================== 认证配置服务 ====================
 
+
 @Component
 @Singleton
 class AuthConfigService(IManaged):
     """
     认证配置服务（由IOC容器管理单例）
-    
+
     管理认证相关的配置和依赖
     """
 
     def __init__(self, db_manager: DBManagerService, security_config: SecurityConfigManager):
         """
         初始化认证配置服务
-        
+
         Args:
             db_manager: 数据库管理服务
             security_config: 安全配置管理器

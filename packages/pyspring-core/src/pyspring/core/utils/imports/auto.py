@@ -8,6 +8,7 @@ Provides functionality to automatically import all modules under a package
 - 使用 Python 标准库 logging（而非 pyspring.log），避免形成循环导入。
 - 默认启用严格模式：模块导入失败立即抛出，避免静默掩盖循环依赖。
 """
+
 import importlib
 import logging
 import pkgutil
@@ -75,7 +76,10 @@ def import_package(
             # 非严格模式下：记录失败（含 traceback），便于定位而非静默掩盖
             logger.warning(
                 "导入模块失败: %s.%s - %s: %s",
-                package_name, modname, type(e).__name__, e,
+                package_name,
+                modname,
+                type(e).__name__,
+                e,
             )
 
     if globals_dict is not None:

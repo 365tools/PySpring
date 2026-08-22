@@ -1,6 +1,7 @@
 """
 权限服务提供者
 """
+
 from pyspring.security.authorization.providers.permission.advanced import (
     AdvancedPermissionService,
 )
@@ -11,4 +12,4 @@ from pyspring.security.authorization.providers.permission.default import (
     DefaultPermissionService,
 )
 
-__all__ = ['DefaultPermissionService', 'CachedPermissionService', 'AdvancedPermissionService']
+__all__ = ["DefaultPermissionService", "CachedPermissionService", "AdvancedPermissionService"]

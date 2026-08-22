@@ -60,6 +60,7 @@ your-project/
 ```python
 from pyspring.core.ioc import Component
 
+
 @Component  # 自动注册到 IoC 容器，默认单例
 class UserService:
     # 类型提示触发自动注入
@@ -90,7 +91,7 @@ users = user_service.get_users()
 from pyspring.security.authentication.web.middleware.dependencies import (
     require_authentication_from_token,
     permission_dependency,
-    role_dependency
+    role_dependency,
 )
 from fastapi import Depends
 from typing import Annotated
@@ -103,6 +104,7 @@ UserReadPermission = Annotated[Any, Depends(permission_dependency("user:read"))]
 
 # 需要特定角色
 AdminOnly = Annotated[Any, Depends(role_dependency("admin"))]
+
 
 @app.get("/api/users")
 async def list_users(user: UserReadPermission):

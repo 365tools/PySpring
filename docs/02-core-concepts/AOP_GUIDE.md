@@ -21,7 +21,6 @@ from pyspring.log.instance import logger
 
 
 class LoggingAspect(Aspect):
-
     # 匹配所有 Service 类的 create_ 开头的方法
     @Before(pointcut=".*Service\.create_.*")
     def log_before_create(self, target, method_name, args, kwargs):
@@ -34,6 +33,7 @@ class LoggingAspect(Aspect):
     @Around(pointcut=".*Service\.complex_.*")
     def measure_time(self, proceed, target, method_name, args, kwargs):
         import time
+
         start = time.time()
         try:
             # 执行原始方法

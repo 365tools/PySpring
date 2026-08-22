@@ -80,7 +80,7 @@ if __name__ == "__main__":
         host=system_service.get_config("server.host", "0.0.0.0"),
         port=int(system_service.get_config("server.port", 8000)),
         reload=system_service.get_config("server.reload", True),
-        log_level=system_service.get_config("server.log_level", "info")
+        log_level=system_service.get_config("server.log_level", "info"),
     )
 ```
 
@@ -110,10 +110,7 @@ def get_system_service():
 
 @app.get("/config")
 async def get_config(system: SystemService = Depends(get_system_service)):
-    return {
-        "app_name": system.get_config("app.name"),
-        "environment": system.get_config("app.environment")
-    }
+    return {"app_name": system.get_config("app.name"), "environment": system.get_config("app.environment")}
 ```
 
 ## 配置优先级
@@ -197,11 +194,7 @@ async def lifespan(app: FastAPI):
     system = SystemService()
 
     # 检查必需配置
-    required_configs = [
-        "server.host",
-        "server.port",
-        "app.name"
-    ]
+    required_configs = ["server.host", "server.port", "app.name"]
 
     for config_key in required_configs:
         value = system.get_config(config_key)

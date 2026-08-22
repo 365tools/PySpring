@@ -24,10 +24,10 @@ class InitSyncCommand(BaseCommand):
     name = "init-sync"
     help = "Auto-generate __init__.py package exports"
     arguments = [
-        CommandArg('path', nargs='?', default='.', help='Path to package directory (default: current dir)'),
-        CommandArg('--fixed', action='store_true', help='Generate fixed explicit exports'),
-        CommandArg('--dynamic', action='store_true', help='Use dynamic auto-import (default)'),
-        CommandArg('--output', action='store_true', help='Generate standard __all__ format (preserves comments)'),
+        CommandArg("path", nargs="?", default=".", help="Path to package directory (default: current dir)"),
+        CommandArg("--fixed", action="store_true", help="Generate fixed explicit exports"),
+        CommandArg("--dynamic", action="store_true", help="Use dynamic auto-import (default)"),
+        CommandArg("--output", action="store_true", help="Generate standard __all__ format (preserves comments)"),
     ]
 
     def run(self, args):
@@ -39,8 +39,4 @@ class DevCommand(BaseCommand):
     help = "Internal development utilities"
     description = "Tools for PySpring framework development"
 
-    subcommands = [
-        SyncTemplatesCommand,
-        VerifyConfigCommand,
-        InitSyncCommand
-    ]
+    subcommands = [SyncTemplatesCommand, VerifyConfigCommand, InitSyncCommand]

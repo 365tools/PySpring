@@ -1,6 +1,7 @@
 """
 内存缓存服务实现
 """
+
 from __future__ import annotations
 
 import time
@@ -23,7 +24,7 @@ class MemoryService(IMemoryService):
     def __init__(self, cache_config: CacheConfig):
         """
         通过 IOC 注入配置
-        
+
         Args:
             cache_config: CacheConfig 实例（自动注入）
         """

@@ -30,15 +30,17 @@ class ApplicationContext:
         self._container = None
 
     @classmethod
-    def initialize(cls, base_packages: (list[str]) | None = None, config_file: (str) | None = None, enable_aop: bool = True):
+    def initialize(
+        cls, base_packages: (list[str]) | None = None, config_file: (str) | None = None, enable_aop: bool = True
+    ):
         """
         初始化应用上下文
-        
+
         Args:
             base_packages: 要扫描的包路径列表（可选，如果提供config_file则可为None）
             config_file: 配置文件路径（可选）
             enable_aop: 是否启用AOP（默认启用）
-            
+
         框架级组件自动加载：
             框架会自动优先扫描以下包，确保框架级服务可用：
             - pyspring.security (安全模块：DBManagerService、IPasswordEncoder等)
@@ -53,6 +55,7 @@ class ApplicationContext:
         # 如果提供了配置文件，从配置文件加载
         if config_file:
             from pyspring.core.ioc.config.loader import IOCConfigLoader
+
             loader = IOCConfigLoader(config_file)
             loader.apply_to_container(instance._container)
 
@@ -63,6 +66,7 @@ class ApplicationContext:
         # 2. 框架的 @ConditionalOnMissingBean Bean 先注册
         # 3. 用户的 Bean 后注册时，Registry 检测到旧Bean是conditional → 允许替换
         from pyspring.core.log.instance import logger
+
         framework_packages = cls._load_framework_packages()
         all_packages = []
 
@@ -81,7 +85,9 @@ class ApplicationContext:
             # 如果用户手动指定了框架包，给出警告
             duplicate_packages = [pkg for pkg in base_packages if pkg in framework_packages]
             if duplicate_packages:
-                logger.warning(f"⚠️  用户配置中包含框架包 {duplicate_packages}，已自动去重。框架包会自动扫描，无需手动配置。")
+                logger.warning(
+                    f"⚠️  用户配置中包含框架包 {duplicate_packages}，已自动去重。框架包会自动扫描，无需手动配置。"
+                )
 
         # 一次性扫描所有包
         if all_packages:
@@ -122,9 +128,8 @@ class ApplicationContext:
             logger.warning(f"[autoconfigure] 装配失败: {exc}")
             return []
 
-
     @classmethod
-    def get_instance(cls) -> 'ApplicationContext':
+    def get_instance(cls) -> "ApplicationContext":
         """获取应用上下文实例"""
         if cls._instance is None or cls._instance._container is None:
             raise RuntimeError("ApplicationContext未初始化，请先调用 initialize()")
@@ -157,27 +162,26 @@ class ApplicationContext:
         """获取某类型的所有实例（get_all_of_type 的语义化别名）"""
         return self.container.get_all_of_type(service_type)
 
-
     @staticmethod
     def service(service_type: type):
         """
         静态方法：根据类型获取服务实例
-        
+
         ApplicationContext.service() 的用法，可在 FastAPI Depends 中直接使用：
-        
+
         Example:
             from fastapi import Depends
             from typing import Annotated
-            
+
             @app.post("/login")
             async def login(
                 login_service: Annotated[ILoginService, Depends(lambda: ApplicationContext.service(ILoginService))]
             ):
                 ...
-        
+
         Args:
             service_type: 服务类型（可以是接口或具体类）
-            
+
         Returns:
             服务实例
         """
@@ -193,24 +197,24 @@ class ApplicationContext:
 def inject(service_type: type):
     """
     依赖注入快捷函数
-    
+
     用于快速从 ApplicationContext 获取服务实例，
     特别适合在 FastAPI Depends 中使用。
-    
+
     Example:
         from pyspring.core.ioc import inject
         from fastapi import Depends
         from typing import Annotated
-        
+
         @app.post("/login")
         async def login(
             login_service: Annotated[ILoginService, Depends(lambda: inject(ILoginService))]
         ):
             ...
-    
+
     Args:
         service_type: 服务类型（可以是接口或具体类）
-        
+
     Returns:
         服务实例
     """
@@ -220,4 +224,4 @@ def inject(service_type: type):
 # 大写别名（推荐用于 FastAPI Depends，保持命名一致性）
 Inject = inject
 
-__all__ = ['ApplicationContext', 'Inject']
+__all__ = ["ApplicationContext", "Inject"]

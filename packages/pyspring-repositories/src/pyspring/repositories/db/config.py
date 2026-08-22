@@ -4,6 +4,7 @@
 通用的数据库配置类，支持多种数据库类型。
 可在不同项目中复用。
 """
+
 from typing import ClassVar
 
 from pydantic import Field
@@ -15,10 +16,11 @@ from pyspring.core.ioc.annotations.scope import Singleton
 
 class DatabasePoolConfig(ConfigSection):
     """数据库连接池配置"""
+
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "database.pool"
 
-    model_config = SettingsConfigDict(extra='ignore')
+    model_config = SettingsConfigDict(extra="ignore")
 
     size: int = Field(default=5, ge=1, le=100, description="连接池大小")
     max_overflow: int = Field(default=10, ge=0, le=50, description="最大溢出连接数")
@@ -34,10 +36,11 @@ class DatabasePoolConfig(ConfigSection):
 
 class PostgreSQLConfig(ConfigSection):
     """PostgreSQL配置"""
+
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "database.postgresql"
 
-    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
+    model_config = SettingsConfigDict(populate_by_name=True, extra="ignore")
 
     host: str = Field(default="localhost", description="主机地址")
     port: int = Field(default=5432, ge=1, le=65535, description="端口号")
@@ -49,10 +52,11 @@ class PostgreSQLConfig(ConfigSection):
 
 class MySQLConfig(ConfigSection):
     """MySQL配置"""
+
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "database.mysql"
 
-    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
+    model_config = SettingsConfigDict(populate_by_name=True, extra="ignore")
 
     host: str = Field(default="localhost", description="主机地址")
     port: int = Field(default=3306, ge=1, le=65535, description="端口号")
@@ -65,10 +69,11 @@ class MySQLConfig(ConfigSection):
 
 class SQLiteConfig(ConfigSection):
     """SQLite配置"""
+
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "database.sqlite"
 
-    model_config = SettingsConfigDict(extra='ignore')
+    model_config = SettingsConfigDict(extra="ignore")
 
     database: str = Field(default="data/app.db", description="数据库文件路径")
     pool: DatabasePoolConfig = Field(default_factory=DatabasePoolConfig, description="连接池配置")
@@ -78,10 +83,11 @@ class SQLiteConfig(ConfigSection):
 @Singleton
 class DatabaseConfig(ConfigSection):
     """通用数据库配置"""
+
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "database"
 
-    model_config = SettingsConfigDict(extra='ignore')
+    model_config = SettingsConfigDict(extra="ignore")
 
     type: str = Field(default="sqlite", description="数据库类型：postgresql、mysql、sqlite")
     postgresql: PostgreSQLConfig = Field(default_factory=PostgreSQLConfig, description="PostgreSQL配置")

@@ -19,16 +19,14 @@ from pyspring.security.authentication.web.middleware.utils import AuthUtils
 
 router = APIRouter()
 
+
 @router.get("/profile")
 async def get_profile(request: Request):
     # 需要手动调用AuthUtils
     user_id = AuthUtils.get_current_user_id(request)
     email = AuthUtils.get_current_user_email(request)
-    
-    return {
-        "user_id": user_id,
-        "email": email
-    }
+
+    return {"user_id": user_id, "email": email}
 ```
 
 **缺点**：
@@ -47,22 +45,19 @@ from fastapi import APIRouter, Depends
 from pyspring.security.authentication.web.middleware.dependencies import (
     get_current_user_id,
     get_current_user_email,
-    get_current_user_roles
+    get_current_user_roles,
 )
 
 router = APIRouter()
+
 
 @router.get("/profile")
 async def get_profile(
     user_id: Annotated[int, Depends(get_current_user_id)],
     email: Annotated[str | None, Depends(get_current_user_email)],
-    roles: Annotated[list[str], Depends(get_current_user_roles)]
+    roles: Annotated[list[str], Depends(get_current_user_roles)],
 ):
-    return {
-        "user_id": user_id,
-        "email": email,
-        "roles": roles
-    }
+    return {"user_id": user_id, "email": email, "roles": roles}
 ```
 
 **优点**：
@@ -85,10 +80,9 @@ from pyspring.security.authentication.web.middleware.dependencies import get_cur
 
 router = APIRouter()
 
+
 @router.get("/my-data")
-async def get_my_data(
-    user_id: Annotated[int, Depends(get_current_user_id)]
-):
+async def get_my_data(user_id: Annotated[int, Depends(get_current_user_id)]):
     """只需要用户ID"""
     return {"user_id": user_id, "data": "..."}
 ```
@@ -103,23 +97,20 @@ from fastapi import APIRouter, Depends
 from pyspring.security.authentication.web.middleware.dependencies import (
     get_current_user_id,
     get_current_user_email,
-    get_current_user_roles
+    get_current_user_roles,
 )
 
 router = APIRouter()
+
 
 @router.get("/profile")
 async def get_full_profile(
     user_id: Annotated[int, Depends(get_current_user_id)],
     email: Annotated[str | None, Depends(get_current_user_email)],
-    roles: Annotated[list[str], Depends(get_current_user_roles)]
+    roles: Annotated[list[str], Depends(get_current_user_roles)],
 ):
     """获取完整用户信息"""
-    return {
-        "user_id": user_id,
-        "email": email,
-        "roles": roles
-    }
+    return {"user_id": user_id, "email": email, "roles": roles}
 ```
 
 ---
@@ -131,17 +122,15 @@ async def get_full_profile(
 ```python
 from typing import Annotated
 from fastapi import APIRouter, Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    get_current_user_id,
-    require_role
-)
+from pyspring.security.authentication.web.middleware.dependencies import get_current_user_id, require_role
 
 router = APIRouter()
+
 
 @router.get("/admin/dashboard")
 async def admin_dashboard(
     user_id: Annotated[int, Depends(get_current_user_id)],
-    _: Annotated[None, Depends(require_role("admin"))]  # 要求admin角色
+    _: Annotated[None, Depends(require_role("admin"))],  # 要求admin角色
 ):
     """仅管理员可访问"""
     return {"message": "Admin Dashboard"}
@@ -152,17 +141,15 @@ async def admin_dashboard(
 ```python
 from typing import Annotated
 from fastapi import APIRouter, Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    get_current_user_id,
-    require_any_role
-)
+from pyspring.security.authentication.web.middleware.dependencies import get_current_user_id, require_any_role
 
 router = APIRouter()
+
 
 @router.get("/staff/panel")
 async def staff_panel(
     user_id: Annotated[int, Depends(get_current_user_id)],
-    _: Annotated[None, Depends(require_any_role(["admin", "moderator", "staff"]))]
+    _: Annotated[None, Depends(require_any_role(["admin", "moderator", "staff"]))],
 ):
     """管理员、版主、员工可访问"""
     return {"message": "Staff Panel"}
@@ -178,10 +165,11 @@ from fastapi import APIRouter, Depends
 from pyspring.security.authentication.web.middleware.dependencies import (
     get_current_user_id,
     get_current_user_roles,
-    require_role
+    require_role,
 )
 
 router = APIRouter()
+
 
 @router.post("/articles")
 async def create_article(
@@ -189,15 +177,10 @@ async def create_article(
     roles: Annotated[list[str], Depends(get_current_user_roles)],
     _: Annotated[None, Depends(require_role("author"))],  # 必须是作者
     title: str,
-    content: str
+    content: str,
 ):
     """创建文章 - 需要author角色"""
-    return {
-        "author_id": user_id,
-        "author_roles": roles,
-        "title": title,
-        "content": content
-    }
+    return {"author_id": user_id, "author_roles": roles, "title": title, "content": content}
 ```
 
 ---
@@ -211,17 +194,11 @@ from pyspring.security.authentication.web.middleware.dependencies import get_tok
 
 router = APIRouter()
 
+
 @router.get("/token-info")
-async def get_token_info(
-    payload: Annotated[dict, Depends(get_token_payload)]
-):
+async def get_token_info(payload: Annotated[dict, Depends(get_token_payload)]):
     """查看Token完整载荷"""
-    return {
-        "sub": payload.get("sub"),
-        "exp": payload.get("exp"),
-        "iat": payload.get("iat"),
-        "custom_claims": payload
-    }
+    return {"sub": payload.get("sub"), "exp": payload.get("exp"), "iat": payload.get("iat"), "custom_claims": payload}
 ```
 
 ---
@@ -232,6 +209,7 @@ async def get_token_info(
 """
 用户管理API示例
 """
+
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 from pyspring.security.authentication.web.middleware.dependencies import (
@@ -239,7 +217,7 @@ from pyspring.security.authentication.web.middleware.dependencies import (
     get_current_user_email,
     get_current_user_roles,
     require_role,
-    require_any_role
+    require_any_role,
 )
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -249,69 +227,46 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 async def get_current_user(
     user_id: Annotated[int, Depends(get_current_user_id)],
     email: Annotated[str | None, Depends(get_current_user_email)],
-    roles: Annotated[list[str], Depends(get_current_user_roles)]
+    roles: Annotated[list[str], Depends(get_current_user_roles)],
 ):
     """获取当前用户信息"""
-    return {
-        "id": user_id,
-        "email": email,
-        "roles": roles
-    }
+    return {"id": user_id, "email": email, "roles": roles}
 
 
 @router.get("/me/profile")
-async def get_my_profile(
-    user_id: Annotated[int, Depends(get_current_user_id)]
-):
+async def get_my_profile(user_id: Annotated[int, Depends(get_current_user_id)]):
     """获取我的详细资料"""
     # 从数据库查询用户详细信息
-    return {
-        "user_id": user_id,
-        "profile": "..."
-    }
+    return {"user_id": user_id, "profile": "..."}
 
 
 @router.put("/me/email")
-async def update_my_email(
-    user_id: Annotated[int, Depends(get_current_user_id)],
-    new_email: str
-):
+async def update_my_email(user_id: Annotated[int, Depends(get_current_user_id)], new_email: str):
     """更新我的邮箱"""
     # 更新邮箱逻辑
-    return {
-        "user_id": user_id,
-        "new_email": new_email,
-        "message": "邮箱更新成功"
-    }
+    return {"user_id": user_id, "new_email": new_email, "message": "邮箱更新成功"}
 
 
 @router.get("/admin/all")
 async def list_all_users(
     _: Annotated[None, Depends(require_role("admin"))],  # 只有admin可访问
     skip: int = 0,
-    limit: int = 10
+    limit: int = 10,
 ):
     """列出所有用户（仅管理员）"""
-    return {
-        "users": [],
-        "skip": skip,
-        "limit": limit
-    }
+    return {"users": [], "skip": skip, "limit": limit}
 
 
 @router.delete("/{target_user_id}")
 async def delete_user(
     target_user_id: int,
     current_user_id: Annotated[int, Depends(get_current_user_id)],
-    _: Annotated[None, Depends(require_any_role(["admin", "moderator"]))]
+    _: Annotated[None, Depends(require_any_role(["admin", "moderator"]))],
 ):
     """删除用户（管理员或版主）"""
     if target_user_id == current_user_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="不能删除自己"
-        )
-    
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="不能删除自己")
+
     # 删除逻辑
     return {"message": f"用户 {target_user_id} 已删除"}
 
@@ -321,14 +276,14 @@ async def promote_user(
     target_user_id: int,
     current_user_id: Annotated[int, Depends(get_current_user_id)],
     current_roles: Annotated[list[str], Depends(get_current_user_roles)],
-    _: Annotated[None, Depends(require_role("admin"))]
+    _: Annotated[None, Depends(require_role("admin"))],
 ):
     """提升用户权限（仅管理员）"""
     return {
         "promoted_by": current_user_id,
         "promoter_roles": current_roles,
         "target_user": target_user_id,
-        "message": "权限提升成功"
+        "message": "权限提升成功",
     }
 ```
 
@@ -346,28 +301,29 @@ from pyspring.security.authentication.web.middleware.utils import AuthUtils
 
 router = APIRouter()
 
+
 @router.get("/complex")
 async def complex_operation(
     request: Request,
-    user_id: Annotated[int, Depends(get_current_user_id)]  # 依赖注入获取ID
+    user_id: Annotated[int, Depends(get_current_user_id)],  # 依赖注入获取ID
 ):
     """复杂操作 - 混合使用"""
-    
+
     # 通过依赖已经获取了user_id
     print(f"User ID from Depends: {user_id}")
-    
+
     # 如果需要在路由内部动态检查角色
     if AuthUtils.has_role(request, "premium"):
         # premium用户的特殊逻辑
         pass
-    
+
     # 获取完整的token载荷
     payload = AuthUtils.get_token_payload(request)
-    
+
     return {
         "user_id": user_id,
         "has_premium": AuthUtils.has_role(request, "premium"),
-        "payload_keys": list(payload.keys())
+        "payload_keys": list(payload.keys()),
     }
 ```
 
@@ -383,9 +339,11 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI, Depends
 from typing import Annotated
 
+
 # 创建测试用的override依赖
 def override_get_current_user_id():
     return 123  # 测试用户ID
+
 
 app = FastAPI()
 
@@ -394,9 +352,11 @@ from pyspring.security.authentication.web.middleware.dependencies import get_cur
 
 app.dependency_overrides[get_current_user_id] = override_get_current_user_id
 
+
 @app.get("/test")
 async def test_route(user_id: Annotated[int, Depends(get_current_user_id)]):
     return {"user_id": user_id}
+
 
 def test_authenticated_route():
     client = TestClient(app)

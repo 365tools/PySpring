@@ -1,6 +1,7 @@
 """
 PySpring Project Initialization Core Logic
 """
+
 import shutil
 import sys
 import traceback
@@ -36,6 +37,7 @@ def get_template_dir() -> Path:
     # we need to locate the pyspring package and get its templates
     try:
         import pyspring
+
         # pyspring 是命名空间包，__file__ 为 None；用 __path__ 遍历各子包目录
         search_paths = []
         file_path = getattr(pyspring, "__file__", None)
@@ -57,13 +59,13 @@ def get_template_dir() -> Path:
 def get_config_files_from_templates(minimal: bool = False) -> list[tuple[str, str]]:
     """
     Scan configuration files from template directory automatically
-    
+
     Args:
         minimal: Whether to return only minimal required configurations
-    
+
     Returns:
         List of configuration files [(filename, description), ...]
-        
+
     Raises:
         FileNotFoundError: Template directory does not exist or missing required configurations
     """
@@ -108,16 +110,18 @@ def get_config_files_from_templates(minimal: bool = False) -> list[tuple[str, st
     return config_files
 
 
-def create_config_file(target_path: Path, template_name: str, force: bool = False, template_subdir: str = "config") -> bool:
+def create_config_file(
+    target_path: Path, template_name: str, force: bool = False, template_subdir: str = "config"
+) -> bool:
     """
     Create configuration file
-    
+
     Args:
         target_path: Target file path
         template_name: Template file name
         force: Whether to force overwrite
         template_subdir: Template subdirectory (config, app, project)
-        
+
     Returns:
         Whether creation was successful
     """
@@ -145,14 +149,13 @@ def create_env_file(target_dir: Path, jwt_secret: str, encryption_key: str, forc
     """Create .env file"""
     env_path = target_dir / ".env.example"
 
-    jwt_encryption_key_line = f"JWT_ENCRYPTION_KEY={encryption_key}" if encryption_key else "# JWT_ENCRYPTION_KEY=your-encryption-key"
-
-    content = ENV_FILE_CONTENT.format(
-        jwt_secret=jwt_secret,
-        jwt_encryption_key_line=jwt_encryption_key_line
+    jwt_encryption_key_line = (
+        f"JWT_ENCRYPTION_KEY={encryption_key}" if encryption_key else "# JWT_ENCRYPTION_KEY=your-encryption-key"
     )
 
-    env_path.write_text(content, encoding='utf-8')
+    content = ENV_FILE_CONTENT.format(jwt_secret=jwt_secret, jwt_encryption_key_line=jwt_encryption_key_line)
+
+    env_path.write_text(content, encoding="utf-8")
     print_success(f"Created: {env_path}")
 
     # Create .env file as well
@@ -174,6 +177,7 @@ def create_database_scripts(target_dir: Path):
         # 通过 importlib 动态导入 ORM 表，避免 CLI 静态依赖具体 starter
         # 若 security 等 starter 未安装，则优雅降级为默认脚本
         import importlib
+
         orm_tables_mod = importlib.import_module("pyspring.security.orm.tables")
         UserTable = orm_tables_mod.UserTable
         RoleTable = orm_tables_mod.RoleTable
@@ -184,23 +188,37 @@ def create_database_scripts(target_dir: Path):
         TokenBlacklistTable = orm_tables_mod.TokenBlacklistTable
 
         # PostgreSQL script generation
-        pg_engine = create_engine('postgresql://localhost/dummy', strategy='mock', executor=lambda sql, *_: None)
+        pg_engine = create_engine("postgresql://localhost/dummy", strategy="mock", executor=lambda sql, *_: None)
         pg_scripts = []
 
-        for table in [UserTable, RoleTable, PermissionTable, UserRoleTable,
-                      RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
+        for table in [
+            UserTable,
+            RoleTable,
+            PermissionTable,
+            UserRoleTable,
+            RolePermissionTable,
+            RefreshTokenTable,
+            TokenBlacklistTable,
+        ]:
             # Explicitly cast to sqlalchemy.sql.schema.Table to satisfy type checker
             create_table = CreateTable(cast(Table, table.__table__), if_not_exists=True)
-            pg_scripts.append(str(create_table.compile(dialect=pg_engine.dialect)) + ';')
+            pg_scripts.append(str(create_table.compile(dialect=pg_engine.dialect)) + ";")
 
         # SQLite script generation
-        sqlite_engine = create_engine('sqlite:///dummy.db', strategy='mock', executor=lambda sql, *_: None)
+        sqlite_engine = create_engine("sqlite:///dummy.db", strategy="mock", executor=lambda sql, *_: None)
         sqlite_scripts = []
 
-        for table in [UserTable, RoleTable, PermissionTable, UserRoleTable,
-                      RolePermissionTable, RefreshTokenTable, TokenBlacklistTable]:
+        for table in [
+            UserTable,
+            RoleTable,
+            PermissionTable,
+            UserRoleTable,
+            RolePermissionTable,
+            RefreshTokenTable,
+            TokenBlacklistTable,
+        ]:
             create_table = CreateTable(cast(Table, table.__table__), if_not_exists=True)
-            sqlite_scripts.append(str(create_table.compile(dialect=sqlite_engine.dialect)) + ';')
+            sqlite_scripts.append(str(create_table.compile(dialect=sqlite_engine.dialect)) + ";")
 
         print_success("SQL scripts generated from ORM models")
 
@@ -213,27 +231,33 @@ def create_database_scripts(target_dir: Path):
     current_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # Format table definitions
-    pg_table_defs = '\n\n'.join(pg_scripts) if pg_scripts else "-- Could not generate from ORM, please define table structure manually"
-    sqlite_table_defs = '\n\n'.join(sqlite_scripts) if sqlite_scripts else "-- Could not generate from ORM, please define table structure manually"
+    pg_table_defs = (
+        "\n\n".join(pg_scripts)
+        if pg_scripts
+        else "-- Could not generate from ORM, please define table structure manually"
+    )
+    sqlite_table_defs = (
+        "\n\n".join(sqlite_scripts)
+        if sqlite_scripts
+        else "-- Could not generate from ORM, please define table structure manually"
+    )
 
     # Create PostgreSQL script
     pg_script_path = db_dir / "init_postgresql.sql"
     pg_script_path.write_text(
-        POSTGRES_INIT_SCRIPT.format(date=current_date, table_definitions=pg_table_defs),
-        encoding='utf-8'
+        POSTGRES_INIT_SCRIPT.format(date=current_date, table_definitions=pg_table_defs), encoding="utf-8"
     )
     print_success(f"Created: {pg_script_path}")
 
     # Create SQLite script
     sqlite_script_path = db_dir / "init_sqlite.sql"
     sqlite_script_path.write_text(
-        SQLITE_INIT_SCRIPT.format(date=current_date, table_definitions=sqlite_table_defs),
-        encoding='utf-8'
+        SQLITE_INIT_SCRIPT.format(date=current_date, table_definitions=sqlite_table_defs), encoding="utf-8"
     )
     print_success(f"Created: {sqlite_script_path}")
 
     readme_path = db_dir / "README.md"
-    readme_path.write_text(DB_README_CONTENT, encoding='utf-8')
+    readme_path.write_text(DB_README_CONTENT, encoding="utf-8")
     print_success(f"Created: {readme_path}")
 
 
@@ -264,7 +288,7 @@ def create_project_structure(target_dir: Path):
         if dir_name.startswith("app"):
             init_file = dir_path / "__init__.py"
             if not init_file.exists():
-                init_file.write_text('"""PySpring Application"""\n', encoding='utf-8')
+                init_file.write_text('"""PySpring Application"""\n', encoding="utf-8")
 
     print_success("Project directory structure created")
 
@@ -285,8 +309,8 @@ def create_main_file(target_dir: Path, force: bool = False):
         return
 
     # Copy content directly
-    content = template_path.read_text(encoding='utf-8')
-    main_path.write_text(content, encoding='utf-8')
+    content = template_path.read_text(encoding="utf-8")
+    main_path.write_text(content, encoding="utf-8")
     print_success(f"Created: {main_path}")
 
 
@@ -306,20 +330,20 @@ def create_pyproject_toml(target_dir: Path, force: bool = False):
         return
 
     # Read template and replace placeholders
-    content = template_path.read_text(encoding='utf-8')
+    content = template_path.read_text(encoding="utf-8")
     # Replace project name (template uses "pyspring" as placeholder)
     content = content.replace('name = "pyspring"', 'name = "my-pyspring-app"')
     # Replace project URL placeholders
     content = content.replace(
         '"Homepage" = "https://github.com/yourusername/pyspring"',
-        '"Homepage" = "https://github.com/yourusername/my-pyspring-app"'
+        '"Homepage" = "https://github.com/yourusername/my-pyspring-app"',
     )
     content = content.replace(
         '"Bug Tracker" = "https://github.com/yourusername/pyspring/issues"',
-        '"Bug Tracker" = "https://github.com/yourusername/my-pyspring-app/issues"'
+        '"Bug Tracker" = "https://github.com/yourusername/my-pyspring-app/issues"',
     )
 
-    pyproject_path.write_text(content, encoding='utf-8')
+    pyproject_path.write_text(content, encoding="utf-8")
     print_success(f"Created: {pyproject_path}")
 
     # Create README.md (referenced by pyproject readme field) if missing
@@ -327,9 +351,9 @@ def create_pyproject_toml(target_dir: Path, force: bool = False):
     if not readme_path.exists():
         readme_template = get_template_dir() / "project" / "README.md.template"
         if readme_template.exists():
-            readme_content = readme_template.read_text(encoding='utf-8')
+            readme_content = readme_template.read_text(encoding="utf-8")
             readme_content = readme_content.replace("{{PROJECT_NAME}}", "PySpring Application")
-            readme_path.write_text(readme_content, encoding='utf-8')
+            readme_path.write_text(readme_content, encoding="utf-8")
             print_success(f"Created: {readme_path}")
 
 
@@ -349,15 +373,15 @@ def create_gitignore(target_dir: Path, force: bool = False):
         return
 
     # Copy content directly
-    content = template_path.read_text(encoding='utf-8')
-    gitignore_path.write_text(content, encoding='utf-8')
+    content = template_path.read_text(encoding="utf-8")
+    gitignore_path.write_text(content, encoding="utf-8")
     print_success(f"Created: {gitignore_path}")
 
 
 def copy_template_dir_recursive(src_dir: Path, dst_dir: Path, force: bool = False):
     """
     递归复制模板目录，去除 .template 后缀
-    
+
     Args:
         src_dir: 源模板目录
         dst_dir: 目标目录
@@ -369,7 +393,7 @@ def copy_template_dir_recursive(src_dir: Path, dst_dir: Path, force: bool = Fals
             rel_path = item.relative_to(src_dir)
 
             # 去除 .template 后缀
-            if rel_path.name.endswith('.template'):
+            if rel_path.name.endswith(".template"):
                 target_name = rel_path.name[:-9]  # 去除 '.template'
                 target_path = dst_dir / rel_path.parent / target_name
             else:
@@ -387,11 +411,10 @@ def copy_template_dir_recursive(src_dir: Path, dst_dir: Path, force: bool = Fals
             print_success(f"Created: {target_path}")
 
 
-
 def create_example_project(target_dir: Path, force: bool = False):
     """
     创建完整的示例项目
-    
+
     包含所有 PySpring 功能的可运行示例：
     - IOC 容器和依赖注入
     - 生命周期管理
@@ -401,7 +424,7 @@ def create_example_project(target_dir: Path, force: bool = False):
     - FastAPI 路由
     - 中间件
     - 结构化日志
-    
+
     Args:
         target_dir: 目标目录
         force: 是否强制清空 example 相关文件后再初始化
@@ -427,7 +450,7 @@ def create_example_project(target_dir: Path, force: bool = False):
                 rel_path = item.relative_to(example_template_dir)
 
                 # 去除 .template 后缀计算目标路径
-                if rel_path.name.endswith('.template'):
+                if rel_path.name.endswith(".template"):
                     target_name = rel_path.name[:-9]
                     target_path = target_dir / rel_path.parent / target_name
                 else:
@@ -445,7 +468,7 @@ def create_example_project(target_dir: Path, force: bool = False):
                 print_warning(f"Failed to remove {file_path}: {e}")
 
         # 删除运行时目录（data, logs）
-        runtime_dirs = ['data', 'logs', '__pycache__']
+        runtime_dirs = ["data", "logs", "__pycache__"]
         for dir_name in runtime_dirs:
             dir_path = target_dir / dir_name
             if dir_path.exists():
@@ -561,7 +584,7 @@ def create_example_project(target_dir: Path, force: bool = False):
         "✅ JWT Authentication - Login, register, token validation",
         "✅ RESTful API - FastAPI routes with dependency injection",
         "✅ Middleware - Request logging, timing, error handling",
-        "✅ Structured Logging - Loguru with rotation"
+        "✅ Structured Logging - Loguru with rotation",
     ]
     for feature in features:
         print(f"  {feature}")
@@ -575,15 +598,15 @@ def create_example_project(target_dir: Path, force: bool = False):
 
 
 def init_project(
-        target_dir: Optional[str] = None,
-        force: bool = False,
-        minimal: bool = False,
-        skip_env: bool = False,
-        example: bool = False
+    target_dir: Optional[str] = None,
+    force: bool = False,
+    minimal: bool = False,
+    skip_env: bool = False,
+    example: bool = False,
 ):
     """
     Initialize PySpring Project Configuration
-    
+
     Args:
         target_dir: Target directory (defaults to current directory)
         force: Whether to force overwrite existing files
@@ -744,8 +767,8 @@ def show_init_info():
         ],
         tips=[
             "Always specify a target directory to ensure safety.",
-            "Use --minimal for a lightweight setup if you don't need all features."
-        ]
+            "Use --minimal for a lightweight setup if you don't need all features.",
+        ],
     )
 
     print(f"\n{Colors.WARNING}⚠  No target directory specified.{Colors.ENDC}")
@@ -755,7 +778,7 @@ def show_init_info():
 def run(args):
     """Run initialization command"""
     # Handle target_dir being None
-    target_dir = getattr(args, 'target_dir', None)
+    target_dir = getattr(args, "target_dir", None)
 
     if target_dir is None:
         show_init_info()
@@ -767,7 +790,7 @@ def run(args):
             force=args.force,
             minimal=args.minimal,
             skip_env=args.skip_env,
-            example=getattr(args, 'example', False)
+            example=getattr(args, "example", False),
         )
     except KeyboardInterrupt:
         print_error("\nUpdate cancelled")

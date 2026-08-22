@@ -482,11 +482,7 @@ except Exception as e:
 
 ```python
 # 使用字典绑定结构化信息
-logger.bind(
-    user_id=user.id,
-    action="login",
-    ip=request.client.host
-).info("用户登录")
+logger.bind(user_id=user.id, action="login", ip=request.client.host).info("用户登录")
 ```
 
 ### 4. 性能日志
@@ -546,6 +542,7 @@ config_manager.reload()
 
 # 重新初始化日志系统
 from pyspring.log.loguru.config.formatter import LoguruConfig
+
 LoguruConfig.setup_from_yaml(force=True)
 ```
 
@@ -569,11 +566,7 @@ config_path = Path(f"config/logging.{env}.yaml")
 from loguru import logger as _loguru
 
 # 添加自定义处理器
-_loguru.add(
-    custom_handler,
-    format="{message}",
-    level="ERROR"
-)
+_loguru.add(custom_handler, format="{message}", level="ERROR")
 ```
 
 ---

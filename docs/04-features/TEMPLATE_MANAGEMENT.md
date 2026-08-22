@@ -65,8 +65,8 @@ pyspring = [
 def create_gitignore(target_dir: Path):
     """从模板读取"""
     template_path = get_template_dir() / ".gitignore.template"
-    content = template_path.read_text(encoding='utf-8')
-    gitignore_path.write_text(content, encoding='utf-8')
+    content = template_path.read_text(encoding="utf-8")
+    gitignore_path.write_text(content, encoding="utf-8")
 ```
 
 ### create_pyproject_toml()
@@ -75,22 +75,21 @@ def create_gitignore(target_dir: Path):
 def create_pyproject_toml(target_dir: Path):
     """从模板读取并替换项目信息"""
     template_path = get_template_dir() / "pyproject.toml.template"
-    content = template_path.read_text(encoding='utf-8')
-    
+    content = template_path.read_text(encoding="utf-8")
+
     # 替换项目名称
     content = content.replace('name = "pyspring"', 'name = "my-pyspring-app"')
     # 替换作者信息
     content = content.replace(
-        '{ name="eavelabs", email="365tools.t1@gmail.com" }',
-        '{ name="Your Name", email="your.email@example.com" }'
+        '{ name="eavelabs", email="365tools.t1@gmail.com" }', '{ name="Your Name", email="your.email@example.com" }'
     )
     # 替换项目 URL
     content = content.replace(
         '"Homepage" = "https://github.com/eavelabs-community/py-spring"',
-        '"Homepage" = "https://github.com/yourusername/my-pyspring-app"'
+        '"Homepage" = "https://github.com/yourusername/my-pyspring-app"',
     )
-    
-    pyproject_path.write_text(content, encoding='utf-8')
+
+    pyproject_path.write_text(content, encoding="utf-8")
 ```
 
 ## 模板更新流程

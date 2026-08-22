@@ -27,9 +27,9 @@ class DefaultUserProvider(IUserProvider):
     async def get_user_by_identity(self, identity: str) -> (Any) | None:
         """
         根据身份标识查找用户
-        
+
         支持根据配置的字段列表进行匹配（从 SecurityEntityConfiguration.identifier_fields）
-        
+
         配置示例（config/security.yaml）：
         authentication:
           identifier_fields:
@@ -37,14 +37,14 @@ class DefaultUserProvider(IUserProvider):
             - "username"
             - "email"
             - "phone"
-        
+
         框架会：
         1. 从配置读取字段列表
         2. 动态检查用户模型是否有这些字段
         3. 只匹配非 NULL 的字段（跳过数据库中为 NULL 的字段）
         4. 构建 OR 查询条件
         5. 返回匹配的用户
-        
+
         设计原则：
         - 允许 identifier_fields 为 NULL（nullable=True）
         - 但登录时只匹配非 NULL 值，避免匹配到未填写该字段的用户
@@ -65,12 +65,12 @@ class DefaultUserProvider(IUserProvider):
             # 如果没有可用的字段，抛出异常
             if not conditions:
                 raise ValueError(
-                    f"No valid identifier fields found in user model. "
-                    f"Configured fields: {identifier_fields}"
+                    f"No valid identifier fields found in user model. Configured fields: {identifier_fields}"
                 )
 
             # 使用 OR 条件查询
             from sqlalchemy import or_
+
             stmt = select(self.component.user_orm_model).where(or_(*conditions))
             result = await session.execute(stmt)
             return result.scalar_one_or_none()

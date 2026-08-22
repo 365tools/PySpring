@@ -13,7 +13,7 @@ from .indicator import HealthCheckResult, HealthIndicator, HealthStatus
 class HealthCheckManager:
     """
     健康检查管理器
-    
+
     负责：
     1. 自动发现所有HealthIndicator实例
     2. 根据配置过滤要执行的检查
@@ -24,7 +24,7 @@ class HealthCheckManager:
     def __init__(self, container=None, config: dict[str, object] | None = None):
         """
         初始化健康检查管理器
-        
+
         Args:
             container: IOC容器实例（可选）
             config: 健康检查配置（可选）
@@ -32,12 +32,12 @@ class HealthCheckManager:
         self.container = container
         self._indicators: list[HealthIndicator] = []
         self._config = config or {}
-        self._enabled = self._config.get('enabled', True)
+        self._enabled = self._config.get("enabled", True)
         self._enabled_indicator_names: (Set[str]) | None = None
 
         # 解析启用的检查项
-        if 'indicators' in self._config and self._config['indicators']:
-            self._enabled_indicator_names = set(cast(list[str], self._config['indicators']))
+        if "indicators" in self._config and self._config["indicators"]:
+            self._enabled_indicator_names = set(cast(list[str], self._config["indicators"]))
 
     def discover_indicators(self) -> None:
         """从IOC容器中自动发现所有HealthIndicator实例"""
@@ -77,9 +77,7 @@ class HealthCheckManager:
             if self._enabled_indicator_names is not None:
                 unknown_indicators = self._enabled_indicator_names - discovered_names
                 if unknown_indicators:
-                    logger.warning(
-                        f"[!] Health indicators from config not found: {', '.join(unknown_indicators)}"
-                    )
+                    logger.warning(f"[!] Health indicators from config not found: {', '.join(unknown_indicators)}")
 
             # 按order排序
             self._indicators.sort(key=lambda x: x.order())
@@ -96,7 +94,7 @@ class HealthCheckManager:
     def add_indicator(self, indicator: HealthIndicator) -> None:
         """
         手动添加健康检查指标
-        
+
         Args:
             indicator: HealthIndicator实例
         """
@@ -106,10 +104,10 @@ class HealthCheckManager:
     async def run_checks(self, parallel: bool = False) -> dict[str, HealthCheckResult]:
         """
         执行所有健康检查（异步方法）
-        
+
         Args:
             parallel: 是否并行执行（当前版本串行）
-            
+
         Returns:
             dict[str, HealthCheckResult]: 健康检查结果字典，key为指标名称
         """
@@ -139,7 +137,7 @@ class HealthCheckManager:
                     # 显示重要的details信息
                     if result.details:
                         for key, value in result.details.items():
-                            if key in ['verified', 'endpoint_test', 'framework_check']:
+                            if key in ["verified", "endpoint_test", "framework_check"]:
                                 if isinstance(value, list):
                                     logger.debug(f"    [+] {key}:")
                                     for item in value:
@@ -153,9 +151,7 @@ class HealthCheckManager:
 
             except Exception as e:
                 error_result = HealthCheckResult(
-                    status=HealthStatus.UNKNOWN,
-                    name=indicator.name(),
-                    error=f"Check execution error: {str(e)}"
+                    status=HealthStatus.UNKNOWN, name=indicator.name(), error=f"Check execution error: {str(e)}"
                 )
                 results[indicator.name()] = error_result
                 logger.error(f"  [X] {indicator.name()}: check execution error - {e}")
@@ -175,10 +171,10 @@ class HealthCheckManager:
     def get_overall_status(self, results: dict[str, HealthCheckResult]) -> HealthStatus:
         """
         获取整体健康状态
-        
+
         Args:
             results: 健康检查结果字典
-            
+
         Returns:
             HealthStatus: 整体健康状态
         """

@@ -3,6 +3,7 @@
 
 定义缓存服务的统一接口
 """
+
 from abc import ABC, abstractmethod
 from typing import Any
 

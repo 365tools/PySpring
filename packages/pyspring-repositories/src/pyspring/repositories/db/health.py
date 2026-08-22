@@ -2,6 +2,7 @@
 数据库健康检查服务
 提供详细的数据库连接健康状况监控
 """
+
 from datetime import datetime
 from typing import Any
 
@@ -28,7 +29,7 @@ class DatabaseHealthChecker:
     async def check_health(self) -> dict[str, Any]:
         """
         检查数据库健康状况
-        
+
         Returns:
             Dict: 包含健康状态信息的字典
         """
@@ -49,7 +50,7 @@ class DatabaseHealthChecker:
                 "database_type": self.db_factory._service_type or "unknown",
                 "check_duration": check_duration,
                 "timestamp": datetime.now().isoformat(),
-                "error": None
+                "error": None,
             }
 
             if not is_healthy:
@@ -77,7 +78,7 @@ class DatabaseHealthChecker:
                 "database_type": self.db_factory._service_type or "unknown",
                 "check_duration": check_duration,
                 "timestamp": error_time.isoformat(),
-                "error": str(e)
+                "error": str(e),
             }
 
             # 更新内部状态
@@ -91,7 +92,7 @@ class DatabaseHealthChecker:
     def get_health_stats(self) -> dict[str, Any]:
         """
         获取健康统计信息
-        
+
         Returns:
             Dict: 健康统计信息
         """
@@ -110,19 +111,19 @@ class DatabaseHealthChecker:
             "average_response_time": f"{avg_duration:.3f}s",
             "last_check_time": self._last_check_time.isoformat() if self._last_check_time else None,
             "current_status": "healthy" if self._last_status else "unhealthy",
-            "last_error": self._last_error
+            "last_error": self._last_error,
         }
 
     async def get_connection_pool_info(self) -> dict[str, Any]:
         """
         获取连接池信息（如果支持）
-        
+
         Returns:
             Dict: 连接池信息
         """
         try:
             db_service = await self.db_factory.get_service()
-            pool_info_method = getattr(db_service, 'get_pool_info', None)
+            pool_info_method = getattr(db_service, "get_pool_info", None)
             if pool_info_method is not None:
                 return await pool_info_method()
             else:

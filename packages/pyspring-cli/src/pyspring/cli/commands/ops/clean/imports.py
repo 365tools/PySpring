@@ -1,6 +1,7 @@
 """
 Clean unused imports operations
 """
+
 import ast
 import os
 from typing import List
@@ -22,15 +23,15 @@ class UnusedImportVisitor(ast.NodeVisitor):
 
     def visit_Import(self, node):
         for alias in node.names:
-            name = alias.asname if alias.asname else alias.name.split('.')[0]
+            name = alias.asname if alias.asname else alias.name.split(".")[0]
             # Record the definition line/node
             self.imports[name] = node
 
     def visit_ImportFrom(self, node):
-        if node.module == '__future__':
+        if node.module == "__future__":
             return  # Keep future imports
         for alias in node.names:
-            if alias.name == '*':
+            if alias.name == "*":
                 continue
             name = alias.asname if alias.asname else alias.name
             self.imports[name] = node
@@ -47,7 +48,7 @@ class UnusedImportVisitor(ast.NodeVisitor):
     def visit_Assign(self, node):
         # Check for __all__
         for target in node.targets:
-            if isinstance(target, ast.Name) and target.id == '__all__':
+            if isinstance(target, ast.Name) and target.id == "__all__":
                 self.has_all = True
         self.generic_visit(node)
 
@@ -57,7 +58,7 @@ def get_unused_imports(file_path: str) -> List[int]:
     Return list of line numbers of unused imports.
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             code = f.read()
 
         tree = ast.parse(code)
@@ -69,7 +70,7 @@ def get_unused_imports(file_path: str) -> List[int]:
 
     # Files with __init__.py usually export potential unused imports, skip them to be safe
     # Or if __all__ is defined.
-    if visitor.has_all or file_path.endswith('__init__.py'):
+    if visitor.has_all or file_path.endswith("__init__.py"):
         return []
 
     unused_lines = set()
@@ -88,10 +89,10 @@ def remove_unused_imports_in_file(file_path: str, verbose: bool = False) -> int:
     if verbose:
         print_file_header(file_path)
         for line in unused_lines:
-            print_issue(str(line), "Removing unused import", file_path, level='info')
+            print_issue(str(line), "Removing unused import", file_path, level="info")
 
     # Read lines
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         lines = f.readlines()
 
     output_lines: List[str] = []
@@ -111,10 +112,11 @@ def remove_unused_imports_in_file(file_path: str, verbose: bool = False) -> int:
             # Type safe append
             output_lines.append(str(content))
 
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         f.writelines(output_lines)
 
     return removed_count
+
 
 def run_clean_imports(args):
     """
@@ -129,10 +131,12 @@ def run_clean_imports(args):
     total_removed = 0
 
     for root, _, files in os.walk(target_dir):
-        if 'venv' in root or '.git' in root: continue
+        if "venv" in root or ".git" in root:
+            continue
 
         for file in files:
-            if not file.endswith('.py'): continue
+            if not file.endswith(".py"):
+                continue
 
             file_path = os.path.join(root, file)
             files_checked += 1

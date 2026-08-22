@@ -26,7 +26,7 @@ class SqliteService(BaseAsyncDBService, ISqliteService):
     def __init__(self, database_config: DatabaseConfig):
         """
         通过 IOC 注入配置
-        
+
         Args:
             database_config: DatabaseConfig 实例（自动注入）
         """
@@ -36,7 +36,7 @@ class SqliteService(BaseAsyncDBService, ISqliteService):
         self.database = sqlite_config.database
 
         # 特殊处理内存数据库
-        if self.database != ':memory:':
+        if self.database != ":memory:":
             # 如果是相对路径，基于当前工作目录解析（用户项目根目录）
             if not os.path.isabs(self.database):
                 # 优先使用当前工作目录（用户项目），而不是框架安装目录
@@ -79,20 +79,18 @@ class SqliteService(BaseAsyncDBService, ISqliteService):
                 self.url,
                 echo=echo_setting,
             )
-            self._session_factory = async_sessionmaker(
-                self._engine,
-                class_=AsyncSession,
-                expire_on_commit=False
+            self._session_factory = async_sessionmaker(self._engine, class_=AsyncSession, expire_on_commit=False)
+            logger.debug(
+                f"SQLite connection pool created (pool_size={self._pool_size}, max_overflow={self._max_overflow})"
             )
-            logger.debug(f"SQLite connection pool created (pool_size={self._pool_size}, max_overflow={self._max_overflow})")
         except Exception as e:
             logger.error(f"❌ Failed to initialize SQLite engine: {e}")
             raise e
 
     def _build_url(self) -> str:
         """构建 SQLite 连接 URL"""
-        if self.database == ':memory:':
-            return 'sqlite+aiosqlite:///:memory:'
+        if self.database == ":memory:":
+            return "sqlite+aiosqlite:///:memory:"
         return f"sqlite+aiosqlite:///{self.database}"
 
     async def insert(self, table: str, data: dict[str, Any]) -> Any:
@@ -107,7 +105,7 @@ class SqliteService(BaseAsyncDBService, ISqliteService):
                 result = await session.execute(text(query), data)
                 await session.commit()
                 # SQLAlchemy CursorResult 提供 lastrowid；用 getattr 安全获取，避免基类类型推断缺失
-                return getattr(result, 'lastrowid', None)
+                return getattr(result, "lastrowid", None)
         except Exception as e:
             logger.error(f"Insert failed: {e}")
             raise e

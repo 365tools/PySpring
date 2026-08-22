@@ -1,6 +1,7 @@
 """
 PySpring Import Checker Command
 """
+
 import importlib
 import os
 import sys
@@ -23,11 +24,13 @@ from .....core.utils.logging import suppress_logs
 PYSPRING_LOG_PATTERNS = [
     r"✅ 已加载日志配置",
     r"⚙️ Loguru日志系统统配置完成",
-    r"\[SecurityConfigManager\] 已加载配置文件"
+    r"\[SecurityConfigManager\] 已加载配置文件",
 ]
 
 
-def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list[str] | None = None) -> Generator[str, None, None]:
+def find_modules_in_dir(
+    scan_dir: str, root_dir: str, exclude_dirs: list[str] | None = None
+) -> Generator[str, None, None]:
     """
     Find modules in a directory relative to a root (sys.path entry).
     scan_dir: absolute path to directory to scan
@@ -42,11 +45,12 @@ def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list[str] | 
 
     # Base package prefix
     rel = os.path.relpath(scan_dir, root_dir)
-    if rel == '.':
-        base_pkg = ''
+    if rel == ".":
+        base_pkg = ""
     else:
-        base_pkg = rel.replace(os.path.sep, '.') + '.'
-        if base_pkg.startswith('.'): base_pkg = base_pkg[1:]
+        base_pkg = rel.replace(os.path.sep, ".") + "."
+        if base_pkg.startswith("."):
+            base_pkg = base_pkg[1:]
 
     ignored_dirs = get_ignore_list(os.getcwd())
 
@@ -59,25 +63,25 @@ def find_modules_in_dir(scan_dir: str, root_dir: str, exclude_dirs: list[str] | 
 
         rel_path = os.path.relpath(root, scan_dir)
 
-        if rel_path == '.':
+        if rel_path == ".":
             current_pkg_prefix = base_pkg
         else:
-            current_pkg_prefix = base_pkg + rel_path.replace(os.path.sep, '.') + '.'
+            current_pkg_prefix = base_pkg + rel_path.replace(os.path.sep, ".") + "."
 
         for file in files:
-            if file.endswith('.py') and file != '__init__.py':
+            if file.endswith(".py") and file != "__init__.py":
                 module_name = current_pkg_prefix + file[:-3]
                 yield module_name
-            elif file == '__init__.py':
+            elif file == "__init__.py":
                 # yield package name (without trailing dot)
-                pkg_name = current_pkg_prefix.rstrip('.')
+                pkg_name = current_pkg_prefix.rstrip(".")
                 if pkg_name:
                     yield pkg_name
 
 
 def run_check_import(args):
     """Run import check logic"""
-    target_arg = getattr(args, 'target', '.')
+    target_arg = getattr(args, "target", ".")
 
     target_path = os.path.abspath(target_arg)
 
@@ -93,13 +97,13 @@ def run_check_import(args):
     if project_root not in sys.path:
         sys.path.insert(0, project_root)
 
-    src_path = os.path.join(project_root, 'src')
+    src_path = os.path.join(project_root, "src")
     if os.path.exists(src_path) and src_path not in sys.path:
         sys.path.insert(0, src_path)
 
     # Parse excluded directories
-    user_exclude_str = getattr(args, 'exclude', '')
-    user_excludes = [x.strip() for x in user_exclude_str.split(',') if x.strip()]
+    user_exclude_str = getattr(args, "exclude", "")
+    user_excludes = [x.strip() for x in user_exclude_str.split(",") if x.strip()]
 
     modules = []
 
@@ -107,13 +111,13 @@ def run_check_import(args):
     # If we are scanning the project root (default), we must scan 'src' separately
     # so that modules inside src are imported as 'package.foo' (root=src)
     # instead of 'src.package.foo' (root=project_root).
-    is_root_scan = (target_path == project_root)
+    is_root_scan = target_path == project_root
 
     if os.path.exists(src_path) and is_root_scan:
         # 1. Scan src folder with root=src_path
         modules.extend(find_modules_in_dir(src_path, src_path, exclude_dirs=user_excludes))
         # 2. Scan project root excluding src folder, with root=project_root
-        exclude_dirs_for_root = user_excludes + ['src']
+        exclude_dirs_for_root = user_excludes + ["src"]
         modules.extend(find_modules_in_dir(project_root, project_root, exclude_dirs=exclude_dirs_for_root))
     else:
         # Determine the 'root' for import resolution
@@ -155,7 +159,7 @@ def run_check_import(args):
 
                     full_path = "Unknown file"
 
-                    rel_path = module_name.replace('.', os.sep)
+                    rel_path = module_name.replace(".", os.sep)
 
                     for root in search_roots:
                         # Check module.py
@@ -191,7 +195,7 @@ def run_check_import(args):
     if failed_modules:
         for mod, err, path, lineno in failed_modules:
             print_file_header(path)
-            print_issue(lineno, f"Import failed: {mod} -> {err}", path, level='error')
+            print_issue(lineno, f"Import failed: {mod} -> {err}", path, level="error")
 
     print_summary(len(failed_modules), len(failed_modules), 0, fixable=False)
 

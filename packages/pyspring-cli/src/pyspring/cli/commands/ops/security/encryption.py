@@ -3,6 +3,7 @@ JWT Encryption Key Generation Tool
 
 Used to generate secure Fernet encryption keys
 """
+
 from cryptography.fernet import Fernet
 from pyspring.cli.core.ui.console import (
     print_info,
@@ -15,7 +16,7 @@ from pyspring.cli.core.ui.console import (
 def generate_encryption_key(args):
     """Generate Fernet encryption key"""
     key = Fernet.generate_key()
-    key_str = key.decode('utf-8')
+    key_str = key.decode("utf-8")
 
     print_title("JWT Encryption Key Generated Successfully")
     print_success(f"Key: {key_str}")
@@ -29,7 +30,7 @@ def generate_encryption_key(args):
     print(f'$env:JWT_ENCRYPTION_KEY="{key_str}"')
     print()
     print("# Windows CMD")
-    print(f'set JWT_ENCRYPTION_KEY={key_str}')
+    print(f"set JWT_ENCRYPTION_KEY={key_str}")
     print("-" * 60)
 
     print_title("Important Notices")

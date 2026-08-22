@@ -9,6 +9,7 @@ BasedPyright Type-Check Checker
 - references：检测未定义名称、缺失导入（AST 层面）
 - basedpyright：检测类型推断问题（泛型、Any、弃用类型、抽象类实例化等）
 """
+
 import importlib.util
 import json
 import os
@@ -36,8 +37,7 @@ class BasedPyrightChecker:
     不适合逐文件独立扫描）。
     """
 
-    def __init__(self, target_path: str = '.', severity: str = 'error',
-                 rules: Optional[List[str]] = None):
+    def __init__(self, target_path: str = ".", severity: str = "error", rules: Optional[List[str]] = None):
         """
         :param target_path: 要扫描的项目根路径（源码目录）
         :param severity: 输出级别: 'error' (默认) | 'warning' | 'all'
@@ -84,9 +84,7 @@ class BasedPyrightChecker:
         exe = self._find_executable()
         if exe is None:
             print_error(
-                "basedpyright 未找到。请安装：\n"
-                "  pip install basedpyright     # 或\n"
-                "  uv add --dev basedpyright"
+                "basedpyright 未找到。请安装：\n  pip install basedpyright     # 或\n  uv add --dev basedpyright"
             )
             return False
 
@@ -144,12 +142,14 @@ class BasedPyrightChecker:
 
             path = d.get("file", "")
             line0 = (d.get("range", {}).get("start", {}) or {}).get("line", 0)
-            file_issues.setdefault(path, []).append({
-                "line": line0 + 1,          # 转 1-based
-                "message": d.get("message", ""),
-                "severity": severity,
-                "rule": rule,
-            })
+            file_issues.setdefault(path, []).append(
+                {
+                    "line": line0 + 1,  # 转 1-based
+                    "message": d.get("message", ""),
+                    "severity": severity,
+                    "rule": rule,
+                }
+            )
 
         for path in sorted(file_issues):
             issues = file_issues[path]
@@ -188,18 +188,15 @@ class BasedPyrightChecker:
 
         # 提示如何调整
         if self.total_issues > 0:
-            print_info(
-                "Tip: use --severity warning|all 查看 warning 级问题，"
-                "--rules <rule> 过滤特定规则"
-            )
+            print_info("Tip: use --severity warning|all 查看 warning 级问题，--rules <rule> 过滤特定规则")
 
 
 def run_check_basedpyright(args):
     """Check 子命令入口。"""
-    target = getattr(args, 'target', None) or getattr(args, 'path', None) or '.'
-    severity = getattr(args, 'severity', 'error')
-    rules_raw = getattr(args, 'rules', '') or ''
-    rules = [r.strip() for r in rules_raw.split(',') if r.strip()]
+    target = getattr(args, "target", None) or getattr(args, "path", None) or "."
+    severity = getattr(args, "severity", "error")
+    rules_raw = getattr(args, "rules", "") or ""
+    rules = [r.strip() for r in rules_raw.split(",") if r.strip()]
 
     checker = BasedPyrightChecker(target_path=target, severity=severity, rules=rules)
     return checker.run()

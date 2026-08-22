@@ -95,7 +95,7 @@ async def me(request: Request):
         "id": request.state.user_id,
         "email": request.state.user_email,
         "roles": request.state.user_roles,
-        "permissions": request.state.user_permissions
+        "permissions": request.state.user_permissions,
     }
 ```
 
@@ -117,7 +117,7 @@ async def validate(self, context: Dict[str, Any]) -> SecurityValidatorResult:
         success=True,  # 是否允许登录
         reason=None,  # 拒绝理由
         claims={},  # 需要动态合并到 Context/Token 的数据
-        warnings=[]  # 提示信息
+        warnings=[],  # 提示信息
     )
 ```
 
@@ -162,7 +162,7 @@ class WorkingHoursValidator(ISecurityContextValidator):
             return SecurityValidatorResult(
                 success=False,
                 reason="Login restricted to working hours (09:00 - 18:00)",
-                warnings=["Attempted login outside working hours"]
+                warnings=["Attempted login outside working hours"],
             )
 
         return SecurityValidatorResult(success=True)
@@ -184,17 +184,10 @@ class DeviceTrustValidator(ISecurityContextValidator):
 
         if device_id == "TRUSTED_DEVICE_001":
             # 动态注入角色
-            claims = {
-                "roles": ["device_trusted"],
-                "permissions": ["file:download_high_speed"]
-            }
+            claims = {"roles": ["device_trusted"], "permissions": ["file:download_high_speed"]}
             warnings.append("Trusted device detected: High speed download enabled")
 
-        return SecurityValidatorResult(
-            success=True,
-            claims=claims,
-            warnings=warnings
-        )
+        return SecurityValidatorResult(success=True, claims=claims, warnings=warnings)
 
 
 @Component
@@ -223,8 +216,7 @@ class IPRestrictionValidator(ISecurityContextValidator):
         if user.email.startswith("admin"):
             if not client_ip.startswith("192.168.") and client_ip != "127.0.0.1":
                 return SecurityValidatorResult(
-                    success=False,
-                    reason=f"Admin login is restricted to intranet. Your IP: {client_ip}"
+                    success=False, reason=f"Admin login is restricted to intranet. Your IP: {client_ip}"
                 )
 
         return SecurityValidatorResult(success=True)
@@ -252,15 +244,12 @@ class SubscriptionPlanValidator(ISecurityContextValidator):
         if plan == "PRO":
             claims = {
                 "quota_limit": 10000,  # 每日 API 配额请求数
-                "features": ["ai_analysis", "export_pdf"]  # 注入前端可见的特性标志
+                "features": ["ai_analysis", "export_pdf"],  # 注入前端可见的特性标志
             }
         elif plan == "FREE":
-            claims = {
-                "quota_limit": 100
-            }
+            claims = {"quota_limit": 100}
 
         return SecurityValidatorResult(success=True, claims=claims)
-
 ```
 
 #### 步骤 2: 注册验证器
@@ -318,6 +307,6 @@ from pyspring.core.boot import SpringApplication
    用户现在可以访问受保护的路由：
    ```python
    @router.get("/download")
-   async def download( _ = Depends(has_permission("file:download_high_speed"))):
+   async def download(_=Depends(has_permission("file:download_high_speed"))):
        return FileResponse(...)
    ```

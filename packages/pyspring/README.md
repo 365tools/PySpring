@@ -168,10 +168,11 @@ pyspring init
 from pyspring.core.ioc import Component
 # 假设有一个已存在的 DBManagerService
 
+
 @Component  # 自动注册到 IoC 容器，默认单例
 class UserService:
     # 类型提示触发自动注入
-    def __init__(self, db_manager: 'DBManagerService'):
+    def __init__(self, db_manager: "DBManagerService"):
         self.db = db_manager
 
     def get_users(self):
@@ -186,7 +187,7 @@ from app.services.user_service import UserService
 
 # 框架会在启动时自动扫描并注册 UserService
 # 首先需要初始化应用上下文
-app_context = ApplicationContext.initialize(base_packages=['app'])
+app_context = ApplicationContext.initialize(base_packages=["app"])
 
 # 然后获取服务
 user_service = app_context.get_by_type(UserService)
@@ -284,7 +285,9 @@ PySpring 设计为开放架构，你几乎可以替换任何组件。以下是�
   > 场景：缓存预热、检查第三方 API连通性、加载机器学习模型。
   ```python
   class ModelLoader(IStartupInitializer):
-      def get_name(self) -> str: return "AIModelLoader"
+      def get_name(self) -> str:
+          return "AIModelLoader"
+
       async def initialize(self) -> bool: ...
   ```
 - **关闭清理**: 实现 `IShutdownHandler` 接口。

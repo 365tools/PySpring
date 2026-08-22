@@ -69,12 +69,20 @@ class Base(DeclarativeBase):
     """SQLAlchemy 基类"""
 
     version = Column(INT, nullable=True)
-    active = Column(Boolean, nullable=False, default=True, server_default=text('1'))
-    deleted = Column(Boolean, nullable=False, default=False, server_default=text('0'))
+    active = Column(Boolean, nullable=False, default=True, server_default=text("1"))
+    deleted = Column(Boolean, nullable=False, default=False, server_default=text("0"))
     creator = Column(String, nullable=False, default="system", server_default=text("'system'"))
-    created_time = Column(TIMESTAMP, nullable=False, default=lambda: datetime.now(UTC), server_default=text('CURRENT_TIMESTAMP'))
+    created_time = Column(
+        TIMESTAMP, nullable=False, default=lambda: datetime.now(UTC), server_default=text("CURRENT_TIMESTAMP")
+    )
     modifier = Column(String, nullable=False, default="system", server_default=text("'system'"))
-    modified_time = Column(TIMESTAMP, nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), server_default=text('CURRENT_TIMESTAMP'))
+    modified_time = Column(
+        TIMESTAMP,
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        server_default=text("CURRENT_TIMESTAMP"),
+    )
 ```
 
 这样重新生成SQL脚本时，CREATE TABLE会包含DEFAULT子句，INSERT时可以省略这些字段。

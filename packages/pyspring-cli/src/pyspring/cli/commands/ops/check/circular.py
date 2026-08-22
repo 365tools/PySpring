@@ -1,6 +1,7 @@
 """
 Circular Dependency Checker using AST
 """
+
 import ast
 import os
 from collections import defaultdict
@@ -13,14 +14,14 @@ from .base import BaseChecker
 
 class CircularChecker(BaseChecker):
     def __init__(self, target_path: str):
-        super().__init__(target_path, ['.py'])
+        super().__init__(target_path, [".py"])
 
         project_root = os.getcwd()
         self.root_path = project_root
         # Smart detection for source root
         self.package_root = self.target_path
         if self.target_path == project_root:
-            src_path = os.path.join(project_root, 'src')
+            src_path = os.path.join(project_root, "src")
             if os.path.exists(src_path):
                 self.package_root = src_path
 
@@ -65,27 +66,28 @@ class CircularChecker(BaseChecker):
             msg = "Cycle Detected:\n"
             for i, mod in enumerate(cycle):
                 prefix = "  "
-                if i > 0: prefix = "  ↓ "
+                if i > 0:
+                    prefix = "  ↓ "
                 msg += f"{prefix}{mod}\n"
 
             # Attribute to the first file in the cycle for reporting
             first_file = self.files.get(cycle[0], files[0])
-            self.add_issue(first_file, 0, msg, level='error')
+            self.add_issue(first_file, 0, msg, level="error")
             self.files_with_issues_count += 1
 
     def get_module_name(self, file_path: str) -> str:
         """Convert file path to dotted module name"""
         rel_path = os.path.relpath(file_path, self.package_root)
-        if rel_path.startswith('..'):
+        if rel_path.startswith(".."):
             rel_path = os.path.relpath(file_path, self.root_path)
 
-        name = os.path.splitext(rel_path)[0].replace(os.path.sep, '.')
-        if name.endswith('.__init__'):
+        name = os.path.splitext(rel_path)[0].replace(os.path.sep, ".")
+        if name.endswith(".__init__"):
             name = name[:-9]
         return name
 
     def _parse_file(self, file_path: str, current_module: str):
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             try:
                 tree = ast.parse(f.read(), filename=file_path)
             except SyntaxError:
@@ -111,7 +113,7 @@ class CircularChecker(BaseChecker):
                             self.dependencies[current_module].add(f"{target}.{alias.name}")
 
     def _resolve_relative_import(self, current_module: str, relative_name: Optional[str], level: int) -> Optional[str]:
-        parts = current_module.split('.')
+        parts = current_module.split(".")
         if level > len(parts):
             return None
         base_parts = parts[:-level] if level > 0 else parts
@@ -135,7 +137,7 @@ class CircularChecker(BaseChecker):
 
         def dfs(node):
             if node in path_set:
-                cycle = path_stack[path_stack.index(node):] + [node]
+                cycle = path_stack[path_stack.index(node) :] + [node]
                 found_cycles.append(cycle)
                 return
 
@@ -161,7 +163,7 @@ class CircularChecker(BaseChecker):
 
 
 def run_check_circular(args):
-    target = getattr(args, 'path', '.')
+    target = getattr(args, "path", ".")
     checker = CircularChecker(target)
     success = checker.run()
 

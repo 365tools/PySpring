@@ -127,20 +127,12 @@ class IRoleProvider(IManaged, ABC):
 ```python
 from typing import Annotated, Any
 from fastapi import Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    permission_dependency
-)
+from pyspring.security.authentication.web.middleware.dependencies import permission_dependency
 
 # 定义类型别名
-UserReadPermission = Annotated[Any, Depends(
-    permission_dependency("user:read")
-)]
-UserWritePermission = Annotated[Any, Depends(
-    permission_dependency("user:write")
-)]
-UserDeletePermission = Annotated[Any, Depends(
-    permission_dependency("user:delete")
-)]
+UserReadPermission = Annotated[Any, Depends(permission_dependency("user:read"))]
+UserWritePermission = Annotated[Any, Depends(permission_dependency("user:write"))]
+UserDeletePermission = Annotated[Any, Depends(permission_dependency("user:delete"))]
 
 
 # 使用
@@ -171,9 +163,7 @@ async def delete_user(user_id: int, user: UserDeletePermission):
 ```python
 from typing import Annotated, Any
 from fastapi import Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    role_dependency
-)
+from pyspring.security.authentication.web.middleware.dependencies import role_dependency
 
 # 定义类型别名
 AdminOnly = Annotated[Any, Depends(role_dependency("admin"))]
@@ -313,7 +303,7 @@ async def require_any_permission(*permissions: str):
 
     async def _check(user=Depends(require_authentication_from_token)):
         permission_service = ApplicationContext.initialize(base_packages=["app"]).get_by_type(IPermissionService)
-        user_id = getattr(user, 'id', None) or getattr(user, 'user_id', None)
+        user_id = getattr(user, "id", None) or getattr(user, "user_id", None)
 
         for perm in permissions:
             if await permission_service.has_permission(user_id, perm):
@@ -330,7 +320,7 @@ async def require_all_permissions(*permissions: str):
 
     async def _check(user=Depends(require_authentication_from_token)):
         permission_service = ApplicationContext.initialize(base_packages=["app"]).get_by_type(IPermissionService)
-        user_id = getattr(user, 'id', None) or getattr(user, 'user_id', None)
+        user_id = getattr(user, "id", None) or getattr(user, "user_id", None)
 
         for perm in permissions:
             if not await permission_service.has_permission(user_id, perm):
@@ -343,17 +333,13 @@ async def require_all_permissions(*permissions: str):
 
 # 使用
 @router.post("/special")
-async def special_action(
-        user=Depends(require_any_permission("admin:*", "manager:special"))
-):
+async def special_action(user=Depends(require_any_permission("admin:*", "manager:special"))):
     """需要 admin:* 或 manager:special 权限"""
     return {"allowed": True}
 
 
 @router.post("/critical")
-async def critical_action(
-        user=Depends(require_all_permissions("admin:write", "audit:log"))
-):
+async def critical_action(user=Depends(require_all_permissions("admin:write", "audit:log"))):
     """同时需要 admin:write 和 audit:log 权限"""
     return {"allowed": True}
 ```
@@ -367,6 +353,7 @@ async def critical_action(
 ```python
 # 用户资源
 "user:read"  # 读取用户
+
 "user:write"  # 创建/修改用户
 "user:delete"  # 删除用户
 "user:*"  # 用户所有权限（通配符）
@@ -489,10 +476,7 @@ CREATE TABLE pyspring_role_permission
 ### 方式1：装饰器（依赖中间件）
 
 ```python
-from pyspring.security.authorization.decorators import (
-    require_permission,
-    require_role
-)
+from pyspring.security.authorization.decorators import require_permission, require_role
 
 
 @router.delete("/users/{user_id}")
@@ -512,9 +496,7 @@ async def delete_user(user_id: int, request: Request):
 ### 方式2：依赖函数（无需中间件）
 
 ```python
-from pyspring.security.authentication.web.middleware.dependencies import (
-    permission_dependency
-)
+from pyspring.security.authentication.web.middleware.dependencies import permission_dependency
 
 UserDelete = Annotated[Any, Depends(permission_dependency("user:delete"))]
 
@@ -539,19 +521,13 @@ async def delete_user(user_id: int, user: UserDelete):
 框架提供 `CachedPermissionService`：
 
 ```python
-from pyspring.security.authorization.providers.permission.cached import (
-    CachedPermissionService
-)
+from pyspring.security.authorization.providers.permission.cached import CachedPermissionService
 
 
 @Configuration
 class MyConfig:
     @Bean
-    def cached_permission_service(
-            self,
-            role_provider: IRoleProvider,
-            cache: ICacheService
-    ) -> IPermissionService:
+    def cached_permission_service(self, role_provider: IRoleProvider, cache: ICacheService) -> IPermissionService:
         return CachedPermissionService(role_provider, cache, ttl=300)
 ```
 
@@ -602,24 +578,15 @@ def test_permission_check():
     client = TestClient(app)
 
     # 1. 登录获取Token
-    response = client.post("/auth/login", json={
-        "email": "admin@test.com",
-        "password": "admin123"
-    })
+    response = client.post("/auth/login", json={"email": "admin@test.com", "password": "admin123"})
     token = response.json()["access_token"]
 
     # 2. 访问需要权限的路由
-    response = client.get(
-        "/api/users",
-        headers={"Authorization": f"Bearer {token}"}
-    )
+    response = client.get("/api/users", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 200  # 有权限
 
     # 3. 访问没有权限的路由
-    response = client.delete(
-        "/api/users/1",
-        headers={"Authorization": f"Bearer {token}"}
-    )
+    response = client.delete("/api/users/1", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403  # 无权限
 ```
 

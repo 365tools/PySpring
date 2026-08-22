@@ -1,4 +1,5 @@
 """启动初始化器管理"""
+
 from abc import ABC, abstractmethod
 
 from pyspring.core.ioc.interfaces.core import ILifecycle, IManaged
@@ -8,13 +9,13 @@ from pyspring.core.log.instance import logger
 class IStartupInitializer(IManaged, ILifecycle, ABC):
     """
     启动初始化器接口
-    
+
     用于在应用启动时执行初始化任务，如：
     - 数据库表结构初始化
     - 缓存预热
     - 配置验证
     - 数据迁移
-    
+
     使用方法：
     1. 继承 IStartupInitializer（自动包含 ILifecycle）
     2. 实现 initialize() 方法
@@ -32,7 +33,7 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
     async def initialize(self) -> bool:
         """
         执行初始化逻辑
-        
+
         Returns:
             bool: 初始化是否成功
         """
@@ -42,7 +43,7 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
     def get_name(self) -> str:
         """
         获取初始化器名称
-        
+
         Returns:
             str: 初始化器名称
         """
@@ -59,7 +60,7 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
     async def execute(self) -> bool:
         """
         执行初始化（带日志和错误处理）
-        
+
         Returns:
             bool: 执行是否成功
         """
@@ -83,7 +84,7 @@ class IStartupInitializer(IManaged, ILifecycle, ABC):
 class StartupInitializerManager:
     """
     启动初始化器管理器
-    
+
     自动发现和管理所有IStartupInitializer
     """
 
@@ -107,7 +108,7 @@ class StartupInitializerManager:
     async def execute_all(self) -> bool:
         """
         执行所有初始化器
-        
+
         Returns:
             bool: 是否全部成功
         """
@@ -135,4 +136,4 @@ class StartupInitializerManager:
         return all_success
 
 
-__all__ = ['IStartupInitializer', 'StartupInitializerManager']
+__all__ = ["IStartupInitializer", "StartupInitializerManager"]

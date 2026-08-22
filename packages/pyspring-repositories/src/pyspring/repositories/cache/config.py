@@ -15,6 +15,7 @@ from pyspring.core.ioc.annotations.scope import Singleton
 
 class RedisPoolConfig(ConfigSection):
     """Redis连接池配置"""
+
     max_connections: int = Field(default=50, description="最大连接数")
     socket_keepalive: bool = Field(default=True, description="保持连接")
     socket_connect_timeout: int = Field(default=5, description="连接超时(秒)")
@@ -23,7 +24,8 @@ class RedisPoolConfig(ConfigSection):
 
 class RedisConfig(ConfigSection):
     """Redis配置"""
-    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
+
+    model_config = SettingsConfigDict(populate_by_name=True, extra="ignore")
 
     host: str = Field(default="localhost", description="主机地址")
     port: int = Field(default=6379, ge=1, le=65535, description="端口号")
@@ -34,13 +36,15 @@ class RedisConfig(ConfigSection):
 
 class MemoryConfig(ConfigSection):
     """内存缓存配置"""
+
     max_size: int = Field(default=1000, description="最大缓存项数")
     ttl: int = Field(default=3600, description="默认过期时间(秒)")
 
 
 class MemcachedConfig(ConfigSection):
     """Memcached配置"""
-    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
+
+    model_config = SettingsConfigDict(populate_by_name=True, extra="ignore")
 
     host: str = Field(default="localhost", description="主机地址")
     port: int = Field(default=11211, ge=1, le=65535, description="端口号")
@@ -53,14 +57,15 @@ class MemcachedConfig(ConfigSection):
 class CacheConfig(ConfigSection):
     """
     缓存配置（由 IOC 容器管理单例）
-    
+
     支持从 YAML 自动加载配置
     配置优先级：环境变量 > YAML 文件 > Field 默认值
     """
+
     yaml_config_file: ClassVar[str] = "config/repositories.yaml"
     yaml_config_key: ClassVar[str] = "cache"
 
-    model_config = SettingsConfigDict(populate_by_name=True, extra='ignore')
+    model_config = SettingsConfigDict(populate_by_name=True, extra="ignore")
 
     type: str = Field(default="memory", description="缓存类型：redis、memory、memcached")
     redis: RedisConfig = Field(default_factory=RedisConfig, description="Redis配置")

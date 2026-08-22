@@ -3,6 +3,7 @@
 
 在应用关闭时释放缓存资源
 """
+
 from pyspring.core.ioc.lifecycle.shutdown import IShutdownHandler
 from pyspring.core.log.instance import logger
 

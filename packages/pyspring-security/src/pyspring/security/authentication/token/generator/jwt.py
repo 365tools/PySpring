@@ -3,6 +3,7 @@ JWT Token 生成器实现
 
 使用最新的IOC框架，负责生成和解析JWT Token
 """
+
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -24,13 +25,13 @@ from pyspring.security.core.config.loader import SecurityConfigManager
 class JWTTokenGenerator(ITokenGenerator):
     """
     JWT Token 生成器
-    
+
     职责：
     - 生成 JWT Access Token
     - 生成 JWT Refresh Token
     - 解析 JWT Token
     - 支持 Token 加密（可选）
-    
+
     配置来源：
     - SecurityConfigManager 统一管理配置
     """
@@ -38,7 +39,7 @@ class JWTTokenGenerator(ITokenGenerator):
     def __init__(self, jwt_encryption: JWTEncryptionManager, config_manager: SecurityConfigManager):
         """
         初始化 JWT Token 生成器
-        
+
         Args:
             jwt_encryption: JWT 加密管理器（通过IOC注入）
             config_manager: 安全配置管理器（通过IOC注入）
@@ -50,7 +51,7 @@ class JWTTokenGenerator(ITokenGenerator):
         self._validate_jwt_secret(jwt_config_dict)
 
         # 将字典配置转换为 JWTConfig 对象（过滤掉额外字段）
-        allowed_fields = {'secret_key', 'algorithm', 'access_token_expire', 'refresh_token_expire'}
+        allowed_fields = {"secret_key", "algorithm", "access_token_expire", "refresh_token_expire"}
         filtered_config = {k: v for k, v in jwt_config_dict.items() if k in allowed_fields}
         self.jwt_config = JWTConfig(**filtered_config)
         self.jwt_encryption = jwt_encryption
@@ -58,10 +59,10 @@ class JWTTokenGenerator(ITokenGenerator):
 
     def _validate_jwt_secret(self, jwt_config: dict[str, Any]):
         """验证JWT密钥配置"""
-        secret_key = jwt_config.get('secret_key')
+        secret_key = jwt_config.get("secret_key")
 
         # 检查密钥是否存在或为无效值
-        if not secret_key or secret_key == 'null' or secret_key.strip() == '':
+        if not secret_key or secret_key == "null" or secret_key.strip() == "":
             logger.warning(
                 "[SECURITY WARNING] JWT_SECRET_KEY 未显式配置，使用框架默认开发密钥！\n"
                 "⚠️  仅适用于开发/测试环境\n"
@@ -75,8 +76,8 @@ class JWTTokenGenerator(ITokenGenerator):
 
         # 检查是否使用不安全的默认值
         insecure_defaults = [
-            'your-secret-key-change-in-production',
-            'pyspring-dev-secret-key-CHANGE-IN-PRODUCTION-32bytes-minimum'
+            "your-secret-key-change-in-production",
+            "pyspring-dev-secret-key-CHANGE-IN-PRODUCTION-32bytes-minimum",
         ]
         if any(default in secret_key for default in insecure_defaults):
             logger.warning(
@@ -100,11 +101,11 @@ class JWTTokenGenerator(ITokenGenerator):
     def encode(self, payload: dict[str, Any], expires_delta: (timedelta) | None = None) -> str:
         """
         编码JWT Token（符合新接口）
-        
+
         Args:
             payload: Token载荷数据
             expires_delta: 过期时间增量（可选）
-            
+
         Returns:
             str: 编码并可能加密的JWT Token
         """
@@ -126,18 +127,16 @@ class JWTTokenGenerator(ITokenGenerator):
             else:
                 expire = datetime.now(UTC) + timedelta(seconds=self.jwt_config.access_token_expire)
 
-        to_encode.update({
-            "exp": expire,
-            "iat": datetime.now(UTC),
-            "jti": token_id,  # JWT ID - 唯一标识，用于黑名单
-        })
+        to_encode.update(
+            {
+                "exp": expire,
+                "iat": datetime.now(UTC),
+                "jti": token_id,  # JWT ID - 唯一标识，用于黑名单
+            }
+        )
 
         # 编码 JWT
-        encoded_jwt = jwt.encode(
-            to_encode,
-            self.jwt_config.secret_key,
-            algorithm=self.jwt_config.algorithm
-        )
+        encoded_jwt = jwt.encode(to_encode, self.jwt_config.secret_key, algorithm=self.jwt_config.algorithm)
 
         # 加密 Token（如果启用）
         encrypted_token = self.jwt_encryption.encrypt(encoded_jwt)
@@ -148,10 +147,10 @@ class JWTTokenGenerator(ITokenGenerator):
     def decode(self, token: str) -> (dict[str, Any]) | None:
         """
         解码JWT Token（符合新接口）
-        
+
         Args:
             token: JWT Token字符串
-            
+
         Returns:
             (Dict) | None: 解码后的载荷，失败返回None
         """
@@ -160,17 +159,13 @@ class JWTTokenGenerator(ITokenGenerator):
             decrypted_token = self.jwt_encryption.decrypt(token)
 
             # 解码 JWT
-            payload = jwt.decode(
-                decrypted_token,
-                self.jwt_config.secret_key,
-                algorithms=[self.jwt_config.algorithm]
-            )
+            payload = jwt.decode(decrypted_token, self.jwt_config.secret_key, algorithms=[self.jwt_config.algorithm])
 
             return payload
 
         except JWTError as e:
             # 记录token信息便于调试（不记录完整token避免泄露）
-            token_preview = token[:20] + '...' if len(token) > 20 else token
+            token_preview = token[:20] + "..." if len(token) > 20 else token
             logger.error(f"[TokenGen][JWT] Token 解码失败: {e} | Token长度: {len(token)} | 前20字符: {token_preview}")
             return None
         except Exception as e:
@@ -184,7 +179,7 @@ class JWTTokenGenerator(ITokenGenerator):
     def get_access_token_expire(self) -> int:
         """
         获取访问令牌过期时间
-        
+
         Returns:
             int: 过期时间（秒）
         """
@@ -193,7 +188,7 @@ class JWTTokenGenerator(ITokenGenerator):
     def get_refresh_token_expire(self) -> int:
         """
         获取刷新令牌过期时间
-        
+
         Returns:
             int: 过期时间（秒）
         """

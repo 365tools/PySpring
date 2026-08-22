@@ -28,23 +28,20 @@ from fastapi import APIRouter, Depends
 from pyspring.security.authentication.web.middleware.dependencies import (
     get_current_user_id,
     get_current_user_email,
-    get_current_user_roles
+    get_current_user_roles,
 )
 
 router = APIRouter()
+
 
 @router.get("/profile")
 async def get_profile(
     user_id: Annotated[int, Depends(get_current_user_id)],
     email: Annotated[str | None, Depends(get_current_user_email)],
-    roles: Annotated[list[str], Depends(get_current_user_roles)]
+    roles: Annotated[list[str], Depends(get_current_user_roles)],
 ):
     """从中间件注入的request.state获取用户信息"""
-    return {
-        "user_id": user_id,
-        "email": email,
-        "roles": roles
-    }
+    return {"user_id": user_id, "email": email, "roles": roles}
 ```
 
 ### 配置要求
@@ -75,16 +72,13 @@ app.add_middleware(AuthMiddleware)
 ```python
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from pyspring.security.authentication.web.middleware.dependencies import (
-    get_current_user_from_token
-)
+from pyspring.security.authentication.web.middleware.dependencies import get_current_user_from_token
 
 router = APIRouter()
 
+
 @router.get("/optional-auth")
-async def optional_auth(
-    user: Annotated[Optional[Any], Depends(get_current_user_from_token)]
-):
+async def optional_auth(user: Annotated[Optional[Any], Depends(get_current_user_from_token)]):
     """可选认证 - 未认证不会抛出错误"""
     if user:
         return {"authenticated": True, "user": user}
@@ -97,23 +91,16 @@ async def optional_auth(
 ```python
 from typing import Annotated
 from fastapi import APIRouter, Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    require_authentication_from_token
-)
+from pyspring.security.authentication.web.middleware.dependencies import require_authentication_from_token
 
 router = APIRouter()
 
+
 @router.get("/protected")
-async def protected_route(
-    user: Annotated[Any, Depends(require_authentication_from_token)]
-):
+async def protected_route(user: Annotated[Any, Depends(require_authentication_from_token)]):
     """强制认证 - 未认证自动抛出401错误"""
     # user一定不为None
-    return {
-        "user_id": user.id,
-        "username": user.username,
-        "email": user.email
-    }
+    return {"user_id": user.id, "username": user.username, "email": user.email}
 ```
 
 ### 2.3 检查用户状态
@@ -121,16 +108,13 @@ async def protected_route(
 ```python
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
-from pyspring.security.authentication.web.middleware.dependencies import (
-    require_authentication_from_token
-)
+from pyspring.security.authentication.web.middleware.dependencies import require_authentication_from_token
 
 router = APIRouter()
 
+
 @router.get("/active-users-only")
-async def active_users_only(
-    user: Annotated[Any, Depends(require_authentication_from_token)]
-):
+async def active_users_only(user: Annotated[Any, Depends(require_authentication_from_token)]):
     """只允许激活用户访问"""
     # require_authentication_from_token已经检查了user.active
     # 如果用户被禁用会自动抛出403错误
@@ -150,7 +134,7 @@ from pyspring.security.authentication.contracts.user import IUserManagerService
 # 1. 从IoC容器获取ITokenService
 # 2. 调用token_service.verify_token(token)验证Token
 # 3. 从payload提取user_id
-# 4. 从IoC容器获取IUserManagerService  
+# 4. 从IoC容器获取IUserManagerService
 # 5. 调用user_service.get_user_by_id(user_id)获取用户
 # 6. 返回用户对象
 ```
@@ -179,16 +163,13 @@ from pyspring.security.authentication.services.user.manager import DefaultUserMa
 ```python
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    get_current_user_with_fallback
-)
+from pyspring.security.authentication.web.middleware.dependencies import get_current_user_with_fallback
 
 router = APIRouter()
 
+
 @router.get("/flexible")
-async def flexible_auth(
-    user: Annotated[Optional[Any], Depends(get_current_user_with_fallback)]
-):
+async def flexible_auth(user: Annotated[Optional[Any], Depends(get_current_user_with_fallback)]):
     """
     智能认证 - 自动尝试两种方式：
     1. 优先从request.state获取（中间件）
@@ -208,9 +189,7 @@ async def flexible_auth(
 ```python
 from typing import Annotated, Any
 from fastapi import Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    token_auth_dependency
-)
+from pyspring.security.authentication.web.middleware.dependencies import token_auth_dependency
 
 # 强制认证的用户类型
 CurrentUser = Annotated[Any, Depends(token_auth_dependency(auto_error=True))]
@@ -218,11 +197,13 @@ CurrentUser = Annotated[Any, Depends(token_auth_dependency(auto_error=True))]
 # 可选认证的用户类型
 OptionalUser = Annotated[Any, Depends(token_auth_dependency(auto_error=False))]
 
+
 # 在路由中使用
 @router.get("/test1")
 async def test1(user: CurrentUser):
     """必须认证"""
     return {"user": user}
+
 
 @router.get("/test2")
 async def test2(user: OptionalUser):
@@ -243,17 +224,19 @@ async def test2(user: OptionalUser):
 纯Token验证模式示例
 适用于微服务、API网关等场景
 """
+
 from typing import Annotated, Any
 from fastapi import FastAPI, APIRouter, Depends, HTTPException, status
 from pyspring.security.authentication.web.middleware.dependencies import (
     get_current_user_from_token,
-    require_authentication_from_token
+    require_authentication_from_token,
 )
 
 app = FastAPI()
 router = APIRouter(prefix="/api")
 
 # 注意：这里不使用AuthMiddleware
+
 
 @router.get("/public")
 async def public_endpoint():
@@ -262,45 +245,26 @@ async def public_endpoint():
 
 
 @router.get("/optional-auth")
-async def optional_auth(
-    user: Annotated[Any | None, Depends(get_current_user_from_token)]
-):
+async def optional_auth(user: Annotated[Any | None, Depends(get_current_user_from_token)]):
     """可选认证 - 根据是否认证返回不同内容"""
     if user:
-        return {
-            "message": f"欢迎回来, {user.username}!",
-            "premium_content": "..."
-        }
-    return {
-        "message": "游客访问",
-        "limited_content": "..."
-    }
+        return {"message": f"欢迎回来, {user.username}!", "premium_content": "..."}
+    return {"message": "游客访问", "limited_content": "..."}
 
 
 @router.get("/protected")
-async def protected_endpoint(
-    user: Annotated[Any, Depends(require_authentication_from_token)]
-):
+async def protected_endpoint(user: Annotated[Any, Depends(require_authentication_from_token)]):
     """受保护端点 - 强制认证"""
-    return {
-        "user_id": user.id,
-        "username": user.username,
-        "data": "敏感数据"
-    }
+    return {"user_id": user.id, "username": user.username, "data": "敏感数据"}
 
 
 @router.get("/admin")
-async def admin_endpoint(
-    user: Annotated[Any, Depends(require_authentication_from_token)]
-):
+async def admin_endpoint(user: Annotated[Any, Depends(require_authentication_from_token)]):
     """管理员端点 - 需要认证+角色检查"""
     # 手动检查角色
-    if not hasattr(user, 'roles') or 'admin' not in user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要管理员权限"
-        )
-    
+    if not hasattr(user, "roles") or "admin" not in user.roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
+
     return {"message": "管理员面板"}
 
 
@@ -308,6 +272,7 @@ app.include_router(router)
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
@@ -341,13 +306,14 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 混合模式示例
 部分路由使用中间件，部分使用Token验证
 """
+
 from typing import Annotated, Any
 from fastapi import FastAPI, APIRouter, Depends
 from pyspring.security.authentication.web.middleware import AuthMiddleware
 from pyspring.security.authentication.web.middleware.dependencies import (
     get_current_user_id,  # 从中间件
     require_authentication_from_token,  # 从Token
-    get_current_user_with_fallback  # 智能回退
+    get_current_user_with_fallback,  # 智能回退
 )
 
 app = FastAPI()
@@ -357,29 +323,24 @@ middleware_router = APIRouter(prefix="/api/v1", tags=["v1-with-middleware"])
 token_router = APIRouter(prefix="/api/v2", tags=["v2-token-only"])
 flexible_router = APIRouter(prefix="/api/v3", tags=["v3-flexible"])
 
+
 # V1 API - 使用中间件
 @middleware_router.get("/profile")
-async def v1_profile(
-    user_id: Annotated[int, Depends(get_current_user_id)]
-):
+async def v1_profile(user_id: Annotated[int, Depends(get_current_user_id)]):
     """V1: 从中间件获取用户ID"""
     return {"version": "v1", "user_id": user_id}
 
 
 # V2 API - 直接Token验证
 @token_router.get("/profile")
-async def v2_profile(
-    user: Annotated[Any, Depends(require_authentication_from_token)]
-):
+async def v2_profile(user: Annotated[Any, Depends(require_authentication_from_token)]):
     """V2: 直接从Token验证"""
     return {"version": "v2", "user": user}
 
 
 # V3 API - 智能回退
 @flexible_router.get("/profile")
-async def v3_profile(
-    user: Annotated[Any | None, Depends(get_current_user_with_fallback)]
-):
+async def v3_profile(user: Annotated[Any | None, Depends(get_current_user_with_fallback)]):
     """V3: 智能回退 - 优先中间件，失败则Token"""
     if user:
         return {"version": "v3", "user": user}
@@ -446,7 +407,7 @@ from typing import Annotated, Any, Optional
 from fastapi import Depends
 from pyspring.security.authentication.web.middleware.dependencies import (
     require_authentication_from_token,
-    get_current_user_from_token
+    get_current_user_from_token,
 )
 
 # 强制认证用户
@@ -454,6 +415,7 @@ AuthenticatedUser = Annotated[Any, Depends(require_authentication_from_token)]
 
 # 可选认证用户
 OptionalAuthenticatedUser = Annotated[Optional[Any], Depends(get_current_user_from_token)]
+
 
 # 在路由中使用
 @router.get("/test")
@@ -467,19 +429,17 @@ async def test(user: AuthenticatedUser):
 from typing import Annotated
 from fastapi import Depends, HTTPException, status
 
-async def get_admin_user(
-    user: Annotated[Any, Depends(require_authentication_from_token)]
-) -> Any:
+
+async def get_admin_user(user: Annotated[Any, Depends(require_authentication_from_token)]) -> Any:
     """要求用户必须是管理员"""
-    if not hasattr(user, 'roles') or 'admin' not in user.roles:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="需要管理员权限"
-        )
+    if not hasattr(user, "roles") or "admin" not in user.roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="需要管理员权限")
     return user
+
 
 # 使用
 AdminUser = Annotated[Any, Depends(get_admin_user)]
+
 
 @router.get("/admin/dashboard")
 async def dashboard(user: AdminUser):
@@ -491,24 +451,18 @@ async def dashboard(user: AdminUser):
 ```python
 from fastapi import HTTPException, status
 
+
 @router.get("/custom-error")
-async def custom_error(
-    user: Annotated[Any | None, Depends(get_current_user_from_token)]
-):
+async def custom_error(user: Annotated[Any | None, Depends(get_current_user_from_token)]):
     """自定义错误处理"""
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="请先登录",
-            headers={"WWW-Authenticate": "Bearer"}
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="请先登录", headers={"WWW-Authenticate": "Bearer"}
         )
-    
-    if hasattr(user, 'subscription') and user.subscription != 'premium':
-        raise HTTPException(
-            status_code=status.HTTP_402_PAYMENT_REQUIRED,
-            detail="此功能需要Premium订阅"
-        )
-    
+
+    if hasattr(user, "subscription") and user.subscription != "premium":
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="此功能需要Premium订阅")
+
     return {"premium_feature": "..."}
 ```
 
@@ -521,12 +475,11 @@ PySpring 提供现成的认证依赖函数，可直接用于 FastAPI 路由：
 ```python
 from typing import Annotated
 from fastapi import Depends
-from pyspring.security.authentication.web.middleware.dependencies import (
-    require_authentication_from_token
-)
+from pyspring.security.authentication.web.middleware.dependencies import require_authentication_from_token
 
 # 直接使用框架提供的依赖
 AuthenticatedUser = Annotated[Any, Depends(require_authentication_from_token)]
+
 
 @router.get("/test")
 async def test(user: AuthenticatedUser):
@@ -577,12 +530,14 @@ async def test(user: AuthenticatedUser):
 from pyspring.core.ioc.annotations import Component
 from pyspring.security.authentication.contracts.token import ITokenService
 
+
 @Component
 class MyCustomTokenService(ITokenService):
     async def verify_token(self, token: str):
         # 自定义验证逻辑
         pass
-    
+
+
 # 框架会自动使用你的实现
 ```
 

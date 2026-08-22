@@ -15,10 +15,10 @@ from pyspring.core.log.instance import logger
 class SecurityConfigManager(IManaged):
     """
     认证与授权配置管理器（由IOC容器管理单例）
-    
+
     使用框架 ConfigManager 实现三层配置架构：
     1. 框架默认配置 (src/pyspring/config/defaults/security.yaml)
-    2. 用户项目配置 (project/config/security.yaml)  
+    2. 用户项目配置 (project/config/security.yaml)
     3. 环境变量覆盖 (JWT_SECRET_KEY 等)
     """
 
@@ -31,7 +31,7 @@ class SecurityConfigManager(IManaged):
     def _load_config(self):
         """
         加载配置文件（使用框架 ConfigManager 实现三层架构）
-        
+
         配置优先级（后面的覆盖前面的）：
         1. 框架默认配置
         2. 用户项目配置
@@ -39,7 +39,7 @@ class SecurityConfigManager(IManaged):
         """
         try:
             # 使用框架 ConfigManager 加载配置（自动处理三层合并）
-            self._config = ConfigManager.load_config('security')
+            self._config = ConfigManager.load_config("security")
             logger.debug("[SecurityConfigManager] 已加载安全配置（三层架构：框架默认 + 用户配置 + 环境变量）")
         except Exception as e:
             logger.warning(f"[SecurityConfigManager] 加载配置异常，使用极简后备配置: {e}")
@@ -48,7 +48,7 @@ class SecurityConfigManager(IManaged):
     def _get_fallback_config(self) -> dict[str, Any]:
         """
         获取极简后备配置（仅在 ConfigManager 加载失败时使用）
-        
+
         这是最后的防御措施，正常情况下应该使用 ConfigManager 加载的三层配置
         完整配置请参考 src/pyspring/config/defaults/security.yaml
         """
@@ -59,7 +59,7 @@ class SecurityConfigManager(IManaged):
                     "secret_key": "pyspring-dev-secret-key-CHANGE-IN-PRODUCTION-32bytes-minimum",
                     "algorithm": "HS256",
                     "access_token_expire": 3600,
-                    "refresh_token_expire": 2592000
+                    "refresh_token_expire": 2592000,
                 },
                 "providers": [
                     {
@@ -67,29 +67,30 @@ class SecurityConfigManager(IManaged):
                         "type": "JWTAuthProvider",
                         "enabled": True,
                         "priority": 1,
-                        "config": {
-                            "token_sources": ["header", "cookie", "query"],
-                            "token_prefix": "Bearer"
-                        }
+                        "config": {"token_sources": ["header", "cookie", "query"], "token_prefix": "Bearer"},
                     }
                 ],
                 "whitelist": {
                     "exact_paths": [
-                        "/", "/health", "/docs", "/redoc", "/openapi.json",
-                        "/api/auth/login", "/api/auth/register", "/api/auth/token/refresh"
+                        "/",
+                        "/health",
+                        "/docs",
+                        "/redoc",
+                        "/openapi.json",
+                        "/api/auth/login",
+                        "/api/auth/register",
+                        "/api/auth/token/refresh",
                     ]
-                }
+                },
             },
-            "authorization": {
-                "enabled": True
-            }
+            "authorization": {"enabled": True},
         }
 
     @property
     def config(self) -> dict[str, Any] | None:
         """
         获取配置
-        
+
         Returns:
             配置字典（未初始化时为 None）
         """
@@ -103,7 +104,7 @@ class SecurityConfigManager(IManaged):
         if self._config is None:
             return default
 
-        keys = key.split('.')
+        keys = key.split(".")
         value = self._config
 
         for k in keys:

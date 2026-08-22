@@ -1,6 +1,7 @@
 """
 Help System Utilities
 """
+
 import argparse
 import sys
 from typing import Dict, List, Optional, Tuple
@@ -9,13 +10,13 @@ from .console import Colors, print_title
 
 
 def print_standard_command_help(
-        title: Optional[str],
-        description: Optional[str],
-        usage: List[Tuple[str, str]],
-        options: List[Tuple[str, str]] | None = None,
-        subcommands: Dict[str, str] | None = None,
-        checks: List[Tuple[str, bool]] | None = None,
-        tips: List[str] | None = None
+    title: Optional[str],
+    description: Optional[str],
+    usage: List[Tuple[str, str]],
+    options: List[Tuple[str, str]] | None = None,
+    subcommands: Dict[str, str] | None = None,
+    checks: List[Tuple[str, bool]] | None = None,
+    tips: List[str] | None = None,
 ):
     """
     Print a standardized help interface for any CLI command.
@@ -71,7 +72,7 @@ def print_friendly_subcommand_help(action, prog_name=None):
         prog_name: The program name (e.g. 'pyspring')
     """
     if prog_name is None:
-        prog_name = sys.argv[0] if sys.argv else 'pyspring'
+        prog_name = sys.argv[0] if sys.argv else "pyspring"
 
     # Get choices
     choices = action.choices
@@ -81,13 +82,13 @@ def print_friendly_subcommand_help(action, prog_name=None):
     # Create subcommands dict
     subcommands = {}
 
-    choices_actions = getattr(action, '_choices_actions', [])
+    choices_actions = getattr(action, "_choices_actions", [])
     for sub_action in choices_actions:
         subcommands[sub_action.dest] = sub_action.help
 
     # Tips customization
     tips = []
-    if action.dest == 'check_command':
+    if action.dest == "check_command":
         tips.append(f"Use --all to run all checks: '{prog_name} check --all'")
         tips.append(f"Use '{prog_name} check <command> --help' for details on a specific command.")
     else:
@@ -98,7 +99,7 @@ def print_friendly_subcommand_help(action, prog_name=None):
         description="  Missing command. Please specify one of the following:",
         usage=[],  # No usage section for this simple error prompt
         subcommands=subcommands,
-        tips=tips
+        tips=tips,
     )
 
 

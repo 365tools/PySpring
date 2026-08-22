@@ -1,6 +1,7 @@
 """
 Import Lifting Logic
 """
+
 import ast
 import os
 from collections import defaultdict, deque
@@ -90,25 +91,18 @@ class LocalImportVisitor(ast.NodeVisitor):
             targets = []
             for alias in node.names:
                 t = self.resolve_import(self.module_name, alias.name, 0)
-                if t: targets.append(t)
-            self.local_imports.append({
-                'node': node,
-                'scope': self.scope_stack[-1],
-                'targets': targets,
-                'type': 'import'
-            })
+                if t:
+                    targets.append(t)
+            self.local_imports.append(
+                {"node": node, "scope": self.scope_stack[-1], "targets": targets, "type": "import"}
+            )
         self.generic_visit(node)
 
     def visit_ImportFrom(self, node):
         if self.is_in_function():
             target = self.resolve_import(self.module_name, node.module, node.level)
             targets = [target] if target else []
-            self.local_imports.append({
-                'node': node,
-                'scope': self.scope_stack[-1],
-                'targets': targets,
-                'type': 'from'
-            })
+            self.local_imports.append({"node": node, "scope": self.scope_stack[-1], "targets": targets, "type": "from"})
         self.generic_visit(node)
 
     def is_in_function(self):
@@ -128,10 +122,10 @@ class ImportLifter:
     def get_module_name(self, file_path: str) -> str:
         """Convert file path to dotted module name"""
         rel_path = os.path.relpath(file_path, self.root_path)
-        if rel_path.startswith('..'):
+        if rel_path.startswith(".."):
             return ""
-        name = os.path.splitext(rel_path)[0].replace(os.path.sep, '.')
-        if name.endswith('.__init__'):
+        name = os.path.splitext(rel_path)[0].replace(os.path.sep, ".")
+        if name.endswith(".__init__"):
             name = name[:-9]
         return name
 
@@ -140,10 +134,11 @@ class ImportLifter:
             # Absolute
             return self.find_internal_module(relative_name)
 
-        parts = current_module.split('.')
-        if level > len(parts): return None
+        parts = current_module.split(".")
+        if level > len(parts):
+            return None
 
-        base = '.'.join(parts[:-level]) if level > 0 else '.'.join(parts)
+        base = ".".join(parts[:-level]) if level > 0 else ".".join(parts)
         if not relative_name:
             return self.find_internal_module(base)
 
@@ -151,8 +146,10 @@ class ImportLifter:
         return self.find_internal_module(target)
 
     def find_internal_module(self, name: Optional[str]) -> Optional[str]:
-        if not name: return None
-        if name in self.files: return name
+        if not name:
+            return None
+        if name in self.files:
+            return name
         return None
 
     def scan_graph(self):
@@ -165,7 +162,7 @@ class ImportLifter:
         for root, dirs, files in os.walk(self.root_path):
             dirs[:] = [d for d in dirs if d not in ignore_list]
             for file in files:
-                if file.endswith('.py'):
+                if file.endswith(".py"):
                     full_path = os.path.join(root, file)
                     mod_name = self.get_module_name(full_path)
                     if mod_name:
@@ -174,7 +171,7 @@ class ImportLifter:
         # 2. Parse for dependencies
         for mod, path in self.files.items():
             try:
-                with open(path, 'r', encoding='utf-8') as f:
+                with open(path, "r", encoding="utf-8") as f:
                     content = f.read()
                 tree = ast.parse(content, filename=path)
                 visitor = LoadTimeGraphBuilder(mod, self.resolve_import)
@@ -213,7 +210,7 @@ class ImportLifter:
 
         for mod, path in self.files.items():
             try:
-                with open(path, 'r', encoding='utf-8') as f:
+                with open(path, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 tree = ast.parse(content)
@@ -225,7 +222,7 @@ class ImportLifter:
 
                 lines = content.splitlines()
                 # Sort local imports by line number descending to avoid interfering
-                visitor.local_imports.sort(key=lambda x: x['node'].lineno, reverse=True)
+                visitor.local_imports.sort(key=lambda x: x["node"].lineno, reverse=True)
 
                 file_modified = False
                 has_printed_header = False
@@ -233,14 +230,15 @@ class ImportLifter:
                 added_top_imports = []
 
                 for item in visitor.local_imports:
-                    node = item['node']
-                    targets = item['targets']
+                    node = item["node"]
+                    targets = item["targets"]
 
                     is_safe = True
                     reason = ""
 
                     for target in targets:
-                        if target == mod: continue  # Self import?
+                        if target == mod:
+                            continue  # Self import?
                         if self.check_reachability(target, mod):
                             is_safe = False
                             reason = f"Cyclic dependency with {target}"
@@ -260,16 +258,16 @@ class ImportLifter:
                     indent_str = current_line[:indentation]
 
                     # Extract the import string
-                    end_line_idx = getattr(node, 'end_lineno', node.lineno) - 1
-                    import_lines = lines[line_idx: end_line_idx + 1]
+                    end_line_idx = getattr(node, "end_lineno", node.lineno) - 1
+                    import_lines = lines[line_idx : end_line_idx + 1]
                     import_text = "\n".join(import_lines).strip()
 
                     if is_safe:
                         if dry_run:
-                            print_issue(str(node.lineno), f"Can lift: {import_text}", path, level='info')
+                            print_issue(str(node.lineno), f"Can lift: {import_text}", path, level="info")
                         else:
                             # Remove from local
-                            del lines[line_idx: end_line_idx + 1]
+                            del lines[line_idx : end_line_idx + 1]
 
                             # Queue for adding to top
                             if import_text not in added_top_imports:
@@ -277,10 +275,10 @@ class ImportLifter:
 
                             file_modified = True
                             modified_count += 1
-                            print_issue(str(node.lineno), f"Lifting: {import_text}", path, level='success')
+                            print_issue(str(node.lineno), f"Lifting: {import_text}", path, level="success")
                     else:
                         if dry_run:
-                            print_issue(str(node.lineno), f"Unsafe: {reason}", path, level='error')
+                            print_issue(str(node.lineno), f"Unsafe: {reason}", path, level="error")
                         else:
                             # Add comment
                             if "Cannot lift" not in lines[line_idx - 1] if line_idx > 0 else True:
@@ -288,7 +286,12 @@ class ImportLifter:
                                 lines.insert(line_idx, comment)
                                 file_modified = True
                                 commented_count += 1
-                                print_issue(str(node.lineno), f"Unsafe to lift: {reason} -> Marked with comment (Manual review needed)", path, level='warning')
+                                print_issue(
+                                    str(node.lineno),
+                                    f"Unsafe to lift: {reason} -> Marked with comment (Manual review needed)",
+                                    path,
+                                    level="warning",
+                                )
 
                 if file_modified and not dry_run:
                     files_modified += 1
@@ -308,7 +311,7 @@ class ImportLifter:
                             lines.insert(insert_pos, imp)
 
                     # Write back
-                    with open(path, 'w', encoding='utf-8') as f:
+                    with open(path, "w", encoding="utf-8") as f:
                         f.write("\n".join(lines) + "\n")
 
             except SyntaxError:
@@ -326,11 +329,11 @@ class ImportLifter:
 
 
 def run_lift_imports(args):
-    do_fix = getattr(args, 'fix', False)
+    do_fix = getattr(args, "fix", False)
 
     if do_fix:
         user_input = input(f"Are you sure you want to lift safe imports in '{args.target}'? [y/N] ").strip().lower()
-        if user_input != 'y':
+        if user_input != "y":
             print_info("Operation cancelled.")
             return
 

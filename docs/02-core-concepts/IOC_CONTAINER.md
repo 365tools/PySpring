@@ -22,11 +22,13 @@ ApplicationContext 是 PySpring 框架的心脏，负责应用组件的发现、
 from pyspring.core.ioc.annotations import Service
 from pyspring.core.interfaces import IService
 
+
 # 方式 A: 使用装饰器 (推荐)
 @Service
 class UserService:
     def __init__(self, repo: UserRepository):
         self.repo = repo  # 容器自动注入 UserRepository
+
 
 # 方式 B: 实现接口
 class EmailService(IService):

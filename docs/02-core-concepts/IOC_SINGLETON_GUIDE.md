@@ -23,6 +23,7 @@ IoC 容器负责管理应用中所有服务的创建、生命周期和依赖关�
 ```python
 from pyspring.core.ioc.annotations.component import Component
 
+
 @Component  # 默认单例
 class UserService:
     def __init__(self, db_manager: "DBManagerService"):
@@ -81,6 +82,7 @@ async def list_users(user_service: UserService = Depends(get_user_service)):
 
 ```python
 from pyspring.core.ioc.annotations.component import Component
+
 
 # ✅ 推荐：通过构造函数注入依赖
 @Component

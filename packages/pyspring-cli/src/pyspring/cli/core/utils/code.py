@@ -5,7 +5,7 @@ def get_indentation(line: str) -> str:
     """
     Returns the leading whitespace of a string.
     """
-    return line[:len(line) - len(line.lstrip())]
+    return line[: len(line) - len(line.lstrip())]
 
 
 def apply_indentation(new_lines: List[str], indentation: str) -> List[str]:

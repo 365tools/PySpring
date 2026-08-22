@@ -1,6 +1,7 @@
 """
 PySpring CLI Init Command Registration
 """
+
 import argparse
 
 from ..core.commands.base import BaseCommand, CommandArg
@@ -35,32 +36,15 @@ Examples:
     formatter_class = argparse.RawDescriptionHelpFormatter
 
     arguments = [
+        CommandArg(flags="target_dir", nargs="?", default=None, help="Target directory (default: current directory)"),
+        CommandArg(flags=["-f", "--force"], action="store_true", help="Force overwrite existing files"),
+        CommandArg(flags=["-m", "--minimal"], action="store_true", help="Create minimal configuration only"),
         CommandArg(
-            flags='target_dir',
-            nargs='?',
-            default=None,
-            help='Target directory (default: current directory)'
+            flags=["-e", "--example"],
+            action="store_true",
+            help="Create complete example project with all PySpring features",
         ),
-        CommandArg(
-            flags=['-f', '--force'],
-            action='store_true',
-            help='Force overwrite existing files'
-        ),
-        CommandArg(
-            flags=['-m', '--minimal'],
-            action='store_true',
-            help='Create minimal configuration only'
-        ),
-        CommandArg(
-            flags=['-e', '--example'],
-            action='store_true',
-            help='Create complete example project with all PySpring features'
-        ),
-        CommandArg(
-            flags='--skip-env',
-            action='store_true',
-            help='Skip .env file generation'
-        )
+        CommandArg(flags="--skip-env", action="store_true", help="Skip .env file generation"),
     ]
 
     def run(self, args: argparse.Namespace):

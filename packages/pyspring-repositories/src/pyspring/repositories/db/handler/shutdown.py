@@ -3,6 +3,7 @@
 
 在应用关闭时关闭数据库连接
 """
+
 from pyspring.core.ioc.lifecycle.shutdown import IShutdownHandler
 from pyspring.core.log.instance import logger
 
@@ -12,7 +13,7 @@ from ..manager import DBManagerService
 class DBShutdownHandler(IShutdownHandler):
     """
     数据库连接关闭处理器
-    
+
     在应用关闭时关闭数据库连接池，释放资源
     """
 
@@ -29,7 +30,7 @@ class DBShutdownHandler(IShutdownHandler):
     async def shutdown(self) -> bool:
         """
         关闭数据库连接
-        
+
         Returns:
             bool: 是否成功关闭
         """

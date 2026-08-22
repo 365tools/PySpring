@@ -11,9 +11,11 @@ IOC 容器已经支持配置对象注入，通过 `AppSettings` 演示：
 @Singleton
 class AppSettings(BaseSettings):
     """主配置类，通过 IOC 管理"""
+
     database: DatabaseConfig = ...
     redis: RedisConfig = ...
     logging: LoggingConfig = ...
+
 
 @Component
 class SystemService:
@@ -37,13 +39,16 @@ class SystemService:
 ```python
 # repositories/cache/config.py
 
+
 @Component
 @Singleton
 class CacheConfig(ConfigSection):
     """缓存配置（由IOC管理）"""
+
     type: str = Field(default="memory")
     redis: RedisConfig = Field(default_factory=RedisConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
+
 
 # 使用
 @Component
@@ -88,10 +93,12 @@ class CacheConnectionInitializer:
 from pyspring.core.ioc.annotations.component import Component
 from pyspring.core.ioc.annotations.scope import Singleton
 
+
 @Component
 @Singleton
 class CacheConfig(ConfigSection):
     """缓存配置（由IOC管理）"""
+
     type: str = Field(default="memory", description="缓存类型：redis、memory")
     redis: RedisConfig = Field(default_factory=RedisConfig, description="Redis配置")
     memory: MemoryConfig = Field(default_factory=MemoryConfig, description="内存缓存配置")
@@ -102,10 +109,12 @@ class CacheConfig(ConfigSection):
 ```python
 # core/configuration/models.py
 
+
 @Component
 @Singleton
 class AppSettings(BaseSettings):
     """主配置类"""
+
     app: AppConfig = Field(default_factory=AppConfig)
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
@@ -124,10 +133,11 @@ from pyspring.core.ioc.annotations.component import Component
 from ..config import CacheConfig
 from ..manager import CacheManagerService
 
+
 @Component
 class CacheConnectionInitializer(IStartupInitializer):
     """缓存连接初始化器"""
-    
+
     def __init__(self, cache_config: CacheConfig, cache_manager: CacheManagerService):
         """
         Args:
@@ -137,38 +147,37 @@ class CacheConnectionInitializer(IStartupInitializer):
         super().__init__(enabled=True)
         self.cache_config = cache_config
         self.cache_manager = cache_manager
-    
+
     async def startup(self) -> bool:
         """初始化缓存服务"""
         cache_type = self.cache_config.type.lower()
-        
+
         if cache_type == "redis":
             from ..providers.redis.services.service import RedisService
+
             provider = RedisService(
                 host=self.cache_config.redis.host,
                 port=self.cache_config.redis.port,
                 db=self.cache_config.redis.db,
                 password=self.cache_config.redis.password,
-                pool_config=self.cache_config.redis.pool.model_dump()
+                pool_config=self.cache_config.redis.pool.model_dump(),
             )
         elif cache_type == "memory":
             from ..providers.memory.services.service import MemoryService
-            provider = MemoryService(
-                max_size=self.cache_config.memory.max_size,
-                ttl=self.cache_config.memory.ttl
-            )
+
+            provider = MemoryService(max_size=self.cache_config.memory.max_size, ttl=self.cache_config.memory.ttl)
         else:
             raise ValueError(f"不支持的缓存类型: {cache_type}")
-        
+
         self.cache_manager.set_provider(provider)
-        
+
         if await provider.ping():
             logger.info(f"✅ {cache_type.capitalize()} 缓存服务已就绪")
             return True
         else:
             logger.error(f"❌ {cache_type.capitalize()} Ping 失败")
             return False
-    
+
     def get_name(self) -> str:
         return "缓存连接初始化器"
 ```
@@ -231,6 +240,7 @@ class CacheConnectionInitializer(IStartupInitializer):
 class CacheConfig(ConfigSection):
     type: str = Field(default="memory")
 
+
 # ❌ 错误
 @Component
 class CacheConfig:  # 不继承 BaseSettings/ConfigSection
@@ -245,6 +255,7 @@ class CacheConfig:  # 不继承 BaseSettings/ConfigSection
 class CacheConfig(ConfigSection):
     def __init__(self, logger: LoggerService):  # 不要这样做
         ...
+
 
 # ✅ 配置类应该无依赖
 @Component

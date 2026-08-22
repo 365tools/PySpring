@@ -1,6 +1,7 @@
 """
 PySpring uv 命令核心逻辑
 """
+
 import shutil
 import subprocess
 import sys
@@ -14,7 +15,7 @@ def get_locking_processes(path_str):
     Get list of (pid, name) for processes locking the path (Windows only currently).
     Uses PowerShell to identify processes running executables within the target path.
     """
-    if sys.platform != 'win32':
+    if sys.platform != "win32":
         return []
 
     # Ensure absolute path with backslashes for Windows
@@ -25,8 +26,10 @@ def get_locking_processes(path_str):
     # Command to find processes whose MainModule.FileName starts with the target path.
     # We filter by Path property of the process main module.
     cmd = [
-        "powershell", "-NoProfile", "-Command",
-        f"Get-Process | Where-Object {{ $_.Path -like '{ps_target}\\*' }} | Select-Object Id, ProcessName"
+        "powershell",
+        "-NoProfile",
+        "-Command",
+        f"Get-Process | Where-Object {{ $_.Path -like '{ps_target}\\*' }} | Select-Object Id, ProcessName",
     ]
 
     try:
@@ -63,7 +66,7 @@ def get_locking_processes(path_str):
 
 def kill_processes(pids):
     """Force kill processes by PID on Windows."""
-    if sys.platform != 'win32' or not pids:
+    if sys.platform != "win32" or not pids:
         return
 
     pid_str = ", ".join(str(p) for p in pids)
@@ -78,7 +81,7 @@ def handle_locking_processes(venv_path):
         True: If no processes found or processes successfully killed.
         False: If user declined to kill processes or killing failed.
     """
-    if sys.platform != 'win32':
+    if sys.platform != "win32":
         return True
 
     venv_abs = Path(venv_path).resolve()
@@ -96,7 +99,7 @@ def handle_locking_processes(venv_path):
     # Prompt user
     while True:
         answer = input("   Do you want to FORCE TERMINATE them and continue? (y/N): ").strip().lower()
-        if answer in ('y', 'yes'):
+        if answer in ("y", "yes"):
             print("   Terminating processes...", end=" ", flush=True)
             pids = [p[0] for p in locking_procs]
             try:
@@ -106,7 +109,7 @@ def handle_locking_processes(venv_path):
             except Exception as e:
                 print(f"Failed: {e}")
                 return False
-        elif answer in ('n', 'no', ''):
+        elif answer in ("n", "no", ""):
             print("   Aborted.")
             return False
 
@@ -115,12 +118,12 @@ def check_windows_lock_issue():
     """
     Check if running on Windows inside the target venv.
     """
-    if sys.platform != 'win32':
+    if sys.platform != "win32":
         return False
 
     # Check if sys.executable is inside the .venv directory of the current project
     # Assume .venv is in the current working directory
-    venv_path = Path.cwd() / '.venv'
+    venv_path = Path.cwd() / ".venv"
     if not venv_path.exists():
         return False
 
@@ -139,17 +142,19 @@ def check_windows_lock_issue():
 def check_uv_installed():
     """检查 uv 是否已安装"""
     try:
-        result = subprocess.run(['uv', '--version'], capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=5)
+        result = subprocess.run(
+            ["uv", "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=5
+        )
         return result.returncode == 0
-    except (subprocess.TimeoutExpired, FileNotFoundError):
+    except subprocess.TimeoutExpired, FileNotFoundError:
         return False
 
 
-def print_activation_hint(venv_name='.venv'):
+def print_activation_hint(venv_name=".venv"):
     """Print hints on how to activate the environment"""
     print_section("Next Steps")
 
-    is_win = sys.platform == 'win32'
+    is_win = sys.platform == "win32"
     activate_cmd = f".\\{venv_name}\\Scripts\\activate" if is_win else f"source {venv_name}/bin/activate"
 
     print("To activate the virtual environment, run:")
@@ -183,12 +188,14 @@ def install_pyspring(dev_mode=False):
     print_section("Installing Dependencies")
 
     # 优先使用 uv sync (如果 pyproject.toml 存在且配置了 tool.uv)
-    if Path("pyproject.toml").exists() and "tool.uv" in Path("pyproject.toml").read_text(encoding="utf-8", errors='ignore'):
+    if Path("pyproject.toml").exists() and "tool.uv" in Path("pyproject.toml").read_text(
+        encoding="utf-8", errors="ignore"
+    ):
         # 只有在非锁模式下或者必须同步时才运行完整 sync，否则我们尝试用 pip install 安装依赖
         if not try_skip_self:
-            cmd = ['uv', 'sync']
+            cmd = ["uv", "sync"]
             if dev_mode:
-                cmd.extend(['--extra', 'dev'])
+                cmd.extend(["--extra", "dev"])
             subprocess.run(cmd)
         else:
             # Safe Mode: 不运行 uv sync (因为它总是尝试操作当前项目环境)
@@ -205,9 +212,9 @@ def install_pyspring(dev_mode=False):
 
             # 检查 uv 版本是否支持 --no-install-project (uv >= 0.4.0)
             # 假设用户用的是较新版本
-            cmd = ['uv', 'sync', '--no-install-project']
+            cmd = ["uv", "sync", "--no-install-project"]
             if dev_mode:
-                cmd.extend(['--extra', 'dev'])
+                cmd.extend(["--extra", "dev"])
 
             # 尝试运行
             ret = subprocess.run(cmd)
@@ -228,9 +235,9 @@ def install_pyspring(dev_mode=False):
             print("   \033[93mSkipping pip install -e . due to file lock.\033[0m")
             print("   Please run 'deactivate' and retry if you need to update the project metadata.")
         else:
-            cmd = ['uv', 'pip', 'install', '-e', '.']
+            cmd = ["uv", "pip", "install", "-e", "."]
             if dev_mode:
-                cmd[-1] = '.[dev]'
+                cmd[-1] = ".[dev]"
             subprocess.run(cmd)
 
 
@@ -255,7 +262,7 @@ def setup_uv_env(dev_mode=True, rebuild=False):
         print("   Please run 'deactivate' first.")
         sys.exit(1)
 
-    venv_path = Path('.venv')
+    venv_path = Path(".venv")
     if rebuild and venv_path.exists():
         # Check and handle background locking processes (e.g. orphan python.exe)
         if not handle_locking_processes(venv_path):
@@ -271,7 +278,7 @@ def setup_uv_env(dev_mode=True, rebuild=False):
     if rebuild or not venv_path.exists():
         print("Creating virtual environment...")
         # Use --allow-existing to support repair/overwrite if deletion failed
-        subprocess.run(['uv', 'venv', '--allow-existing'], check=True)
+        subprocess.run(["uv", "venv", "--allow-existing"], check=True)
     else:
         print("Virtual environment exists.")
 
@@ -290,7 +297,7 @@ def inspect_module_in_venv(venv_path, module_name):
     """Inspect a module inside the virtual environment"""
     print(f"\n🔍 Inspecting module: {module_name}")
 
-    python_exe = venv_path / 'Scripts' / 'python.exe' if sys.platform == 'win32' else venv_path / 'bin' / 'python'
+    python_exe = venv_path / "Scripts" / "python.exe" if sys.platform == "win32" else venv_path / "bin" / "python"
     if not python_exe.exists():
         print("❌ Could not find python executable in .venv")
         return
@@ -353,39 +360,36 @@ except Exception as e:
 print(json.dumps(result))
 """
     try:
-        res = subprocess.run(
-            [str(python_exe), "-c", script],
-            capture_output=True,
-            text=True
-        )
+        res = subprocess.run([str(python_exe), "-c", script], capture_output=True, text=True)
         if res.returncode != 0:
             print("❌ Helper script failed")
             print(res.stderr)
             return
 
         import json
+
         try:
             data = json.loads(res.stdout.strip())
         except json.JSONDecodeError:
             print(f"❌ Failed to parse output: {res.stdout}")
             return
 
-        if not data.get('found'):
+        if not data.get("found"):
             print(f"❌ Module '{module_name}' not found in environment.")
             return
 
         print(f"   Name:      {data['name']}")
         print(f"   Version:   {data['version'] or 'N/A'}")
-        if data.get('updated'):
+        if data.get("updated"):
             print(f"   Updated:   {data['updated']}")
 
         print(f"   Location:  {data['location'] or 'N/A'}")
-        if data.get('file'):
+        if data.get("file"):
             print(f"   File:      {data['file']}")
 
-        if data.get('editable'):
+        if data.get("editable"):
             print("   Mode:      ✅ EDITABLE")
-            if data.get('url'):
+            if data.get("url"):
                 print(f"   Source:    {data['url']}")
         else:
             print("   Mode:      Standard")
@@ -397,7 +401,7 @@ print(json.dumps(result))
 def show_uv_status(module_name=None):
     """显示 uv 状态"""
     print_section("uv Environment Status")
-    venv_path = Path('.venv')
+    venv_path = Path(".venv")
     if venv_path.exists():
         print(f"✅ Virtual environment found ({venv_path.absolute()})")
 
@@ -420,7 +424,7 @@ def show_uv_status(module_name=None):
             print_activation_hint()
             # Show pip list summary
             print("\nInstalled Packages (Summary):")
-            subprocess.run(['uv', 'pip', 'list'], check=False)
+            subprocess.run(["uv", "pip", "list"], check=False)
     else:
         print("❌ Virtual environment not found")
         print("\nTo create one, run:")
@@ -432,15 +436,15 @@ def run(args):
     cmd = args.uv_command
 
     try:
-        if cmd == 'setup':
+        if cmd == "setup":
             setup_uv_env(dev_mode=args.dev, rebuild=args.rebuild)
-        elif cmd == 'rebuild':
+        elif cmd == "rebuild":
             rebuild_uv_env()
-        elif cmd == 'install':
+        elif cmd == "install":
             install_pyspring(dev_mode=args.dev)
             print("\n✅ Install complete!")
             print_activation_hint()
-        elif cmd == 'status':
+        elif cmd == "status":
             show_uv_status()
     except Exception as e:
         print(f"\n❌ Error: {e}")

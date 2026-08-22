@@ -8,7 +8,7 @@ from ..utils.logging import suppress_logs
 from .base import BaseCommand
 
 
-def load_commands(subparsers, package_path='pyspring.cli.commands'):
+def load_commands(subparsers, package_path="pyspring.cli.commands"):
     """
     Dynamically loads command modules from the specified package path.
     Discovers and registers BaseCommand subclasses.
@@ -28,10 +28,10 @@ def load_commands(subparsers, package_path='pyspring.cli.commands'):
     # Use suppress_logs to suppress expected noise from module-level initialization,
     # but capture the original stderr so genuine load errors are still visible.
     original_stderr = sys.stderr
-    with suppress_logs(patterns=[r'.*']):
+    with suppress_logs(patterns=[r".*"]):
         for _, name, is_pkg in pkgutil.iter_modules(package.__path__):
             # specific skip rules
-            if name.startswith('_'):
+            if name.startswith("_"):
                 continue
 
             full_module_name = f"{package_path}.{name}"
@@ -50,6 +50,7 @@ def load_commands(subparsers, package_path='pyspring.cli.commands'):
                 # suppress_logs redirects sys.stderr; write to the ORIGINAL stderr so
                 # command load failures are never silently swallowed.
                 import traceback
+
                 print(
                     f"\n[PySpring CLI] 警告：命令模块加载失败: {full_module_name}",
                     file=original_stderr,

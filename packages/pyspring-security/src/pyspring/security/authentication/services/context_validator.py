@@ -42,10 +42,10 @@ class SecurityContextManagerService(IManaged):
     async def evaluate(self, context: dict[str, Any]) -> ContextEvaluationResult:
         """
         评估安全上下文
-        
+
         Args:
             context: 上下文数据
-            
+
         Returns:
             ContextEvaluationResult: 评估结果对象
         """
@@ -79,8 +79,4 @@ class SecurityContextManagerService(IManaged):
                 logger.error(f"[Error] 验证器 {v.name} 执行异常: {e}")
                 errors.append(f"{v.name} execution error")
 
-        return ContextEvaluationResult(
-            claims=final_claims,
-            errors=errors,
-            warnings=warnings
-        )
+        return ContextEvaluationResult(claims=final_claims, errors=errors, warnings=warnings)

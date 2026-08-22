@@ -6,6 +6,7 @@ pyspring-core：AutoConfiguration 装配测试
 - 按 order 排序
 - 收集各 starter 的扫描包
 """
+
 from pyspring.core.autoconfigure.loader import AutoConfigurationLoader
 
 
@@ -19,7 +20,7 @@ class TestAutoConfigurationLoader:
 
         names = [c.name for c in configs]
         # 至少包含核心 starter
-        assert 'pyspring-core' in names
+        assert "pyspring-core" in names
 
     def test_order_sorted(self):
         """测试 starter 按 order 升序排列"""
@@ -43,6 +44,6 @@ class TestAutoConfigurationLoader:
         loader = AutoConfigurationLoader()
         configs = loader.discover()
 
-        core_configs = [c for c in configs if c.name == 'pyspring-core']
+        core_configs = [c for c in configs if c.name == "pyspring-core"]
         if core_configs:
             assert core_configs[0].order == min(c.order for c in configs)

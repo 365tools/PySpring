@@ -1,6 +1,7 @@
-'''
+"""
 MySQL 数据库服务实现
-'''
+"""
+
 from typing import Any, cast
 
 from pyspring.core.log.instance import logger
@@ -13,21 +14,21 @@ from ....service import IDBService
 
 
 class MysqlService(IDBService):
-    '''MySQL 数据库服务实现'''
+    """MySQL 数据库服务实现"""
 
     def __init__(self, config):
-        '''
+        """
         初始化 MySQL 服务
-        
+
         Args:
             config: 数据库配置对象
-        '''
+        """
         self.config = config
         self._engine: (AsyncEngine) | None = None
         self._connected = False
 
         try:
-            mysql_config = getattr(config, 'mysql', None)
+            mysql_config = getattr(config, "mysql", None)
 
             # 初始化连接池配置
             if mysql_config:
@@ -69,7 +70,7 @@ class MysqlService(IDBService):
                     pool_recycle=pool_config.pool_recycle,
                     pool_pre_ping=pool_config.pool_pre_ping,
                     pool_timeout=pool_config.pool_timeout,
-                    echo=pool_config.echo
+                    echo=pool_config.echo,
                 )
 
             logger.info("✅ MySQL 服务初始化完成")
@@ -83,12 +84,12 @@ class MysqlService(IDBService):
             self._connected = False
 
     async def ping(self) -> bool:
-        '''
+        """
         检查 MySQL 连接状态
-        
+
         Returns:
             bool: 连接是否正常
-        '''
+        """
         if not self._connected or not self._engine:
             return False
 
@@ -101,16 +102,16 @@ class MysqlService(IDBService):
             return False
 
     async def execute(self, query: str, params: (dict[str, Any]) | None = None) -> Any:
-        '''
+        """
         执行查询
-        
+
         Args:
             query: SQL 查询语句
             params: 查询参数
-            
+
         Returns:
             Any: 查询结果
-        '''
+        """
         if not self._engine:
             raise RuntimeError("MySQL 服务未初始化")
 
@@ -125,16 +126,16 @@ class MysqlService(IDBService):
             raise
 
     async def fetch_one(self, query: str, params: (dict[str, Any]) | None = None) -> (dict[str, Any]) | None:
-        '''
+        """
         获取单条记录
-        
+
         Args:
             query: SQL 查询语句
             params: 查询参数
-            
+
         Returns:
             (dict[str, Any]) | None: 单条记录，不存在则返回 None
-        '''
+        """
         if not self._engine:
             raise RuntimeError("MySQL 服务未初始化")
 
@@ -150,16 +151,16 @@ class MysqlService(IDBService):
             raise
 
     async def fetch_all(self, query: str, params: (dict[str, Any]) | None = None) -> list[dict[str, Any]]:
-        '''
+        """
         获取多条记录
-        
+
         Args:
             query: SQL 查询语句
             params: 查询参数
-            
+
         Returns:
             list[dict[str, Any]]: 记录列表
-        '''
+        """
         if not self._engine:
             raise RuntimeError("MySQL 服务未初始化")
 
@@ -173,32 +174,31 @@ class MysqlService(IDBService):
             raise
 
     async def close(self) -> None:
-        '''关闭连接'''
+        """关闭连接"""
         if self._engine:
             await self._engine.dispose()
             self._connected = False
             logger.info("[MySQL] 连接已关闭")
 
     async def engine(self):
-        '''获取数据库引擎'''
+        """获取数据库引擎"""
         if not self._engine:
             raise RuntimeError("MySQL 服务未初始化")
         return self._engine
 
     async def session(self):
-        '''获取数据库会话'''
+        """获取数据库会话"""
         if not self._engine:
             raise RuntimeError("MySQL 服务未初始化")
         from sqlalchemy.ext.asyncio import async_sessionmaker
-        session_factory = async_sessionmaker(
-            self._engine,
-            expire_on_commit=False
-        )
+
+        session_factory = async_sessionmaker(self._engine, expire_on_commit=False)
         return session_factory()
 
     async def insert(self, table: str, data: dict[str, Any]) -> Any:
-        '''插入数据'''
+        """插入数据"""
         from sqlalchemy import text
+
         try:
             columns = ", ".join(data.keys())
             placeholders = ", ".join([f":{key}" for key in data.keys()])

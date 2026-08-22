@@ -8,6 +8,7 @@ PySpring CLI 版本号统一入口
 使用方式：
     from pyspring.cli._version import __version__
 """
+
 from importlib import metadata
 
 __all__ = ["__version__", "DISTRIBUTION_NAME"]

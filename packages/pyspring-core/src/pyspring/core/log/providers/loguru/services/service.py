@@ -55,6 +55,7 @@ class _BoundLogger(ILoggerService):
 @Singleton
 class LoguruService(IManaged, ILoggerService):
     """Loguru 日志服务（由IOC容器管理单例）"""
+
     _configured = False
 
     def __init__(self):

@@ -145,6 +145,7 @@ pyspring init
 from pyspring.core.ioc import ApplicationContext
 from pyspring.core.ioc import Component
 
+
 @Component
 class UserService:
     def __init__(self, db_manager: "DBManagerService"):

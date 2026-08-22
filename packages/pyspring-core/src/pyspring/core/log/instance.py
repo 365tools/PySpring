@@ -10,6 +10,7 @@
 - 因此 `from pyspring.core.log.instance import logger` 在任意模块顶层都是安全的，
   不会导致循环依赖。
 """
+
 from typing import Any, Protocol, cast
 
 from .manager import LogManager
@@ -106,6 +107,7 @@ class _NullLogger:
     def __getattr__(self, name: str) -> Any:
         def _noop(*args: Any, **kwargs: Any) -> None:
             return None
+
         return _noop
 
 

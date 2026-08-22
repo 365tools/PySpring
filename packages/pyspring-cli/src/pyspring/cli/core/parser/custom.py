@@ -20,8 +20,8 @@ class FriendlyArgumentParser(argparse.ArgumentParser):
         # Check for missing required arguments (subcommands)
         if "the following arguments are required" in message:
             # Extract the missing argument name(s)
-            match = re.search(r': (.+)', message)
-            missing_args = match.group(1).split(', ') if match else []
+            match = re.search(r": (.+)", message)
+            missing_args = match.group(1).split(", ") if match else []
 
             # Check if one of missing args allows subcommands
             subparser_action = self._find_subparser_action(missing_args)

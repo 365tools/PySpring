@@ -3,6 +3,7 @@
 - 返回 JSON：{"code": <http_status>, "message": <string|optional>, "data": <payload|optional>}
 - code 使用 HTTP 状态码；message 为提示信息；data 为有效数据或错误信息
 """
+
 import traceback as _tb
 from typing import Any, Generic, TypeVar
 
@@ -20,13 +21,16 @@ class HttpResponse(BaseModel, Generic[T]):
     - message: 人类可读的提示信息(可选)
     - data: 负载对象(可选，类型由泛型参数T指定)
     """
+
     code: (int) | None = Field(default=None, description="Business/App code; omitted when equals HTTP status")
     message: (str) | None = Field(default=None, description="Human-readable message")
     success: (bool) | None = Field(default=None, description="Indicates if the request was successful")
     data: (T) | None = Field(default=None, description="Payload object")
 
 
-def _json(result: HttpResponse[Any], status_code: int | None = None, headers: (dict[str, str]) | None = None) -> JSONResponse:
+def _json(
+    result: HttpResponse[Any], status_code: int | None = None, headers: (dict[str, str]) | None = None
+) -> JSONResponse:
     """构造JSONResponse，避免重复代码；允许显式设置 HTTP 状态码、headers
 
     - 当code与最终HTTP状态码相同，按约定从响应体中移除code
@@ -34,7 +38,7 @@ def _json(result: HttpResponse[Any], status_code: int | None = None, headers: (d
     """
     # 计算最终HTTP状态码(允许显式传入覆盖)
     final_status = status_code if status_code is not None else result.code
-    result.success = (final_status is not None and 200 <= final_status < 300)
+    result.success = final_status is not None and 200 <= final_status < 300
 
     # 生成内容(先 Pydantic dump，再经jsonable转换)
     raw_content = result.model_dump(exclude_none=True)
@@ -68,13 +72,13 @@ class Response:
 
     @staticmethod
     def error(
-            result: HttpResponse[Any] | Exception | Any,
-            headers: (dict[str, str]) | None = None,
-            *,
-            exc: (Exception) | None = None,
-            include_trace: bool = False,
-            error_id: (str) | None = None,
-            default_status_code: int = 500,
+        result: HttpResponse[Any] | Exception | Any,
+        headers: (dict[str, str]) | None = None,
+        *,
+        exc: (Exception) | None = None,
+        include_trace: bool = False,
+        error_id: (str) | None = None,
+        default_status_code: int = 500,
     ) -> JSONResponse:
         """
         错误响应器:

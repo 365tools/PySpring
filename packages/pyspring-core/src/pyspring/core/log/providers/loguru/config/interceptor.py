@@ -3,6 +3,7 @@
 
 支持拦截 uvicorn、fastapi、watchfiles 等常见库的日志。
 """
+
 import logging
 import sys
 from typing import Any
@@ -18,7 +19,7 @@ class InterceptHandler(logging.Handler):
     def emit(self, record):
         """
         处理日志记录
-        
+
         Args:
             record: logging.LogRecord 对象
         """
@@ -37,9 +38,7 @@ class InterceptHandler(logging.Handler):
             else:
                 break
 
-        logger.opt(depth=depth, exception=record.exc_info).log(
-            level, record.getMessage()
-        )
+        logger.opt(depth=depth, exception=record.exc_info).log(level, record.getMessage())
 
 
 class WatchfilesFilter(logging.Filter):
@@ -50,7 +49,7 @@ class WatchfilesFilter(logging.Filter):
     def __init__(self, suppress_changes: bool = True):
         """
         初始化过滤器
-        
+
         Args:
             suppress_changes: 是否抑制 "changes detected" 消息
         """
@@ -60,10 +59,10 @@ class WatchfilesFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         """
         过滤日志记录
-        
+
         Args:
             record: logging.LogRecord 对象
-            
+
         Returns:
             bool: True 表示保留，False 表示过滤
         """
@@ -77,7 +76,7 @@ class WatchfilesFilter(logging.Filter):
 def setup_stdlib_intercept(intercept_config: dict[str, Any]) -> None:
     """
     根据配置设置标准库 logging 的拦截器
-    
+
     Args:
         intercept_config: 拦截配置字典
     """
@@ -93,13 +92,13 @@ def setup_stdlib_intercept(intercept_config: dict[str, Any]) -> None:
     # 根据配置决定要拦截的logger
     loggers_to_intercept = []
 
-    if intercept_config.get('uvicorn', True):
+    if intercept_config.get("uvicorn", True):
         loggers_to_intercept.extend(["uvicorn", "uvicorn.error", "uvicorn.access"])
 
-    if intercept_config.get('fastapi', True):
+    if intercept_config.get("fastapi", True):
         loggers_to_intercept.append("fastapi")
 
-    if intercept_config.get('watchfiles', True):
+    if intercept_config.get("watchfiles", True):
         # 除了拦截，还对 watchfiles 的 "changes detected" 类消息做抑制
         suppress_changes = True  # 默认启用抑制
 
@@ -109,7 +108,7 @@ def setup_stdlib_intercept(intercept_config: dict[str, Any]) -> None:
             lgr.addFilter(WatchfilesFilter(suppress_changes))
 
     # 拦截自定义日志记录器
-    custom_loggers = intercept_config.get('custom_loggers', [])
+    custom_loggers = intercept_config.get("custom_loggers", [])
     loggers_to_intercept.extend(custom_loggers)
 
     # 应用拦截器

@@ -2,6 +2,7 @@
 动态规则引擎
 提供灵活的权限验证机制，支持运行时规则配置
 """
+
 import asyncio
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -22,13 +23,13 @@ class IRule(ABC):
     async def evaluate(self, user_id: Any, resource: str, action: str, context: dict[str, Any]) -> RuleResult:
         """
         评估规则
-        
+
         Args:
             user_id: 用户ID
             resource: 资源
             action: 动作
             context: 上下文信息
-            
+
         Returns:
             RuleResult: 规则评估结果
         """
@@ -53,9 +54,7 @@ class CompositeRule(IRule):
         self.operator = operator.lower()
 
     async def evaluate(self, user_id: Any, resource: str, action: str, context: dict[str, Any]) -> RuleResult:
-        results = await asyncio.gather(*[
-            rule.evaluate(user_id, resource, action, context) for rule in self.rules
-        ])
+        results = await asyncio.gather(*[rule.evaluate(user_id, resource, action, context) for rule in self.rules])
 
         if self.operator == "and":
             # AND逻辑：所有规则必须允许
@@ -162,8 +161,7 @@ class ResourceBasedRule(IRule):
                     return resource.startswith(pattern_parts[0])
                 else:
                     # prefix*suffix 匹配
-                    return (resource.startswith(pattern_parts[0]) and
-                           resource.endswith(pattern_parts[1]))
+                    return resource.startswith(pattern_parts[0]) and resource.endswith(pattern_parts[1])
 
         return resource == pattern
 
@@ -243,22 +241,20 @@ class RuleEngine:
     async def evaluate(self, user_id: Any, resource: str, action: str, context: dict[str, Any] | None = None) -> bool:
         """
         评估权限
-        
+
         Args:
             user_id: 用户ID
             resource: 资源
             action: 动作
             context: 上下文信息
-            
+
         Returns:
             bool: 是否允许
         """
         if context is None:
             context = {}
 
-        results = await asyncio.gather(*[
-            rule.evaluate(user_id, resource, action, context) for rule in self.rules
-        ])
+        results = await asyncio.gather(*[rule.evaluate(user_id, resource, action, context) for rule in self.rules])
 
         # DENY 优先原则：如果有DENY，则拒绝
         if RuleResult.DENY in results:
@@ -279,18 +275,11 @@ class PredefinedRuleEngines:
     @staticmethod
     def create_admin_only_engine():
         """创建仅管理员引擎"""
-        admin_rule = UserBasedRule([{
-            "users": ["admin", "root"],
-            "resources": ["*"],
-            "actions": ["*"],
-            "effect": "allow"
-        }])
+        admin_rule = UserBasedRule(
+            [{"users": ["admin", "root"], "resources": ["*"], "actions": ["*"], "effect": "allow"}]
+        )
 
-        deny_all_others = ResourceBasedRule([{
-            "pattern": "*",
-            "actions": ["*"],
-            "effect": "deny"
-        }])
+        deny_all_others = ResourceBasedRule([{"pattern": "*", "actions": ["*"], "effect": "deny"}])
 
         return RuleEngine([admin_rule, deny_all_others])
 
@@ -299,7 +288,7 @@ class PredefinedRuleEngines:
         """创建工作时间引擎"""
         time_rule = TimeBasedRule(
             allowed_hours=[(9, 18)],  # 工作时间 9-18点
-            allowed_days=[0, 1, 2, 3, 4]  # 工作日
+            allowed_days=[0, 1, 2, 3, 4],  # 工作日
         )
 
         return RuleEngine([time_rule])

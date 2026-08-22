@@ -5,6 +5,7 @@ PySpring CLI 集成测试配置
 所有命令通过 subprocess 调用真实 CLI（python -m pyspring.cli.main），
 验证 CLI 的实际行为（返回码 + 输出）。
 """
+
 import os
 import subprocess
 import sys
@@ -29,8 +30,13 @@ def _run_cli(args, cwd, env, timeout=120):
     cmd = [sys.executable, "-m", "pyspring.cli.main"] + list(args)
     try:
         r = subprocess.run(
-            cmd, capture_output=True, text=True, encoding="utf-8",
-            cwd=str(cwd), env=env, timeout=timeout,
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            cwd=str(cwd),
+            env=env,
+            timeout=timeout,
         )
         return r.returncode, (r.stdout or "") + (r.stderr or "")
     except subprocess.TimeoutExpired:
@@ -69,5 +75,6 @@ def repo_workdir(tmp_path):
     yield work
     # 清理（仅删除本 fixture 创建的内容）
     import shutil
+
     if os.path.isdir(work):
         shutil.rmtree(work, ignore_errors=True)

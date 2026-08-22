@@ -4,6 +4,7 @@
 使用策略模式，支持多种 Token 类型
 职责明确：编排 Token 生成器、黑名单、存储服务
 """
+
 from datetime import UTC, datetime
 from typing import Any
 
@@ -30,12 +31,12 @@ from sqlalchemy import and_, select
 class TokenService(ITokenService):
     """
     Token 管理服务
-    
+
     【架构设计】
     1. 使用策略模式：Token 生成委托给 ITokenGenerator
     2. 职责分离：生成、验证、撤销、存储逻辑分离
     3. 配置驱动：通过工厂根据配置选择 Token 类型
-    
+
     【两级存储架构】
     - Redis层(L1缓存): 快速访问
     - 数据库层(持久化): 最终存储
@@ -78,15 +79,15 @@ class TokenService(ITokenService):
     def create_access_token(self, data: dict[str, Any], expires_delta: (Any) | None = None) -> str:
         """
         创建访问 Token
-        
+
         职责：编排Token生成流程
         - 准备载荷（添加type标记）
         - 委托给Generator进行编码
-        
+
         Args:
             data: Token 载荷数据
             expires_delta: 过期时间增量
-            
+
         Returns:
             str: Token 字符串
         """
@@ -100,15 +101,15 @@ class TokenService(ITokenService):
     async def create_refresh_token(self, data: dict[str, Any], expires_delta: (Any) | None = None) -> str:
         """
         创建刷新 Token
-        
+
         职责：
         1. 编排Token生成（委托Generator）
         2. 持久化存储（数据库 + Redis）
-        
+
         Args:
             data: Token 载荷数据
             expires_delta: 过期时间增量
-            
+
         Returns:
             str: Refresh Token 字符串
         """
@@ -142,7 +143,7 @@ class TokenService(ITokenService):
                     user_email=payload.get("email", ""),
                     token=refresh_token,
                     expires_at=expires_at,
-                    is_revoked=False
+                    is_revoked=False,
                 )
                 session.add(refresh_record)
                 await session.commit()
@@ -166,14 +167,14 @@ class TokenService(ITokenService):
     async def verify_token(self, token: str) -> (dict[str, Any]) | None:
         """
         验证 Token
-        
+
         职责：
         1. 解码Token（委托Generator）
         2. 检查黑名单（服务层逻辑）
-        
+
         Args:
             token: Token 字符串
-            
+
         Returns:
             (Dict) | None: Token 载荷数据
         """
@@ -198,7 +199,7 @@ class TokenService(ITokenService):
     async def _is_token_blacklisted(self, token_id: str) -> bool:
         """
         检查 Token 是否在黑名单中（容错降级策略）
-        
+
         策略：
         1. 优先检查Redis（快速路径）
         2. Redis失败时检查数据库
@@ -219,10 +220,7 @@ class TokenService(ITokenService):
         try:
             async with await self.db.session() as session:
                 query = select(TokenBlacklistTable).where(
-                    and_(
-                        TokenBlacklistTable.token_id == token_id,
-                        TokenBlacklistTable.expires_at > datetime.now(UTC)
-                    )
+                    and_(TokenBlacklistTable.token_id == token_id, TokenBlacklistTable.expires_at > datetime.now(UTC))
                 )
                 result = await session.execute(query)
                 is_blacklisted = result.scalar_one_or_none() is not None
@@ -239,23 +237,21 @@ class TokenService(ITokenService):
         except Exception as e:
             logger.critical(f"[TokenService][Critical] 数据库查询失败: {e}")
             # 双重故障：采用安全优先策略（拒绝访问）
-            logger.critical(
-                "[Security] Redis和数据库同时故障，采用安全优先策略：拒绝Token访问"
-            )
+            logger.critical("[Security] Redis和数据库同时故障，采用安全优先策略：拒绝Token访问")
             return True  # 故障时拒绝访问（安全优先）
 
     async def revoke_token(self, token: str, reason: str = "") -> bool:
         """
         撤销 Token（加入黑名单）
-        
+
         职责：
         1. 解码Token（委托Generator）
         2. 黑名单管理（服务层逻辑）
-        
+
         Args:
             token: Token 字符串
             reason: 撤销原因
-            
+
         Returns:
             bool: 是否成功
         """
@@ -289,7 +285,7 @@ class TokenService(ITokenService):
                     user_id=user_id,  # UUID 字符串
                     token_type="access",
                     reason=reason or RevokeTokenReason.USER_LOGOUT,
-                    expires_at=expires_at
+                    expires_at=expires_at,
                 )
                 session.add(blacklist_record)
                 await session.commit()
@@ -311,15 +307,10 @@ class TokenService(ITokenService):
             logger.error(f"[TokenService] 撤销Token失败: {e}")
             return False
 
-    async def revoke_user_refresh_tokens(
-            self,
-            session: object | None,
-            user_id: str,
-            reason: str = ""
-    ) -> None:
+    async def revoke_user_refresh_tokens(self, session: object | None, user_id: str, reason: str = "") -> None:
         """
         撤销用户的所有 Refresh Token
-        
+
         Args:
             session: 数据库会话（暂未使用）
             user_id: 用户UUID
@@ -331,7 +322,7 @@ class TokenService(ITokenService):
                 query = select(RefreshTokenTable).where(
                     and_(
                         RefreshTokenTable.user_id == user_id,  # UUID 字符串
-                        RefreshTokenTable.is_revoked.is_(False)
+                        RefreshTokenTable.is_revoked.is_(False),
                     )
                 )
                 result = await db_session.execute(query)
@@ -367,7 +358,7 @@ class TokenService(ITokenService):
                             user_id=user_id,
                             token_type="refresh",
                             reason=reason or RevokeTokenReason.USER_LOGIN,
-                            expires_at=record.expires_at
+                            expires_at=record.expires_at,
                         )
                         db_session.add(blacklist_record)
 
@@ -402,13 +393,13 @@ class TokenService(ITokenService):
     def refresh_access_token(self, refresh_token: str) -> str:
         """
         刷新 Access Token
-        
+
         Args:
             refresh_token: Refresh Token 字符串
-            
+
         Returns:
             str: 新的 Access Token
-            
+
         Raises:
             NotImplementedError: 刷新功能待实现（可通过扩展实现）
         """

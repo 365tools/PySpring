@@ -14,10 +14,10 @@ class IRoleProvider(IManaged, ABC):
     async def get_user_roles(self, user_id: Any) -> list[str]:
         """
         获取指定用户的角色列表
-        
+
         Args:
             user_id: 用户ID
-            
+
         Returns:
             list[str]: 角色代码列表
         """
@@ -27,10 +27,10 @@ class IRoleProvider(IManaged, ABC):
     async def get_role_permissions(self, role_name: str) -> list[str]:
         """
         获取指定角色的权限列表
-        
+
         Args:
             role_name: 角色代码
-            
+
         Returns:
             list[str]: 权限代码列表
         """
@@ -40,11 +40,11 @@ class IRoleProvider(IManaged, ABC):
     async def get_role_hierarchy(self) -> dict[str, list[str]]:
         """
         获取角色继承层次结构
-        
+
         返回角色继承映射，key为角色，value为其继承的角色列表
         例如：{'admin': ['manager', 'user'], 'manager': ['user']}
         表示admin继承manager和user，manager继承user
-        
+
         Returns:
             dict[str, list[str]]: 角色继承映射
         """
@@ -53,12 +53,12 @@ class IRoleProvider(IManaged, ABC):
     async def get_effective_roles(self, user_id: Any) -> list[str]:
         """
         获取用户的有效角色（包含继承的角色）
-        
+
         默认实现：基于角色继承层次自动计算
-        
+
         Args:
             user_id: 用户ID
-            
+
         Returns:
             list[str]: 包含继承关系的角色列表
         """

@@ -1,4 +1,5 @@
 """Verify generated pyproject.toml content"""
+
 import shutil
 import tempfile
 from pathlib import Path
@@ -17,7 +18,7 @@ def verify_pyproject(args):
 
         pyproject_path = temp_dir / "pyproject.toml"
         if pyproject_path.exists():
-            content = pyproject_path.read_text(encoding='utf-8')
+            content = pyproject_path.read_text(encoding="utf-8")
 
             print_title("Verified pyproject.toml Content")
             print(content)

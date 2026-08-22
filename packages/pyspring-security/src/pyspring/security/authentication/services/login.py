@@ -1,4 +1,3 @@
-
 from fastapi import HTTPException, status
 from pyspring.core.ioc.annotations import ConditionalOnMissingBean
 from pyspring.core.log.instance import logger
@@ -20,24 +19,24 @@ from pyspring.security.authentication.services.context_validator import (
 class DefaultLoginService(ILoginService):
     """
     默认登录认证服务（编排者）
-    
+
     负责协调各个组件完成用户登录、登出等流程。
     支持多个认证提供者，按顺序尝试直到找到支持的提供者。
     具体的业务逻辑（查库、验密、构造响应）委托给具体的 Provider 实现。
     """
 
     def __init__(
-            self,
-            user_provider: IUserProvider,
-            login_providers: list[ILoginProvider],
-            response_builder: IResponseBuilder,
-            payload_builder: ITokenPayloadBuilder,
-            context_manager: SecurityContextManagerService,
-            token_manager: ITokenService
+        self,
+        user_provider: IUserProvider,
+        login_providers: list[ILoginProvider],
+        response_builder: IResponseBuilder,
+        payload_builder: ITokenPayloadBuilder,
+        context_manager: SecurityContextManagerService,
+        token_manager: ITokenService,
     ):
         """
         初始化登录服务
-        
+
         Args:
             user_provider: 用户提供者
             login_providers: 登录提供者列表（支持多种登录方式）
@@ -58,7 +57,7 @@ class DefaultLoginService(ILoginService):
     async def login(self, request: object) -> object:
         """
         用户登录流程编排
-        
+
         支持多个登录提供者，按顺序尝试直到找到支持的提供者
         """
         try:
@@ -73,7 +72,7 @@ class DefaultLoginService(ILoginService):
             if user is None:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"No LoginProvider found for request type: {type(request)}"
+                    detail=f"No LoginProvider found for request type: {type(request)}",
                 )
 
             # ==================== 安全上下文验证 (Context Validation) ====================
@@ -89,8 +88,7 @@ class DefaultLoginService(ILoginService):
                 error_msg = "; ".join(evaluation.errors)
                 logger.warning(f"Login blocked by security policy: {error_msg}")
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Security Policy Violation: {error_msg}"
+                    status_code=status.HTTP_403_FORBIDDEN, detail=f"Security Policy Violation: {error_msg}"
                 )
 
             # 获取警告信息
@@ -100,7 +98,7 @@ class DefaultLoginService(ILoginService):
             await self.token_manager.revoke_user_refresh_tokens(
                 None,  # session 后续直接传递，TokenManager 库自己处理，目前不需要
                 user.user_id,  # UUID
-                reason=RevokeTokenReason.USER_LOGIN
+                reason=RevokeTokenReason.USER_LOGIN,
             )
 
             # 3. 构建 Token Payload (委托给 PayloadBuilder)
@@ -121,20 +119,14 @@ class DefaultLoginService(ILoginService):
 
             # 5. 构造响应（委托给 ResponseBuilder)
             return self.response_builder.build_login_response(
-                user=user,
-                access_token=access_token,
-                refresh_token=refresh_token,
-                warning_msg=warning_msg
+                user=user, access_token=access_token, refresh_token=refresh_token, warning_msg=warning_msg
             )
 
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"[Error] 登录失败: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"登录失败: {str(e)}"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"登录失败: {str(e)}")
 
     async def logout(self, token: str) -> object:
         """
@@ -144,10 +136,7 @@ class DefaultLoginService(ILoginService):
             # 1. 验证 Token
             payload = await self.token_manager.verify_token(token)
             if not payload:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Token 无效或已过期"
-                )
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token 无效或已过期")
 
             # 2. 撤销 Token
             await self.token_manager.revoke_token(token)
@@ -162,10 +151,7 @@ class DefaultLoginService(ILoginService):
             raise
         except Exception as e:
             logger.error(f"[Error] 登出失败: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"登出失败: {str(e)}"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"登出失败: {str(e)}")
 
     async def refresh_token(self, refresh_token: str) -> object:
         """
@@ -176,25 +162,17 @@ class DefaultLoginService(ILoginService):
             new_access_token = self.token_manager.refresh_access_token(refresh_token)
 
             if not new_access_token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Refresh token 无效或已过期"
-                )
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token 无效或已过期")
 
             logger.info("[Success]Token 刷新成功")
 
             # 2. 构造响应
-            return self.response_builder.build_token_response(
-                access_token=new_access_token
-            )
+            return self.response_builder.build_token_response(access_token=new_access_token)
         except HTTPException:
             raise
         except Exception as e:
             logger.error(f"[Error] Token 刷新失败: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="刷新失败"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="刷新失败")
 
     async def get_current_user(self, token: str) -> (object) | None:
         """

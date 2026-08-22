@@ -152,10 +152,10 @@ curl http://localhost:8000/api/auth/login
 中间件按**注册顺序的反序**执行（洋葱模型）：
 
 ```python
-app.add_middleware(CORSMiddleware)           # 第 4 层（最外层）
-app.add_middleware(RequestLoggingMiddleware) # 第 3 层
-app.add_middleware(AuthenticationMiddleware) # 第 2 层
-app.middleware("http")(timing_middleware)    # 第 1 层（最内层）
+app.add_middleware(CORSMiddleware)  # 第 4 层（最外层）
+app.add_middleware(RequestLoggingMiddleware)  # 第 3 层
+app.add_middleware(AuthenticationMiddleware)  # 第 2 层
+app.middleware("http")(timing_middleware)  # 第 1 层（最内层）
 ```
 
 **执行流程**：

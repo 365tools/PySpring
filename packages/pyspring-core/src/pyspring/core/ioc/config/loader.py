@@ -3,6 +3,7 @@ IOC配置加载器
 
 支持从YAML配置文件加载服务定义
 """
+
 import os
 from typing import Any
 
@@ -16,33 +17,33 @@ class IOCConfig:
 
     def __init__(self, data: dict[str, Any]):
         data = data or {}
-        self.services = data.get('services') or {}
-        self.scan_packages = data.get('scan_packages') or []
-        self.exclude_packages = data.get('exclude_packages') or []
+        self.services = data.get("services") or {}
+        self.scan_packages = data.get("scan_packages") or []
+        self.exclude_packages = data.get("exclude_packages") or []
 
 
 class IOCConfigLoader:
     """
     IOC配置加载器
-    
+
     支持从YAML文件加载服务定义
-    
+
     配置示例：
     ```yaml
     # config/container.yaml
     scan_packages:
       - myapp.services
       - myapp.repositories
-    
+
     exclude_packages:
       - myapp.tests
-    
+
     services:
       # Bean工厂方式（推荐）
       db_config:
         factory: myapp.config.DatabaseConfig.create
         singleton: true
-      
+
       # 直接类名方式（不推荐，建议用@Component）
       user_service:
         class: myapp.services.UserService
@@ -63,9 +64,9 @@ class IOCConfigLoader:
     def _find_default_config(self) -> str:
         """查找默认配置文件"""
         possible_paths = [
-            'config/container.yaml',
-            'config/ioc.yaml',
-            'src/config/container.yaml',
+            "config/container.yaml",
+            "config/ioc.yaml",
+            "src/config/container.yaml",
         ]
 
         for path in possible_paths:
@@ -78,7 +79,7 @@ class IOCConfigLoader:
     def load(self) -> IOCConfig:
         """
         加载配置
-        
+
         Returns:
             IOCConfig: 配置对象
         """
@@ -88,7 +89,7 @@ class IOCConfigLoader:
             return self.config
 
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
                 self.config = IOCConfig(data)
                 logger.debug(f"✅ 加载IOC配置: {self.config_path}")
@@ -101,20 +102,20 @@ class IOCConfigLoader:
     def get_health_config(self) -> dict[str, Any]:
         """
         获取健康检查配置
-        
+
         Returns:
             Dict: 健康检查配置，包含 enabled 和 indicators
         """
         if not os.path.exists(self.config_path):
-            return {'enabled': True}  # 默认启用
+            return {"enabled": True}  # 默认启用
 
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
+            with open(self.config_path, "r", encoding="utf-8") as f:
                 data = yaml.safe_load(f) or {}
-                return data.get('health', {'enabled': True})
+                return data.get("health", {"enabled": True})
         except Exception as e:
             logger.warning(f"⚠️  读取健康检查配置失败: {e}")
-            return {'enabled': True}
+            return {"enabled": True}
 
     def get_scan_packages(self) -> list[str]:
         """获取要扫描的包列表"""
@@ -133,7 +134,7 @@ class IOCConfigLoader:
     def apply_to_container(self, container):
         """
         将配置应用到容器
-        
+
         Args:
             container: IOC容器
         """
@@ -153,7 +154,7 @@ class IOCConfigLoader:
     def _register_service_from_config(self, container, name: str, service_def: dict[str, Any]):
         """
         从配置注册服务
-        
+
         Args:
             container: IOC容器
             name: 服务名称
@@ -161,25 +162,26 @@ class IOCConfigLoader:
         """
         try:
             # 如果定义了factory，使用工厂方法
-            if 'factory' in service_def:
-                factory_path = service_def['factory']
+            if "factory" in service_def:
+                factory_path = service_def["factory"]
                 factory = self._resolve_factory(factory_path)
-                scope = Scope.SINGLETON if service_def.get('singleton', True) else Scope.PROTOTYPE
+                scope = Scope.SINGLETON if service_def.get("singleton", True) else Scope.PROTOTYPE
 
                 # 使用Bean方式注册
                 from pyspring.core.ioc.registry.registry import ServiceDefinition
+
                 definition = ServiceDefinition(
                     name=name,
                     service_type=type(None),  # factory模式不需要类型
                     factory=factory,
                     scope=scope,
-                    is_bean=True
+                    is_bean=True,
                 )
                 container.registry.register(definition)
                 logger.debug(f"✅ 从配置注册Bean: {name}")
 
             # 如果定义了class，使用类实例化（不推荐）
-            elif 'class' in service_def:
+            elif "class" in service_def:
                 logger.warning(f"⚠️  不推荐在配置文件中直接定义类，建议使用@Component装饰器: {name}")
                 # TODO: 实现类实例化逻辑（暂不支持）
 
@@ -189,19 +191,20 @@ class IOCConfigLoader:
     def _resolve_factory(self, factory_path: str):
         """
         解析工厂方法路径
-        
+
         Args:
             factory_path: 工厂路径，如 'myapp.config.DatabaseConfig.create'
-            
+
         Returns:
             工厂方法
         """
-        parts = factory_path.split('.')
-        module_path = '.'.join(parts[:-2])
+        parts = factory_path.split(".")
+        module_path = ".".join(parts[:-2])
         class_name = parts[-2]
         method_name = parts[-1]
 
         import importlib
+
         module = importlib.import_module(module_path)
         cls = getattr(module, class_name)
         factory = getattr(cls, method_name)
@@ -209,4 +212,4 @@ class IOCConfigLoader:
         return factory
 
 
-__all__ = ['IOCConfigLoader', 'IOCConfig']
+__all__ = ["IOCConfigLoader", "IOCConfig"]

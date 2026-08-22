@@ -4,6 +4,7 @@
 提供用户信息的查询、更新、删除等操作
 使用最新的IOC和日志框架
 """
+
 from datetime import UTC, datetime
 from typing import Any
 
@@ -28,21 +29,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 class DefaultUserManagerService(IUserManagerService):
     """
     默认用户管理服务
-    
+
     职责：
     - 用户信息的CRUD操作
     - 用户角色管理
     - 当前用户上下文获取
     """
 
-    def __init__(self,
-                 db: DBManagerService,
-                 component: SecurityEntityConfiguration,
-                 token_manager: ITokenService,
-                 password_encoder: IPasswordEncoder):
+    def __init__(
+        self,
+        db: DBManagerService,
+        component: SecurityEntityConfiguration,
+        token_manager: ITokenService,
+        password_encoder: IPasswordEncoder,
+    ):
         """
         初始化用户管理服务
-        
+
         Args:
             db: 数据库管理服务
             component: 安全组件配置
@@ -105,19 +108,19 @@ class DefaultUserManagerService(IUserManagerService):
     async def get_current_user(self, token: (str) | None = None) -> (UserInfo) | None:
         """
         获取当前用户信息（支持两种方式）
-        
+
         方式1：从上下文获取（推荐，类似Spring Security）
             user = await user_manager.get_current_user()
-            
+
         方式2：传递token
             user = await user_manager.get_current_user(token="xxx")
-        
+
         Args:
             token: JWT access token（可选，不传则从上下文中获取）
-            
+
         Returns:
             用户信息，如果token无效或上下文中无用户则返回None
-            
+
         Raises:
             HTTPException: token无效或用户不存在
         """
@@ -158,7 +161,7 @@ class DefaultUserManagerService(IUserManagerService):
                 user_id = int(str(user_id_raw))
                 if user_id <= 0:
                     raise ValueError("Invalid user_id")
-            except (ValueError, TypeError):
+            except ValueError, TypeError:
                 logger.warning(f"[Security] 无效的user_id格式: {user_id_raw}")
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -235,10 +238,7 @@ class DefaultUserManagerService(IUserManagerService):
                 db_user = result.scalar_one_or_none()
 
                 if not db_user:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"用户ID {user_id} 不存在"
-                    )
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"用户ID {user_id} 不存在")
 
                 # 更新用户基本信息
                 if user_info.user:
@@ -260,10 +260,7 @@ class DefaultUserManagerService(IUserManagerService):
             raise
         except Exception as e:
             logger.error(f"[Error] 更新用户信息失败: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"更新失败: {str(e)}"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"更新失败: {str(e)}")
 
     async def update_user_field(self, user_id: str, field_name: str, field_value: Any) -> UserInfo:
         """
@@ -287,19 +284,13 @@ class DefaultUserManagerService(IUserManagerService):
                 db_user = result.scalar_one_or_none()
 
                 if not db_user:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"用户ID {user_id} 不存在"
-                    )
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"用户ID {user_id} 不存在")
 
                 if not hasattr(db_user, field_name):
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail=f"字段 '{field_name}' 不存在"
-                    )
+                    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"字段 '{field_name}' 不存在")
 
                 # 特殊处理密码字段
-                if field_name == 'password':
+                if field_name == "password":
                     field_value = self.password_encoder.encode(field_value)
 
                 setattr(db_user, field_name, field_value)
@@ -314,10 +305,7 @@ class DefaultUserManagerService(IUserManagerService):
             raise
         except Exception as e:
             logger.error(f"[Error] 更新用户字段失败: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"更新字段失败: {str(e)}"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"更新字段失败: {str(e)}")
 
     async def update_user_roles(self, user_id: str, roles: list[Role]) -> UserInfo:
         """
@@ -340,10 +328,7 @@ class DefaultUserManagerService(IUserManagerService):
                 db_user = result.scalar_one_or_none()
 
                 if not db_user:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"用户ID {user_id} 不存在"
-                    )
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"用户ID {user_id} 不存在")
 
                 await self._update_user_roles(session, db_user.user_id, roles)  # 使用 UUID
                 await session.commit()
@@ -356,10 +341,7 @@ class DefaultUserManagerService(IUserManagerService):
             raise
         except Exception as e:
             logger.error(f"[Error] 更新用户角色失败: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"更新角色失败: {str(e)}"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"更新角色失败: {str(e)}")
 
     async def delete_user(self, user_id: str) -> bool:
         """
@@ -381,10 +363,7 @@ class DefaultUserManagerService(IUserManagerService):
                 db_user = result.scalar_one_or_none()
 
                 if not db_user:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"用户ID {user_id} 不存在"
-                    )
+                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"用户ID {user_id} 不存在")
 
                 # 删除用户角色关联
                 stmt = delete(self.component.user_role_orm_model).where(
@@ -403,21 +382,18 @@ class DefaultUserManagerService(IUserManagerService):
             raise
         except Exception as e:
             logger.error(f"[Error] 删除用户失败: {e}")
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"删除失败: {str(e)}"
-            )
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"删除失败: {str(e)}")
 
     # ==================== 私有辅助方法 ====================
 
     async def _build_user_info(self, session: AsyncSession, db_user: Any) -> UserInfo:
         """
         构造完整的用户信息
-        
+
         Args:
             session: 数据库会话
             db_user: 用户数据库对象
-            
+
         Returns:
             完整的用户信息
         """
@@ -432,10 +408,14 @@ class DefaultUserManagerService(IUserManagerService):
         )
 
         # 查询用户角色
-        stmt = select(self.component.role_orm_model).join(
-            self.component.user_role_orm_model,
-            self.component.user_role_orm_model.role_code == self.component.role_orm_model.code
-        ).where(self.component.user_role_orm_model.user_id == db_user.user_id)
+        stmt = (
+            select(self.component.role_orm_model)
+            .join(
+                self.component.user_role_orm_model,
+                self.component.user_role_orm_model.role_code == self.component.role_orm_model.code,
+            )
+            .where(self.component.user_role_orm_model.user_id == db_user.user_id)
+        )
         result = await session.execute(stmt)
         roles = [Role.model_validate(role) for role in result.scalars().all()]
 
@@ -443,52 +423,53 @@ class DefaultUserManagerService(IUserManagerService):
         permissions = []
         if roles:
             role_codes = [role.code for role in roles]
-            stmt = select(self.component.permission_orm_model).join(
-                self.component.role_permission_orm_model,
-                self.component.role_permission_orm_model.permission_code == self.component.permission_orm_model.code
-            ).where(self.component.role_permission_orm_model.role_code.in_(role_codes)).distinct()
+            stmt = (
+                select(self.component.permission_orm_model)
+                .join(
+                    self.component.role_permission_orm_model,
+                    self.component.role_permission_orm_model.permission_code
+                    == self.component.permission_orm_model.code,
+                )
+                .where(self.component.role_permission_orm_model.role_code.in_(role_codes))
+                .distinct()
+            )
 
             result = await session.execute(stmt)
             permissions = [Permission.model_validate(perm) for perm in result.scalars().all()]
 
-        return UserInfo(
-            user=user,
-            roles=roles or None,
-            permissions=permissions or None
-        )
+        return UserInfo(user=user, roles=roles or None, permissions=permissions or None)
 
     async def _update_user_basic_info(self, session: AsyncSession, db_user: Any, user: User) -> None:
         """
         更新用户基本信息
-        
+
         Args:
             session: 数据库会话
             db_user: 用户数据库对象
             user: 新的用户信息
-            
+
         Raises:
             HTTPException: 邮箱已被占用
         """
         # 只更新明确设置的字段
-        update_fields = user.model_dump(exclude_unset=True, exclude={'id'})
+        update_fields = user.model_dump(exclude_unset=True, exclude={"id"})
 
         # 检查邮箱唯一性
-        if 'email' in update_fields and update_fields['email'] != db_user.email:
+        if "email" in update_fields and update_fields["email"] != db_user.email:
             stmt = select(self.component.user_orm_model).where(
-                self.component.user_orm_model.email == update_fields['email']
+                self.component.user_orm_model.email == update_fields["email"]
             )
             result = await session.execute(stmt)
             existing_user = result.scalar_one_or_none()
 
             if existing_user:
                 raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"邮箱 {update_fields['email']} 已被使用"
+                    status_code=status.HTTP_400_BAD_REQUEST, detail=f"邮箱 {update_fields['email']} 已被使用"
                 )
 
         # 特殊处理密码
-        if 'password' in update_fields and update_fields['password']:
-            update_fields['password'] = self.password_encoder.encode(update_fields['password'])
+        if "password" in update_fields and update_fields["password"]:
+            update_fields["password"] = self.password_encoder.encode(update_fields["password"])
 
         # 更新字段
         for field, value in update_fields.items():
@@ -501,7 +482,7 @@ class DefaultUserManagerService(IUserManagerService):
     async def _update_user_roles(self, session: AsyncSession, user_id: str, roles: list[Role]) -> None:
         """
         更新用户角色（替换所有角色）
-        
+
         Args:
             session: 数据库会话
             user_id: 用户UUID
@@ -526,6 +507,6 @@ class DefaultUserManagerService(IUserManagerService):
             # 创建关联
             user_role = self.component.user_role_orm_model(
                 user_id=user_id,  # UUID 字符串
-                role_code=db_role.code  # 角色代码
+                role_code=db_role.code,  # 角色代码
             )
             session.add(user_role)

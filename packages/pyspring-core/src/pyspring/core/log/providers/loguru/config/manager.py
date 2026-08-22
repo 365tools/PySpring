@@ -5,6 +5,7 @@
 
 注意：此模块使用标准库 logging 记录诊断信息，避免污染 stderr。
 """
+
 import logging
 from typing import Any
 
@@ -22,9 +23,9 @@ logger = logging.getLogger(__name__)
 class LoggingConfigManager(IManaged):
     """
     日志配置管理器（由IOC容器管理单例）
-    
+
     负责从 YAML 文件加载日志配置
-    
+
     配置加载顺序：
     1. 框架默认配置 (src/pyspring/config/defaults/logging.yaml)
     2. 用户项目配置 (config/logging.yaml)  # 覆盖框架默认
@@ -45,7 +46,7 @@ class LoggingConfigManager(IManaged):
         """
         加载日志配置文件
         使用新的 ConfigManager 实现三层配置架构
-        
+
         Returns:
             配置字典（框架默认值 + 用户覆盖）
         """
@@ -63,17 +64,17 @@ class LoggingConfigManager(IManaged):
     def _get_default_config() -> dict[str, Any]:
         """
         获取默认配置（兜底方案）
-        
+
         Returns:
             默认配置字典
         """
-        return {'logging': LoggingConfig().model_dump(exclude_none=True)}
+        return {"logging": LoggingConfig().model_dump(exclude_none=True)}
 
     @property
     def config(self) -> dict[str, Any] | None:
         """
         获取配置
-        
+
         Returns:
             配置字典（未初始化时为 None）
         """
@@ -82,19 +83,19 @@ class LoggingConfigManager(IManaged):
     def get(self, key: str, default: Any = None) -> Any:
         """
         使用点号路径获取配置值
-        
+
         例如：
             manager.get("logging.level")
             manager.get("logging.console.enabled")
-        
+
         Args:
             key: 配置键（点号分隔）
             default: 默认值
-            
+
         Returns:
             配置值
         """
-        keys = key.split('.')
+        keys = key.split(".")
         value = self._config
 
         for k in keys:

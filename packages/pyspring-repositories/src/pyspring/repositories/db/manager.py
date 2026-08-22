@@ -12,14 +12,14 @@ from .service import IDBService
 class DBManagerService(IManaged):
     """
     数据库管理服务（由 IOC 容器管理单例）
-    
+
     通过 DBServiceFactory 获取已验证的数据库实例
     """
 
     def __init__(self, db_service_factory: DBServiceFactory):
         """
         通过 IOC 注入工厂
-        
+
         Args:
             db_service_factory: DBServiceFactory 实例（自动注入）
         """
@@ -29,9 +29,9 @@ class DBManagerService(IManaged):
     async def provider(self) -> IDBService:
         """
         获取数据库服务（Factory 内部已实现单例）
-        
+
         Factory 已完成连接检测和降级，返回已验证的实例
-        
+
         Returns:
             IDBService: SQLite 或 PostgreSQL 实现
         """
@@ -40,7 +40,7 @@ class DBManagerService(IManaged):
     async def service(self) -> IDBService:
         """
         获取已初始化的数据库服务实例
-        
+
         Returns:
             数据库服务实例
         """

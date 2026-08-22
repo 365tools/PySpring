@@ -27,7 +27,7 @@ class SortedHelpFormatter(argparse.HelpFormatter):
         if isinstance(action, argparse._SubParsersAction):
             # _choices_actions is the list used by HelpFormatter to print subcommands
             # We sort this list in-place to affect the output order
-            action._choices_actions.sort(key=attrgetter('dest'))
+            action._choices_actions.sort(key=attrgetter("dest"))
 
         return super()._format_action(action)
 
@@ -67,16 +67,16 @@ class GroupedHelpFormatter(SortedHelpFormatter):
 
                 visible_cmds = []
                 for name in group_cmds:
-                    help_str = help_lookup.get(name, '')
+                    help_str = help_lookup.get(name, "")
                     if help_str is not argparse.SUPPRESS:
                         visible_cmds.append(name)
 
                 if visible_cmds:
-                    parts.append(f'\n{title}:\n')
+                    parts.append(f"\n{title}:\n")
                     for name in visible_cmds:
                         shown_cmds.add(name)
-                        help_str = help_lookup.get(name, '')
-                        parts.append(f'  {name:<{width}} {help_str}\n')
+                        help_str = help_lookup.get(name, "")
+                        parts.append(f"  {name:<{width}} {help_str}\n")
 
             # Remaining - Sort them alphabetically!
             remaining = [c for c in cmds if c not in shown_cmds]
@@ -84,15 +84,15 @@ class GroupedHelpFormatter(SortedHelpFormatter):
 
             visible_remaining = []
             for name in remaining:
-                help_str = help_lookup.get(name, '')
+                help_str = help_lookup.get(name, "")
                 if help_str is not argparse.SUPPRESS:
                     visible_remaining.append(name)
 
             if visible_remaining:
-                parts.append('\nOther Commands:\n')
+                parts.append("\nOther Commands:\n")
                 for name in visible_remaining:
-                    help_str = help_lookup.get(name, '')
-                    parts.append(f'  {name:<{width}} {help_str}\n')
+                    help_str = help_lookup.get(name, "")
+                    parts.append(f"  {name:<{width}} {help_str}\n")
 
             return "".join(parts)
 

@@ -23,7 +23,7 @@ class CliCheckCommand(BaseCommand):
         check_cli_structure()
 
 
-def check_cli_structure(package_path: str = 'pyspring.cli.commands'):
+def check_cli_structure(package_path: str = "pyspring.cli.commands"):
     """
     Dynamically discover and validate all CLI commands in the given package.
     Prints a hierarchical tree of commands and verifies their integrity.
@@ -44,9 +44,9 @@ def check_cli_structure(package_path: str = 'pyspring.cli.commands'):
     print(f"{Colors.BOLD}Scanning package: {package_path}...{Colors.ENDC}\n")
 
     # Suppress logs during import to avoid noise from module-level initialization
-    with suppress_logs(patterns=[r'.*']):
+    with suppress_logs(patterns=[r".*"]):
         for _, name, _ in pkgutil.iter_modules(package.__path__):
-            if name.startswith('_'):
+            if name.startswith("_"):
                 continue
 
             full_module_name = f"{package_path}.{name}"
@@ -69,6 +69,7 @@ def check_cli_structure(package_path: str = 'pyspring.cli.commands'):
 
             except Exception as e:
                 import traceback
+
                 tb = traceback.format_exc()
                 errors.append(f"Module '{name}' failed to load: {e}\n{Colors.FAIL}{tb}{Colors.ENDC}")
 
@@ -78,18 +79,18 @@ def check_cli_structure(package_path: str = 'pyspring.cli.commands'):
     # Filter out commands that are already subcommands of others
     all_subcommands = set()
     for cmd in found_commands:
-        subs = getattr(cmd, 'subcommands', []) or []
+        subs = getattr(cmd, "subcommands", []) or []
         for sub in subs:
             all_subcommands.add(sub)
 
     # Root commands are those not referenced as subcommands
     root_commands = [c for c in found_commands if c not in all_subcommands]
 
-    sorted_commands = sorted(root_commands, key=lambda x: x.name or '')
+    sorted_commands = sorted(root_commands, key=lambda x: x.name or "")
     count = len(sorted_commands)
 
     for i, cmd_class in enumerate(sorted_commands):
-        is_last = (i == count - 1)
+        is_last = i == count - 1
         _validate_and_print_command(cmd_class, errors, prefix="", is_last=is_last)
 
     # 3. Summary
@@ -103,21 +104,23 @@ def check_cli_structure(package_path: str = 'pyspring.cli.commands'):
         print_success("All commands loaded and structure is valid.")
 
 
-def _validate_and_print_command(cmd_class: Type[BaseCommand], errors: List[str], prefix: str = "", is_last: bool = True):
+def _validate_and_print_command(
+    cmd_class: Type[BaseCommand], errors: List[str], prefix: str = "", is_last: bool = True
+):
     """Recursively validate and print command tree with ASCII lines"""
 
     # ├── if middle item, └── if last item
     connector = "└── " if is_last else "├── "
 
     # Validation Checks
-    cmd_name = getattr(cmd_class, 'name', None)
+    cmd_name = getattr(cmd_class, "name", None)
     if not cmd_name:
         errors.append(f"Class '{cmd_class.__name__}' is missing 'name' attribute")
         display_name = f"{Colors.FAIL}<Missing Name>{Colors.ENDC}"
     else:
         display_name = f"{Colors.OKGREEN}{cmd_name}{Colors.ENDC}"
 
-    help_text = getattr(cmd_class, 'help', "No help provided")
+    help_text = getattr(cmd_class, "help", "No help provided")
 
     # Print Command Line
     # Root level usually doesn't need indentation if it's the very first text,
@@ -129,7 +132,7 @@ def _validate_and_print_command(cmd_class: Type[BaseCommand], errors: List[str],
     child_prefix = prefix + ("    " if is_last else "│   ")
 
     # Validate Arguments
-    args: List[CommandArg] = getattr(cmd_class, 'arguments', [])
+    args: List[CommandArg] = getattr(cmd_class, "arguments", [])
     if args:
         arg_list = []
         for arg in args:
@@ -141,13 +144,13 @@ def _validate_and_print_command(cmd_class: Type[BaseCommand], errors: List[str],
         print(f"{child_prefix}· {Colors.OKCYAN}[args]: {', '.join(arg_list)}{Colors.ENDC}")
 
     # Check Subcommands
-    subcommands = getattr(cmd_class, 'subcommands', [])
+    subcommands = getattr(cmd_class, "subcommands", [])
     if subcommands:
         # Sort subcommands by name for consistent tree output
         # Assuming subcommands have a 'name' attribute or we sort by class name
         try:
             # Try to sort by 'name' attribute, fallback to class name
-            subcommands = sorted(subcommands, key=lambda x: getattr(x, 'name', x.__name__))
+            subcommands = sorted(subcommands, key=lambda x: getattr(x, "name", x.__name__))
         except Exception:
             # Fallback if something is weird
             pass
@@ -158,5 +161,5 @@ def _validate_and_print_command(cmd_class: Type[BaseCommand], errors: List[str],
                 errors.append(f"Command '{cmd_name}' has invalid subcommand '{sub_cmd}'")
                 continue
 
-            is_last_sub = (i == count - 1)
+            is_last_sub = i == count - 1
             _validate_and_print_command(sub_cmd, errors, prefix=child_prefix, is_last=is_last_sub)

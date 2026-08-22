@@ -3,6 +3,7 @@
 
 负责解析服务之间的依赖关系，支持类型提示、命名注入和集合注入。
 """
+
 import inspect
 from typing import Any, get_args, get_origin, get_type_hints
 
@@ -14,7 +15,9 @@ from ..registry.registry import ServiceDefinition, ServiceRegistry
 # 特殊标记：表示应该使用参数的默认值
 class _UseDefaultValue:
     """标记类，表示参数应使用其默认值"""
+
     pass
+
 
 _USE_DEFAULT_VALUE = _UseDefaultValue()
 
@@ -22,13 +25,14 @@ _USE_DEFAULT_VALUE = _UseDefaultValue()
 class DependencyResolver:
     """
     依赖解析器
-    
+
     负责解析服务的依赖关系，支持：
     - 类型注入
     - 命名注入
     - list[Type] 集合注入
     - 循环依赖检测与处理
     """
+
     def __init__(self, registry: ServiceRegistry):
         self.registry = registry
         self._instantiation_stack = []
@@ -36,25 +40,27 @@ class DependencyResolver:
     def _generate_service_name(self, param_type: type) -> str:
         """
         根据类型生成服务名称
-        
+
         Args:
             param_type: 参数类型
-            
+
         Returns:
             服务名称
         """
-        if hasattr(param_type, '__name__'):
+        if hasattr(param_type, "__name__"):
             # 将驼峰命名转为蛇形命名
             import re
+
             name = param_type.__name__
             # 将驼峰命名转换为蛇形命名
-            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
             return name
-        elif hasattr(param_type, '_name') and param_type._name:
+        elif hasattr(param_type, "_name") and param_type._name:
             # 对于一些特殊类型如List[int]等
             import re
+
             name = param_type._name
-            name = re.sub(r'(?<!^)(?=[A-Z])', '_', name).lower()
+            name = re.sub(r"(?<!^)(?=[A-Z])", "_", name).lower()
             return name
         else:
             # 如果类型没有 __name__ 属性，返回基于类型的唯一标识
@@ -63,11 +69,11 @@ class DependencyResolver:
     def resolve_dependencies(self, service_def: ServiceDefinition, container: Any) -> dict[str, Any]:
         """
         解析服务定义的所有依赖
-        
+
         Args:
             service_def: 服务定义
             container: 容器实例
-            
+
         Returns:
             依赖字典
         """
@@ -78,10 +84,10 @@ class DependencyResolver:
         sig = inspect.signature(service_def.service_type.__init__)
 
         # 移除self参数
-        if 'return' in init_signature:
-            del init_signature['return']
-        if 'self' in init_signature:
-            del init_signature['self']
+        if "return" in init_signature:
+            del init_signature["return"]
+        if "self" in init_signature:
+            del init_signature["self"]
 
         dependencies = {}
         for param_name, param_type in init_signature.items():
@@ -106,12 +112,12 @@ class DependencyResolver:
     def _create_dependency_info(self, service_def, param_name: str, param_type: type) -> DependencyInfo:
         """
         创建依赖信息对象
-        
+
         Args:
             service_def: 服务定义
             param_name: 参数名称
             param_type: 参数类型
-            
+
         Returns:
             依赖信息
         """
@@ -128,18 +134,18 @@ class DependencyResolver:
                     param_type=param_type,
                     service_name=service_name,
                     is_list=True,
-                    element_type=element_type
+                    element_type=element_type,
                 )
 
         # 检查是否有@inject注解
-        annotations = getattr(service_def.service_type, '__annotations__', {})
+        annotations = getattr(service_def.service_type, "__annotations__", {})
         inject_config = annotations.get(f"_{param_name}_inject", None)
         if inject_config:
             return DependencyInfo(
                 param_name=param_name,
                 param_type=param_type,
                 service_name=inject_config.service_name,
-                qualifier=inject_config.qualifier
+                qualifier=inject_config.qualifier,
             )
 
         # 默认按类型查找
@@ -149,25 +155,21 @@ class DependencyResolver:
             param_name=param_name,
             param_type=param_type,
             service_name=service_name,  # 使用类型生成的服务名
-            qualifier=None
+            qualifier=None,
         )
 
     def _resolve_dependency(
-            self,
-            dep_info: DependencyInfo,
-            container: Any,
-            current_service: str,
-            has_default: bool = False
+        self, dep_info: DependencyInfo, container: Any, current_service: str, has_default: bool = False
     ) -> Any:
         """
         解析单个依赖，返回实例或代理
-        
+
         Args:
             dep_info: 依赖信息
             container: 容器
             current_service: 当前正在实例化的服务名称
             has_default: 该参数是否有默认值
-            
+
         Returns:
             依赖实例、代理或 _USE_DEFAULT_VALUE 标记
         """
@@ -211,6 +213,7 @@ class DependencyResolver:
             except ValueError:
                 # 如果是特殊类型（如 typing.Any 或 Optional[T]），即使返回 None 也应该静默处理
                 import typing
+
                 if dep_info.param_type is typing.Any:
                     return None
 
@@ -250,19 +253,20 @@ class DependencyResolver:
     def _is_optional_type(self, param_type: type) -> bool:
         """
         检查是否是Optional类型 (Union[X, None] 或 X | None)
-            
+
         Args:
             param_type: 参数类型
-                
+
         Returns:
             是否是Optional类型
         """
         import typing
+
         # 检查 Union[X, None] 形式
-        if hasattr(param_type, '__origin__'):
+        if hasattr(param_type, "__origin__"):
             try:
-                param_origin = getattr(param_type, '__origin__', None)
-                if param_origin is getattr(typing, 'Union', None):
+                param_origin = getattr(param_type, "__origin__", None)
+                if param_origin is getattr(typing, "Union", None):
                     args = get_args(param_type)
                     if len(args) == 2 and type(None) in args:
                         return True
@@ -271,8 +275,8 @@ class DependencyResolver:
 
         # 检查新的联合类型语法 (如 str | None)
         try:
-            if hasattr(param_type, '__args__'):
-                args = getattr(param_type, '__args__', ())
+            if hasattr(param_type, "__args__"):
+                args = getattr(param_type, "__args__", ())
                 if len(args) == 2 and type(None) in args:
                     return True
         except Exception:
@@ -280,10 +284,10 @@ class DependencyResolver:
 
         # 检查新语法的联合类型 (T | None)，通过字符串表示
         type_str = str(param_type)
-        if '|' in type_str and 'None' in type_str:
+        if "|" in type_str and "None" in type_str:
             # 检查是否是 T | None 的形式
-            parts = [part.strip() for part in type_str.split('|')]
-            if len(parts) == 2 and 'None' in parts:
+            parts = [part.strip() for part in type_str.split("|")]
+            if len(parts) == 2 and "None" in parts:
                 return True
 
         return False
@@ -291,10 +295,10 @@ class DependencyResolver:
     def _get_builtin_type_default(self, param_type: type):
         """
         获取内置类型的默认值
-            
+
         Args:
             param_type: 参数类型
-                
+
         Returns:
             默认值, 如果类型不是内置类型则返回None
         """
@@ -321,12 +325,13 @@ class DependencyResolver:
 
         # 检查是否是typing模块的特殊类型
         import typing
+
         # 检查 typing.Any 类型 - 这是最重要的检查
         if param_type is typing.Any:
             return None  # typing.Any 类型返回 None
-        elif getattr(param_type, '__name__', None) == 'Any' or str(param_type).endswith('.Any'):
+        elif getattr(param_type, "__name__", None) == "Any" or str(param_type).endswith(".Any"):
             return None  # 其他 Any 类型的变体
-        elif hasattr(typing, 'NoReturn') and param_type == typing.NoReturn:
+        elif hasattr(typing, "NoReturn") and param_type == typing.NoReturn:
             return None
         elif param_type is type(None):
             return None
@@ -341,27 +346,28 @@ class DependencyResolver:
     def _get_generic_type_default(self, param_type: type):
         """
         获取泛型类型的默认值
-        
+
         Args:
             param_type: 参数类型
-            
+
         Returns:
             默认值, 如果类型不是泛型类型则返回None
         """
         # 检查是否是typing.Any类型（需要优先处理）
         import typing
+
         if param_type is typing.Any:
             return None
-        elif getattr(param_type, '__name__', None) == 'Any' or str(param_type).endswith('.Any'):
+        elif getattr(param_type, "__name__", None) == "Any" or str(param_type).endswith(".Any"):
             return None  # 其他 Any 类型的变体
 
         # 检查是否是Optional类型 (Union[X, None] 或 X | None)
-        if hasattr(param_type, '__origin__'):
+        if hasattr(param_type, "__origin__"):
             try:
-                param_origin = getattr(param_type, '__origin__', None)
+                param_origin = getattr(param_type, "__origin__", None)
 
                 # 检查是否是 Union 类型 (适用于 Optional[T] = Union[T, None])
-                if param_origin is getattr(typing, 'Union', None):
+                if param_origin is getattr(typing, "Union", None):
                     args = get_args(param_type)
                     if len(args) == 2 and type(None) in args:
                         # Optional[X] 类型，返回None
@@ -371,8 +377,8 @@ class DependencyResolver:
 
         # 检查是否是新的联合类型语法 (如 str | None)
         try:
-            if hasattr(param_type, '__args__'):
-                args = getattr(param_type, '__args__', ())
+            if hasattr(param_type, "__args__"):
+                args = getattr(param_type, "__args__", ())
                 if len(args) == 2 and type(None) in args:
                     # 这是类似 T | None 的类型，返回None
                     return None
@@ -381,10 +387,10 @@ class DependencyResolver:
 
         # 检查是否是新语法的联合类型 (T | None)，通过字符串表示
         type_str = str(param_type)
-        if '|' in type_str and 'None' in type_str:
+        if "|" in type_str and "None" in type_str:
             # 检查是否是 T | None 的形式
-            parts = [part.strip() for part in type_str.split('|')]
-            if len(parts) == 2 and 'None' in parts:
+            parts = [part.strip() for part in type_str.split("|")]
+            if len(parts) == 2 and "None" in parts:
                 return None  # 视为 object | None 类型
 
         # 检查是否是泛型类型
@@ -403,14 +409,12 @@ class DependencyResolver:
                 return frozenset()
             elif origin is type(None):
                 return None
-            elif hasattr(origin, '__origin__'):  # 更多泛型类型
+            elif hasattr(origin, "__origin__"):  # 更多泛型类型
                 # 对于其他泛型类型，尝试返回其原始类型的空实例
-                if hasattr(origin, '__call__'):
+                if hasattr(origin, "__call__"):
                     try:
                         return origin()
                     except Exception:
                         pass
-
-
 
         return None

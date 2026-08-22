@@ -8,9 +8,7 @@ class CleanCacheCommand(BaseCommand):
     name = "cache"
     help = "Clear system and framework caches"
     description = "Remove project cache directories"
-    arguments = [
-        CommandArg(['-v', '--verbose'], action='store_true', help='Show detailed output')
-    ]
+    arguments = [CommandArg(["-v", "--verbose"], action="store_true", help="Show detailed output")]
 
     def run(self, args):
         clean_project_cache(args.verbose)
@@ -21,8 +19,8 @@ class CleanImportsCommand(BaseCommand):
     help = "Remove detected unused import statements"
     description = "Scanning and removing unused import statements"
     arguments = [
-        CommandArg('path', nargs='?', default='.', help='Path to clean (default: current directory)'),
-        CommandArg(['-v', '--verbose'], action='store_true', help='Show detailed output')
+        CommandArg("path", nargs="?", default=".", help="Path to clean (default: current directory)"),
+        CommandArg(["-v", "--verbose"], action="store_true", help="Show detailed output"),
     ]
 
     def run(self, args):
@@ -35,7 +33,4 @@ class CleanCommand(BaseCommand):
     description = "Remove temporary files or clean unused codes"
     formatter_class = SortedHelpFormatter
 
-    subcommands = [
-        CleanCacheCommand,
-        CleanImportsCommand
-    ]
+    subcommands = [CleanCacheCommand, CleanImportsCommand]

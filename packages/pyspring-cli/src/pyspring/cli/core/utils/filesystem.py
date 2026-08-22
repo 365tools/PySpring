@@ -3,25 +3,40 @@ from typing import List, Set
 
 DEFAULT_IGNORES = {
     # SCM
-    '.git', '.svn', '.hg',
+    ".git",
+    ".svn",
+    ".hg",
     # Python
-    '__pycache__', '.pytest_cache', '.pyspring_cache',
-    '.tox', '.nox', '.mypy_cache', '.ruff_cache',
-    '*.egg-info', 'dist', 'build', 'wheels',
+    "__pycache__",
+    ".pytest_cache",
+    ".pyspring_cache",
+    ".tox",
+    ".nox",
+    ".mypy_cache",
+    ".ruff_cache",
+    "*.egg-info",
+    "dist",
+    "build",
+    "wheels",
     # Virtual Envs
-    'venv', '.venv', 'env', '.env',
+    "venv",
+    ".venv",
+    "env",
+    ".env",
     # IDEs
-    '.idea', '.vscode', '.cursor',
+    ".idea",
+    ".vscode",
+    ".cursor",
     # Web
-    'node_modules',
+    "node_modules",
 }
 
 
-def get_ignore_list(root_path: str = '.', extra_ignores: Set[str] | None = None) -> Set[str]:
+def get_ignore_list(root_path: str = ".", extra_ignores: Set[str] | None = None) -> Set[str]:
     """
     Get a set of directory names to ignore.
     Combines defaults with user's .gitignore (if present).
-    
+
     Args:
         root_path: Project root path to look for .gitignore
         extra_ignores: Additional ignores to add
@@ -31,16 +46,16 @@ def get_ignore_list(root_path: str = '.', extra_ignores: Set[str] | None = None)
         ignore_set.update(extra_ignores)
 
     # Try to read user's .gitignore
-    gitignore_path = os.path.join(root_path, '.gitignore')
+    gitignore_path = os.path.join(root_path, ".gitignore")
     if os.path.exists(gitignore_path):
         try:
-            with open(gitignore_path, 'r', encoding='utf-8') as f:
+            with open(gitignore_path, "r", encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith("#"):
                         continue
-                    clean_line = line.replace('/', '')
-                    if '*' not in clean_line and '!' not in clean_line:
+                    clean_line = line.replace("/", "")
+                    if "*" not in clean_line and "!" not in clean_line:
                         ignore_set.add(clean_line)
         except Exception:
             pass
@@ -57,12 +72,13 @@ def is_ignored(name: str, ignore_patterns: Set[str]) -> bool:
         return True
 
     import fnmatch
+
     for pattern in ignore_patterns:
         if fnmatch.fnmatch(name, pattern):
             return True
 
     # Also ignore .startswith('.') for hidden files (except current dir)
-    if name.startswith('.') and name != '.':
+    if name.startswith(".") and name != ".":
         return True
 
     return False
@@ -127,4 +143,4 @@ def find_python_files(root_dir: str) -> List[str]:
     """
     Recursively find all .py files.
     """
-    return find_files(root_dir, ['.py'])
+    return find_files(root_dir, [".py"])

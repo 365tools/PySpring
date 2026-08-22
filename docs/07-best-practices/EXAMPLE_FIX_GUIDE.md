@@ -42,8 +42,7 @@ from pyspring.core.ioc.annotations.component import Component
 
 ```python
 @Component
-class CustomPasswordLoginProvider(DefaultPasswordLoginProvider):
-    ...
+class CustomPasswordLoginProvider(DefaultPasswordLoginProvider): ...
 ```
 
 #### 2. 修复 `app/services/custom_register_service.py`
@@ -58,8 +57,7 @@ from pyspring.core.ioc.annotations.component import Component
 
 ```python
 @Component
-class CustomRegisterService(DefaultRegisterService):
-    ...
+class CustomRegisterService(DefaultRegisterService): ...
 ```
 
 #### 3. 如果您自定义了 `app/config/security_config.py`
@@ -69,9 +67,9 @@ class CustomRegisterService(DefaultRegisterService):
 ```python
 from pyspring.core.ioc.annotations.component import Component
 
+
 @Component
-class CustomSecurityEntityConfiguration(SecurityEntityConfiguration):
-    ...
+class CustomSecurityEntityConfiguration(SecurityEntityConfiguration): ...
 ```
 
 ## 验证修复

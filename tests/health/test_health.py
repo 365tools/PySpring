@@ -7,6 +7,7 @@ pyspring-health：健康检查测试
 - 健康指标抽象
 - 健康检查管理器（发现、执行、聚合）
 """
+
 import asyncio
 
 from pyspring.health import HealthCheckManager, HealthCheckResult, HealthIndicator, HealthStatus
@@ -14,6 +15,7 @@ from pyspring.health import HealthCheckManager, HealthCheckResult, HealthIndicat
 
 class DummyContainer:
     """模拟容器：提供已注册类型和获取服务"""
+
     def __init__(self, indicator):
         self._indicator = indicator
 
@@ -26,6 +28,7 @@ class DummyContainer:
 
 class DummyIndicator(HealthIndicator):
     """测试用健康指标"""
+
     def __init__(self, name="dummy", status=HealthStatus.UP):
         self._name = name
         self._status = status

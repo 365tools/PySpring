@@ -8,6 +8,7 @@
 - 本模块只依赖抽象接口 IDBService 与 sqlalchemy，不依赖任何具体 provider。
 - 公共逻辑集中在基类，具体 provider 关注点分离，便于新增其他数据库后端。
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -63,9 +64,7 @@ class BaseAsyncDBService(IDBService):
         """获取数据库引擎"""
         self._ensure_initialized()
         if self._engine is None:
-            raise RuntimeError(
-                f"{type(self).__name__} engine not initialized"
-            )
+            raise RuntimeError(f"{type(self).__name__} engine not initialized")
         return self._engine
 
     @override
@@ -75,9 +74,7 @@ class BaseAsyncDBService(IDBService):
         """
         self._ensure_initialized()
         if self._session_factory is None:
-            raise RuntimeError(
-                f"{type(self).__name__} session factory not initialized"
-            )
+            raise RuntimeError(f"{type(self).__name__} session factory not initialized")
         return self._session_factory()
 
     @override
@@ -164,10 +161,7 @@ class BaseAsyncDBService(IDBService):
             if self._engine is not None:
                 logger.debug(f"Closing {provider_name} connection pool...")
                 try:
-                    await asyncio.wait_for(
-                        self._engine.dispose(close=True),
-                        timeout=5.0
-                    )
+                    await asyncio.wait_for(self._engine.dispose(close=True), timeout=5.0)
                 except asyncio.TimeoutError:
                     logger.warning(f"{provider_name} connection pool close timeout, forcing cleanup...")
                     # 强制清理
@@ -193,7 +187,6 @@ class BaseAsyncDBService(IDBService):
         except Exception as e:
             logger.warning(f"Ping failed: {e}")
             return False
-
 
 
 def _row_to_dict(row: Row[Any]) -> RowData:

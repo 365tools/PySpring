@@ -31,7 +31,7 @@ class ImportResetVisitor(ast.NodeVisitor):
             return False
 
         # Only target pyspring packages
-        if not module_name.startswith('pyspring'):
+        if not module_name.startswith("pyspring"):
             return False
 
         # If force mode, we remove ALL pyspring imports
@@ -50,11 +50,13 @@ class ImportResetVisitor(ast.NodeVisitor):
         for alias in node.names:
             if self._should_remove(alias.name, node.lineno):
                 if alias.asname:
-                    self.issues.append({
-                        'line': node.lineno,
-                        'msg': f"Skipping removal of aliased import '{alias.name} as {alias.asname}' (Manual fix required)",
-                        'level': 'warning'
-                    })
+                    self.issues.append(
+                        {
+                            "line": node.lineno,
+                            "msg": f"Skipping removal of aliased import '{alias.name} as {alias.asname}' (Manual fix required)",
+                            "level": "warning",
+                        }
+                    )
                 else:
                     self.imports_to_remove.append(node.lineno)
 
@@ -64,11 +66,13 @@ class ImportResetVisitor(ast.NodeVisitor):
             # Check for aliases in imported names
             has_alias = any(alias.asname for alias in node.names)
             if has_alias:
-                self.issues.append({
-                    'line': node.lineno,
-                    'msg': f"Skipping removal of aliased import from '{node.module}' (Manual fix required)",
-                    'level': 'warning'
-                })
+                self.issues.append(
+                    {
+                        "line": node.lineno,
+                        "msg": f"Skipping removal of aliased import from '{node.module}' (Manual fix required)",
+                        "level": "warning",
+                    }
+                )
             else:
                 self.imports_to_remove.append(node.lineno)
 
@@ -79,17 +83,18 @@ class ImportResetChecker(BaseChecker):
         return "Import Auto-Migration (Reset & Reconstruct)"
 
     def __init__(self, target_path, force: bool = False):
-        super().__init__(target_path, ['.py'])
+        super().__init__(target_path, [".py"])
         self.force = force
         self.sys_path = sys.path.copy()
 
         # Add current directory to path for resolution check
         cwd = os.getcwd()
-        if cwd not in self.sys_path: self.sys_path.insert(0, cwd)
+        if cwd not in self.sys_path:
+            self.sys_path.insert(0, cwd)
 
     def check_file(self, file_path: str, fix: bool = False, **kwargs) -> bool:
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
             tree = ast.parse("".join(lines), filename=file_path)
         except Exception:
@@ -100,7 +105,7 @@ class ImportResetChecker(BaseChecker):
 
         # Report warnings (aliased imports)
         for issue in visitor.issues:
-            self.add_issue(file_path, issue['line'], issue['msg'], level=issue['level'])
+            self.add_issue(file_path, issue["line"], issue["msg"], level=issue["level"])
 
         if not visitor.imports_to_remove:
             return bool(visitor.issues)
@@ -119,10 +124,12 @@ class ImportResetChecker(BaseChecker):
                 print_fix(file_path, lineno, f"Removed stale import '{original_line}'", action="Reset")
                 self.resolved_count += 1
             else:
-                self.add_issue(file_path, lineno, f"Stale import detected: '{original_line}' (Run --fix to reset)", level='error')
+                self.add_issue(
+                    file_path, lineno, f"Stale import detected: '{original_line}' (Run --fix to reset)", level="error"
+                )
 
         if fix and lines_to_remove:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.writelines(lines)
             return True
 
@@ -135,13 +142,14 @@ class ReconstructChecker(BaseChecker):
         return "Import Reconstruction"
 
     def __init__(self, target_path):
-        super().__init__(target_path, ['.py'])
+        super().__init__(target_path, [".py"])
         self.indexer = ProjectIndexer(os.getcwd())
         self.indexer.build_index()
 
         # Also index pyspring library if we can find it
         try:
             import pyspring
+
             # pyspring 是命名空间包，用 __path__ 获取各子包目录
             lib_paths = []
             file_path = getattr(pyspring, "__file__", None)
@@ -167,7 +175,7 @@ class ReconstructChecker(BaseChecker):
         unresolved.sort(key=lambda x: x[1])
 
         # Read file content once
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         # Find insertion point (Safe Docstring Handling)
@@ -175,14 +183,16 @@ class ReconstructChecker(BaseChecker):
         if lines:
             first_line = lines[0].strip()
             # Check for one-line docstring
-            if (first_line.startswith('"""') and first_line.endswith('"""') and len(first_line) > 3) or \
-                    (first_line.startswith("'''") and first_line.endswith("'''") and len(first_line) > 3):
+            if (first_line.startswith('"""') and first_line.endswith('"""') and len(first_line) > 3) or (
+                first_line.startswith("'''") and first_line.endswith("'''") and len(first_line) > 3
+            ):
                 insert_idx = 1
             # Check for multi-line docstring
             elif first_line.startswith('"""') or first_line.startswith("'''"):
                 marker = first_line[:3]
                 for i, line in enumerate(lines):
-                    if i == 0: continue
+                    if i == 0:
+                        continue
                     if marker in line:
                         insert_idx = i + 1
                         break
@@ -192,7 +202,7 @@ class ReconstructChecker(BaseChecker):
         for i, line in enumerate(lines):
             # Fix: Only consider top-level imports to avoid inserting into indented blocks
             # We strictly check for imports starting at column 0
-            if line.startswith('import ') or line.startswith('from '):
+            if line.startswith("import ") or line.startswith("from "):
                 last_import_idx = i
 
         if last_import_idx != -1:
@@ -204,7 +214,7 @@ class ReconstructChecker(BaseChecker):
         current_file_imports = set()
         for line in lines:
             line_str = line.strip()
-            if line_str.startswith('import ') or line_str.startswith('from '):
+            if line_str.startswith("import ") or line_str.startswith("from "):
                 current_file_imports.add(line_str)
 
         for name, lineno, _ in unresolved:
@@ -219,7 +229,7 @@ class ReconstructChecker(BaseChecker):
                     continue
 
                 if fix:
-                    lines.insert(insert_idx, new_import + '\n')
+                    lines.insert(insert_idx, new_import + "\n")
                     current_file_imports.add(new_import)
                     modifications = True
                     self.resolved_count += 1
@@ -227,14 +237,18 @@ class ReconstructChecker(BaseChecker):
                     # Increment index so next import is added AFTER this one
                     insert_idx += 1
                 else:
-                    self.add_issue(file_path, lineno, f"Missing import for '{name}'. Found candidate: {module}", level='error')
+                    self.add_issue(
+                        file_path, lineno, f"Missing import for '{name}'. Found candidate: {module}", level="error"
+                    )
             elif len(candidates) > 1:
-                self.add_issue(file_path, lineno, f"Ambiguous symbol '{name}': {candidates} (Manual fix required)", level='warning')
+                self.add_issue(
+                    file_path, lineno, f"Ambiguous symbol '{name}': {candidates} (Manual fix required)", level="warning"
+                )
             else:
                 pass
 
         if fix and modifications:
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 f.writelines(lines)
             return True
 
@@ -247,8 +261,8 @@ def run_import_reset(args):
     2. Run ReconstructChecker to find and add missing imports
     """
     target_path = os.path.abspath(args.path)
-    force = getattr(args, 'force', False)
-    fix = getattr(args, 'fix', False)
+    force = getattr(args, "force", False)
+    fix = getattr(args, "fix", False)
 
     # 1. Safety Check for Force Mode
     if force and fix:
@@ -258,7 +272,7 @@ def run_import_reset(args):
 
         # Interactive confirmation
         response = input(f"{Colors.BOLD}Are you sure you want to continue? [y/N] {Colors.ENDC}")
-        if response.lower() != 'y':
+        if response.lower() != "y":
             print("Operation cancelled.")
             sys.exit(0)
 

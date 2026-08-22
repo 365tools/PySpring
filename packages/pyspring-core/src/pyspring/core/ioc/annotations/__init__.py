@@ -21,18 +21,18 @@ from pyspring.core.ioc.annotations.scope import Prototype, Singleton
 
 __all__ = [
     # 组件装饰器
-    'Component',
-    'Service',
-    'Repository',
+    "Component",
+    "Service",
+    "Repository",
     # 配置装饰器
-    'Configuration',
-    'Bean',
+    "Configuration",
+    "Bean",
     # 修饰器
-    'Primary',
-    'Lazy',
+    "Primary",
+    "Lazy",
     # 条件装饰器
-    'ConditionalOnMissingBean',
+    "ConditionalOnMissingBean",
     # 作用域装饰器
-    'Singleton',
-    'Prototype',
+    "Singleton",
+    "Prototype",
 ]
