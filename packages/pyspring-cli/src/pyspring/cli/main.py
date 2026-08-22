@@ -84,7 +84,7 @@ def main():
     parser = FriendlyArgumentParser(
         prog='pyspring',
         description='PySpring Framework Command Line Interface',
-        epilog='For more information, visit https://github.com/365tools/PySpring',
+        epilog='For more information, visit https://github.com/eavelabs-community/py-spring',
         formatter_class=GroupedHelpFormatter
     )
 

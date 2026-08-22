@@ -81,12 +81,12 @@ def create_pyproject_toml(target_dir: Path):
     content = content.replace('name = "pyspring"', 'name = "my-pyspring-app"')
     # 替换作者信息
     content = content.replace(
-        '{ name="Yingchun", email="allureyc@gmail.com" }',
+        '{ name="eavelabs", email="365tools.t1@gmail.com" }',
         '{ name="Your Name", email="your.email@example.com" }'
     )
     # 替换项目 URL
     content = content.replace(
-        '"Homepage" = "https://github.com/365tools/PySpring"',
+        '"Homepage" = "https://github.com/eavelabs-community/py-spring"',
         '"Homepage" = "https://github.com/yourusername/my-pyspring-app"'
     )
     

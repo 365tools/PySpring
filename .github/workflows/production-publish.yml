@@ -241,7 +241,7 @@ jobs:
 
             ### 🔗 相关链接
             - [PyPI 包](https://pypi.org/project/pyspring/${{ needs.build-and-test.outputs.version }}/)
-            - [文档](https://github.com/365tools/PySpring/tree/main/docs)
-            - [更新日志](https://github.com/365tools/PySpring/blob/main/CHANGELOG.md)
+            - [文档](https://github.com/eavelabs-community/py-spring/tree/main/docs)
+            - [更新日志](https://github.com/eavelabs-community/py-spring/blob/main/CHANGELOG.md)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

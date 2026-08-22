@@ -56,7 +56,7 @@ TestPyPI 是测试环境，代码推送到 `main` 或 `develop` 分支时自动�
 
 #### 方式 1：通过 Web 界面配置（推荐）
 
-1. 打开你的 GitHub 仓库：https://github.com/365tools/PySpring
+1. 打开你的 GitHub 仓库：https://github.com/eavelabs-community/py-spring
 
 2. 点击 **Settings** → **Secrets and variables** → **Actions**
 
@@ -147,7 +147,7 @@ git commit -m "test: trigger testpypi publish"
 git push origin main
 
 # 查看 Actions 执行情况
-# https://github.com/365tools/PySpring/actions
+# https://github.com/eavelabs-community/py-spring/actions
 ```
 
 **预期结果**：
@@ -171,7 +171,7 @@ git tag v1.0.1
 git push origin v1.0.1
 
 # 4. 访问 Actions 页面
-# https://github.com/365tools/PySpring/actions
+# https://github.com/eavelabs-community/py-spring/actions
 
 # 5. 找到 "Production - Publish to PyPI" workflow
 

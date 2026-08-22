@@ -326,7 +326,7 @@ python main.py
 
 ```bash
 # 克隆仓库
-git clone https://github.com/365tools/PySpring.git
+git clone https://github.com/eavelabs-community/py-spring.git
 
 # 安装为可编辑模式
 cd YourProject
@@ -389,7 +389,7 @@ pip show pyspring
 pip list | grep pyspring
 ```
 
-然后在 GitHub 上创建 Issue：https://github.com/365tools/PySpring/issues
+然后在 GitHub 上创建 Issue：https://github.com/eavelabs-community/py-spring/issues
 
 ---
 

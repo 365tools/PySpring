@@ -2,7 +2,7 @@
 name = "pyspring-workspace"
 version = "0.0.1"
 description = "PySpring Framework and CLI Tools Development Workspace"
-authors = [{ name = "Yingchun", email = "allureyc@gmail.com" }]
+authors = [{ name = "eavelabs", email = "365tools.t1@gmail.com" }]
 requires-python = ">=3.14"
 license = { text = "Apache-2.0" }
 

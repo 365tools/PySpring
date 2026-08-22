@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pyspring-repositories"
 version = "0.0.1"
 authors = [
-  { name="Yingchun", email="allureyc@gmail.com" },
+  { name="eavelabs", email="365tools.t1@gmail.com" },
 ]
 description = "Repositories starter for PySpring: database (PG/MySQL/SQLite) and cache (Redis/Memory/Memcached)."
 readme = "README.md"
@@ -33,8 +33,8 @@ pythonpath = ["."]
 pyspring-repositories = "pyspring.repositories.autoconfigure:load"
 
 [project.urls]
-"Homepage" = "https://github.com/365tools/PySpring"
-"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+"Homepage" = "https://github.com/eavelabs-community/py-spring"
+"Bug Tracker" = "https://github.com/eavelabs-community/py-spring/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

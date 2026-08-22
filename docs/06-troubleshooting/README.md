@@ -93,7 +93,7 @@
 
 如果文档无法解决你的问题：
 
-1. 查看 [GitHub Issues](https://github.com/365tools/PySpring/issues)
+1. 查看 [GitHub Issues](https://github.com/eavelabs-community/py-spring/issues)
 2. 提交新的 Issue（提供详细信息）
 3. 加入社区讨论
 

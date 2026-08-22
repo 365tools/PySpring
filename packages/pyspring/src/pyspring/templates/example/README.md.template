@@ -6,7 +6,7 @@
 > 
 > 使用命令 `pyspring init --example` 或 `uvx --from pyspring pyspring init --example` 创建。
 > 
-> 如果你想创建自己的项目，查看 [PySpring 文档](https://github.com/365tools/PySpring)
+> 如果你想创建自己的项目，查看 [PySpring 文档](https://github.com/eavelabs-community/py-spring)
 
 ## 🎯 功能特性
 

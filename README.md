@@ -204,8 +204,8 @@ PySpring 采用**多包独立发布**策略，各 Starter 独立维护版本与�
 
 ## 贡献与支持
 
-- 🐛 **报告 Bug**：[GitHub Issues](https://github.com/365tools/PySpring/issues)
-- 💬 **参与讨论**：[GitHub Discussions](https://github.com/365tools/PySpring/discussions)
+- 🐛 **报告 Bug**：[GitHub Issues](https://github.com/eavelabs-community/py-spring/issues)
+- 💬 **参与讨论**：[GitHub Discussions](https://github.com/eavelabs-community/py-spring/discussions)
 
 ---
 
@@ -213,4 +213,4 @@ PySpring 采用**多包独立发布**策略，各 Starter 独立维护版本与�
 
 本项目采用 **Apache License 2.0** 协议开源。
 
-Copyright © 2026 [Yingchun] (365tools)
+Copyright © 2026 [eavelabs] (Eavelabs)

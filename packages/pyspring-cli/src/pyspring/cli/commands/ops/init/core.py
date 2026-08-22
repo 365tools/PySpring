@@ -708,10 +708,10 @@ def init_project(
     print(f"  {Colors.WARNING}• Create database before initializing schema{Colors.ENDC}")
 
     print_title("Documentation Reference")
-    print("  • Quick Start: https://github.com/365tools/PySpring/docs/")
-    print("  • Auth Config: https://github.com/365tools/PySpring/docs/SECURITY_CONFIG_GUIDE.md")
-    print("  • JWT Encryption: https://github.com/365tools/PySpring/docs/JWT_ENCRYPTION_GUIDE.md")
-    print("  • Database Config: https://github.com/365tools/PySpring/docs/REPOSITORIES_CONFIG_GUIDE.md")
+    print("  • Quick Start: https://github.com/eavelabs-community/py-spring/docs/")
+    print("  • Auth Config: https://github.com/eavelabs-community/py-spring/docs/SECURITY_CONFIG_GUIDE.md")
+    print("  • JWT Encryption: https://github.com/eavelabs-community/py-spring/docs/JWT_ENCRYPTION_GUIDE.md")
+    print("  • Database Config: https://github.com/eavelabs-community/py-spring/docs/REPOSITORIES_CONFIG_GUIDE.md")
 
     print()
 

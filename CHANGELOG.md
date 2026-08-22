@@ -74,9 +74,9 @@ PySpring 的所有重要变更都将记录在此文件中。
 
 我们欢迎贡献！
 
-- **Bug 报告**: [GitHub Issues](https://github.com/365tools/PySpring/issues)
-- **功能请求**: [GitHub Discussions](https://github.com/365tools/PySpring/discussions)
-- **Pull Requests**: [GitHub Pull Requests](https://github.com/365tools/PySpring/pulls)
+- **Bug 报告**: [GitHub Issues](https://github.com/eavelabs-community/py-spring/issues)
+- **功能请求**: [GitHub Discussions](https://github.com/eavelabs-community/py-spring/discussions)
+- **Pull Requests**: [GitHub Pull Requests](https://github.com/eavelabs-community/py-spring/pulls)
 
 ---
 
@@ -89,4 +89,4 @@ PySpring 的所有重要变更都将记录在此文件中。
 ## 链接
 
 - **文档**: [docs/](docs/)
-- **GitHub**: https://github.com/365tools/PySpring
+- **GitHub**: https://github.com/eavelabs-community/py-spring

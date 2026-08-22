@@ -1,6 +1,6 @@
 # {{PROJECT_NAME}}
 
-基于 [PySpring](https://github.com/365tools/PySpring)（Spring Boot 风格的 FastAPI 框架）构建的 Web 应用。
+基于 [PySpring](https://github.com/eavelabs-community/py-spring)（Spring Boot 风格的 FastAPI 框架）构建的 Web 应用。
 
 ## 快速开始
 
@@ -45,6 +45,6 @@ uv run python main.py
 
 ## 文档
 
-- 项目文档：<https://github.com/365tools/PySpring/docs/>
-- 安全配置：<https://github.com/365tools/PySpring/docs/SECURITY_CONFIG_GUIDE.md>
-- 数据库配置：<https://github.com/365tools/PySpring/docs/REPOSITORIES_CONFIG_GUIDE.md>
+- 项目文档：<https://github.com/eavelabs-community/py-spring/docs/>
+- 安全配置：<https://github.com/eavelabs-community/py-spring/docs/SECURITY_CONFIG_GUIDE.md>
+- 数据库配置：<https://github.com/eavelabs-community/py-spring/docs/REPOSITORIES_CONFIG_GUIDE.md>

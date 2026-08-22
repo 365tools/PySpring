@@ -35,7 +35,7 @@ pyspring clean cache
 
 ## Documentation
 
-For detailed documentation, visit [PySpring Documentation](https://github.com/365tools/PySpring)
+For detailed documentation, visit [PySpring Documentation](https://github.com/eavelabs-community/py-spring)
 
 ## Requirements
 

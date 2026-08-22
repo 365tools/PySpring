@@ -313,6 +313,6 @@ pyspring init --force
 
 ## 获取帮助
 
-- 📧 邮件: allureyc@gmail.com
-- 🐛 Issues: https://github.com/365tools/PySpring/issues
-- 💬 讨论: https://github.com/365tools/PySpring/discussions
+- 📧 邮件: 365tools.t1@gmail.com
+- 🐛 Issues: https://github.com/eavelabs-community/py-spring/issues
+- 💬 讨论: https://github.com/eavelabs-community/py-spring/discussions

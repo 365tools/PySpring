@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pyspring-core"
 version = "0.0.1"
 authors = [
-  { name="Yingchun", email="allureyc@gmail.com" },
+  { name="eavelabs", email="365tools.t1@gmail.com" },
 ]
 description = "Core of PySpring: IoC container, AOP, logging, config."
 readme = "README.md"
@@ -32,8 +32,8 @@ pythonpath = ["."]
 pyspring-core = "pyspring.core.autoconfigure.core_starter:load"
 
 [project.urls]
-"Homepage" = "https://github.com/365tools/PySpring"
-"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+"Homepage" = "https://github.com/eavelabs-community/py-spring"
+"Bug Tracker" = "https://github.com/eavelabs-community/py-spring/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

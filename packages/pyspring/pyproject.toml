@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pyspring"
 version = "0.0.1"
 authors = [
-  { name="Yingchun", email="allureyc@gmail.com" },
+  { name="eavelabs", email="365tools.t1@gmail.com" },
 ]
 description = "A SpringBoot-style scaffold for FastAPI with IoC and Auto-Configuration."
 readme = "README.md"
@@ -60,8 +60,8 @@ testpaths = ["../../tests"]
 package = true
 
 [project.urls]
-"Homepage" = "https://github.com/365tools/PySpring"
-"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+"Homepage" = "https://github.com/eavelabs-community/py-spring"
+"Bug Tracker" = "https://github.com/eavelabs-community/py-spring/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

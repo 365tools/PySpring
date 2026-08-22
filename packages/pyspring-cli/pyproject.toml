@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pyspring-cli"
 version = "0.0.1"
 authors = [
-  { name="Yingchun", email="allureyc@gmail.com" },
+  { name="eavelabs", email="365tools.t1@gmail.com" },
 ]
 description = "Command-line development tools for PySpring Framework"
 readme = "README.md"
@@ -47,9 +47,9 @@ namespaces = true
 exclude = ["*.tests", "*.tests.*", "tests.*", "tests"]
 
 [project.urls]
-"Homepage" = "https://github.com/365tools/PySpring"
-"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
-"Documentation" = "https://github.com/365tools/PySpring/tree/main/docs"
+"Homepage" = "https://github.com/eavelabs-community/py-spring"
+"Bug Tracker" = "https://github.com/eavelabs-community/py-spring/issues"
+"Documentation" = "https://github.com/eavelabs-community/py-spring/tree/main/docs"
 
 # CLI entry point
 [project.scripts]

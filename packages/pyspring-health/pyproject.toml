@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "pyspring-health"
 version = "0.0.1"
 authors = [
-  { name="Yingchun", email="allureyc@gmail.com" },
+  { name="eavelabs", email="365tools.t1@gmail.com" },
 ]
 description = "Health check starter for PySpring framework."
 readme = "README.md"
@@ -31,8 +31,8 @@ pyspring-health = "pyspring.health.autoconfigure:load"
 package = true
 
 [project.urls]
-"Homepage" = "https://github.com/365tools/PySpring"
-"Bug Tracker" = "https://github.com/365tools/PySpring/issues"
+"Homepage" = "https://github.com/eavelabs-community/py-spring"
+"Bug Tracker" = "https://github.com/eavelabs-community/py-spring/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

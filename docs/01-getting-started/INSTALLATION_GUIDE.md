@@ -15,7 +15,7 @@ pip install pyspring
 ### 2. 从源码安装
 
 ```bash
-git clone https://github.com/365tools/PySpring.git
+git clone https://github.com/eavelabs-community/py-spring.git
 cd PySpring
 pip install -e .
 ```
@@ -362,9 +362,9 @@ pyspring init my-demo-app --example
 
 ## 获取帮助
 
-- GitHub Issues: https://github.com/365tools/PySpring/issues
-- 讨论区: https://github.com/365tools/PySpring/discussions
-- 邮件: allureyc@gmail.com
+- GitHub Issues: https://github.com/eavelabs-community/py-spring/issues
+- 讨论区: https://github.com/eavelabs-community/py-spring/discussions
+- 邮件: 365tools.t1@gmail.com
 
 ## 许可证
 

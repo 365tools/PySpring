@@ -328,8 +328,8 @@ PySpring 设计为开放架构，你几乎可以替换任何组件。以下是�
 
 PySpring 是一个开源项目，欢迎任何形式的贡献！
 
-- 🐛 **报告 Bug**：请提交 [GitHub Issues](https://github.com/365tools/PySpring/issues)
-- 💬 **参与讨论**：欢迎在 [GitHub Discussions](https://github.com/365tools/PySpring/discussions) 中分享想法
+- 🐛 **报告 Bug**：请提交 [GitHub Issues](https://github.com/eavelabs-community/py-spring/issues)
+- 💬 **参与讨论**：欢迎在 [GitHub Discussions](https://github.com/eavelabs-community/py-spring/discussions) 中分享想法
 
 ---
 
@@ -337,4 +337,4 @@ PySpring 是一个开源项目，欢迎任何形式的贡献！
 
 本项目采用 **Apache License 2.0** 协议开源。
 
-Copyright © 2026 [Yingchun] (365tools)
+Copyright © 2026 [eavelabs] (Eavelabs)

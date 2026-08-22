@@ -199,7 +199,7 @@ YourProject/
 -e D:\Project\PycharmProjects\PySpring
 
 # 生产环境：使用 Git 安装
-# git+https://github.com/365tools/PySpring.git
+# git+https://github.com/eavelabs-community/py-spring.git
 ```
 
 ### 3. 使用示例

@@ -280,7 +280,7 @@ try {
     }
     
     Write-Host "`nDocumentation:" -ForegroundColor Yellow
-    Write-Host "  https://github.com/365tools/PySpring`n"
+    Write-Host "  https://github.com/eavelabs-community/py-spring`n"
 
 } catch {
     Write-Err "Script execution failed: $_"
